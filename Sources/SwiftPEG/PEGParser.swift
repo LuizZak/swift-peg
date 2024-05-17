@@ -25,18 +25,18 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
     }
 
     /// Creates a cache key for the current tokenizer position and the given
-    /// rule name/rule parameters combination.
+    /// rule name/rule arguments combination.
     /// 
     /// By default, `name` is the current callee's name via `#function`.
     open func makeKey(
         _ name: String = #function,
-        parameters: [AnyHashable] = []
+        arguments: [AnyHashable] = []
     ) -> ParserCache<RawTokenizer>.Key {
 
         return .init(
             mark: tokenizer.mark(),
             ruleName: name,
-            parameters: parameters
+            arguments: arguments
         )
     }
 

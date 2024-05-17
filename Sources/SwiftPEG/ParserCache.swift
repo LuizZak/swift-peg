@@ -35,13 +35,19 @@ public class ParserCache<RawTokenizer: RawTokenizerType> {
     }
 
     public struct CacheEntry<T> {
+        /// The tokenizer position after this cached entry's original parsing.
         var mark: Mark
+        /// The result of this cached entry.
         var result: T
     }
 
     public struct Key: Hashable {
+        /// The mark at which the parsing attempt that this key is based of was
+        /// made.
         var mark: Mark
+        /// The name of the rule that produced this key.
         var ruleName: String
-        var parameters: [AnyHashable]
+        /// The arguments for the particular call to the rule that produced this key.
+        var arguments: [AnyHashable]
     }
 }

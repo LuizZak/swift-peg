@@ -19,29 +19,29 @@ public struct ParserMemoizeMacro: PeerMacro {
         }
 
         // Fetch macro argument
-        let arguments = try parseArguments(node)
+        let macroArguments = try parseArguments(node)
 
         let nonMemoizedMethod: TokenSyntax = declaration.name
-        let memoizedMethod: TokenSyntax = "\(raw: arguments.memoizedName)"
+        let memoizedMethod: TokenSyntax = "\(raw: macroArguments.memoizedName)"
 
         guard nonMemoizedMethod.description != memoizedMethod.description else {
             throw Error.message("Memoized method cannot have the same name as non-memoized \(nonMemoizedMethod)")
         }
 
-        let cache = arguments.cache
+        let cache = macroArguments.cache
 
         let leadingTrivia = docComments(for: declaration)
         let typeToCache = returnType.trimmed
-        let parameters = parameters(in: declaration.signature.parameterClause)
-        let cacheParams: ExprSyntax = "[\(raw: parameters.map({ "AnyHashable(\($0.name.description))" }).joined(separator: ", "))]"
-        let nonMemoArguments = parameters.map({ $0.label != nil ? "\($0.label!): \($0.name)" : "\($0.name)" }).joined(separator: ", ")
+        let arguments = parameters(in: declaration.signature.parameterClause)
+        let cacheParams: ExprSyntax = "[\(raw: arguments.map({ "AnyHashable(\($0.name.description))" }).joined(separator: ", "))]"
+        let nonMemoArguments = arguments.map({ $0.label != nil ? "\($0.label!): \($0.name)" : "\($0.name)" }).joined(separator: ", ")
 
         return [
             """
             \(leadingTrivia)
             open func \(memoizedMethod)\(declaration.signature.parameterClause.trimmed) throws -> \(typeToCache) {
-                let params: [AnyHashable] = \(cacheParams)
-                let key = makeKey("\(memoizedMethod)", parameters: params)
+                let args: [AnyHashable] = \(cacheParams)
+                let key = makeKey("\(memoizedMethod)", arguments: args)
                 if let cached: CacheEntry<\(typeToCache)> = \(cache).fetch(key) {
                     self.restore(cached.mark)
                     return cached.result

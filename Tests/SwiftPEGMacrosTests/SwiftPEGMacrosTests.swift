@@ -25,8 +25,8 @@ class SwiftPEGMacrosTests: XCTestCase {
                 }
 
                 open func method() throws -> Any {
-                    let params: [AnyHashable] = []
-                    let key = makeKey("method", parameters: params)
+                    let args: [AnyHashable] = []
+                    let key = makeKey("method", arguments: args)
                     if let cached: CacheEntry<Any> = self.cache.fetch(key) {
                         self.restore(cached.mark)
                         return cached.result
@@ -60,8 +60,8 @@ class SwiftPEGMacrosTests: XCTestCase {
                 }
 
                 open func method(a: Int, _ b: Float, c _c: Bool) throws -> Any {
-                    let params: [AnyHashable] = [AnyHashable(a), AnyHashable(b), AnyHashable(_c)]
-                    let key = makeKey("method", parameters: params)
+                    let args: [AnyHashable] = [AnyHashable(a), AnyHashable(b), AnyHashable(_c)]
+                    let key = makeKey("method", arguments: args)
                     if let cached: CacheEntry<Any> = self.cache.fetch(key) {
                         self.restore(cached.mark)
                         return cached.result
@@ -95,8 +95,8 @@ class SwiftPEGMacrosTests: XCTestCase {
                 }
 
                 open func method() throws -> Int? {
-                    let params: [AnyHashable] = []
-                    let key = makeKey("method", parameters: params)
+                    let args: [AnyHashable] = []
+                    let key = makeKey("method", arguments: args)
                     if let cached: CacheEntry<Int?> = self.cache.fetch(key) {
                         self.restore(cached.mark)
                         return cached.result
@@ -133,8 +133,8 @@ class SwiftPEGMacrosTests: XCTestCase {
 
                 /// A doc comment
                 open func method() throws -> Int? {
-                    let params: [AnyHashable] = []
-                    let key = makeKey("method", parameters: params)
+                    let args: [AnyHashable] = []
+                    let key = makeKey("method", arguments: args)
                     if let cached: CacheEntry<Int?> = self.cache.fetch(key) {
                         self.restore(cached.mark)
                         return cached.result
