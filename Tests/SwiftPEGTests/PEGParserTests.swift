@@ -80,6 +80,58 @@ class PEGParserTests: XCTestCase {
         assertEqual(stubTokenizer.next_callCount, 1)
         assertEqual(stubTokenizer.tokenIndex, 1)
     }
+
+    func testPositiveLookahead_success() throws {
+        let stubTokenizer = stubTestTokenizer([
+            0, 1, 2,
+        ])
+        let sut = makeSut(stubTokenizer)
+
+        let result = try sut.positiveLookahead { try sut.expect(0) }
+        
+        assertTrue(result)
+        assertEqual(stubTokenizer.next_callCount, 1)
+        assertEqual(stubTokenizer.tokenIndex, 0)
+    }
+
+    func testPositiveLookahead_failure() throws {
+        let stubTokenizer = stubTestTokenizer([
+            0, 1, 2,
+        ])
+        let sut = makeSut(stubTokenizer)
+
+        let result = try sut.positiveLookahead { try sut.expect(1) }
+        
+        assertFalse(result)
+        assertEqual(stubTokenizer.next_callCount, 1)
+        assertEqual(stubTokenizer.tokenIndex, 0)
+    }
+
+    func testNegativeLookahead_success() throws {
+        let stubTokenizer = stubTestTokenizer([
+            0, 1, 2,
+        ])
+        let sut = makeSut(stubTokenizer)
+
+        let result = try sut.negativeLookahead { try sut.expect(1) }
+        
+        assertTrue(result)
+        assertEqual(stubTokenizer.next_callCount, 1)
+        assertEqual(stubTokenizer.tokenIndex, 0)
+    }
+
+    func testNegativeLookahead_failure() throws {
+        let stubTokenizer = stubTestTokenizer([
+            0, 1, 2,
+        ])
+        let sut = makeSut(stubTokenizer)
+
+        let result = try sut.negativeLookahead { try sut.expect(0) }
+        
+        assertFalse(result)
+        assertEqual(stubTokenizer.next_callCount, 1)
+        assertEqual(stubTokenizer.tokenIndex, 0)
+    }
 }
 
 // MARK: - Test internals

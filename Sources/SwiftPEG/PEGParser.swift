@@ -52,4 +52,24 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
         self.restore(mark)
         return nil
     }
+
+    /// Performs a positive lookahead for a token, returning `true` if the result
+    /// of `production()` is non-nil.
+    ///
+    /// Restores the position of the tokenizer after the lookahead.
+    public func positiveLookahead<T>(_ production: () throws -> T?) rethrows -> Bool {
+        let mark = self.mark()
+        defer { restore(mark) }
+        return try production() != nil
+    }
+
+    /// Performs a positive lookahead for a token, returning `true` if the result
+    /// of `production()` is nil.
+    ///
+    /// Restores the position of the tokenizer after the lookahead.
+    public func negativeLookahead<T>(_ production: () throws -> T?) rethrows -> Bool {
+        let mark = self.mark()
+        defer { restore(mark) }
+        return try production() == nil
+    }
 }
