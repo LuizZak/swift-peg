@@ -43,7 +43,7 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
     /// Fetches the next token in the stream and compares it to `token`, returning
     /// the token if it is equal. If the method fails, `nil` is returned and the
     /// token position is reset.
-    
+    @memoized("expect")
     public func __expect(_ token: TokenType) throws -> TokenType? {
         let mark = self.mark()
         if try tokenizer.next() == token {
@@ -51,21 +51,5 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
         }
         self.restore(mark)
         return nil
-    }
-
-    /// Fetches the next token in the stream and compares it to `token`, returning
-    /// the token if it is equal. If the method fails, `nil` is returned and the
-    /// token position is reset.
-    open func expect(_ token: TokenType) throws -> TokenType? {
-        let params: [AnyHashable] = [AnyHashable(token)]
-        let key = makeKey("expect", parameters: params)
-        if let cached: CacheEntry<TokenType> = self.cache.fetch(key) {
-            self.restore(cached.mark)
-            return cached.result
-        }
-        let result = try __expect(token)
-        cache.store(key, value: CacheEntry(mark: self.mark(), result: result))
-
-        return result
     }
 }

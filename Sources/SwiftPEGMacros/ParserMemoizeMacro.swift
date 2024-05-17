@@ -49,7 +49,7 @@ public struct ParserMemoizeMacro: PeerMacro {
                 let result = try \(nonMemoizedMethod)(\(raw: nonMemoArguments))
                 cache.store(
                     key,
-                    value: CachedEntry(mark: self.mark(), result: result)
+                    value: CacheEntry(mark: self.mark(), result: result)
                 )
 
                 return result

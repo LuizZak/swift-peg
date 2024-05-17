@@ -36,7 +36,7 @@ public class ParserCache<RawTokenizer: RawTokenizerType> {
 
     public struct CacheEntry<T> {
         var mark: Mark
-        var result: T?
+        var result: T
     }
 
     public struct Key: Hashable {

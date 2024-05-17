@@ -37,11 +37,13 @@ class PEGParserTests: XCTestCase {
         ])
         let sut = makeSut(stubTokenizer)
 
-        let result = try sut.expect(1)
-        _ = try sut.expect(1)
-        _ = try sut.expect(1)
+        let result_0 = try sut.expect(1)
+        let result_1 = try sut.expect(1)
+        let result_2 = try sut.expect(1)
 
-        assertEqual(result, nil)
+        assertEqual(result_0, nil)
+        assertEqual(result_1, nil)
+        assertEqual(result_2, nil)
         assertEqual(stubTokenizer.next_callCount, 1)
         assertEqual(stubTokenizer.restore_callCount, 3)
         assertEqual(stubTokenizer.tokenIndex, 0)
@@ -61,6 +63,22 @@ class PEGParserTests: XCTestCase {
         assertEqual(stubTokenizer.next_callCount, 3)
         assertEqual(stubTokenizer.restore_callCount, 3)
         assertEqual(stubTokenizer.tokenIndex, 0)
+    }
+
+    func testExpect_restoresLocationIfSuccessful() throws {
+        let stubTokenizer = stubTestTokenizer([
+            0, 1, 2,
+        ])
+        let sut = makeSut(stubTokenizer)
+
+        let mark = sut.mark()
+        _ = try sut.expect(0)
+        sut.restore(mark)
+        let result = try sut.expect(0)
+        
+        assertEqual(result, 0)
+        assertEqual(stubTokenizer.next_callCount, 1)
+        assertEqual(stubTokenizer.tokenIndex, 1)
     }
 }
 

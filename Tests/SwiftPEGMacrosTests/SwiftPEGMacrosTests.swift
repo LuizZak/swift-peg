@@ -34,7 +34,7 @@ class SwiftPEGMacrosTests: XCTestCase {
                     let result = try __method__()
                     cache.store(
                         key,
-                        value: CachedEntry(mark: self.mark(), result: result)
+                        value: CacheEntry(mark: self.mark(), result: result)
                     )
 
                     return result
@@ -69,7 +69,7 @@ class SwiftPEGMacrosTests: XCTestCase {
                     let result = try __method__(a: a, b, c: _c)
                     cache.store(
                         key,
-                        value: CachedEntry(mark: self.mark(), result: result)
+                        value: CacheEntry(mark: self.mark(), result: result)
                     )
 
                     return result
@@ -104,7 +104,7 @@ class SwiftPEGMacrosTests: XCTestCase {
                     let result = try __method__()
                     cache.store(
                         key,
-                        value: CachedEntry(mark: self.mark(), result: result)
+                        value: CacheEntry(mark: self.mark(), result: result)
                     )
 
                     return result
@@ -142,7 +142,7 @@ class SwiftPEGMacrosTests: XCTestCase {
                     let result = try __method__()
                     cache.store(
                         key,
-                        value: CachedEntry(mark: self.mark(), result: result)
+                        value: CacheEntry(mark: self.mark(), result: result)
                     )
 
                     return result
