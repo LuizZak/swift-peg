@@ -39,6 +39,7 @@ public struct ParserMemoizeMacro: PeerMacro {
         return [
             """
             \(leadingTrivia)
+            /// Memoized version of `\(nonMemoizedMethod)`.
             open func \(memoizedMethod)\(declaration.signature.parameterClause.trimmed) throws -> \(typeToCache) {
                 let args: [AnyHashable] = \(cacheParams)
                 let key = makeKey("\(memoizedMethod)", arguments: args)

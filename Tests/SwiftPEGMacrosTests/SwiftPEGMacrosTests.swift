@@ -24,6 +24,7 @@ class SwiftPEGMacrosTests: XCTestCase {
                     return 0
                 }
 
+                /// Memoized version of `__method__`.
                 open func method() throws -> Any {
                     let args: [AnyHashable] = []
                     let key = makeKey("method", arguments: args)
@@ -59,6 +60,7 @@ class SwiftPEGMacrosTests: XCTestCase {
                     return 0
                 }
 
+                /// Memoized version of `__method__`.
                 open func method(a: Int, _ b: Float, c _c: Bool) throws -> Any {
                     let args: [AnyHashable] = [AnyHashable(a), AnyHashable(b), AnyHashable(_c)]
                     let key = makeKey("method", arguments: args)
@@ -94,6 +96,7 @@ class SwiftPEGMacrosTests: XCTestCase {
                     return nil
                 }
 
+                /// Memoized version of `__method__`.
                 open func method() throws -> Int? {
                     let args: [AnyHashable] = []
                     let key = makeKey("method", arguments: args)
@@ -132,6 +135,7 @@ class SwiftPEGMacrosTests: XCTestCase {
                 }
 
                 /// A doc comment
+                /// Memoized version of `__method__`.
                 open func method() throws -> Int? {
                     let args: [AnyHashable] = []
                     let key = makeKey("method", arguments: args)
