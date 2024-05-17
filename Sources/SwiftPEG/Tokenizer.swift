@@ -1,5 +1,5 @@
 /// A tokenizer with built-in caching support.
-public class Tokenizer<Raw: RawTokenizerType> {
+open class Tokenizer<Raw: RawTokenizerType> {
     public typealias TokenType = Raw.TokenType
     private var _raw: Raw
 
@@ -11,14 +11,14 @@ public class Tokenizer<Raw: RawTokenizerType> {
     private var _cachedTokens: [TokenType] = []
 
     /// Index into `_cachedTokens` that tokens are fetched from, currently.
-    private var _tokenIndex: Int = 0
+    internal var tokenIndex: Int = 0
 
     /// Returns whether the current tokenizer position is at end-of-file, a.k.a.
     /// EOF.
     ///
     /// When at EOF, invocations of `next()` return `nil`.
     public var isEOF: Bool {
-        return _raw.isEOF || _tokenIndex == _rawEOFIndex
+        return _raw.isEOF || tokenIndex == _rawEOFIndex
     }
 
     public init(rawTokenizer: Raw) {
@@ -27,14 +27,14 @@ public class Tokenizer<Raw: RawTokenizerType> {
 
     /// Peeks the next token from the underlying raw stream without advancing the
     /// token index.
-    private func peekToken() throws -> TokenType? {
+    open func peekToken() throws -> TokenType? {
         // Look into cached tokens
-        if _cachedTokens.count > _tokenIndex {
-            return _cachedTokens[_tokenIndex]
+        if _cachedTokens.count > tokenIndex {
+            return _cachedTokens[tokenIndex]
         }
 
         // Prevent probing raw tokenizer past its EOF.
-        if _tokenIndex == _rawEOFIndex {
+        if tokenIndex == _rawEOFIndex {
             return nil
         }
 
@@ -43,7 +43,7 @@ public class Tokenizer<Raw: RawTokenizerType> {
             _cachedTokens.append(nextToken)
             return nextToken
         } else {
-            _rawEOFIndex = _tokenIndex
+            _rawEOFIndex = tokenIndex
             return nil
         }
     }
@@ -51,12 +51,65 @@ public class Tokenizer<Raw: RawTokenizerType> {
     /// Returns the next token in the token sequence and advances the token index
     /// forward to the next token.
     /// Returns `nil` to indicate the end of the token stream.
-    public func next() throws -> TokenType? {
+    open func next() throws -> TokenType? {
         if let next = try peekToken() {
-            _tokenIndex += 1
+            tokenIndex += 1
             return next
         }
 
         return nil
+    }
+
+    // MARK: - Seeking/restoring
+
+    /// Returns a marker for the current tokenizer's position so that it can be
+    /// rolled back at a later point.
+    /// 
+    /// - note: Markers from different tokenizer instances are not exchangeable.
+    open func mark() -> Mark {
+        return Mark(owner: self, index: self.tokenIndex)
+    }
+
+    /// Restores the tokenizer to a point indicated by `mark`.
+    /// - precondition: `mark` was created by an invocation to this tokenizer
+    /// instance's own `mark()` method.
+    open func restore(_ mark: Mark) {
+        precondition(
+            mark.owner === self,
+            "Attempt to restore() to a Mark created by a different tokenizer?"
+        )
+
+        if mark.index != self.tokenIndex {
+            self.tokenIndex = mark.index
+        }
+    }
+
+    /// A marker created by `Tokenizer.mark()`. Can be used to later restore the
+    /// token stream to a previous location.
+    public struct Mark: Hashable, Comparable {
+        weak var owner: Tokenizer?
+        var index: Int
+
+        /// Hashes this marker into a given hasher.
+        public func hash(into hasher: inout Hasher) {
+            hasher.combine(index)
+        }
+
+        /// Returns `true` if `lhs` is a marker that precedes `rhs` on its tokenizer.
+        ///
+        /// - note: Always returns `false` for markers created by different
+        /// tokenizer instances.
+        public static func < (lhs: Mark, rhs: Mark) -> Bool {
+            lhs.owner === rhs.owner && lhs.index < rhs.index
+        }
+
+        /// Returns `true` if `lhs` is a marker that points to the same location
+        /// as `rhs` on its tokenizer.
+        ///
+        /// - note: Always returns `false` for markers created by different
+        /// tokenizer instances.
+        public static func == (lhs: Self, rhs: Self) -> Bool {
+            lhs.owner === rhs.owner && lhs.index == rhs.index
+        }
     }
 }

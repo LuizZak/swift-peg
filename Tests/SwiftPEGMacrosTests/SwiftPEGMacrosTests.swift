@@ -1,0 +1,154 @@
+import XCTest
+import SwiftSyntaxMacros
+import SwiftSyntaxMacrosTestSupport
+
+@testable import SwiftPEGMacros
+
+let testMacros: [String: Macro.Type] = [
+    "memoized": ParserMemoizeMacro.self
+]
+
+class SwiftPEGMacrosTests: XCTestCase {
+    func testMemoizeMacro_noArguments() {
+        assertMacroExpansion("""
+            class A {
+                @memoized("method")
+                func __method__() throws -> Any {
+                    return 0
+                }
+            }
+            """,
+            expandedSource: """
+            class A {
+                func __method__() throws -> Any {
+                    return 0
+                }
+
+                open func method() throws -> Any {
+                    let params: [AnyHashable] = []
+                    let key = makeKey("method", parameters: params)
+                    if let cached: CacheEntry<Any> = self.cache.fetch(key) {
+                        self.restore(cached.mark)
+                        return cached.result
+                    }
+                    let result = try __method__()
+                    cache.store(
+                        key,
+                        value: CachedEntry(mark: self.mark(), result: result)
+                    )
+
+                    return result
+                }
+            }
+            """,
+            macros: testMacros)
+    }
+
+    func testMemoizeMacro_withArguments() {
+        assertMacroExpansion("""
+            class A {
+                @memoized("method")
+                func __method__(a: Int, _ b: Float, c _c: Bool) throws -> Any {
+                    return 0
+                }
+            }
+            """,
+            expandedSource: """
+            class A {
+                func __method__(a: Int, _ b: Float, c _c: Bool) throws -> Any {
+                    return 0
+                }
+
+                open func method(a: Int, _ b: Float, c _c: Bool) throws -> Any {
+                    let params: [AnyHashable] = [AnyHashable(a), AnyHashable(b), AnyHashable(_c)]
+                    let key = makeKey("method", parameters: params)
+                    if let cached: CacheEntry<Any> = self.cache.fetch(key) {
+                        self.restore(cached.mark)
+                        return cached.result
+                    }
+                    let result = try __method__(a: a, b, c: _c)
+                    cache.store(
+                        key,
+                        value: CachedEntry(mark: self.mark(), result: result)
+                    )
+
+                    return result
+                }
+            }
+            """,
+            macros: testMacros)
+    }
+
+    func testMemoizeMacro_nilReturn() {
+        assertMacroExpansion("""
+            class A {
+                @memoized("method")
+                func __method__() throws -> Int? {
+                    return nil
+                }
+            }
+            """,
+            expandedSource: """
+            class A {
+                func __method__() throws -> Int? {
+                    return nil
+                }
+
+                open func method() throws -> Int? {
+                    let params: [AnyHashable] = []
+                    let key = makeKey("method", parameters: params)
+                    if let cached: CacheEntry<Int?> = self.cache.fetch(key) {
+                        self.restore(cached.mark)
+                        return cached.result
+                    }
+                    let result = try __method__()
+                    cache.store(
+                        key,
+                        value: CachedEntry(mark: self.mark(), result: result)
+                    )
+
+                    return result
+                }
+            }
+            """,
+            macros: testMacros)
+    }
+
+    func testMemoizeMacro_copiesDocumentation() {
+        assertMacroExpansion("""
+            class A {
+                /// A doc comment
+                @memoized("method")
+                func __method__() throws -> Int? {
+                    return nil
+                }
+            }
+            """,
+            expandedSource: """
+            class A {
+                /// A doc comment
+                func __method__() throws -> Int? {
+                    return nil
+                }
+
+                /// A doc comment
+                open func method() throws -> Int? {
+                    let params: [AnyHashable] = []
+                    let key = makeKey("method", parameters: params)
+                    if let cached: CacheEntry<Int?> = self.cache.fetch(key) {
+                        self.restore(cached.mark)
+                        return cached.result
+                    }
+                    let result = try __method__()
+                    cache.store(
+                        key,
+                        value: CachedEntry(mark: self.mark(), result: result)
+                    )
+
+                    return result
+                }
+            }
+            """,
+            macros: testMacros)
+    }
+}

@@ -8,6 +8,38 @@ func fail(_ message: String, file: StaticString = #file, line: UInt = #line) {
     XCTFail(message, file: file, line: line)
 }
 
+/// Asserts a given Bool is `true`.
+func assertTrue(
+    _ value: Bool,
+    _ message: @autoclosure () -> String = "",
+    file: StaticString = #file,
+    line: UInt = #line
+) {
+    XCTAssertTrue(value, message(), file: file, line: line)
+}
+
+/// Asserts a given Bool is `false`.
+func assertFalse(
+    _ value: Bool,
+    _ message: @autoclosure () -> String = "",
+    file: StaticString = #file,
+    line: UInt = #line
+) {
+    XCTAssertFalse(value, message(), file: file, line: line)
+}
+
+/// Asserts two reference values point to the same object.
+func assertIdentical<T>(
+    _ lhs: T?,
+    _ rhs: T?,
+    _ message: @autoclosure () -> String = "",
+    file: StaticString = #file,
+    line: UInt = #line
+) where T: AnyObject {
+
+    XCTAssertIdentical(lhs, rhs, message(), file: file, line: line)
+}
+
 /// Asserts two equatable values are the same.
 func assertEqual<T>(
     _ lhs: T,

@@ -3,7 +3,7 @@
 /// by a parser.
 public protocol RawTokenizerType {
     /// The token type that this tokenizer produces.
-    associatedtype TokenType
+    associatedtype TokenType: Hashable
 
     /// Gets whether any more tokens can be consumed from this tokenizer.
     var isEOF: Bool { get }

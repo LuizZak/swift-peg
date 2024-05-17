@@ -1,6 +1,6 @@
 import SwiftPEG
 
-class TestRawTokenizer<T> {
+class TestRawTokenizer<T: Hashable> {
     let tokens: [T]
     var index: Int = 0
 

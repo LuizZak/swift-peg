@@ -11,6 +11,52 @@ final class TokenizerTests: XCTestCase {
         assertEqual(rawStub.next_callCount, 0)
     }
 
+    /// On initialization, `isEOF` must be `false` if the raw tokenizer's own
+    /// `isEOF` is `false`.
+    func testIsEOF_onInit_notEof_returnsFalse() throws {
+        let rawStub = stubTestRawTokenizer([
+            0,
+        ])
+        let sut = makeSut(rawStub)
+
+        assertFalse(sut.isEOF)
+    }
+
+    /// On initialization, `isEOF` must be `true` if the raw tokenizer's own
+    /// `isEOF` is `true`.
+    func testIsEOF_onInit_atEof_returnsTrue() throws {
+        let rawStub = stubTestRawTokenizer(Array<Int>())
+        let sut = makeSut(rawStub)
+
+        assertTrue(sut.isEOF)
+    }
+
+    /// After `next()`, `isEOF` must be `false` if the raw tokenizer's own
+    /// `isEOF` is `false`.
+    func testIsEOF_onNext_notEof_returnsFalse() throws {
+        let rawStub = stubTestRawTokenizer([
+            0, 1,
+        ])
+        let sut = makeSut(rawStub)
+
+        _=try sut.next()
+
+        assertFalse(sut.isEOF)
+    }
+
+    /// After `next()`, `isEOF` must be `true` if the raw tokenizer's own
+    /// `isEOF` is `true`.
+    func testIsEOF_onNext_atEof_returnsTrue() throws {
+        let rawStub = stubTestRawTokenizer([
+            0,
+        ])
+        let sut = makeSut(rawStub)
+
+        _=try sut.next()
+
+        assertTrue(sut.isEOF)
+    }
+
     /// Calling `Tokenizer.next()` when not at EOF should return the token from
     /// the raw tokenizer.
     func testNext_nonNil_returnsToken() throws {
