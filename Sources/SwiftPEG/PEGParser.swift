@@ -15,12 +15,12 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
     }
 
     /// Convenience for `self.tokenizer.mark()`.
-    public func mark() -> Tokenizer<RawTokenizer>.Mark {
+    open func mark() -> Tokenizer<RawTokenizer>.Mark {
         tokenizer.mark()
     }
 
     /// Convenience for `self.tokenizer.restore(mark)`.
-    public func restore(_ mark: Tokenizer<RawTokenizer>.Mark) {
+    open func restore(_ mark: Tokenizer<RawTokenizer>.Mark) {
         tokenizer.restore(mark)
     }
 

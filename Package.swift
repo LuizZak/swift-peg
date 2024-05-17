@@ -18,6 +18,9 @@ let package = Package(
             name: "SwiftPEG",
             dependencies: [
                 "SwiftPEGMacros",
+            ],
+            exclude: [
+                "Grammar/metagrammar.gram",
             ]
         ),
         .macro(
