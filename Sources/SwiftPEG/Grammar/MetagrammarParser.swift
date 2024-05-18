@@ -53,13 +53,24 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
         if
             try self.expect("@") != nil,
             let name = try self.identToken(),
+            let metaValue = try self.metaValue(),
             try self.expect(";") != nil
         {
-            let metaValue = try self.metaValue()
             return .init(name: name, value: metaValue)
         }
 
         self.restore(mark)
+
+        if
+            try self.expect("@") != nil,
+            let name = try self.identToken(),
+            try self.expect(";") != nil
+        {
+            return .init(name: name, value: nil)
+        }
+
+        self.restore(mark)
+
         return nil
     }
 

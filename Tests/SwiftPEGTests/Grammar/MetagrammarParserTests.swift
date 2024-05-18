@@ -15,7 +15,7 @@ class MetagrammarParserTests: XCTestCase {
 
     func testGrammar_metaPropertyOnly_returnsNil() throws {
         let stubTokenizer = stubTestTokenizer([
-            "@", "ident",
+            "@", "ident", ";",
         ])
         let sut = makeSut(stubTokenizer)
 
@@ -26,7 +26,7 @@ class MetagrammarParserTests: XCTestCase {
 
     func testGrammar_singleRule_returnsGrammar() throws {
         let stubTokenizer = stubTestTokenizer([
-            "rule", ":", "'a'", ";"
+            "rule", ":", "'a'", ";",
         ])
         let sut = makeSut(stubTokenizer)
 
@@ -34,6 +34,54 @@ class MetagrammarParserTests: XCTestCase {
 
         assertEqual(result.metas.count, 0)
         assertEqual(result.rules.count, 1)
+    }
+
+    func testGrammar_metaPropertyAndRule_returnsGrammar() throws {
+        let stubTokenizer = stubTestTokenizer([
+            "@", "ident", ";",
+            "rule", ":", "'a'", ";",
+        ])
+        let sut = makeSut(stubTokenizer)
+
+        let result = try assertUnwrap(sut.grammar())
+
+        assertEqual(result.metas.count, 1)
+        assertEqual(result.rules.count, 1)
+    }
+
+    func testGrammar_twoRule_returnsGrammar() throws {
+        let stubTokenizer = stubTestTokenizer([
+            "ruleA", ":", "'a'", ";",
+            "ruleB", ":", "'b'", ";",
+        ])
+        let sut = makeSut(stubTokenizer)
+
+        let result = try assertUnwrap(sut.grammar())
+
+        assertEqual(result.metas.count, 0)
+        assertEqual(result.rules.count, 2)
+    }
+
+    func testRule_barStart_returnsRule() throws {
+        let stubTokenizer = stubTestTokenizer([
+            "ruleA", ":", "|", "'a'", ";",
+        ])
+        let sut = makeSut(stubTokenizer)
+
+        let result = try assertUnwrap(sut.rule())
+
+        assertEqual(result.alts.count, 1)
+    }
+
+    func testRule_twoAlts_returnsRule() throws {
+        let stubTokenizer = stubTestTokenizer([
+            "ruleA", ":", "'b'", "|", "'a'", ";",
+        ])
+        let sut = makeSut(stubTokenizer)
+
+        let result = try assertUnwrap(sut.rule())
+
+        assertEqual(result.alts.count, 2)
     }
 }
 
