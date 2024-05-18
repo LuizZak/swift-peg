@@ -97,3 +97,112 @@ extension SyntaxProtocol {
         return Trivia(pieces: leadingTrivia[startIndex...endIndex])
     }
 }
+
+extension SyntaxProtocol {
+    /// Convenience for `Syntax(self)`.
+    var asSyntax: Syntax {
+        return Syntax(self)
+    }
+
+    /// Sets the leading trivia to be a number of spaces of the given count.
+    func withLeadingSpace(count: Int = 1) -> Self {
+        with(\.leadingTrivia, .spaces(count))
+    }
+
+    /// Sets the trailing trivia to be a number of spaces of the given count.
+    func withTrailingSpace(count: Int = 1) -> Self {
+        with(\.trailingTrivia, .spaces(count))
+    }
+    
+    /// Adds to the leading trivia a number of spaces of the given count.
+    func addingLeadingSpace(count: Int = 1) -> Self {
+        addingLeadingTrivia(.spaces(count))
+    }
+    
+    /// Adds to the trailing trivia a number of spaces of the given count.
+    func addingTrailingSpace(count: Int = 1) -> Self {
+        addingTrailingTrivia(.spaces(count))
+    }
+    
+    /// Adds to the leading trivia a given `Trivia`.
+    /// Trivia is added at the end of the current trivia value.
+    func addingLeadingTrivia(_ trivia: Trivia) -> Self {
+        with(\.leadingTrivia, leadingTrivia + trivia)
+    }
+    
+    /// Adds to the trailing trivia a given `Trivia`.
+    /// Trivia is added at the end of the current trivia value.
+    func addingTrailingTrivia(_ trivia: Trivia) -> Self {
+        with(\.trailingTrivia, trailingTrivia + trivia)
+    }
+    
+    /// Adds one leading/trailing spaces to the current trivia.
+    func addingSurroundingSpaces() -> Self {
+        addingLeadingSpace().addingTrailingSpace()
+    }
+    
+    /// Replaces the trivia with a single newline.
+    func onNewline() -> Self {
+        with(\.leadingTrivia, .newlines(1))
+    }
+}
+
+extension TypeSyntaxProtocol {
+    var asTypeSyntax: TypeSyntax {
+        return TypeSyntax(self)
+    }
+}
+
+extension DeclSyntaxProtocol {
+    var asDeclSyntax: DeclSyntax {
+        return DeclSyntax(self)
+    }
+}
+
+extension ExprSyntaxProtocol {
+    var asExprSyntax: ExprSyntax {
+        return ExprSyntax(self)
+    }
+}
+
+extension StmtSyntaxProtocol {
+    var asStmtSyntax: StmtSyntax {
+        return StmtSyntax(self)
+    }
+}
+
+extension PatternSyntaxProtocol {
+    var asPatternSyntax: PatternSyntax {
+        return PatternSyntax(self)
+    }
+}
+
+extension ExprSyntaxProtocol {
+    func inCodeBlock() -> CodeBlockItemSyntax {
+        .init(item: inCodeBlockItem())
+    }
+
+    func inCodeBlockItem() -> CodeBlockItemSyntax.Item {
+        .expr(self.asExprSyntax)
+    }
+}
+
+extension StmtSyntaxProtocol {
+    func inCodeBlock() -> CodeBlockItemSyntax {
+        .init(item: inCodeBlockItem())
+    }
+
+    func inCodeBlockItem() -> CodeBlockItemSyntax.Item {
+        .stmt(self.asStmtSyntax)
+    }
+}
+
+extension DeclSyntaxProtocol {
+    func inCodeBlock() -> CodeBlockItemSyntax {
+        .init(item: inCodeBlockItem())
+    }
+
+    func inCodeBlockItem() -> CodeBlockItemSyntax.Item {
+        .decl(self.asDeclSyntax)
+    }
+}

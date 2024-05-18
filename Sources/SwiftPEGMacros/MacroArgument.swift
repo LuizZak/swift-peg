@@ -36,7 +36,7 @@ extension AttributeSyntax {
 
         if let arguments = arguments.as(LabeledExprListSyntax.self) {
             for element in arguments {
-                let syntax = Syntax(element.with(\.trailingComma, nil))
+                let syntax = Syntax(element)
 
                 if let label = element.label {
                     result.append(.labeled(syntax, label, element.expression))

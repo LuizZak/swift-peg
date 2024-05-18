@@ -4,7 +4,9 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
     public typealias CacheEntry<T> = ParserCache<RawTokenizer>.CacheEntry<T>
 
     let cache: ParserCache<RawTokenizer> = ParserCache()
-    let tokenizer: Tokenizer<RawTokenizer>
+    
+    /// The tokenizer associated with this parser.
+    public let tokenizer: Tokenizer<RawTokenizer>
 
     public init(tokenizer: Tokenizer<RawTokenizer>) {
         self.tokenizer = tokenizer
@@ -53,6 +55,17 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
         return nil
     }
 
+    /// Fetches the next token in the stream and compares to `token`, and if it
+    /// matches, consumes it and returns `true`, otherwise returns `false`.
+    @memoized("maybe")
+    public func __maybe(_ token: TokenType) throws -> Bool {
+        if try tokenizer.peekToken() == token {
+            _ = try tokenizer.next()
+            return true
+        }
+        return false
+    }
+
     /// Performs a positive lookahead for a token, returning `true` if the result
     /// of `production()` is non-nil.
     ///
@@ -71,5 +84,18 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
         let mark = self.mark()
         defer { restore(mark) }
         return try production() == nil
+    }
+
+    /// Stateful boolean flag used during parsing methods that use the cut syntax
+    /// feature (`~`).
+    public struct CutFlag {
+        public var isOn: Bool = false
+
+        /// Toggles the cut flag on and returns `true`, allowing parser methods
+        /// to chain this method in a conditional expression.
+        public mutating func toggleOn() -> Bool {
+            self.isOn = true
+            return self.isOn
+        }
     }
 }

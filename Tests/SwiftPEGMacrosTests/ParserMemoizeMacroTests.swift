@@ -355,7 +355,7 @@ class ParserMemoizeMacroTests: XCTestCase {
                 ),
                 DiagnosticSpec(
                     message: "Memoization cache name cannot be empty",
-                    line: 3,
+                    line: 5,
                     column: 22,
                     highlights: ["cacheTarget: \"\""]
                 ),
@@ -417,9 +417,9 @@ class ParserMemoizeMacroTests: XCTestCase {
                 ),
                 DiagnosticSpec(
                     message: "Unexpected arguments",
-                    line: 3,
+                    line: 5,
                     column: 36,
-                    highlights: ["c: 0", "d"]
+                    highlights: ["c: 0,", "d"]
                 ),
             ])
     }

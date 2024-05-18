@@ -8,6 +8,37 @@ func fail(_ message: String, file: StaticString = #file, line: UInt = #line) {
     XCTFail(message, file: file, line: line)
 }
 
+/// Asserts a given Optional is not nil.
+func assertNotNil<T>(
+    _ value: T?,
+    _ message: @autoclosure () -> String = "",
+    file: StaticString = #file,
+    line: UInt = #line
+) {
+    XCTAssertNotNil(value, message(), file: file, line: line)
+}
+
+/// Asserts a given Optional is nil.
+func assertNil<T>(
+    _ value: T?,
+    _ message: @autoclosure () -> String = "",
+    file: StaticString = #file,
+    line: UInt = #line
+) {
+    XCTAssertNil(value, message(), file: file, line: line)
+}
+
+/// Asserts a given Optional is not nil, returning its value, throwing if it is
+/// nil.
+func assertUnwrap<T>(
+    _ value: T?,
+    _ message: @autoclosure () -> String = "",
+    file: StaticString = #file,
+    line: UInt = #line
+) throws -> T {
+    try XCTUnwrap(value, message(), file: file, line: line)
+}
+
 /// Asserts a given Bool is `true`.
 func assertTrue(
     _ value: Bool,

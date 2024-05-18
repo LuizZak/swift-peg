@@ -1,23 +1,24 @@
 import SwiftSyntax
 import SwiftSyntaxMacros
+import SwiftSyntaxMacroExpansion
 
 /// Macro used to generate boilerplate grammar node-related glue code.
 public struct NodeTypeMacro: MemberMacro {
-    private static let _attributeName: String = "NodeProperty"
-
     public static func expansion(
         of node: AttributeSyntax,
         providingMembersOf declaration: some DeclGroupSyntax,
         conformingTo protocols: [TypeSyntax],
         in context: some MacroExpansionContext
     ) throws -> [DeclSyntax] {
+        let impl = NodeTypeMacroImplementation(
+            node: node,
+            declaration: declaration,
+            protocols: protocols,
+            context: context
+        )
+
         do {
-            return try _expansion(
-                of: node,
-                providingMembersOf: declaration,
-                conformingTo: protocols,
-                in: context
-            )
+            return try impl.expand()
         } catch MacroError.diagnostic(let diag) {
             context.diagnose(diag)
             return []
@@ -25,84 +26,148 @@ public struct NodeTypeMacro: MemberMacro {
             throw error
         }
     }
+}
 
-    private static func _expansion(
-        of node: AttributeSyntax,
-        providingMembersOf declaration: some DeclGroupSyntax,
-        conformingTo protocols: [TypeSyntax],
-        in context: some MacroExpansionContext
-    ) throws -> [DeclSyntax] {
+class NodeTypeMacroImplementation {
+    private static let _nodePropertyAttributeName: String = "NodeProperty"
+    private static let _nodeRequiredAttributeName: String = "NodeRequired"
 
-        let arguments = try parseArguments(node, in: context)
+    var node: AttributeSyntax
+    var declaration: any DeclGroupSyntax
+    var protocols: [TypeSyntax]
+    var context: any MacroExpansionContext
+
+    init(
+        node: AttributeSyntax,
+        declaration: some DeclGroupSyntax,
+        protocols: [TypeSyntax],
+        context: some MacroExpansionContext
+    ) {
+        self.node = node
+        self.declaration = declaration
+        self.protocols = protocols
+        self.context = context
+    }
+
+    func expand() throws -> [DeclSyntax] {
+        let arguments = try _parseArguments()
         
-        // Collect members to generate based on private nodes decorated with @NodeProperty
-        var nodes = _fetchNodes(declaration: declaration, in: context)
-
         // For nodes with no explicit access control, inherit the declaration's
         let accessLevel = declaration
             .ext_accessLevel()?
             .name.trimmed
             .with(\.trailingTrivia, .spaces(1))
-        nodes = nodes.map { node in
-            var node = node
-            node.accessLevel = node.accessLevel ?? accessLevel
-            return node
+
+        // Collect members to generate based on private nodes decorated with @NodeProperty
+        let evaluatedType = try _collect()
+
+        var decls: [DeclSyntax] = []
+
+        let properties = evaluatedType.properties.map(_synthesizeProperty)
+        let children = _synthesizeChildrenProperty(
+            nodes: evaluatedType.properties,
+            accessLevel: accessLevel,
+            arguments: arguments
+        )
+
+        decls.append(contentsOf: properties)
+        decls.append(children)
+        if let initializer = _synthesizeInit(evaluatedType: evaluatedType, accessLevel: accessLevel) {
+            decls.append(initializer)
         }
 
-        return nodes.map(_synthesizeProperty) + [
-            _synthesizeChildrenProperty(
-                nodes: nodes,
-                accessLevel: accessLevel,
-                arguments: arguments
-            )
-        ]
+        return decls
     }
 
-    private static func _synthesizeProperty(_ node: _NodeEntry) -> DeclSyntax {
+    private func _collect() throws -> EvaluatedType {
+        // For nodes with no explicit access control, inherit the declaration's
+        let accessLevel = declaration
+            .ext_accessLevel()?
+            .name.trimmed
+            .with(\.trailingTrivia, .spaces(1))
+
+        // Collect members to generate based on private nodes decorated with @NodeProperty
+        let properties = NodePropertyDecl.fromDeclGroupSyntax(
+            declaration,
+            accessLevel: accessLevel,
+            in: context
+        )
+        let required = NodeRequiredDecl.fromDeclGroupSyntax(
+            declaration,
+            accessLevel: accessLevel,
+            in: context
+        )
+
+        // Ensure no declarations don't overlap
+        for property in properties {
+            for required in required {
+                guard property.member.position == required.member.position else {
+                    continue
+                }
+
+                throw MacroError.diagnostic(
+                    property.diagnosticSyntax.ext_errorDiagnostic(
+                        message: "Property cannot be both @\(property.attribute.attributeName) and @\(required.attribute.attributeName)",
+                        highlights: [
+                            property.attribute,
+                            required.attribute
+                        ]
+                    )
+                )
+            }
+        }
+
+        return EvaluatedType(
+            properties: properties,
+            required: required
+        )
+    }
+
+    private func _synthesizedComment() -> Trivia {
+        return .docLineComment("/// Synthesized with `\(NodeTypeMacro.self)`.")
+    }
+
+    /// Synthesize the property:
+    /// 
+    /// ```
+    /// <accessLevel> var <node.property>: <NodeType> {
+    ///    get {
+    ///        <node.field>
+    ///    }
+    ///    set {
+    ///        <node.field>.parent = nil
+    ///        <node.field> = newValue
+    ///        <node.field>.parent = self
+    ///    }
+    /// }
+    /// ```
+    private func _synthesizeProperty(_ node: NodePropertyDecl) -> DeclSyntax {
         let field = TokenSyntax.identifier(node.memberName)
         let property = TokenSyntax.identifier(node.synthesizedName)
 
-        let body: CodeBlockItemListSyntax
-        
-        switch node.childNodeType {
-        case .simple:
-            body = """
-                \(field).parent = nil
-                \(field) = newValue
-                \(field).parent = self
-                """
-        case .array:
-            body = """
-                \(field).forEach({
-                    $0.parent = nil
-                })
-                \(field) = newValue
-                \(field).forEach({
-                    $0.parent = self
-                })
-                """
-        case .optional:
-            body = """
-                \(field)?.parent = nil
-                \(field) = newValue
-                \(field)?.parent = self
-                """
-        }
-
         return """
         \(node.comments)
-        /// Synthesized with `\(self)`.
+        \(_synthesizedComment())
         \(node.accessLevel)var \(property): \(node.childNodeType.type) {
             get { \(field) }
             set {
-                \(body)
+                \(node.synthesizeAssignParent("nil"))
+                \(field) = newValue
+                \(node.synthesizeAssignParent("self"))
             }
         }
         """
     }
 
-    private static func _synthesizeChildrenProperty(
-        nodes: [_NodeEntry],
+    /// Synthesize the property:
+    /// 
+    /// ```
+    /// <accessLevel> var children: [<NodeType>] {
+    ///    Self.makeNodeList(lists: <nodes.nodeLists>, nodes: <nodes.nodes>)
+    /// }
+    /// ```
+    private func _synthesizeChildrenProperty(
+        nodes: [NodePropertyDecl],
         accessLevel: TokenSyntax?,
         arguments macroArguments: MacroArguments
     ) -> DeclSyntax {
@@ -138,86 +203,91 @@ public struct NodeTypeMacro: MemberMacro {
         let body: ExprSyntax = "Self.makeNodeList(\(raw: arguments.map(\.description).joined(separator: ", ")))"
 
         return """
-        /// Synthesized with `\(self)`.
+        \(_synthesizedComment())
         override \(accessLevel)var children: [\(macroArguments.baseNodeType)] { \(body) }
         """
     }
 
-    private static func _fetchNodes(
-        declaration: some DeclGroupSyntax,
-        in context: some MacroExpansionContext
-    ) -> [_NodeEntry] {
-        let members = declaration.memberBlock.members
-        guard !members.isEmpty else {
-            return []
+    /// Synthesize the initializer:
+    /// 
+    /// ```
+    /// <accessLevel> init(<args>) {
+    ///    self.<properties> = <args.properties>
+    ///    self.<required> = <args.required>
+    /// 
+    ///    super.init()
+    /// 
+    ///    self.<properties>.parent = self
+    /// }
+    /// ```
+    /// 
+    /// If the evaluated type has no fields to initialize, `nil` is returned,
+    /// instead.
+    private func _synthesizeInit(
+        evaluatedType: EvaluatedType,
+        accessLevel: TokenSyntax?
+    ) -> DeclSyntax? {
+
+        let properties = evaluatedType.properties
+        let required = evaluatedType.required
+
+        let params = evaluatedType.synthesizeFunctionParameters()
+        guard !params.isEmpty else {
+            return nil
         }
 
-        return members.flatMap({ _entriesFromMember($0, in: context) })
+        let paramList = FunctionParameterListSyntax(
+            params.ext_commaSeparated(comma: .commaToken().withTrailingSpace())
+        )
+
+        let preSuperInitBlock = CodeBlockItemListSyntax(
+            properties.map { node in
+                CodeBlockItemSyntax("self.\(node.member) = \(node.synthesizedNameExpr)").addingTrailingTrivia(.newline)
+            } +
+            required.map { node in
+                CodeBlockItemSyntax("self.\(node.member) = \(node.member)").addingTrailingTrivia(.newline)
+            }
+        )
+        let postSuperInitBlock = CodeBlockItemListSyntax(properties.map { node in
+            CodeBlockItemSyntax("self.\(node.synthesizeAssignParent("self"))").addingLeadingTrivia(.newline)
+        })
+
+        var accessLevel = accessLevel
+        if accessLevel?.tokenKind == .keyword(.open) {
+            accessLevel = .keyword(.public).withTrailingSpace()
+        }
+
+        // TODO: Figure out better way to attach newline-separated statement lists
+        if postSuperInitBlock.isEmpty {
+            return """
+            \(_synthesizedComment())
+            \(accessLevel)init(\(paramList)) {
+                \(preSuperInitBlock)
+                super.init()
+            }
+            """
+        }
+
+        return """
+        \(_synthesizedComment())
+        \(accessLevel)init(\(paramList)) {
+            \(preSuperInitBlock)
+            super.init()
+            \(postSuperInitBlock)
+        }
+        """
     }
 
-    private static func _entriesFromMember(
-        _ member: MemberBlockItemSyntax,
-        in context: some MacroExpansionContext
-    ) -> [_NodeEntry] {
-        guard let property = member.decl.as(VariableDeclSyntax.self) else {
-            return []
-        }
-        guard let (_, attributeType) = _nodePropertyAttribute(from: property) else {
-            return []
-        }
+    private static func _nodeAttribute(
+        named name: String,
+        from member: VariableDeclSyntax
+    ) -> (AttributeSyntax, TypeSyntax?)? {
 
-        var result: [_NodeEntry] = []
-        
-        for binding in _bindings(from: property.bindings) {
-            let name = binding.name.trimmed
-            guard let type = binding.type ?? attributeType else {
-                context.diagnose(
-                    binding.name.ext_warningDiagnostic(
-                        message: "Could not resolve type for @NodeProperty binding"
-                    )
-                )
-                continue
-            }
-            guard name.description.hasPrefix("_") else {
-                context.diagnose(
-                    binding.name.ext_warningDiagnostic(
-                        message: "Bindings with @NodeProperty need to start with underscored name, e.g. '_\(name)'"
-                    )
-                )
-                continue
-            }
-
-            let entry = _NodeEntry(
-                accessLevel: nil,
-                comments: member.ext_docComments(),
-                member: name,
-                childNodeType: .fromType(type)
-            )
-            result.append(entry)
-        }
-
-        return result
-    }
-
-    private static func _bindings(from bindings: PatternBindingListSyntax) -> [(name: TokenSyntax, type: TypeSyntax?)] {
-        var result: [(name: TokenSyntax, type: TypeSyntax?)] = []
-
-        for binding in bindings {
-            guard let pattern = binding.pattern.as(IdentifierPatternSyntax.self) else {
-                continue
-            }
-
-            result.append(
-                (name: pattern.identifier, binding.typeAnnotation?.type)
-            )
-        }
-
-        return result
-    }
-
-    private static func _nodePropertyAttribute(from member: VariableDeclSyntax) -> (AttributeSyntax, TypeSyntax?)? {
         for attribute in member.attributes {
-            if let result = _nodePropertyAttribute(from: attribute) {
+            if let result = _nodeAttribute(
+                named: name,
+                from: attribute
+            ) {
                 return result
             }
         }
@@ -225,13 +295,16 @@ public struct NodeTypeMacro: MemberMacro {
         return nil
     }
 
-    private static func _nodePropertyAttribute(from attribute: AttributeListSyntax.Element) -> (AttributeSyntax, TypeSyntax?)? {
+    private static func _nodeAttribute(
+        named name: String,
+        from attribute: AttributeListSyntax.Element
+    ) -> (AttributeSyntax, TypeSyntax?)? {
         switch attribute {
         case .attribute(let attr):
             guard let typeSyntax = attr.attributeName.as(IdentifierTypeSyntax.self) else {
                 return nil
             }
-            guard typeSyntax.name.trimmed.description == _attributeName else {
+            guard typeSyntax.name.trimmed.description == name else {
                 return nil
             }
 
@@ -249,32 +322,253 @@ public struct NodeTypeMacro: MemberMacro {
         }
     }
 
-    static func parseArguments(
-        _ node: AttributeSyntax,
-        in context: some MacroExpansionContext
-    ) throws -> MacroArguments {
+    private func _parseArguments() throws -> MacroArguments {
         guard
             let attributeName = node.attributeName.as(IdentifierTypeSyntax.self),
             let genericClause = attributeName.genericArgumentClause,
             let genericArgument = genericClause.arguments.first,
             genericClause.arguments.count == 1
         else {
-            throw MacroError.message("Could not extract base class name from generic argument of attribute \(node)")
+            throw MacroError.message(
+                "Could not extract base class name from generic argument of attribute \(node)"
+            )
         }
 
         return MacroArguments(baseNodeType: genericArgument.argument)
     }
 
-    private struct _NodeEntry {
+    /// Collects all properties evaluated within a type declaration.
+    private struct EvaluatedType {
+        /// Properties tagged with `@NodeProperty`
+        var properties: [NodePropertyDecl]
+
+        /// Properties tagged with `@NodeRequired`
+        var required: [NodeRequiredDecl]
+
+        /// Generates function parameters that receive all properties and required
+        /// nodes for the evaluated type.
+        /// 
+        /// Order of the resulting parameters is significant: it is the same order
+        /// that the properties that generated the declarations are laid out within
+        /// the type.
+        /// 
+        /// - note: Generated parameters don't include commas.
+        func synthesizeFunctionParameters() -> [FunctionParameterSyntax] {
+            var result: [(syntax: any SyntaxProtocol, param: FunctionParameterSyntax)] = []
+
+            for property in properties {
+                result.append(
+                    (property.member, property.synthesizeFunctionParameter())
+                )
+            }
+            for required in required {
+                result.append(
+                    (required.member, required.synthesizeFunctionParameter())
+                )
+            }
+
+            return result.sorted {
+                $0.syntax.position < $1.syntax.position
+            }.map(\.param)
+        }
+    }
+
+    /// Property tagged with `@NodeRequired`
+    private struct NodeRequiredDecl {
+        /// The attribute that the declaration was tagged with.
+        var attribute: AttributeSyntax
+        /// Name of member that originated this entry.
+        var member: TokenSyntax
+        /// A syntax element to attach diagnostic message to.
+        var diagnosticSyntax: any SyntaxProtocol
+        /// Type of the member
+        var type: TypeSyntax
+
+        static func fromDeclGroupSyntax(
+            _ declaration: any DeclGroupSyntax,
+            accessLevel: TokenSyntax? = nil,
+            in context: MacroExpansionContext
+        ) -> [Self] {
+
+            let members = declaration.memberBlock.members
+            guard !members.isEmpty else {
+                return []
+            }
+
+            return members.flatMap {
+                Self.fromProperty(
+                    $0,
+                    accessLevel: accessLevel,
+                    in: context
+                )
+            }
+        }
+
+        static func fromProperty(
+            _ member: MemberBlockItemSyntax,
+            accessLevel: TokenSyntax? = nil,
+            in context: MacroExpansionContext
+        ) -> [Self] {
+
+            guard let property = member.decl.as(VariableDeclSyntax.self) else {
+                return []
+            }
+            guard
+                let (attribute, attributeType) = _nodeAttribute(
+                    named: _nodeRequiredAttributeName, from: property
+                )
+            else {
+                return []
+            }
+
+            var result: [Self] = []
+
+            let identifier = "@NodeRequired"
+            
+            for binding in property.bindings.ext_bindings() {
+                let name = binding.name.trimmed
+                guard let type = binding.type ?? attributeType else {
+                    context.diagnose(
+                        binding.name.ext_warningDiagnostic(
+                            message: "Could not resolve type for \(identifier) binding"
+                        )
+                    )
+                    continue
+                }
+
+                let entry = Self(
+                    attribute: attribute,
+                    member: name,
+                    diagnosticSyntax: binding.binding,
+                    type: type
+                )
+                result.append(entry)
+            }
+
+            return result
+        }
+
+        /// Synthesizes a function parameter from this node's declaration.
+        func synthesizeFunctionParameter(needsComma: Bool = false) -> FunctionParameterSyntax {
+            FunctionParameterSyntax(
+                firstName: member,
+                type: type,
+                trailingComma: needsComma ? .commaToken().withTrailingSpace() : nil
+            )
+        }
+    }
+
+    /// Property tagged with `@NodeProperty`
+    private struct NodePropertyDecl {
+        /// The attribute that the declaration was tagged with.
+        var attribute: AttributeSyntax
+        /// Name of member that originated this entry.
+        var member: TokenSyntax
+        /// A syntax element to attach diagnostic message to.
+        var diagnosticSyntax: any SyntaxProtocol
+
         var accessLevel: TokenSyntax?
         var comments: Trivia
-        var member: TokenSyntax
         var childNodeType: ChildNodeType
 
         var memberName: String { member.description }
         var synthesizedName: String { String(memberName.trimmingPrefix("_")) }
         var synthesizedNameExpr: DeclReferenceExprSyntax {
             DeclReferenceExprSyntax(baseName: .identifier(synthesizedName))
+        }
+
+        static func fromDeclGroupSyntax(
+            _ declaration: any DeclGroupSyntax,
+            accessLevel: TokenSyntax? = nil,
+            in context: MacroExpansionContext
+        ) -> [Self] {
+
+            let members = declaration.memberBlock.members
+            guard !members.isEmpty else {
+                return []
+            }
+
+            return members.flatMap {
+                Self.fromProperty(
+                    $0,
+                    accessLevel: accessLevel,
+                    in: context
+                )
+            }
+        }
+
+        static func fromProperty(
+            _ member: MemberBlockItemSyntax,
+            accessLevel: TokenSyntax? = nil,
+            in context: MacroExpansionContext
+        ) -> [Self] {
+
+            guard let property = member.decl.as(VariableDeclSyntax.self) else {
+                return []
+            }
+            guard
+                let (attribute, attributeType) = _nodeAttribute(
+                    named: _nodePropertyAttributeName,
+                    from: property
+                )
+            else {
+                return []
+            }
+
+            var result: [Self] = []
+            
+            let identifier = "@NodeRequired"
+            
+            for binding in property.bindings.ext_bindings() {
+                let name = binding.name.trimmed
+                guard let type = binding.type ?? attributeType else {
+                    context.diagnose(
+                        binding.name.ext_warningDiagnostic(
+                            message: "Could not resolve type for \(identifier) binding"
+                        )
+                    )
+                    continue
+                }
+                guard name.description.hasPrefix("_") else {
+                    context.diagnose(
+                        binding.name.ext_warningDiagnostic(
+                            message: "Bindings with \(identifier) need to start with underscored name, e.g. '_\(name)'"
+                        )
+                    )
+                    continue
+                }
+
+                let entry = Self(
+                    attribute: attribute,
+                    member: name,
+                    diagnosticSyntax: binding.binding,
+                    accessLevel: accessLevel,
+                    comments: member.ext_docComments(),
+                    childNodeType: .fromType(type)
+                )
+                result.append(entry)
+            }
+
+            return result
+        }
+
+        /// Synthesizes a function parameter from this node's declaration.
+        func synthesizeFunctionParameter(needsComma: Bool = false) -> FunctionParameterSyntax {
+            FunctionParameterSyntax(
+                firstName: .identifier(synthesizedName),
+                type: childNodeType.type,
+                trailingComma: needsComma ? .commaToken().withTrailingSpace() : nil
+            )
+        }
+
+        /// Synthesizes the equivalent `<value>.parent = <expr>` expression
+        /// according to this node's type.
+        func synthesizeAssignParent(_ expr: ExprSyntax) -> ExprSyntax {
+            return childNodeType.synthesizeAssign(
+                symbol: "\(member)",
+                member: .init(baseName: .identifier("parent")),
+                expr
+            )
         }
 
         enum ChildNodeType {
@@ -299,6 +593,28 @@ public struct NodeTypeMacro: MemberMacro {
                     return type
                 case .optional(let type, _):
                     return type
+                }
+            }
+
+            /// Synthesizes an expression that assigns `expr` to a `member` of
+            /// `symbol` based on this node type.
+            func synthesizeAssign(
+                symbol: ExprSyntax,
+                member: DeclReferenceExprSyntax,
+                _ expr: ExprSyntax
+            ) -> ExprSyntax {
+
+                switch self {
+                case .simple:
+                    return "\(symbol).\(member) = \(expr)"
+                case .array:
+                    return """
+                        \(symbol).forEach({
+                            $0.\(member) = \(expr)
+                        })
+                        """
+                case .optional:
+                    return "\(symbol)?.\(member) = \(expr)"
                 }
             }
 
@@ -332,12 +648,13 @@ public struct NodeTypeMacro: MemberMacro {
     }
 }
 
-/// Property wrapper for signaling fields to create node properties with when
-/// used with `NodeTypeMacro`.
+/// Property wrapper that is type-aliased into different constructs that are
+/// detected by `NodeTypeMacro` to indicate attributes of fields of types being
+/// macro-expanded.
 ///
 /// By itself does nothing but wrap the value.
 @propertyWrapper
-public struct NodeProperty<T> {
+public struct NodeMacroWrapper<T> {
     public var wrappedValue: T
 
     @inlinable
@@ -345,3 +662,15 @@ public struct NodeProperty<T> {
         self.wrappedValue = wrappedValue
     }
 }
+
+/// Property wrapper for signaling fields to create node properties with when
+/// used with `NodeTypeMacro`.
+///
+/// By itself does nothing but wrap the value.
+public typealias NodeProperty<T> = NodeMacroWrapper<T>
+
+/// Property wrapper for signaling fields that are required during the node's
+/// construction, but are not node types themselves.
+///
+/// By itself does nothing but wrap the value.
+public typealias NodeRequired<T> = NodeMacroWrapper<T>

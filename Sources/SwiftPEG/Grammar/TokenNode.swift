@@ -1,13 +1,12 @@
 import SwiftPEGMacros
 
 /// A terminal Token node.
-/// Must be subclassed by specific grammars to wrap the 
-@NodeType<Node>
+/// Must be subclassed by specific grammars to wrap the tokens read by the tokenizer.
 open class TokenNode: Node {
-    /// The token value associated with this node.
-    public let token: Any
+    /// The immutable token value associated with this node.
+    public let token: any Hashable
 
-    public init(token: Any) {
+    public init(token: some Hashable) {
         self.token = token
     }
 }

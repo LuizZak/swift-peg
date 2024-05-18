@@ -17,6 +17,15 @@ open class Node {
     public init() {
 
     }
+
+    /// Accepts a given visitor on this node, invoking its corresponding visit
+    /// method.
+    /// 
+    /// Subclasses of `Node` can override this method to customize the visit call
+    /// that is made to the visitor.
+    open func accept<Visitor>(_ visitor: Visitor) where Visitor: NodeVisitorType {
+        visitor.visit(self)
+    }
 }
 
 public extension Node {
