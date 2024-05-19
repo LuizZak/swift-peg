@@ -8,6 +8,35 @@ func fail(_ message: String, file: StaticString = #file, line: UInt = #line) {
     XCTFail(message, file: file, line: line)
 }
 
+/// Asserts a given Optional is not nil, returning its value, throwing if it is
+/// nil.
+func assertUnwrap<T>(
+    _ value: T?,
+    _ message: @autoclosure () -> String = "",
+    file: StaticString = #file,
+    line: UInt = #line
+) throws -> T {
+    try XCTUnwrap(value, message(), file: file, line: line)
+}
+
+/// Asserts that a value of type `T` can be dynamically cast to `U`, throwing if
+/// it is not. 
+func assertCast<T, U>(
+    _ value: T,
+    to type: U.Type = U.self,
+    _ message: @autoclosure () -> String = "",
+    file: StaticString = #file,
+    line: UInt = #line
+) throws -> U {
+
+    try assertUnwrap(
+        value as? U,
+        "\(#function) failure: \(value) cannot be cast to \(U.self) \(message())",
+        file: file,
+        line: line
+    )
+}
+
 /// Asserts a given Optional is not nil.
 func assertNotNil<T>(
     _ value: T?,
@@ -26,17 +55,6 @@ func assertNil<T>(
     line: UInt = #line
 ) {
     XCTAssertNil(value, message(), file: file, line: line)
-}
-
-/// Asserts a given Optional is not nil, returning its value, throwing if it is
-/// nil.
-func assertUnwrap<T>(
-    _ value: T?,
-    _ message: @autoclosure () -> String = "",
-    file: StaticString = #file,
-    line: UInt = #line
-) throws -> T {
-    try XCTUnwrap(value, message(), file: file, line: line)
 }
 
 /// Asserts a given Bool is `true`.
@@ -81,6 +99,25 @@ func assertEqual<T>(
 ) where T: Equatable {
 
     XCTAssertEqual(lhs, rhs, message(), file: file, line: line)
+}
+
+/// Asserts two equatable values are the same. Uses debug description of the values
+/// in error message.
+func assertEqual<T>(
+    _ lhs: T,
+    _ rhs: T,
+    _ message: @autoclosure () -> String = "",
+    file: StaticString = #file,
+    line: UInt = #line
+) where T: Equatable & CustomDebugStringConvertible {
+
+    XCTAssertEqual(
+        lhs,
+        rhs,
+        message() + " lhs: \(lhs.debugDescription) rhs: \(rhs.debugDescription)",
+        file: file,
+        line: line
+    )
 }
 
 /// Asserts two results with equatable Success and Failure values are the same.

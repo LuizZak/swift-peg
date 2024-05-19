@@ -3,6 +3,8 @@ import XCTest
 @testable import SwiftPEG
 
 class MetagrammarParserTests: XCTestCase {
+    typealias Sut = MetagrammarParser<TestRawTokenizer<Metagrammar.MetagrammarToken>>
+
     func testGrammar_emptyGrammar_returnsNil() throws {
         let stubTokenizer = stubTestTokenizer([
         ])
@@ -21,7 +23,16 @@ class MetagrammarParserTests: XCTestCase {
 
         let result = try sut.grammar()
 
+        let error: Sut.SyntaxError = try assertCast(sut.makeSyntaxError())
         assertNil(result)
+        assertEqual(
+            error,
+            Sut.SyntaxError.expectedToken(
+                #"Syntax error @ 3: Expected: "@""#,
+                .init(owner: sut.tokenizer, index:3),
+                expected: [.at]
+            )
+        )
     }
 
     func testGrammar_singleRule_returnsGrammar() throws {
@@ -62,6 +73,27 @@ class MetagrammarParserTests: XCTestCase {
         assertEqual(result.rules.count, 2)
     }
 
+    func testGrammar_largeGrammar_returnsGrammar() throws {
+        var tokens: [Metagrammar.MetagrammarToken] = []
+        let tokensToCopy: [Metagrammar.MetagrammarToken] = [
+            "ruleA", ":",
+                "|", "'a'",
+                "|", "'b'",
+                "|", "'c'", "'d'", "'e'",
+                "|", "'f'", "'g'", "'h'",
+                ";",
+        ]
+        for _ in 0..<10_000 {
+            tokens.append(contentsOf: tokensToCopy)
+        }
+        let stubTokenizer = stubTestTokenizer(tokens)
+        let sut = makeSut(stubTokenizer)
+
+        let result = try assertUnwrap(sut.grammar())
+
+        assertEqual(result.rules.count, 10_000)
+    }
+
     func testRule_barStart_returnsRule() throws {
         let stubTokenizer = stubTestTokenizer([
             "ruleA", ":", "|", "'a'", ";",
@@ -91,6 +123,6 @@ private func makeSut<Raw: RawTokenizerType>(_ tokenizer: Raw) -> MetagrammarPars
     return MetagrammarParser(raw: tokenizer)
 }
 
-private func stubTestTokenizer(_ tokens: [Metagrammar.Token]) -> TestRawTokenizer<Metagrammar.Token> {
+private func stubTestTokenizer(_ tokens: [Metagrammar.MetagrammarToken]) -> TestRawTokenizer<Metagrammar.MetagrammarToken> {
     return TestRawTokenizer(tokens: tokens)
 }

@@ -30,10 +30,14 @@ class ParserMemoizeMacroTests: XCTestCase {
                     return cached.result
                 }
                 let result = __method__()
+                let mark = self.mark()
+                let priorReach = self.resetReach(mark)
                 other.cache[0].store(
                     key,
-                    value: CacheEntry(mark: self.mark(), result: result)
+                    value: CacheEntry(mark: self.mark(), reach: self.reach, result: result)
                 )
+                let reach = self.resetReach(priorReach)
+                self.updateReach(reach)
 
                 return result
             }
@@ -62,10 +66,14 @@ class ParserMemoizeMacroTests: XCTestCase {
                     return cached.result
                 }
                 let result = __method__()
+                let mark = self.mark()
+                let priorReach = self.resetReach(mark)
                 self.cache.store(
                     key,
-                    value: CacheEntry(mark: self.mark(), result: result)
+                    value: CacheEntry(mark: self.mark(), reach: self.reach, result: result)
                 )
+                let reach = self.resetReach(priorReach)
+                self.updateReach(reach)
 
                 return result
             }
@@ -94,10 +102,14 @@ class ParserMemoizeMacroTests: XCTestCase {
                     return cached.result
                 }
                 let result = try __method__()
+                let mark = self.mark()
+                let priorReach = self.resetReach(mark)
                 self.cache.store(
                     key,
-                    value: CacheEntry(mark: self.mark(), result: result)
+                    value: CacheEntry(mark: self.mark(), reach: self.reach, result: result)
                 )
+                let reach = self.resetReach(priorReach)
+                self.updateReach(reach)
 
                 return result
             }
@@ -126,10 +138,14 @@ class ParserMemoizeMacroTests: XCTestCase {
                     return cached.result
                 }
                 let result = try __method__(a: a, b, c: _c)
+                let mark = self.mark()
+                let priorReach = self.resetReach(mark)
                 self.cache.store(
                     key,
-                    value: CacheEntry(mark: self.mark(), result: result)
+                    value: CacheEntry(mark: self.mark(), reach: self.reach, result: result)
                 )
+                let reach = self.resetReach(priorReach)
+                self.updateReach(reach)
 
                 return result
             }
@@ -158,10 +174,14 @@ class ParserMemoizeMacroTests: XCTestCase {
                     return cached.result
                 }
                 let result = try __method__()
+                let mark = self.mark()
+                let priorReach = self.resetReach(mark)
                 self.cache.store(
                     key,
-                    value: CacheEntry(mark: self.mark(), result: result)
+                    value: CacheEntry(mark: self.mark(), reach: self.reach, result: result)
                 )
+                let reach = self.resetReach(priorReach)
+                self.updateReach(reach)
 
                 return result
             }
@@ -193,10 +213,14 @@ class ParserMemoizeMacroTests: XCTestCase {
                     return cached.result
                 }
                 let result = try __method__()
+                let mark = self.mark()
+                let priorReach = self.resetReach(mark)
                 self.cache.store(
                     key,
-                    value: CacheEntry(mark: self.mark(), result: result)
+                    value: CacheEntry(mark: self.mark(), reach: self.reach, result: result)
                 )
+                let reach = self.resetReach(priorReach)
+                self.updateReach(reach)
 
                 return result
             }

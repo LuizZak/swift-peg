@@ -1,6 +1,6 @@
 import SwiftPEG
 
-class TestRawTokenizer<T: Hashable> {
+class TestRawTokenizer<T: TokenType> {
     let tokens: [T]
     var index: Int = 0
 
@@ -41,7 +41,22 @@ class TestRawTokenizer<T: Hashable> {
 }
 
 extension TestRawTokenizer: RawTokenizerType {
-    typealias TokenType = T
+    typealias Token = T
 
     var isEOF: Bool { index >= tokens.count }
+}
+
+extension Int: TokenType {
+    public var kind: Int {
+        return self
+    }
+
+    public var string: String {
+        self.description
+    }
+
+    public static func produceDummy(_ kind: TokenKind) -> Self { kind }
+}
+
+extension Int: TokenKindType {
 }

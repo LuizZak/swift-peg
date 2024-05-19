@@ -1,11 +1,29 @@
 /// A parser for SwiftPEG grammar files.
 public class MetagrammarParser<RawTokenizer: RawTokenizerType>
-    : PEGParser<RawTokenizer> where RawTokenizer.TokenType == Metagrammar.Token
+    : PEGParser<RawTokenizer> where RawTokenizer.Token == Metagrammar.MetagrammarToken
 {
+    /// Fetches the next token's contents as a string.
+    @memoized("peekAsString")
+    func _peekAsString() throws -> String? {
+        return try tokenizer.peekToken()?.kind.description
+    }
+
+    /// Fetches the next token in the stream and compares its kind against `kind`,
+    /// returning the token if it matches. If the method fails, `nil` is returned
+    /// and the tokenizer position is reset.
+    @memoized("expect")
+    public func _expect(kind: String) throws -> Token? {
+        if let next = try peekAsString(), next == kind {
+            return try tokenizer.next()
+        }
+        return nil
+    }
+
     /// ```
     /// start: grammar ;
     /// ```
-    public func start() throws -> Metagrammar.Grammar? {
+    @memoized("start")
+    public func _start() throws -> Metagrammar.Grammar? {
         try grammar()
     }
 
@@ -15,7 +33,8 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
     /// metas: meta+ ;
     /// rules: rule+ ;
     /// ```
-    public func grammar() throws -> Metagrammar.Grammar? {
+    @memoized("grammar")
+    public func _grammar() throws -> Metagrammar.Grammar? {
         let mark = self.mark()
         let metas = try self.metas() ?? []
         if let rules = try self.rules() {
@@ -28,7 +47,8 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
     /// ```
     /// metas: meta+ ;
     /// ```
-    public func metas() throws -> [Metagrammar.Meta]? {
+    @memoized("metas")
+    public func _metas() throws -> [Metagrammar.Meta]? {
         let mark = self.mark()
         guard let meta = try self.meta() else {
             self.restore(mark)
@@ -47,7 +67,8 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
     ///     | '@' name=IDENT metaValue? ';'
     ///     ;
     /// ```
-    public func meta() throws -> Metagrammar.Meta? {
+    @memoized("meta")
+    public func _meta() throws -> Metagrammar.Meta? {
         let mark = self.mark()
 
         if
@@ -80,7 +101,8 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
     ///     | metaValueString
     ///     ;
     /// ```
-    public func metaValue() throws -> Metagrammar.MetaValue? {
+    @memoized("metaValue")
+    public func _metaValue() throws -> Metagrammar.MetaValue? {
         let mark = self.mark()
 
         if
@@ -104,7 +126,8 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
     /// ```
     /// metaValueIdent: IDENT ;
     /// ```
-    public func metaValueIdent() throws -> Metagrammar.MetaIdentifierValue? {
+    @memoized("metaValueIdent")
+    public func _metaValueIdent() throws -> Metagrammar.MetaIdentifierValue? {
         let mark = self.mark()
 
         if
@@ -120,7 +143,8 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
     /// ```
     /// metaValueString: STRING ;
     /// ```
-    public func metaValueString() throws -> Metagrammar.MetaStringValue? {
+    @memoized("metaValueString")
+    public func _metaValueString() throws -> Metagrammar.MetaStringValue? {
         let mark = self.mark()
 
         if
@@ -136,7 +160,8 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
     /// ```
     /// rules: rule+ ;
     /// ```
-    public func rules() throws -> [Metagrammar.Rule]? {
+    @memoized("rules")
+    public func _rules() throws -> [Metagrammar.Rule]? {
         let mark = self.mark()
         guard let rule = try self.rule() else {
             self.restore(mark)
@@ -155,7 +180,8 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
     ///     | ruleName ':' '|'? alts ';'
     ///     ;
     /// ```
-    public func rule() throws -> Metagrammar.Rule? {
+    @memoized("rule")
+    public func _rule() throws -> Metagrammar.Rule? {
         let mark = self.mark()
 
         if
@@ -177,7 +203,8 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
     ///     | name=IDENT ('[' type=IDENT ']')?
     ///     ;
     /// ```
-    public func ruleName() throws -> Metagrammar.RuleName? {
+    @memoized("ruleName")
+    public func _ruleName() throws -> Metagrammar.RuleName? {
         let mark = self.mark()
 
         if
@@ -204,7 +231,8 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
     /// ```
     /// alts: '|'.alt+;
     /// ```
-    public func alts() throws -> [Metagrammar.Alt]? {
+    @memoized("alts")
+    public func _alts() throws -> [Metagrammar.Alt]? {
         var mark = self.mark()
 
         var result: [Metagrammar.Alt] = []
@@ -226,7 +254,8 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
     ///     | namedItems action?
     ///     ;
     /// ```
-    public func alt() throws -> Metagrammar.Alt? {
+    @memoized("alt")
+    public func _alt() throws -> Metagrammar.Alt? {
         let mark = self.mark()
 
         if
@@ -243,7 +272,8 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
     /// ```
     /// namedItems: namedItem+ ;
     /// ```
-    public func namedItems() throws -> [Metagrammar.NamedItem]? {
+    @memoized("namedItems")
+    public func _namedItems() throws -> [Metagrammar.NamedItem]? {
         let mark = self.mark()
         guard let namedItem = try self.namedItem() else {
             self.restore(mark)
@@ -265,7 +295,8 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
     ///     | lookahead
     ///     ;
     /// ```
-    public func namedItem() throws -> Metagrammar.NamedItem? {
+    @memoized("namedItem")
+    public func _namedItem() throws -> Metagrammar.NamedItem? {
         let mark = self.mark()
         var cut = CutFlag()
 
@@ -327,7 +358,8 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
     ///     | '~'
     ///     ;
     /// ```
-    public func lookahead() throws -> Metagrammar.LookaheadOrCut? {
+    @memoized("lookahead")
+    public func _lookahead() throws -> Metagrammar.LookaheadOrCut? {
         let mark = self.mark()
 
         if
@@ -359,7 +391,8 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
     /// ```
     /// '&' atom ;
     /// ```
-    public func positiveLookahead() throws -> Metagrammar.PositiveLookahead? {
+    @memoized("positiveLookahead")
+    public func _positiveLookahead() throws -> Metagrammar.PositiveLookahead? {
         let mark = self.mark()
 
         if
@@ -376,7 +409,8 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
     /// ```
     /// '!' atom ;
     /// ```
-    public func negativeLookahead() throws -> Metagrammar.NegativeLookahead? {
+    @memoized("negativeLookahead")
+    public func _negativeLookahead() throws -> Metagrammar.NegativeLookahead? {
         let mark = self.mark()
 
         if
@@ -393,7 +427,8 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
     /// ```
     /// '~' ;
     /// ```
-    public func cut() throws -> Metagrammar.Cut? {
+    @memoized("cut")
+    public func _cut() throws -> Metagrammar.Cut? {
         let mark = self.mark()
 
         if
@@ -416,7 +451,8 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
     ///     | atom
     ///     ;
     /// ```
-    public func item() throws -> Metagrammar.Item? {
+    @memoized("item")
+    public func _item() throws -> Metagrammar.Item? {
         let mark = self.mark()
         var cut = CutFlag()
 
@@ -487,42 +523,48 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
     /// ```
     /// '[' ~ alts ']' ;
     /// ```
-    public func optionalItems() throws -> Metagrammar.OptionalItems? {
+    @memoized("optionalItems")
+    public func _optionalItems() throws -> Metagrammar.OptionalItems? {
         return nil
     }
 
     /// ```
     /// atom '?' ;
     /// ```
-    public func optionalItem() throws -> Metagrammar.OptionalItem? {
+    @memoized("optionalItem")
+    public func _optionalItem() throws -> Metagrammar.OptionalItem? {
         return nil
     }
 
     /// ```
     /// atom '*' ;
     /// ```
-    public func zeroOrMoreItem() throws -> Metagrammar.ZeroOrMoreItem? {
+    @memoized("zeroOrMoreItem")
+    public func _zeroOrMoreItem() throws -> Metagrammar.ZeroOrMoreItem? {
         return nil
     }
 
     /// ```
     /// atom '+' ;
     /// ```
-    public func oneOrMoreItem() throws -> Metagrammar.OneOrMoreItem? {
+    @memoized("oneOrMoreItem")
+    public func _oneOrMoreItem() throws -> Metagrammar.OneOrMoreItem? {
         return nil
     }
 
     /// ```
     /// sep=atom '.' node=atom '+' ;
     /// ```
-    public func gatherItem() throws -> Metagrammar.GatherItem? {
+    @memoized("gatherItem")
+    public func _gatherItem() throws -> Metagrammar.GatherItem? {
         return nil
     }
 
     /// ```
     /// atom ;
     /// ```
-    public func atomItem() throws -> Metagrammar.AtomItem? {
+    @memoized("atomItem")
+    public func _atomItem() throws -> Metagrammar.AtomItem? {
         return nil
     }
     */
@@ -534,7 +576,8 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
     ///     | STRING
     ///     ;
     /// ```
-    public func atom() throws -> Metagrammar.Atom? {
+    @memoized("atom")
+    public func _atom() throws -> Metagrammar.Atom? {
         let mark = self.mark()
         var cut = CutFlag()
 
@@ -575,21 +618,24 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
     /// ```
     /// '(' ~ alts ')' ;
     /// ```
-    public func groupAtom() throws -> Metagrammar.GroupAtom? {
+    @memoized("groupAtom")
+    public func _groupAtom() throws -> Metagrammar.GroupAtom? {
         return nil
     }
 
     /// ```
     /// STRING ;
     /// ```
-    public func stringAtom() throws -> Metagrammar.StringAtom? {
+    @memoized("stringAtom")
+    public func _stringAtom() throws -> Metagrammar.StringAtom? {
         return nil
     }
 
     /// ```
     /// IDENT ;
     /// ```
-    public func identAtom() throws -> Metagrammar.IdentAtom? {
+    @memoized("identAtom")
+    public func _identAtom() throws -> Metagrammar.IdentAtom? {
         return nil
     }
     */
@@ -597,7 +643,8 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
     /// ```
     /// action: '{' ~ balancedTokens? '}' ;
     /// ```
-    public func action() throws -> Metagrammar.Action? {
+    @memoized("action")
+    public func _action() throws -> Metagrammar.Action? {
         let mark = self.mark()
         var cut = CutFlag()
 
@@ -646,21 +693,23 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
     ///     | '\'
     ///     ;
     /// ```
-    public func balancedTokens() throws -> Metagrammar.BalancedTokens? {
+    @memoized("balancedTokens")
+    public func _balancedTokens() throws -> Metagrammar.BalancedTokens? {
         return nil
     }
 
     /// ```
     /// IDENT ;
     /// ```
-    public func identToken() throws -> Metagrammar.IdentifierToken? {
+    @memoized("identToken")
+    public func _identToken() throws -> Metagrammar.IdentifierToken? {
         let mark = self.mark()
 
         if
             let next = try self.tokenizer.next(),
             case .identifier = next
         {
-            return .init(token: next.description)
+            return .init(token: next.string)
         }
 
         self.restore(mark)
@@ -670,14 +719,15 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
     /// ```
     /// STRING ;
     /// ```
-    public func stringToken() throws -> Metagrammar.StringToken? {
+    @memoized("stringToken")
+    public func _stringToken() throws -> Metagrammar.StringToken? {
         let mark = self.mark()
 
         if
             let next = try self.tokenizer.next(),
             case .string = next
         {
-            return .init(token: next.description)
+            return .init(token: next.string)
         }
 
         self.restore(mark)

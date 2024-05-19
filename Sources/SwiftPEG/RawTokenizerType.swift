@@ -3,7 +3,7 @@
 /// by a parser.
 public protocol RawTokenizerType {
     /// The token type that this tokenizer produces.
-    associatedtype TokenType: Hashable
+    associatedtype Token: TokenType
 
     /// Gets whether any more tokens can be consumed from this tokenizer.
     var isEOF: Bool { get }
@@ -12,5 +12,5 @@ public protocol RawTokenizerType {
     /// Returns `nil` to signal EOF for consumers.
     /// 
     /// Errors can be thrown to indicate an unknown token type.
-    mutating func next() throws -> TokenType?
+    mutating func next() throws -> Token?
 }

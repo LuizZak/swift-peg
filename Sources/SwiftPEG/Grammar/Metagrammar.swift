@@ -522,12 +522,15 @@ extension Metagrammar {
     }
 
     /// A token in a metagrammar.
-    public enum Token: Hashable, ExpressibleByStringLiteral {
-        /// The regular expression pattern for matching `Token.identifier()`
+    public enum MetagrammarToken: TokenType, ExpressibleByStringLiteral {
+        public typealias TokenKind = MetagrammarTokenKind
+        public typealias TokenString = String
+
+        /// The regular expression pattern for matching `MetagrammarToken.identifier()`
         /// values from a string.
         public static let identifier_pattern = #/[A-Za-z_][0-9A-Za-z_]*/#
 
-        /// The regular expression pattern for matching `Token.digits()`
+        /// The regular expression pattern for matching `MetagrammarToken.digits()`
         /// values from a string.
         public static let digits_pattern = #/[0-9]+/#
 
@@ -595,7 +598,38 @@ extension Metagrammar {
         /// `\`
         case backslash
 
-        public var description: String {
+        public var kind: MetagrammarTokenKind {
+            switch self {
+            case .identifier: return .identifier
+            case .digits: return .digits
+            case .string: return .string
+            case .leftParen: return .leftParen
+            case .rightParen: return .rightParen
+            case .leftBrace: return .leftBrace
+            case .rightBrace: return .rightBrace
+            case .leftSquare: return .leftSquare
+            case .rightSquare: return .rightSquare
+            case .leftAngle: return .leftAngle
+            case .rightAngle: return .rightAngle
+            case .colon: return .colon
+            case .semicolon: return .semicolon
+            case .bar: return .bar
+            case .equals: return .equals
+            case .tilde: return .tilde
+            case .star: return .star
+            case .plus: return .plus
+            case .questionMark: return .questionMark
+            case .exclamationMark: return .exclamationMark
+            case .ampersand: return .ampersand
+            case .comma: return .comma
+            case .period: return .period
+            case .at: return .at
+            case .forwardSlash: return .forwardSlash
+            case .backslash: return .backslash
+            }
+        }
+
+        public var string: TokenString {
             switch self {
             case .identifier(let value): return value
             case .digits(let value): return value
@@ -628,7 +662,7 @@ extension Metagrammar {
 
         /// Returns the UTF8 length of this token.
         public var tokenUTF8Length: Int {
-            description.utf8.count
+            string.utf8.count
         }
 
         /// Attempts to construct a token from a given string literal value.
@@ -641,6 +675,37 @@ extension Metagrammar {
             }
 
             self = token
+        }
+        
+        public static func produceDummy(_ kind: TokenKind) -> Self {
+            switch kind {
+            case .identifier: return .identifier("<dummy>")
+            case .digits: return .digits("<dummy>")
+            case .string: return .string(.singleQuote("<dummy>"))
+            case .leftParen: return .leftParen
+            case .rightParen: return .rightParen
+            case .leftBrace: return .leftBrace
+            case .rightBrace: return .rightBrace
+            case .leftSquare: return .leftSquare
+            case .rightSquare: return .rightSquare
+            case .leftAngle: return .leftAngle
+            case .rightAngle: return .rightAngle
+            case .colon: return .colon
+            case .semicolon: return .semicolon
+            case .bar: return .bar
+            case .equals: return .equals
+            case .tilde: return .tilde
+            case .star: return .star
+            case .plus: return .plus
+            case .questionMark: return .questionMark
+            case .exclamationMark: return .exclamationMark
+            case .ampersand: return .ampersand
+            case .comma: return .comma
+            case .period: return .period
+            case .at: return .at
+            case .forwardSlash: return .forwardSlash
+            case .backslash: return .backslash
+            }
         }
 
         /// Returns a parsed token from the given string or substring.
@@ -710,6 +775,12 @@ extension Metagrammar {
         /// Associated values represent the string's contents, not including the
         /// quotes.
         public enum StringLiteral: Hashable, CustomStringConvertible {
+            /// Regex used for fetching single- and double-quoted strings.
+            public static let quoteRegex = #/("|')((?:\\\1|(?:(?!\1).))*)\1/#
+
+            /// Regex used for fetching triple-quoted strings.
+            public static let tripleQuoteRegex = #/(""")((?:\\\1|(?:(?!\1).)|\n)*)\1/#
+
             /// `'<...>'`
             case singleQuote(String)
             
@@ -746,15 +817,12 @@ extension Metagrammar {
             /// If no string literal is recognized, `nil` is returned, instead.
             public static func from(string: Substring) -> Self? {
                 // Triple quote
-                let tripleRegex = #/(""")((?:\\\1|(?:(?!\1).)|\n)*)\1/#
-                if let match = try? tripleRegex.prefixMatch(in: string) {
+                if let match = try? tripleQuoteRegex.prefixMatch(in: string) {
                     return .tripleQuote(String(match.output.1))
                 }
 
                 // Single quote
-                let regex = #/("|')((?:\\\1|(?:(?!\1).))*)\1/#
-
-                guard let match = try? regex.prefixMatch(in: string) else {
+                guard let match = try? quoteRegex.prefixMatch(in: string) else {
                     return nil
                 }
 
@@ -767,6 +835,85 @@ extension Metagrammar {
                     return nil
                 }
             }
+        }
+    }
+
+    /// Specifies kinds for metagrammar tokens.
+    public enum MetagrammarTokenKind: String, TokenKindType, CaseIterable, ExpressibleByStringLiteral {
+        /// A Swift-compatible identifier token.
+        case identifier = "IDENTIFIER"
+
+        /// A digit sequence.
+        case digits = "DIGITS"
+
+        /// A string literal token.
+        /// Includes the quotes.
+        case string = "STRING"
+
+        /// `(`
+        case leftParen = "("
+        /// `)`
+        case rightParen = ")"
+
+        /// `{`
+        case leftBrace = "{"
+        /// `}`
+        case rightBrace = "}"
+
+        /// `[`
+        case leftSquare = "["
+        /// `]`
+        case rightSquare = "]"
+
+        /// `<`
+        case leftAngle = "<"
+        /// `>`
+        case rightAngle = ">"
+
+        /// `:`
+        case colon = ":"
+        /// `;`
+        case semicolon = ";"
+        /// `|`
+        case bar = "|"
+
+        /// `=`
+        case equals = "="
+        /// `~`
+        case tilde = "~"
+        /// `*`
+        case star = "*"
+        /// `+`
+        case plus = "+"
+
+        /// `?`
+        case questionMark = "?"
+        /// `!`
+        case exclamationMark = "!"
+        /// `&`
+        case ampersand = "&"
+        /// `,`
+        case comma = ","
+        /// `.`
+        case period = "."
+        /// `@`
+        case at = "@"
+
+        /// `/`
+        case forwardSlash = "/"
+        /// `\`
+        case backslash = "\\"
+
+        public var description: String {
+            self.rawValue
+        }
+        
+        public init(stringLiteral: String) {
+            guard let value = Self(rawValue: stringLiteral) else {
+                fatalError("Unknown metagrammar token kind '\(stringLiteral)'")
+            }
+
+            self = value
         }
     }
 }

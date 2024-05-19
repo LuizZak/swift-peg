@@ -80,27 +80,65 @@ public struct ParserMemoizeMacro: PeerMacro {
             invocation = "try \(invocation)"
         }
 
-        return [
-            """
-            \(leadingTrivia)
-            /// Memoized version of `\(nonMemoizedMethod)`.
-            open func \(memoizedMethod)\(parameters) \(effects)-> \(typeToCache) {
-                let args: [AnyHashable] = \(cacheParams)
-                let key = makeKey("\(memoizedMethod)", arguments: args)
-                if let cached: CacheEntry<\(typeToCache)> = \(cache).fetch(key) {
-                    self.restore(cached.mark)
-                    return cached.result
-                }
-                let result = \(invocation)
-                \(cache).store(
-                    key,
-                    value: CacheEntry(mark: self.mark(), result: result)
-                )
+        // TODO: Reduce duplication when producing metadata and diagnostics constructs
+        if macroArguments.debugDiagnostics {
+            return [
+                """
+                \(leadingTrivia)
+                /// Memoized version of `\(nonMemoizedMethod)`.
+                open func \(memoizedMethod)\(parameters) \(effects)-> \(typeToCache) {
+                    let metadataKey = "\(memoizedMethod)(\(raw: arguments.map({ #"\#($0.name.description): \(\#($0.name.description))"# }).joined(separator: ", ")))"
+                    \(cache).incrementMetadata(metadataKey)
 
-                return result
-            }
-            """
-        ]
+                    let args: [AnyHashable] = \(cacheParams)
+                    let key = makeKey("\(memoizedMethod)", arguments: args)
+                    if let cached: CacheEntry<\(typeToCache)> = \(cache).fetch(key) {
+                        self.restore(cached.mark)
+                        \(cache).incrementMetadata("cacheHit")
+                        return cached.result
+                    }
+                    \(cache).incrementMetadata("cacheMiss")
+                    let result = \(invocation)
+                    let mark = self.mark()
+                    let priorReach = self.resetReach(mark)
+                    \(cache).store(
+                        key,
+                        value: CacheEntry(mark: self.mark(), reach: self.reach, result: result)
+                    )
+                    let reach = self.resetReach(priorReach)
+                    self.updateReach(reach)
+
+                    return result
+                }
+                """
+            ]
+        } else {
+            return [
+                """
+                \(leadingTrivia)
+                /// Memoized version of `\(nonMemoizedMethod)`.
+                open func \(memoizedMethod)\(parameters) \(effects)-> \(typeToCache) {
+                    let args: [AnyHashable] = \(cacheParams)
+                    let key = makeKey("\(memoizedMethod)", arguments: args)
+                    if let cached: CacheEntry<\(typeToCache)> = \(cache).fetch(key) {
+                        self.restore(cached.mark)
+                        return cached.result
+                    }
+                    let result = \(invocation)
+                    let mark = self.mark()
+                    let priorReach = self.resetReach(mark)
+                    \(cache).store(
+                        key,
+                        value: CacheEntry(mark: self.mark(), reach: self.reach, result: result)
+                    )
+                    let reach = self.resetReach(priorReach)
+                    self.updateReach(reach)
+
+                    return result
+                }
+                """
+            ]
+        }
     }
 
     static func parseArguments(
@@ -155,6 +193,7 @@ public struct ParserMemoizeMacro: PeerMacro {
 
         var memoizedName: String
         var cache: ExprSyntax
+        var debugDiagnostics: Bool = false
 
         var memoizedName_diagnosticSyntax: Syntax {
             arguments[0].diagnosticSyntax

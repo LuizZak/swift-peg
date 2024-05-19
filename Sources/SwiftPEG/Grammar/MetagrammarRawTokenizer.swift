@@ -1,7 +1,7 @@
 /// A tokenizer for SwiftPEG grammar files.
 /// Reads tokens out of a character stream.
 public class MetagrammarRawTokenizer: RawTokenizerType {
-    public typealias TokenType = Metagrammar.Token
+    public typealias Token = Metagrammar.MetagrammarToken
 
     private var _source: String
     private var _index: String.Index
@@ -15,7 +15,7 @@ public class MetagrammarRawTokenizer: RawTokenizerType {
         _index = source.startIndex
     }
 
-    public func next() throws -> Metagrammar.Token? {
+    public func next() throws -> Token? {
         _skipWhitespace()
 
         guard _index < _source.endIndex else {
@@ -23,7 +23,7 @@ public class MetagrammarRawTokenizer: RawTokenizerType {
         }
 
         guard
-            let token = Metagrammar.Token.from(string: _source[_index...]),
+            let token = Token.from(string: _source[_index...]),
             token.tokenUTF8Length > 0
         else {
             throw Error.unknownToken(index: _index)
