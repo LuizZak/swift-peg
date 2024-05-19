@@ -3,20 +3,25 @@
 public class MetagrammarRawTokenizer: RawTokenizerType {
     public typealias Token = Metagrammar.MetagrammarToken
 
-    private var _source: String
-    private var _index: String.Index
+    @usableFromInline
+    internal var _source: String
+    @usableFromInline
+    internal var _index: String.Index
 
+    @inlinable
     public var isEOF: Bool {
         _index >= _source.endIndex
     }
 
+    @inlinable
     public init(source: String) {
         self._source = source
         _index = source.startIndex
     }
 
+    @inlinable
     public func next() throws -> Token? {
-        _skipWhitespace()
+        skipWhitespace()
 
         guard _index < _source.endIndex else {
             return nil
@@ -29,22 +34,31 @@ public class MetagrammarRawTokenizer: RawTokenizerType {
             throw Error.unknownToken(index: _index)
         }
 
-        _advance(by: token.tokenUTF8Length)
+        advance(by: token.tokenUTF8Length)
 
         return token
     }
 
-    private func _skipWhitespace() {
+    @inlinable
+    internal func skipWhitespace() {
         while _index < _source.endIndex && _source[_index].isWhitespace {
-            _advance(by: 1)
+            advance(by: 1)
         }
     }
 
-    private func _advance(by count: Int) {
+    @inlinable
+    internal func advance(by count: Int) {
         _index = _source.utf8.index(_index, offsetBy: count)
     }
 
-    enum Error: TokenizerError {
+    public enum Error: TokenizerError {
         case unknownToken(index: String.Index)
+
+        public var description: String {
+            switch self {
+            case .unknownToken:
+                return "Unknown token"
+            }
+        }
     }
 }

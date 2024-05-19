@@ -9,6 +9,41 @@ class ParserMemoizeMacroTests: XCTestCase {
         "memoized": ParserMemoizeMacro.self,
     ]
 
+    func testMemoizeMacro_copiesAccessLevel() {
+        assertMacroExpansion("""
+            @memoized("method", "other.cache[0]")
+            public func __method__() -> Any {
+                return 0
+            }
+            """,
+            expandedSource: """
+            public func __method__() -> Any {
+                return 0
+            }
+
+            /// Memoized version of `__method__`.
+            public func method() -> Any {
+                let key = makeKey("method", arguments: nil)
+                if let cached: CacheEntry<Any> = other.cache[0].fetch(key) {
+                    self.restore(cached.mark)
+                    return cached.result
+                }
+                let result = __method__()
+                let mark = self.mark()
+                let priorReach = self.resetReach(mark)
+                other.cache[0].store(
+                    key,
+                    value: CacheEntry(mark: self.mark(), reach: self.reach, result: result)
+                )
+                let reach = self.resetReach(priorReach)
+                self.updateReach(reach)
+
+                return result
+            }
+            """,
+            macros: testMacros)
+    }
+
     func testMemoizeMacro_customCacheTarget() {
         assertMacroExpansion("""
             @memoized("method", "other.cache[0]")
@@ -22,9 +57,8 @@ class ParserMemoizeMacroTests: XCTestCase {
             }
 
             /// Memoized version of `__method__`.
-            open func method() -> Any {
-                let args: [AnyHashable] = []
-                let key = makeKey("method", arguments: args)
+            func method() -> Any {
+                let key = makeKey("method", arguments: nil)
                 if let cached: CacheEntry<Any> = other.cache[0].fetch(key) {
                     self.restore(cached.mark)
                     return cached.result
@@ -58,9 +92,8 @@ class ParserMemoizeMacroTests: XCTestCase {
             }
 
             /// Memoized version of `__method__`.
-            open func method() -> Any {
-                let args: [AnyHashable] = []
-                let key = makeKey("method", arguments: args)
+            func method() -> Any {
+                let key = makeKey("method", arguments: nil)
                 if let cached: CacheEntry<Any> = self.cache.fetch(key) {
                     self.restore(cached.mark)
                     return cached.result
@@ -94,9 +127,8 @@ class ParserMemoizeMacroTests: XCTestCase {
             }
 
             /// Memoized version of `__method__`.
-            open func method() throws -> Any {
-                let args: [AnyHashable] = []
-                let key = makeKey("method", arguments: args)
+            func method() throws -> Any {
+                let key = makeKey("method", arguments: nil)
                 if let cached: CacheEntry<Any> = self.cache.fetch(key) {
                     self.restore(cached.mark)
                     return cached.result
@@ -130,9 +162,8 @@ class ParserMemoizeMacroTests: XCTestCase {
             }
 
             /// Memoized version of `__method__`.
-            open func method(a: Int, _ b: Float, c _c: Bool) throws -> Any {
-                let args: [AnyHashable] = [AnyHashable(a), AnyHashable(b), AnyHashable(_c)]
-                let key = makeKey("method", arguments: args)
+            func method(a: Int, _ b: Float, c _c: Bool) throws -> Any {
+                let key = makeKey("method", arguments: [AnyHashable(a), AnyHashable(b), AnyHashable(_c)])
                 if let cached: CacheEntry<Any> = self.cache.fetch(key) {
                     self.restore(cached.mark)
                     return cached.result
@@ -166,9 +197,8 @@ class ParserMemoizeMacroTests: XCTestCase {
             }
 
             /// Memoized version of `__method__`.
-            open func method() throws -> Int? {
-                let args: [AnyHashable] = []
-                let key = makeKey("method", arguments: args)
+            func method() throws -> Int? {
+                let key = makeKey("method", arguments: nil)
                 if let cached: CacheEntry<Int?> = self.cache.fetch(key) {
                     self.restore(cached.mark)
                     return cached.result
@@ -205,9 +235,49 @@ class ParserMemoizeMacroTests: XCTestCase {
 
             /// A doc comment
             /// Memoized version of `__method__`.
-            open func method() throws -> Int? {
-                let args: [AnyHashable] = []
-                let key = makeKey("method", arguments: args)
+            func method() throws -> Int? {
+                let key = makeKey("method", arguments: nil)
+                if let cached: CacheEntry<Int?> = self.cache.fetch(key) {
+                    self.restore(cached.mark)
+                    return cached.result
+                }
+                let result = try __method__()
+                let mark = self.mark()
+                let priorReach = self.resetReach(mark)
+                self.cache.store(
+                    key,
+                    value: CacheEntry(mark: self.mark(), reach: self.reach, result: result)
+                )
+                let reach = self.resetReach(priorReach)
+                self.updateReach(reach)
+
+                return result
+            }
+            """,
+            macros: testMacros)
+    }
+
+    func testMemoizeMacro_copiesAttributes() {
+        assertMacroExpansion("""
+            @memoized("method")
+            @inlinable
+            @discardableResult
+            func __method__() throws -> Int? {
+                return nil
+            }
+            """,
+            expandedSource: """
+            @inlinable
+            @discardableResult
+            func __method__() throws -> Int? {
+                return nil
+            }
+
+            /// Memoized version of `__method__`.
+            @inlinable
+            @discardableResult
+            func method() throws -> Int? {
+                let key = makeKey("method", arguments: nil)
                 if let cached: CacheEntry<Int?> = self.cache.fetch(key) {
                     self.restore(cached.mark)
                     return cached.result

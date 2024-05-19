@@ -16,3 +16,30 @@ public macro memoized(_ method: String, cacheTarget: String? = nil) =
 @attached(member, names: arbitrary, named(children), named(init))
 public macro GeneratedNodeType<T>() =
     #externalMacro(module: "SwiftPEGMacros", type: "NodeTypeMacro")
+
+/// Property wrapper that is type-aliased into different constructs that are
+/// detected by `NodeTypeMacro` to indicate attributes of fields of types being
+/// macro-expanded.
+///
+/// By itself does nothing but wrap the value.
+@propertyWrapper
+public struct NodeMacroWrapper<T> {
+    public var wrappedValue: T
+
+    @inlinable
+    public init(wrappedValue: T) {
+        self.wrappedValue = wrappedValue
+    }
+}
+
+/// Property wrapper for signaling fields to create node properties with when
+/// used with `NodeTypeMacro`.
+///
+/// By itself does nothing but wrap the value.
+public typealias NodeProperty<T> = NodeMacroWrapper<T>
+
+/// Property wrapper for signaling fields that are required during the node's
+/// construction, but are not node types themselves.
+///
+/// By itself does nothing but wrap the value.
+public typealias NodeRequired<T> = NodeMacroWrapper<T>

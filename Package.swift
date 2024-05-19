@@ -14,15 +14,6 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-syntax.git", exact: "510.0.0"),
     ],
     targets: [
-        .target(
-            name: "SwiftPEG",
-            dependencies: [
-                "SwiftPEGMacros",
-            ],
-            exclude: [
-                "Grammar/metagrammar.gram",
-            ]
-        ),
         .macro(
             name: "SwiftPEGMacros",
             dependencies: [
@@ -33,6 +24,22 @@ let package = Package(
                 .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
                 .product(name: "SwiftSyntaxMacrosTestSupport", package: "swift-syntax"),
                 .product(name: "SwiftCompilerPlugin", package: "swift-syntax"),
+            ]
+        ),
+        .target(
+            name: "SwiftPEG",
+            dependencies: [
+                "SwiftPEGMacros",
+            ],
+            exclude: [
+                "Grammar/metagrammar.gram",
+            ]
+        ),
+        .executableTarget(
+            name: "SwiftPEGSample",
+            dependencies: [
+                "SwiftPEGMacros",
+                "SwiftPEG",
             ]
         ),
         .testTarget(

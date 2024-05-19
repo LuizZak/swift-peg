@@ -65,15 +65,28 @@ public struct ParserMemoizeMacro: PeerMacro {
                     .ext_errorDiagnostic(message: "Memoized method cannot have the same name as non-memoized \(nonMemoizedMethod)")
             )
         }
+        
+        // Collect attributes to apply, as well
+        let attributes = declaration.attributes.filter({
+            $0.position != node.position
+        }).map { $0.trimmed.addingLeadingTrivia(.newline).description }.joined()
 
-        let cache = macroArguments.cache
+        // For nodes with no explicit access control, inherit the declaration's
+        let accessLevel = declaration
+            .ext_accessLevel()?
+            .name.trimmed
+            .with(\.trailingTrivia, .spaces(1))
 
         let leadingTrivia = declaration.ext_docComments()
         let typeToCache = returnType.trimmed
         let effects = declaration.signature.effectSpecifiers
         let parameters = declaration.signature.parameterClause.trimmed
         let arguments = declaration.signature.parameterClause.ext_parameters()
-        let cacheParams: ExprSyntax = "[\(raw: arguments.map({ "AnyHashable(\($0.name.description))" }).joined(separator: ", "))]"
+        let cache = macroArguments.cache
+        let cacheParams: ExprSyntax =
+            arguments.isEmpty
+                ? "nil"
+                : "[\(raw: arguments.map({ "AnyHashable(\($0.name.description))" }).joined(separator: ", "))]"
         let nonMemoArguments = arguments.map({ $0.label != nil ? "\($0.label!): \($0.name)" : "\($0.name)" }).joined(separator: ", ")
         var invocation: ExprSyntax = "\(nonMemoizedMethod)(\(raw: nonMemoArguments))"
         if effects?.throwsSpecifier != nil {
@@ -81,23 +94,17 @@ public struct ParserMemoizeMacro: PeerMacro {
         }
 
         // TODO: Reduce duplication when producing metadata and diagnostics constructs
-        if macroArguments.debugDiagnostics {
+        if !macroArguments.debugDiagnostics {
             return [
                 """
                 \(leadingTrivia)
-                /// Memoized version of `\(nonMemoizedMethod)`.
-                open func \(memoizedMethod)\(parameters) \(effects)-> \(typeToCache) {
-                    let metadataKey = "\(memoizedMethod)(\(raw: arguments.map({ #"\#($0.name.description): \(\#($0.name.description))"# }).joined(separator: ", ")))"
-                    \(cache).incrementMetadata(metadataKey)
-
-                    let args: [AnyHashable] = \(cacheParams)
-                    let key = makeKey("\(memoizedMethod)", arguments: args)
+                /// Memoized version of `\(nonMemoizedMethod)`.\(raw: attributes)
+                \(accessLevel)func \(memoizedMethod)\(parameters) \(effects)-> \(typeToCache) {
+                    let key = makeKey("\(memoizedMethod)", arguments: \(cacheParams))
                     if let cached: CacheEntry<\(typeToCache)> = \(cache).fetch(key) {
                         self.restore(cached.mark)
-                        \(cache).incrementMetadata("cacheHit")
                         return cached.result
                     }
-                    \(cache).incrementMetadata("cacheMiss")
                     let result = \(invocation)
                     let mark = self.mark()
                     let priorReach = self.resetReach(mark)
@@ -117,13 +124,18 @@ public struct ParserMemoizeMacro: PeerMacro {
                 """
                 \(leadingTrivia)
                 /// Memoized version of `\(nonMemoizedMethod)`.
-                open func \(memoizedMethod)\(parameters) \(effects)-> \(typeToCache) {
-                    let args: [AnyHashable] = \(cacheParams)
-                    let key = makeKey("\(memoizedMethod)", arguments: args)
+                \(raw: attributes)
+                \(accessLevel)func \(memoizedMethod)\(parameters) \(effects)-> \(typeToCache) {
+                    let metadataKey = "\(memoizedMethod)(\(raw: arguments.map({ #"\#($0.name.description): \(\#($0.name.description))"# }).joined(separator: ", ")))"
+                    \(cache).incrementMetadata(metadataKey)
+
+                    let key = makeKey("\(memoizedMethod)", arguments: \(cacheParams))
                     if let cached: CacheEntry<\(typeToCache)> = \(cache).fetch(key) {
                         self.restore(cached.mark)
+                        \(cache).incrementMetadata("cacheHit")
                         return cached.result
                     }
+                    \(cache).incrementMetadata("cacheMiss")
                     let result = \(invocation)
                     let mark = self.mark()
                     let priorReach = self.resetReach(mark)

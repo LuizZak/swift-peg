@@ -63,7 +63,7 @@ extension Metagrammar {
     /// metaValueIdent: IDENT ;
     /// ```
     @GeneratedNodeType<Node>
-    public class MetaIdentifierValue: MetaValue {
+    public final class MetaIdentifierValue: MetaValue {
         /// The associated identifier value.
         @NodeProperty
         var _identifier: IdentifierToken
@@ -76,7 +76,7 @@ extension Metagrammar {
     /// metaValueString: STRING ;
     /// ```
     @GeneratedNodeType<Node>
-    public class MetaStringValue: MetaValue {
+    public final class MetaStringValue: MetaValue {
         /// The associated string value.
         @NodeProperty
         var _string: StringToken
@@ -534,6 +534,16 @@ extension Metagrammar {
         /// values from a string.
         public static let digits_pattern = #/[0-9]+/#
 
+        /// `*`
+        /// 
+        /// Alias for `Self.star`
+        public static let asterisk = Self.star
+
+        /// `.`
+        /// 
+        /// Alias for `Self.period`
+        public static let dot = Self.period
+
         /// A Swift-compatible identifier token.
         case identifier(String)
 
@@ -579,6 +589,8 @@ extension Metagrammar {
         case star
         /// `+`
         case plus
+        /// `-`
+        case minus
 
         /// `?`
         case questionMark
@@ -598,6 +610,7 @@ extension Metagrammar {
         /// `\`
         case backslash
 
+        @inlinable
         public var kind: MetagrammarTokenKind {
             switch self {
             case .identifier: return .identifier
@@ -618,6 +631,7 @@ extension Metagrammar {
             case .tilde: return .tilde
             case .star: return .star
             case .plus: return .plus
+            case .minus: return .minus
             case .questionMark: return .questionMark
             case .exclamationMark: return .exclamationMark
             case .ampersand: return .ampersand
@@ -629,6 +643,7 @@ extension Metagrammar {
             }
         }
 
+        @inlinable
         public var string: TokenString {
             switch self {
             case .identifier(let value): return value
@@ -649,6 +664,7 @@ extension Metagrammar {
             case .tilde: return "~"
             case .star: return "*"
             case .plus: return "+"
+            case .minus: return "-"
             case .questionMark: return "?"
             case .exclamationMark: return "!"
             case .ampersand: return "&"
@@ -661,6 +677,7 @@ extension Metagrammar {
         }
 
         /// Returns the UTF8 length of this token.
+        @inlinable
         public var tokenUTF8Length: Int {
             string.utf8.count
         }
@@ -669,6 +686,7 @@ extension Metagrammar {
         ///
         /// - Note: If the construction fails, an assertion is raised, and should
         /// only be used as a convenience within a parser.
+        @inlinable
         public init(stringLiteral value: String) {
             guard let token = Self.from(string: value) else {
                 fatalError("\(Self.self): Unknown token literal '\(value)'")
@@ -676,7 +694,8 @@ extension Metagrammar {
 
             self = token
         }
-        
+
+        @inlinable
         public static func produceDummy(_ kind: TokenKind) -> Self {
             switch kind {
             case .identifier: return .identifier("<dummy>")
@@ -697,6 +716,7 @@ extension Metagrammar {
             case .tilde: return .tilde
             case .star: return .star
             case .plus: return .plus
+            case .minus: return .minus
             case .questionMark: return .questionMark
             case .exclamationMark: return .exclamationMark
             case .ampersand: return .ampersand
@@ -710,6 +730,7 @@ extension Metagrammar {
 
         /// Returns a parsed token from the given string or substring.
         /// If the token is not recognized, `nil` is returned, instead.
+        @inlinable
         public static func from<S: StringProtocol>(string: S) -> Self? {
             switch string.first {
             case "(": return .leftParen
@@ -727,6 +748,7 @@ extension Metagrammar {
             case "~": return .tilde
             case "*": return .star
             case "+": return .plus
+            case "-": return .minus
             case "?": return .questionMark
             case "!": return .exclamationMark
             case "&": return .ampersand
@@ -792,6 +814,7 @@ extension Metagrammar {
             case tripleQuote(String)
 
             /// Returns contents of the string, without surrounding quotes.
+            @inlinable
             public var contents: String {
                 switch self {
                 case .singleQuote(let string),
@@ -802,6 +825,7 @@ extension Metagrammar {
             }
 
             /// Returns the full representation of this literal, including quotes.
+            @inlinable
             public var description: String {
                 switch self {
                 case .singleQuote(let string):
@@ -815,6 +839,7 @@ extension Metagrammar {
 
             /// Returns a parsed string literal from the given substring.
             /// If no string literal is recognized, `nil` is returned, instead.
+            @inlinable
             public static func from(string: Substring) -> Self? {
                 // Triple quote
                 if let match = try? tripleQuoteRegex.prefixMatch(in: string) {
@@ -840,6 +865,16 @@ extension Metagrammar {
 
     /// Specifies kinds for metagrammar tokens.
     public enum MetagrammarTokenKind: String, TokenKindType, CaseIterable, ExpressibleByStringLiteral {
+        /// `*`
+        /// 
+        /// Alias for `Self.star`
+        public static let asterisk = Self.star
+
+        /// `.`
+        /// 
+        /// Alias for `Self.period`
+        public static let dot = Self.period
+
         /// A Swift-compatible identifier token.
         case identifier = "IDENTIFIER"
 
@@ -885,6 +920,8 @@ extension Metagrammar {
         case star = "*"
         /// `+`
         case plus = "+"
+        /// `-`
+        case minus = "-"
 
         /// `?`
         case questionMark = "?"
@@ -904,10 +941,12 @@ extension Metagrammar {
         /// `\`
         case backslash = "\\"
 
+        @inlinable
         public var description: String {
             self.rawValue
         }
-        
+
+        @inlinable
         public init(stringLiteral: String) {
             guard let value = Self(rawValue: stringLiteral) else {
                 fatalError("Unknown metagrammar token kind '\(stringLiteral)'")

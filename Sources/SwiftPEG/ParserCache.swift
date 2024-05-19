@@ -1,10 +1,12 @@
 /// A class for caching results of parser method invocations by tokenizer's mark
 /// and optionally a parameter set for the arguments.
-public class ParserCache<RawTokenizer: RawTokenizerType> {
+public final class ParserCache<RawTokenizer: RawTokenizerType> {
     public typealias Mark = Tokenizer<RawTokenizer>.Mark
 
-    private var _cache: [Key: Any] = [:]
-    private var _metadata: [String: Any] = [:]
+    @usableFromInline
+    internal var _cache: [Key: Any] = [:]
+    @usableFromInline
+    internal var _metadata: [String: Any] = [:]
 
     /// Whether enable or disable the cache.
     /// When disabled, `has()`, `fetch()`, and `fetchAny()` behave as if the cache
@@ -13,22 +15,26 @@ public class ParserCache<RawTokenizer: RawTokenizerType> {
     public var enabled: Bool = true
 
     /// Returns `true` if cache contains a given key.
+    @inlinable
     public func has(_ key: Key) -> Bool {
         enabled && _cache[key] != nil
     }
 
     /// Stores the given key/value pair in this cache.
+    @inlinable
     public func store<T>(_ key: Key, value: CacheEntry<T>?) {
         _cache[key] = value
     }
 
     /// Performs an untyped cache fetch.
+    @inlinable
     public func fetchAny(_ key: Key) -> Any?? {
         if enabled { _cache[key] }
         else { nil }
     }
 
     /// Performs a typed cache fetch.
+    @inlinable
     public func fetch<Value>(_ key: Key) -> CacheEntry<Value>? {
         guard enabled, let cached = _cache[key] else {
             return nil
@@ -38,6 +44,7 @@ public class ParserCache<RawTokenizer: RawTokenizerType> {
     }
 
     /// Fetches all keys that point at a given mark.
+    @inlinable
     public func fetchAllKeys(at mark: Mark) -> [Key] {
         return _cache.keys.filter { key in
             key.mark == mark
@@ -45,6 +52,7 @@ public class ParserCache<RawTokenizer: RawTokenizerType> {
     }
 
     /// Removes an entry to this cache with a given key.
+    @inlinable
     @discardableResult
     public func removeValue(forKey key: Key) -> Any?? {
         _cache.removeValue(forKey: key)
@@ -52,6 +60,7 @@ public class ParserCache<RawTokenizer: RawTokenizerType> {
 
     /// Removes all cached entries within the cache that have a mark greater than
     /// `mark`.
+    @inlinable
     public func removePast(mark: Mark) {
         for key in _cache.keys {
             if key.mark > mark {
@@ -64,6 +73,7 @@ public class ParserCache<RawTokenizer: RawTokenizerType> {
 
     /// If the metadata key associated with `key` is an Int, increment it by
     /// one. If it it doesn't exist yet, creates and stores 1.
+    @inlinable
     public func incrementMetadata(_ key: String) {
         if let value: Int = fetchMetadata(key) {
             storeMetadata(key, value + 1)
@@ -73,12 +83,14 @@ public class ParserCache<RawTokenizer: RawTokenizerType> {
     }
 
     /// Stores metadata on this cache.
+    @inlinable
     public func storeMetadata(_ key: String, _ value: Any) {
         _metadata[key] = value
     }
 
     /// Fetches a metadata with a given key.
     /// Returns is `nil` if `key` is not present in the metadata cache.
+    @inlinable
     public func fetchMetadataAny(_ key: String) -> Any? {
         return _metadata[key]
     }
@@ -86,6 +98,7 @@ public class ParserCache<RawTokenizer: RawTokenizerType> {
     /// Fetches a metadata with a given key, conditionally casted to `T`.
     /// Returns is `nil` if `key` is not present in the metadata cache, or if its
     /// value cannot be cast to `T`.
+    @inlinable
     public func fetchMetadata<T>(_ key: String) -> T? {
         return _metadata[key] as? T
     }
@@ -99,6 +112,7 @@ public class ParserCache<RawTokenizer: RawTokenizerType> {
         /// The result of this cached entry.
         public var result: T
 
+        @inlinable
         public init(mark: Mark, reach: Mark, result: T) {
             self.mark = mark
             self.reach = reach
@@ -112,10 +126,12 @@ public class ParserCache<RawTokenizer: RawTokenizerType> {
         public var mark: Mark
         /// The name of the rule that produced this key.
         public var ruleName: String
-        /// The arguments for the particular call to the rule that produced this key.
-        public var arguments: [AnyHashable]
-        
-        public init(mark: Mark, ruleName: String, arguments: [AnyHashable]) {
+        /// The arguments for the particular call to the rule that produced this
+        /// key.
+        public var arguments: [AnyHashable]?
+
+        @inlinable
+        public init(mark: Mark, ruleName: String, arguments: [AnyHashable]?) {
             self.mark = mark
             self.ruleName = ruleName
             self.arguments = arguments

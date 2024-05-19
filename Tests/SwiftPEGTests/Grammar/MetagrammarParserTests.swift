@@ -27,10 +27,9 @@ class MetagrammarParserTests: XCTestCase {
         assertNil(result)
         assertEqual(
             error,
-            Sut.SyntaxError.expectedToken(
-                #"Syntax error @ 3: Expected: "@""#,
-                .init(owner: sut.tokenizer, index:3),
-                expected: [.at]
+            Sut.SyntaxError.unexpectedEof(
+                #"Syntax error @ 3: Unexpected end-of-stream"#,
+                .init(owner: sut.tokenizer, index: 3)
             )
         )
     }

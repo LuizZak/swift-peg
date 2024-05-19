@@ -1,28 +1,12 @@
 /// A parser for SwiftPEG grammar files.
-public class MetagrammarParser<RawTokenizer: RawTokenizerType>
+public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
     : PEGParser<RawTokenizer> where RawTokenizer.Token == Metagrammar.MetagrammarToken
 {
-    /// Fetches the next token's contents as a string.
-    @memoized("peekAsString")
-    func _peekAsString() throws -> String? {
-        return try tokenizer.peekToken()?.kind.description
-    }
-
-    /// Fetches the next token in the stream and compares its kind against `kind`,
-    /// returning the token if it matches. If the method fails, `nil` is returned
-    /// and the tokenizer position is reset.
-    @memoized("expect")
-    public func _expect(kind: String) throws -> Token? {
-        if let next = try peekAsString(), next == kind {
-            return try tokenizer.next()
-        }
-        return nil
-    }
-
     /// ```
     /// start: grammar ;
     /// ```
     @memoized("start")
+    @inlinable
     public func _start() throws -> Metagrammar.Grammar? {
         try grammar()
     }
@@ -34,6 +18,7 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
     /// rules: rule+ ;
     /// ```
     @memoized("grammar")
+    @inlinable
     public func _grammar() throws -> Metagrammar.Grammar? {
         let mark = self.mark()
         let metas = try self.metas() ?? []
@@ -48,6 +33,7 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
     /// metas: meta+ ;
     /// ```
     @memoized("metas")
+    @inlinable
     public func _metas() throws -> [Metagrammar.Meta]? {
         let mark = self.mark()
         guard let meta = try self.meta() else {
@@ -68,14 +54,15 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
     ///     ;
     /// ```
     @memoized("meta")
+    @inlinable
     public func _meta() throws -> Metagrammar.Meta? {
         let mark = self.mark()
 
         if
-            try self.expect("@") != nil,
+            try self.expect(kind: .at) != nil,
             let name = try self.identToken(),
             let metaValue = try self.metaValue(),
-            try self.expect(";") != nil
+            try self.expect(kind: .semicolon) != nil
         {
             return .init(name: name, value: metaValue)
         }
@@ -83,9 +70,9 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
         self.restore(mark)
 
         if
-            try self.expect("@") != nil,
+            try self.expect(kind: .at) != nil,
             let name = try self.identToken(),
-            try self.expect(";") != nil
+            try self.expect(kind: .semicolon) != nil
         {
             return .init(name: name, value: nil)
         }
@@ -102,6 +89,7 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
     ///     ;
     /// ```
     @memoized("metaValue")
+    @inlinable
     public func _metaValue() throws -> Metagrammar.MetaValue? {
         let mark = self.mark()
 
@@ -127,6 +115,7 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
     /// metaValueIdent: IDENT ;
     /// ```
     @memoized("metaValueIdent")
+    @inlinable
     public func _metaValueIdent() throws -> Metagrammar.MetaIdentifierValue? {
         let mark = self.mark()
 
@@ -144,6 +133,7 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
     /// metaValueString: STRING ;
     /// ```
     @memoized("metaValueString")
+    @inlinable
     public func _metaValueString() throws -> Metagrammar.MetaStringValue? {
         let mark = self.mark()
 
@@ -161,6 +151,7 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
     /// rules: rule+ ;
     /// ```
     @memoized("rules")
+    @inlinable
     public func _rules() throws -> [Metagrammar.Rule]? {
         let mark = self.mark()
         guard let rule = try self.rule() else {
@@ -181,15 +172,16 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
     ///     ;
     /// ```
     @memoized("rule")
+    @inlinable
     public func _rule() throws -> Metagrammar.Rule? {
         let mark = self.mark()
 
         if
             let ruleName = try self.ruleName(),
-            try self.expect(":") != nil,
-            (try self.maybe("|") || true),
+            try self.expect(kind: .colon) != nil,
+            (try self.maybe(kind: .bar) || true),
             let alts = try self.alts(),
-            try self.expect(";") != nil
+            try self.expect(kind: .semicolon) != nil
         {
             return .init(name: ruleName, alts: alts)
         }
@@ -204,14 +196,15 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
     ///     ;
     /// ```
     @memoized("ruleName")
+    @inlinable
     public func _ruleName() throws -> Metagrammar.RuleName? {
         let mark = self.mark()
 
         if
             let name = try self.identToken(),
-            try self.expect("[") != nil,
+            try self.expect(kind: .leftSquare) != nil,
             let type = try self.identToken(),
-            try self.expect("]") != nil
+            try self.expect(kind: .rightSquare) != nil
         {
             return .init(name: name, type: type)
         }
@@ -232,6 +225,7 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
     /// alts: '|'.alt+;
     /// ```
     @memoized("alts")
+    @inlinable
     public func _alts() throws -> [Metagrammar.Alt]? {
         var mark = self.mark()
 
@@ -243,7 +237,7 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
 
             result.append(alt)
             mark = self.mark()
-        } while try self.maybe("|")
+        } while try self.maybe(kind: .bar)
 
         self.restore(mark)
         return result.isEmpty ? nil : result
@@ -255,6 +249,7 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
     ///     ;
     /// ```
     @memoized("alt")
+    @inlinable
     public func _alt() throws -> Metagrammar.Alt? {
         let mark = self.mark()
 
@@ -273,6 +268,7 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
     /// namedItems: namedItem+ ;
     /// ```
     @memoized("namedItems")
+    @inlinable
     public func _namedItems() throws -> [Metagrammar.NamedItem]? {
         let mark = self.mark()
         guard let namedItem = try self.namedItem() else {
@@ -296,17 +292,18 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
     ///     ;
     /// ```
     @memoized("namedItem")
+    @inlinable
     public func _namedItem() throws -> Metagrammar.NamedItem? {
         let mark = self.mark()
         var cut = CutFlag()
 
         if
             let name = try self.identToken(),
-            try self.expect("=") != nil,
+            try self.expect(kind: .equals) != nil,
             cut.toggleOn(),
-            try self.expect("[") != nil,
+            try self.expect(kind: .leftSquare) != nil,
             try self.identToken() != nil,
-            try self.expect("]") != nil,
+            try self.expect(kind: .rightSquare) != nil,
             let item = try self.item()
         {
             return .init(name: name, item: item, lookahead: nil)
@@ -320,7 +317,7 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
 
         if
             let name = try self.identToken(),
-            try self.expect("=") != nil,
+            try self.expect(kind: .equals) != nil,
             cut.toggleOn(),
             let item = try self.item()
         {
@@ -359,6 +356,7 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
     ///     ;
     /// ```
     @memoized("lookahead")
+    @inlinable
     public func _lookahead() throws -> Metagrammar.LookaheadOrCut? {
         let mark = self.mark()
 
@@ -392,11 +390,12 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
     /// '&' atom ;
     /// ```
     @memoized("positiveLookahead")
+    @inlinable
     public func _positiveLookahead() throws -> Metagrammar.PositiveLookahead? {
         let mark = self.mark()
 
         if
-            try self.expect("&") != nil,
+            try self.expect(kind: .ampersand) != nil,
             let atom = try self.atom()
         {
             return .init(atom: atom)
@@ -410,11 +409,12 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
     /// '!' atom ;
     /// ```
     @memoized("negativeLookahead")
+    @inlinable
     public func _negativeLookahead() throws -> Metagrammar.NegativeLookahead? {
         let mark = self.mark()
 
         if
-            try self.expect("!") != nil,
+            try self.expect(kind: .exclamationMark) != nil,
             let atom = try self.atom()
         {
             return .init(atom: atom)
@@ -428,11 +428,12 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
     /// '~' ;
     /// ```
     @memoized("cut")
+    @inlinable
     public func _cut() throws -> Metagrammar.Cut? {
         let mark = self.mark()
 
         if
-            try self.expect("~") != nil
+            try self.expect(kind: .tilde) != nil
         {
             return .init()
         }
@@ -452,15 +453,16 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
     ///     ;
     /// ```
     @memoized("item")
+    @inlinable
     public func _item() throws -> Metagrammar.Item? {
         let mark = self.mark()
         var cut = CutFlag()
 
         if
-            try self.expect("[") != nil,
+            try self.expect(kind: .leftSquare) != nil,
             cut.toggleOn(),
             let alts = try self.alts(),
-            try self.expect("]") != nil
+            try self.expect(kind: .rightSquare) != nil
         {
             return Metagrammar.OptionalItems(alts: alts)
         }
@@ -473,7 +475,7 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
 
         if
             let atom = try self.atom(),
-            try self.expect("?") != nil
+            try self.expect(kind: .questionMark) != nil
         {
             return Metagrammar.OptionalItem(atom: atom)
         }
@@ -482,7 +484,7 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
 
         if
             let atom = try self.atom(),
-            try self.expect("*") != nil
+            try self.expect(kind: .star) != nil
         {
             return Metagrammar.ZeroOrMoreItem(atom: atom)
         }
@@ -491,7 +493,7 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
 
         if
             let atom = try self.atom(),
-            try self.expect("+") != nil
+            try self.expect(kind: .plus) != nil
         {
             return Metagrammar.OneOrMoreItem(atom: atom)
         }
@@ -500,9 +502,9 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
 
         if
             let sep = try self.atom(),
-            try self.expect(".") != nil,
+            try self.expect(kind: .period) != nil,
             let node = try self.atom(),
-            try self.expect("+") != nil
+            try self.expect(kind: .plus) != nil
         {
             return Metagrammar.GatherItem(sep: sep, item: node)
         }
@@ -519,56 +521,6 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
         return nil
     }
 
-    /*
-    /// ```
-    /// '[' ~ alts ']' ;
-    /// ```
-    @memoized("optionalItems")
-    public func _optionalItems() throws -> Metagrammar.OptionalItems? {
-        return nil
-    }
-
-    /// ```
-    /// atom '?' ;
-    /// ```
-    @memoized("optionalItem")
-    public func _optionalItem() throws -> Metagrammar.OptionalItem? {
-        return nil
-    }
-
-    /// ```
-    /// atom '*' ;
-    /// ```
-    @memoized("zeroOrMoreItem")
-    public func _zeroOrMoreItem() throws -> Metagrammar.ZeroOrMoreItem? {
-        return nil
-    }
-
-    /// ```
-    /// atom '+' ;
-    /// ```
-    @memoized("oneOrMoreItem")
-    public func _oneOrMoreItem() throws -> Metagrammar.OneOrMoreItem? {
-        return nil
-    }
-
-    /// ```
-    /// sep=atom '.' node=atom '+' ;
-    /// ```
-    @memoized("gatherItem")
-    public func _gatherItem() throws -> Metagrammar.GatherItem? {
-        return nil
-    }
-
-    /// ```
-    /// atom ;
-    /// ```
-    @memoized("atomItem")
-    public func _atomItem() throws -> Metagrammar.AtomItem? {
-        return nil
-    }
-    */
-
     /// ```
     /// atom:
     ///     | '(' ~ alts ')'
@@ -577,15 +529,16 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
     ///     ;
     /// ```
     @memoized("atom")
+    @inlinable
     public func _atom() throws -> Metagrammar.Atom? {
         let mark = self.mark()
         var cut = CutFlag()
 
         if
-            try self.expect("(") != nil,
+            try self.expect(kind: .leftParen) != nil,
             cut.toggleOn(),
             let alts = try self.alts(),
-            try self.expect(")") != nil
+            try self.expect(kind: .rightParen) != nil
         {
             return Metagrammar.GroupAtom(alts: alts)
         }
@@ -614,55 +567,32 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
         return nil
     }
 
-    /*
     /// ```
-    /// '(' ~ alts ')' ;
-    /// ```
-    @memoized("groupAtom")
-    public func _groupAtom() throws -> Metagrammar.GroupAtom? {
-        return nil
-    }
-
-    /// ```
-    /// STRING ;
-    /// ```
-    @memoized("stringAtom")
-    public func _stringAtom() throws -> Metagrammar.StringAtom? {
-        return nil
-    }
-
-    /// ```
-    /// IDENT ;
-    /// ```
-    @memoized("identAtom")
-    public func _identAtom() throws -> Metagrammar.IdentAtom? {
-        return nil
-    }
-    */
-
-    /// ```
-    /// action: '{' ~ balancedTokens? '}' ;
+    /// action: '{' balancedTokens? '}' ;
     /// ```
     @memoized("action")
+    @inlinable
     public func _action() throws -> Metagrammar.Action? {
         let mark = self.mark()
-        var cut = CutFlag()
 
         if
-            try self.expect("{") != nil,
-            cut.toggleOn(),
+            try self.expect(kind: .leftBrace) != nil,
             let balancedTokens = try self.balancedTokens(),
-            try self.expect("}") != nil
+            try self.expect(kind: .rightBrace) != nil
         {
             return .init(balancedTokens: balancedTokens)
         }
 
         self.restore(mark)
 
-        if cut.isOn {
-            return nil
+        if
+            try self.expect(kind: .leftBrace) != nil,
+            try self.expect(kind: .rightBrace) != nil
+        {
+            return .init(balancedTokens: nil)
         }
-        
+
+        self.restore(mark)
         return nil
     }
 
@@ -694,6 +624,7 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
     ///     ;
     /// ```
     @memoized("balancedTokens")
+    @inlinable
     public func _balancedTokens() throws -> Metagrammar.BalancedTokens? {
         return nil
     }
@@ -702,14 +633,14 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
     /// IDENT ;
     /// ```
     @memoized("identToken")
+    @inlinable
     public func _identToken() throws -> Metagrammar.IdentifierToken? {
         let mark = self.mark()
 
         if
-            let next = try self.tokenizer.next(),
-            case .identifier = next
+            let token = try self.expect(kind: .identifier)
         {
-            return .init(token: next.string)
+            return .init(token: token.string)
         }
 
         self.restore(mark)
@@ -720,14 +651,14 @@ public class MetagrammarParser<RawTokenizer: RawTokenizerType>
     /// STRING ;
     /// ```
     @memoized("stringToken")
+    @inlinable
     public func _stringToken() throws -> Metagrammar.StringToken? {
         let mark = self.mark()
 
         if
-            let next = try self.tokenizer.next(),
-            case .string = next
+            let token = try self.expect(kind: .string)
         {
-            return .init(token: next.string)
+            return .init(token: token.string)
         }
 
         self.restore(mark)

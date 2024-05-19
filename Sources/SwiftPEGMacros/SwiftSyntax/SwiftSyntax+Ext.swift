@@ -206,3 +206,17 @@ extension DeclSyntaxProtocol {
         .decl(self.asDeclSyntax)
     }
 }
+
+extension FunctionDeclSyntax {
+    /// Attempts to fetch the access level modifier attached to this declaration.
+    func ext_accessLevel() -> DeclModifierSyntax? {
+        modifiers.first(where: { $0.ext_isAccessLevel() })
+    }
+}
+
+extension VariableDeclSyntax {
+    /// Attempts to fetch the access level modifier attached to this declaration.
+    func ext_accessLevel() -> DeclModifierSyntax? {
+        modifiers.first(where: { $0.ext_isAccessLevel() })
+    }
+}

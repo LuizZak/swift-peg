@@ -7,3 +7,11 @@ DerivedData/
 .swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
 .netrc
 *.profraw
+
+# perf-related files
+perf_test.sh
+perf.data
+perf.data.old
+out.svg
+out.perf
+out.folded

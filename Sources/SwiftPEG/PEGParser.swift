@@ -12,6 +12,7 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
 
     /// Gets the reach of the underlying tokenizer.
     /// Convenience for `self.tokenizer.reach`.
+    @inlinable
     public var reach: Mark {
         tokenizer.reach
     }
@@ -24,9 +25,15 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
         tokenizer = Tokenizer(rawTokenizer: raw)
     }
 
+    // TODO: Reduce duplication of methods bellow
+
     /// Produces a syntax error description from the latest token position that
     /// the marker attempted to parse.
+    @inlinable
     open func makeSyntaxError() -> ParserError {
+        let mark = self.mark()
+        defer { self.restore(mark) }
+
         typealias TokenKindType = Token.TokenKind
 
         let errorMark = tokenizer.mark(before: reach)
@@ -36,27 +43,42 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
         if keys.isEmpty {
             return SyntaxError.invalidSyntax(errorLead, errorMark)
         }
+        tokenizer.restore(errorMark)
+        guard let actual = try? tokenizer.peekToken() else {
+            return SyntaxError.unexpectedEof("\(errorLead): Unexpected end-of-stream", errorMark)
+        }
         let expectEntries: [TokenKindType] = keys.compactMap { key -> TokenKindType? in
-            guard key.ruleName == "expect" && key.arguments.count == 1 else {
+            guard let arguments = key.arguments else {
                 return nil
             }
-            if let entry = key.arguments[0] as? TokenKindType {
+            guard key.ruleName == "expect" && arguments.count == 1 else {
+                return nil
+            }
+            if let entry = arguments[0].base as? TokenKindType {
                 return entry
+            }
+            if let entry = arguments[0].base as? Token {
+                return entry.kind
             }
 
             return nil
         }
 
         return SyntaxError.expectedToken(
-            "\(errorLead): Expected: \(expectEntries.map({ "\"\($0)\"" }).joined(separator: ", "))",
+            "\(errorLead): Found \"\(actual.string)\" but expected: \(expectEntries.map({ "\"\($0)\"" }).joined(separator: ", "))",
             errorMark,
+            received: actual,
             expected: expectEntries
         )
     }
 
     /// Produces a syntax error description from the latest token position that
     /// the marker attempted to parse.
+    @inlinable
     open func makeSyntaxError() -> ParserError where Token.TokenKind: RawRepresentable, Token.TokenKind.RawValue == String {
+        let mark = self.mark()
+        defer { self.restore(mark) }
+
         typealias TokenKindType = Token.TokenKind
 
         let errorMark = tokenizer.mark(before: reach)
@@ -66,18 +88,25 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
         if keys.isEmpty {
             return SyntaxError.invalidSyntax(errorLead, errorMark)
         }
+        tokenizer.restore(errorMark)
+        guard let actual = try? tokenizer.peekToken() else {
+            return SyntaxError.unexpectedEof("\(errorLead): Unexpected end-of-stream", errorMark)
+        }
         let expectEntries: [TokenKindType] = keys.compactMap { key -> TokenKindType? in
-            guard key.ruleName == "expect" && key.arguments.count == 1 else {
+            guard let arguments = key.arguments else {
                 return nil
             }
-            if let entry = key.arguments[0].base as? TokenKindType {
+            guard key.ruleName == "expect" && arguments.count == 1 else {
+                return nil
+            }
+            if let entry = arguments[0].base as? TokenKindType {
                 return entry
             }
-            if let entry = key.arguments[0].base as? Token {
+            if let entry = arguments[0].base as? Token {
                 return entry.kind
             }
             if
-                let entry = key.arguments[0].base as? String,
+                let entry = arguments[0].base as? String,
                 let kind = TokenKindType(rawValue: entry)
             {
                 return kind
@@ -87,18 +116,21 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
         }
 
         return SyntaxError.expectedToken(
-            "\(errorLead): Expected: \(expectEntries.map({ "\"\($0)\"" }).joined(separator: ", "))",
+            "\(errorLead): Found \"\(actual.string)\" but expected: \(expectEntries.map({ "\"\($0)\"" }).joined(separator: ", "))",
             errorMark,
+            received: actual,
             expected: expectEntries
         )
     }
 
     /// Convenience for `self.tokenizer.mark()`.
+    @inlinable
     open func mark() -> Mark {
         tokenizer.mark()
     }
 
     /// Convenience for `self.tokenizer.restore(mark)`.
+    @inlinable
     open func restore(_ mark: Mark) {
         tokenizer.restore(mark)
     }
@@ -107,6 +139,7 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
     /// `mark`. If `self.reach > mark`, the reach is not updated.
     /// 
     /// Convenience for `tokenizer.updateReach(mark)`.
+    @inlinable
     open func updateReach(_ mark: Mark) {
         tokenizer.updateReach(mark)
     }
@@ -115,6 +148,7 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
     /// value.
     /// 
     /// Convenience for `tokenizer.resetReach(mark)`.
+    @inlinable
     public func resetReach(_ mark: Mark) -> Mark {
         tokenizer.resetReach(mark)
     }
@@ -123,9 +157,10 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
     /// rule name/rule arguments combination.
     /// 
     /// By default, `name` is the current callee's name via `#function`.
+    @inlinable
     open func makeKey(
         _ name: String = #function,
-        arguments: [AnyHashable] = []
+        arguments: [AnyHashable]? = nil
     ) -> ParserCache<RawTokenizer>.Key {
 
         return .init(
@@ -135,10 +170,18 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
         )
     }
 
+    /// Returns the kind of the next token on the tokenizer, if not at EOF.
+    @memoized("peekKind")
+    @inlinable
+    public func __peekKind() throws -> Token.TokenKind? {
+        return try tokenizer.peekToken()?.kind
+    }
+
     /// Fetches the next token in the stream and compares its kind against `kind`,
     /// returning the token if it matches. If the method fails, `nil` is returned
     /// and the tokenizer position is reset.
     @memoized("expect")
+    @inlinable
     public func __expect(kind: Token.TokenKind) throws -> Token? {
         let mark = self.mark()
         if let next = try tokenizer.next(), next.kind == kind {
@@ -152,6 +195,7 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
     /// the token if it is equal. If the method fails, `nil` is returned and the
     /// tokenizer position is reset.
     @memoized("expect")
+    @inlinable
     public func __expect(_ token: Token) throws -> Token? {
         let mark = self.mark()
         if try tokenizer.next() == token {
@@ -164,8 +208,22 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
     /// Fetches the next token in the stream and compares to `token`, and if it
     /// matches, consumes it and returns `true`, otherwise returns `false`.
     @memoized("maybe")
+    @inlinable
     public func __maybe(_ token: Token) throws -> Bool {
         if try tokenizer.peekToken() == token {
+            _ = try tokenizer.next()
+            return true
+        }
+        return false
+    }
+
+    /// Fetches the next token in the stream and compares its kind to `kind`,
+    /// and if it matches, consumes it and returns `true`, otherwise returns
+    /// `false`.
+    @memoized("maybe")
+    @inlinable
+    public func __maybe(kind: Token.TokenKind) throws -> Bool {
+        if try tokenizer.peekToken()?.kind == kind {
             _ = try tokenizer.next()
             return true
         }
@@ -176,6 +234,7 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
     /// of `production()` is non-nil.
     ///
     /// Restores the position of the tokenizer after the lookahead.
+    @inlinable
     public func positiveLookahead<T>(_ production: () throws -> T?) rethrows -> Bool {
         let mark = self.mark()
         defer { restore(mark) }
@@ -186,6 +245,7 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
     /// of `production()` is nil.
     ///
     /// Restores the position of the tokenizer after the lookahead.
+    @inlinable
     public func negativeLookahead<T>(_ production: () throws -> T?) rethrows -> Bool {
         let mark = self.mark()
         defer { restore(mark) }
@@ -197,8 +257,13 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
     public struct CutFlag {
         public var isOn: Bool = false
 
+        @inlinable
+        public init() {
+        }
+
         /// Toggles the cut flag on and returns `true`, allowing parser methods
         /// to chain this method in a conditional expression.
+        @inlinable
         public mutating func toggleOn() -> Bool {
             self.isOn = true
             return self.isOn
@@ -210,13 +275,18 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
         /// Generic syntax error.
         case invalidSyntax(String, _ mark: Mark)
 
-        /// Expected one of the following token kinds, found none.
-        case expectedToken(String, _ mark: Mark, expected: [Token.TokenKind])
+        /// Found end-of-stream unexpectedly.
+        case unexpectedEof(String, _ mark: Mark)
+
+        /// Found given token kind, expected one of the following token kinds
+        /// instead.
+        case expectedToken(String, _ mark: Mark, received: Token, expected: [Token.TokenKind])
 
         public var description: String {
             switch self {
             case .invalidSyntax(let desc, _),
-                .expectedToken(let desc, _, _):
+                .unexpectedEof(let desc, _),
+                .expectedToken(let desc, _, _, _):
                 return desc
             }
         }
@@ -225,8 +295,10 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
             switch self {
             case .invalidSyntax(let desc, let mark):
                 return "\(Self.self).invalidSyntax(\"\(desc)\", \(mark))"
-            case .expectedToken(let desc, let mark, let expected):
-                return "\(Self.self).expectedToken(\"\(desc)\", \(mark), expected: \(expected))"
+            case .unexpectedEof(let desc, let mark):
+                return "\(Self.self).unexpectedEof(\"\(desc)\", \(mark))"
+            case .expectedToken(let desc, let mark, let received, let expected):
+                return "\(Self.self).expectedToken(\"\(desc)\", \(mark), received: \(received), expected: \(expected))"
             }
         }
     }
