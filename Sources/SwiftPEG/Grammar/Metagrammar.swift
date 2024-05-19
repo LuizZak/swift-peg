@@ -194,6 +194,8 @@ extension Metagrammar {
     public final class PositiveLookahead: LookaheadOrCut {
         @NodeProperty
         var _atom: Atom
+
+        public override var shortDebugDescription: String { "&" }
     }
 
     /// A negative lookahead.
@@ -209,6 +211,8 @@ extension Metagrammar {
     public final class NegativeLookahead: LookaheadOrCut {
         @NodeProperty
         var _atom: Atom
+
+        public override var shortDebugDescription: String { "!" }
     }
 
     /// A cut ('~') node.
@@ -221,7 +225,9 @@ extension Metagrammar {
     /// ```
     /// '~' ;
     /// ```
-    public final class Cut: LookaheadOrCut { }
+    public final class Cut: LookaheadOrCut {
+        public override var shortDebugDescription: String { "~" }
+    }
 
     /// Base class for items; an atom or similar single-value construct that is
     /// part of an alt.
@@ -253,6 +259,8 @@ extension Metagrammar {
         /// The alts that are optionally wrapped.
         @NodeProperty
         var _alts: [Alt]
+
+        public override var shortDebugDescription: String { "?" }
     }
 
     /// An optional item attached to a single atom.
@@ -274,6 +282,8 @@ extension Metagrammar {
         /// The atom that is optionally wrapped.
         @NodeProperty
         var _atom: Atom
+
+        public override var shortDebugDescription: String { "?" }
     }
 
     /// An item that must match its associated atom zero or more times to succeed.
@@ -290,6 +300,8 @@ extension Metagrammar {
         /// The atom that is wrapped.
         @NodeProperty
         var _atom: Atom
+
+        public override var shortDebugDescription: String { "*" }
     }
 
     /// An item that must match its associated atom one or more times to succeed.
@@ -306,6 +318,8 @@ extension Metagrammar {
         /// The atom that is wrapped.
         @NodeProperty
         var _atom: Atom
+
+        public override var shortDebugDescription: String { "+" }
     }
 
     /// A gather match, or a sequence of atoms that are separated by another atom.
@@ -425,6 +439,14 @@ extension Metagrammar {
         /// Balanced tokens contained within this action.
         @NodeProperty
         var _balancedTokens: BalancedTokens?
+
+        public override var shortDebugDescription: String {
+            guard let balancedTokens = balancedTokens else {
+                return ""
+            }
+
+            return "{ \(balancedTokens.tokens.joined()) }"
+        }
     }
 
     /// A collection of balanced tokens for use in an action.
@@ -458,6 +480,8 @@ extension Metagrammar {
         /// A list of tokens contained within this balanced token set.
         @NodeRequired
         public var tokens: [String]
+
+        public override var shortDebugDescription: String { "[\(tokens.map { #""\#($0)""# }.joined(separator: ", "))]" }
     }
 
     /// Base meta-grammar string token.
@@ -490,6 +514,8 @@ extension Metagrammar {
             return String(value.dropFirst().dropLast())
         }
 
+        public override var shortDebugDescription: String { value }
+
         public init() {
             super.init(token: "")
         }
@@ -511,6 +537,8 @@ extension Metagrammar {
         public var identifier: String {
             token as! String
         }
+
+        public override var shortDebugDescription: String { identifier }
 
         public init() {
             super.init(token: "")
@@ -829,7 +857,7 @@ extension Metagrammar {
             public var description: String {
                 switch self {
                 case .singleQuote(let string):
-                    return #"\#(string)"#
+                    return #"'\#(string)'"#
                 case .doubleQuote(let string):
                     return #""\#(string)""#
                 case .tripleQuote(let string):

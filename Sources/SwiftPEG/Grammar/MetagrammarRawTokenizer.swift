@@ -21,7 +21,7 @@ public class MetagrammarRawTokenizer: RawTokenizerType {
 
     @inlinable
     public func next() throws -> Token? {
-        skipWhitespace()
+        skipToContent()
 
         guard _index < _source.endIndex else {
             return nil
@@ -40,9 +40,36 @@ public class MetagrammarRawTokenizer: RawTokenizerType {
     }
 
     @inlinable
+    internal func skipToContent() {
+        var lastIndex = _index
+        repeat {
+            lastIndex = _index
+            skipWhitespace()
+            skipComments()
+        } while _index < _source.endIndex && lastIndex != _index
+    }
+
+    @inlinable
     internal func skipWhitespace() {
         while _index < _source.endIndex && _source[_index].isWhitespace {
             advance(by: 1)
+        }
+    }
+
+    @inlinable
+    internal func skipLine() {
+        while _index < _source.endIndex && _source[_index] != "\n" {
+            advance(by: 1)
+        }
+        if _index < _source.endIndex {
+            advance(by: 1) // Skip linefeed character
+        }
+    }
+
+    @inlinable
+    internal func skipComments() {
+        while _index < _source.endIndex && _source[_index] == "#" {
+            skipLine()
         }
     }
 

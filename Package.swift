@@ -31,8 +31,8 @@ let package = Package(
             dependencies: [
                 "SwiftPEGMacros",
             ],
-            exclude: [
-                "Grammar/metagrammar.gram",
+            resources: [
+                .copy("Grammar/metagrammar.gram")
             ]
         ),
         .executableTarget(

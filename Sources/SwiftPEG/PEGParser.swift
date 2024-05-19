@@ -191,6 +191,21 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
         return nil
     }
 
+    /// Fetches the next token in the stream and compares its kind against a
+    /// sequence of toke kinds `kinds`, returning the token if it matches one of
+    /// them. If the method fails, `nil` is returned and the tokenizer position
+    /// is reset.
+    @memoized("expect")
+    @inlinable
+    public func __expect(oneOfKind kinds: [Token.TokenKind]) throws -> Token? {
+        let mark = self.mark()
+        if let next = try tokenizer.next(), kinds.contains(next.kind) {
+            return next
+        }
+        self.restore(mark)
+        return nil
+    }
+
     /// Fetches the next token in the stream and compares it to `token`, returning
     /// the token if it is equal. If the method fails, `nil` is returned and the
     /// tokenizer position is reset.
@@ -228,6 +243,13 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
             return true
         }
         return false
+    }
+
+    /// Fetches the next token in the stream and returns it unconditionally.
+    @memoized("nextToken")
+    @inlinable
+    public func __nextToken() throws -> Token? {
+        return try tokenizer.next()
     }
 
     /// Performs a positive lookahead for a token, returning `true` if the result

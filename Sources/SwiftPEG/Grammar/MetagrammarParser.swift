@@ -299,11 +299,11 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
 
         if
             let name = try self.identToken(),
-            try self.expect(kind: .equals) != nil,
-            cut.toggleOn(),
             try self.expect(kind: .leftSquare) != nil,
             try self.identToken() != nil,
             try self.expect(kind: .rightSquare) != nil,
+            try self.expect(kind: .equals) != nil,
+            cut.toggleOn(),
             let item = try self.item()
         {
             return .init(name: name, item: item, lookahead: nil)
@@ -598,13 +598,42 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
 
     /// ```
     /// balancedTokens:
-    ///     | '[' ~ balancedTokens* ']'
-    ///     | '{' ~ balancedTokens* '}'
-    ///     | '(' ~ balancedTokens* ')'
-    ///     | balancedToken+
+    ///     | balancedToken balancedTokens
+    ///     | balancedToken
     ///     ;
-    ///
+    /// ```
+    @memoized("balancedTokens")
+    @inlinable
+    public func _balancedTokens() throws -> Metagrammar.BalancedTokens? {
+        let mark = self.mark()
+
+        if
+            let balancedToken = try self.balancedToken(),
+            let balancedTokens = try self.balancedTokens()
+        {
+            return .init(tokens: balancedToken.tokens + balancedTokens.tokens)
+        }
+
+        self.restore(mark)
+        
+        if
+            let balancedToken = try self.balancedToken()
+        {
+            return balancedToken
+        }
+
+        self.restore(mark)
+        return nil
+    }
+
+    /// ```
     /// balancedToken:
+    ///     | '[' balancedTokens ']'
+    ///     | '{' balancedTokens '}'
+    ///     | '(' balancedTokens ')'
+    ///     | '[' ~ ']'
+    ///     | '{' ~ '}'
+    ///     | '(' ~ ')'
     ///     | IDENT
     ///     | DIGITS
     ///     | STRING
@@ -623,9 +652,113 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
     ///     | '\'
     ///     ;
     /// ```
-    @memoized("balancedTokens")
+    @memoized("balancedToken")
     @inlinable
-    public func _balancedTokens() throws -> Metagrammar.BalancedTokens? {
+    public func _balancedToken() throws -> Metagrammar.BalancedTokens? {
+        let mark = self.mark()
+        var cut = CutFlag()
+
+        if
+            try self.expect(kind: .leftBrace) != nil,
+            let balancedTokens = try self.balancedTokens(),
+            try self.expect(kind: .rightBrace) != nil
+        {
+            return .init(tokens: ["{"] + balancedTokens.tokens + ["}"])
+        }
+
+        self.restore(mark)
+
+        if
+            try self.expect(kind: .leftSquare) != nil,
+            let balancedTokens = try self.balancedTokens(),
+            try self.expect(kind: .rightSquare) != nil
+        {
+            return .init(tokens: ["["] + balancedTokens.tokens + ["]"])
+        }
+
+        self.restore(mark)
+
+        if
+            try self.expect(kind: .leftAngle) != nil,
+            let balancedTokens = try self.balancedTokens(),
+            try self.expect(kind: .rightAngle) != nil
+        {
+            return .init(tokens: ["<"] + balancedTokens.tokens + [">"])
+        }
+
+        self.restore(mark)
+
+        if
+            try self.expect(kind: .leftParen) != nil,
+            let balancedTokens = try self.balancedTokens(),
+            try self.expect(kind: .rightParen) != nil
+        {
+            return .init(tokens: ["("] + balancedTokens.tokens + [")"])
+        }
+
+        if
+            try self.expect(kind: .leftBrace) != nil,
+            let balancedTokens = try self.balancedTokens(),
+            try self.expect(kind: .rightBrace) != nil
+        {
+            return .init(tokens: ["{"] + balancedTokens.tokens + ["}"])
+        }
+
+        self.restore(mark)
+
+        if
+            try self.expect(kind: .leftSquare) != nil,
+            cut.toggleOn(),
+            try self.expect(kind: .rightSquare) != nil
+        {
+            return .init(tokens: ["[", "]"])
+        }
+
+        self.restore(mark)
+
+        if cut.isOn {
+            return nil
+        }
+
+        if
+            try self.expect(kind: .leftAngle) != nil,
+            cut.toggleOn(),
+            try self.expect(kind: .rightAngle) != nil
+        {
+            return .init(tokens: ["<", ">"])
+        }
+
+        self.restore(mark)
+
+        if cut.isOn {
+            return nil
+        }
+
+        if
+            try self.expect(kind: .leftParen) != nil,
+            cut.toggleOn(),
+            try self.expect(kind: .rightParen) != nil
+        {
+            return .init(tokens: ["(", ")"])
+        }
+
+        self.restore(mark)
+        
+        if cut.isOn {
+            return nil
+        }
+
+        if
+            let token = try self.expect(oneOfKind: [
+                .identifier, .digits, .string, .colon, .semicolon, .bar, .equals,
+                .tilde, .star, .plus, .questionMark, .comma, .period, .at,
+                .forwardSlash, .backslash,
+            ])
+        {
+            return .init(tokens: [token.string])
+        }
+
+        self.restore(mark)
         return nil
     }
 

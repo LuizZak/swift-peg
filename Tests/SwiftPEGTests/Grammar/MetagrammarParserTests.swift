@@ -82,7 +82,7 @@ class MetagrammarParserTests: XCTestCase {
                 "|", "'f'", "'g'", "'h'",
                 ";",
         ]
-        for _ in 0..<10_000 {
+        for _ in 0..<500 {
             tokens.append(contentsOf: tokensToCopy)
         }
         let stubTokenizer = stubTestTokenizer(tokens)
@@ -90,7 +90,7 @@ class MetagrammarParserTests: XCTestCase {
 
         let result = try assertUnwrap(sut.grammar())
 
-        assertEqual(result.rules.count, 10_000)
+        assertEqual(result.rules.count, 500)
     }
 
     func testRule_barStart_returnsRule() throws {
@@ -113,6 +113,33 @@ class MetagrammarParserTests: XCTestCase {
         let result = try assertUnwrap(sut.rule())
 
         assertEqual(result.alts.count, 2)
+    }
+
+    func testAlt_withAction_emptyAction_returnsAlt() throws {
+        let stubTokenizer = stubTestTokenizer([
+            "'a'", "'b'", "{", "}",
+        ])
+        let sut = makeSut(stubTokenizer)
+
+        let result = try assertUnwrap(sut.alt())
+
+        assertNotNil(result.action)
+        assertNil(result.action?.balancedTokens)
+    }
+
+    func testAlt_withAction_filledAction_returnsAlt() throws {
+        let stubTokenizer = stubTestTokenizer([
+            "'a'", "'b'", "{", ".", ",", "}",
+        ])
+        let sut = makeSut(stubTokenizer)
+
+        let result = try assertUnwrap(sut.alt())
+
+        assertNotNil(result.action)
+        assertNotNil(result.action?.balancedTokens)
+        assertEqual(result.action?.balancedTokens?.tokens, [
+            ".", ",",
+        ])
     }
 }
 

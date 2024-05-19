@@ -14,6 +14,12 @@ open class Node {
 
     open var children: [Node] { [] }
 
+    /// A short, one-line debug description for this node. By default is an empty
+    /// string.
+    /// Subclasses of `Node` can override this property to return custom metadata
+    /// relating to the node.
+    open var shortDebugDescription: String { "" }
+
     public init() {
 
     }
