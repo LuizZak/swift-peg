@@ -10,7 +10,10 @@ extension Metagrammar {
     /// 
     /// Represents the construct:
     /// ```
-    /// grammar: metas? rules ;
+    /// grammar[Grammar]:
+    ///     | metas rules { Metagrammar.Grammar(metas: metas, rules: rules) }
+    ///     | rules { Metagrammar.Grammar(metas: [], rules: rules) }
+    ///     ;
     /// 
     /// metas: meta+ ;
     /// rules: rule+ ;
@@ -107,7 +110,7 @@ extension Metagrammar {
     /// Represents the construct:
     /// ```
     /// ruleName:
-    ///     | name=IDENT ('[' type=IDENT ']')?
+    ///     | name=IDENT ('[' type=swiftType ']')?
     ///     ;
     /// ```
     @GeneratedNodeType<Node>
@@ -118,7 +121,7 @@ extension Metagrammar {
 
         /// A type name directly associated with this rule.
         @NodeProperty
-        var _type: IdentifierToken?
+        var _type: SwiftType?
     }
 
     /// An alternative, or a sequence of items that must succeed sequentially
@@ -146,7 +149,7 @@ extension Metagrammar {
     /// Represents the construct:
     /// ```
     /// namedItem:
-    ///     | name=IDENT '[' type=IDENT ']' '=' ~ item
+    ///     | name=IDENT '[' type=swiftType ']' '=' ~ item
     ///     | name=IDENT '=' ~ item
     ///     | item
     ///     | lookahead
@@ -161,6 +164,10 @@ extension Metagrammar {
         /// Item associated with this named item.
         @NodeProperty
         var _item: Item?
+
+        /// A type hint for this named production.
+        @NodeProperty
+        var _type: SwiftType?
 
         /// Lookahead associated with this named item.
         @NodeProperty
@@ -422,9 +429,39 @@ extension Metagrammar {
         var _identifier: IdentifierToken
 
         /// Convenience for `self.identifier.identifier`.
-        var name: String {
+        public var name: String {
             _identifier.identifier
         }
+    }
+
+    /// Describes the type of a grammar production.
+    /// 
+    /// Represents the construct:
+    /// ```
+    /// swiftType[SwiftType]:
+    ///     | '[' ~ type=swiftType ']' { SwiftType(name: "[" + type.name + "]") }
+    ///     | '(' ~ types=swiftTypeList ')' { SwiftType(name: "(" + types.map(\.name).joined(separator: ", ") + ")") }
+    ///     | name=IDENT '<' ~ types=swiftTypeList '>' { SwiftType(name: name.name + "<" + types.map(\.name).joined(separator: ", ") + ">") }
+    ///     | name=IDENT '.' inner=swiftType { SwiftType(name: name + "." + inner.name) }
+    ///     | name=IDENT '?' { SwiftType(name: name + "?") }
+    ///     | name=IDENT
+    ///     ;
+    /// ```
+    /// 
+    /// And in list form:
+    /// ```
+    /// swiftTypeList[[SwiftType]]:
+    ///     | type=swiftType ',' types=swiftTypeList { [type] + types }
+    ///     | type=swiftType { [type] }
+    ///     ;
+    /// ```
+    @GeneratedNodeType<Node>
+    public final class SwiftType: Node {
+        /// The name of the type.
+        @NodeRequired
+        public var name: String
+
+        public override var shortDebugDescription: String { self.name }
     }
 
     /// An action of an alt. Represents a segment of code that is inserted on

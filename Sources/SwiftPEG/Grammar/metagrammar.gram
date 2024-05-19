@@ -1,114 +1,139 @@
-# Metagrammar for SwiftPEG - based on https://github.com/we-like-parsers/pegen_experiments (see LICENSE.pegen.md)
+# Metagrammar for SwiftPEG - based on https://github.com/we-like-parsers/pegen_experiments/blob/master/pegen/metagrammar.gram (see LICENSE.pegen.md)
 # This metagrammar requires the MetagrammarRawTokenizer for tokenizing.
 
-start[Grammar]: grammar ENDMARKER { grammar } ;
+start[Metagrammar.Grammar]: grammar { grammar } ;
 
-grammar[Grammar]:
-    | metas rules { Grammar(rules, metas) }
-    | rules { Grammar(rules, []) }
+grammar[Metagrammar.Grammar]:
+    | metas rules { .init(metas: metas, rules: rules) }
+    | rules { .init(metas: [], rules: rules) }
     ;
 
-metas[MetaList]:
+metas[[Metagrammar.Meta]]:
     | meta metas { [meta] + metas }
     | meta { [meta] }
     ;
 
-meta[MetaTuple]:
-    | "@" a=NAME NEWLINE { (a.string, None) }
-    | "@" a=NAME b=NAME NEWLINE { (a.string, b.string) }
-    | "@" a=NAME b=STRING NEWLINE { (a.string, literal_eval(b.string)) }
+meta[Metagrammar.Meta]:
+    | "@" name=IDENT value=metaValue ';' { .init(name: name, value: value) }
+    | "@" name=IDENT ';' { .init(name: name, value: nil) }
     ;
 
-rules[RuleList]:
+metaValue[Metagrammar.MetaValue]:
+    | ident=IDENT { Metagrammar.MetaIdentifierValue(identifier: ident) }
+    | string=STRING { Metagrammar.MetaStringValue(string: string) }
+    ;
+
+rules[[Metagrammar.Rule]]:
     | rule rules { [rule] + rules }
     | rule { [rule] }
     ;
 
-rule[Rule]:
-    | rulename memoflag? ":" alts NEWLINE INDENT more_alts DEDENT {
-          Rule(rulename[0], rulename[1], Rhs(alts.alts + more_alts.alts), memo=opt) }
-    | rulename memoflag? ":" NEWLINE INDENT more_alts DEDENT {
-          Rule(rulename[0], rulename[1], more_alts, memo=opt) }
-    | rulename memoflag? ":" alts NEWLINE { Rule(rulename[0], rulename[1], alts, memo=opt) }
+rule[Metagrammar.Rule]:
+    | ruleName ":" '|' alts ';' { .init(name: ruleName, alts: alts) }
+    | ruleName ":" alts ';' { .init(name: ruleName, alts: alts) }
     ;
 
-rulename[RuleName]:
-    | a=NAME '[' type=NAME '*' ']' { (a.string, type.string+"*") }
-    | a=NAME '[' type=NAME ']' { (a.string, type.string) }
-    | a=NAME { (a.string, None) }
+ruleName[Metagrammar.RuleName]:
+    | a=IDENT '[' type=swiftType ']' { .init(name: name, type: type) }
+    | a=IDENT { .init(name: name, type: nil) }
     ;
 
-# In the future this may return something more complicated
-memoflag[str]:
-    | '(' 'memo' ')' { "memo" }
+alts[[Metagrammar.Alt]]:
+    | alt "|" alts { [alt] + alts }
+    | alt { [alt] }
     ;
 
-alts[Rhs]:
-    | alt "|" alts { Rhs([alt] + alts.alts) }
-    | alt { Rhs([alt]) }
+alt[Metagrammar.Alt]:
+    | namedItems action { .init(namedItems: namedItems, action: action) }
+    | namedItems { .init(namedItems: namedItems, action: nil) }
     ;
 
-more_alts[Rhs]:
-    | "|" alts NEWLINE more_alts { Rhs(alts.alts + more_alts.alts) }
-    | "|" alts NEWLINE { Rhs(alts.alts) }
+namedItems[[Metagrammar.NamedItem]]:
+    | namedItem namedItems { [namedItem] + namedItems }
+    | namedItem { [namedItem] }
     ;
 
-alt[Alt]:
-    | items '$' action { Alt(items + [NamedItem(None, NameLeaf('ENDMARKER'))], action=action) }
-    | items '$' { Alt(items + [NamedItem(None, NameLeaf('ENDMARKER'))], action=None) }
-    | items action { Alt(items, action=action) }
-    | items { Alt(items, action=None) }
+namedItem[Metagrammar.NamedItem]:
+    | name=IDENT '[' type=swiftType ']' '=' ~ item { .init(name: name, item: item, type: swiftType, lookahead: nil) }
+    | name=IDENT '=' ~ item { .init(name: name, item: item, type: nil, lookahead: nil) }
+    | item { .init(name: nil, item: item, type: nil, lookahead: nil) }
+    | lookahead { .init(name: nil, item: nil, type: nil, lookahead: lookahead) }
     ;
 
-items[NamedItemList]:
-    | named_item items { [named_item] + items }
-    | named_item { [named_item] }
+lookahead[Metagrammar.LookaheadOrCut]:
+    | '&' ~ atom { Metagrammar.PositiveLookahead(atom: atom) }
+    | '!' ~ atom { Metagrammar.NegativeLookahead(atom: atom) }
+    | '~' { Metagrammar.Cut() }
     ;
 
-named_item[NamedItem]:
-    | a=NAME '[' type=NAME '*' ']' '=' ~ item { NamedItem(a.string, item, f"{type.string}*") }
-    | a=NAME '[' type=NAME ']' '=' ~ item { NamedItem(a.string, item, type.string) }
-    | a=NAME '=' ~ item { NamedItem(a.string, item) }
-    | item { NamedItem(None, item) }
-    | it=lookahead { NamedItem(None, it) }
+item[Metagrammar.Item]:
+    | '[' ~ alts ']' { Metagrammar.OptionalItems(alts: alts) }
+    |  atom '?' { Metagrammar.OptionalItem(atom: atom) }
+    |  atom '*' { Metagrammar.ZeroOrMoreItem(atom: atom) }
+    |  atom '+' { Metagrammar.OneOrMoreItem(atom: atom) }
+    |  sep=atom '.' node=atom '+' { Metagrammar.GatherItem(sep: sep, item: node) }
+    |  atom { Metagrammar.AtomItem(atom: atom) }
     ;
 
-lookahead[LookaheadOrCut]:
-    | '&' ~ atom { PositiveLookahead(atom) }
-    | '!' ~ atom { NegativeLookahead(atom) }
-    | '~' {Cut()}
+atom[Metagrammar.Atom]:
+    | '(' ~ alts ')' { Metagrammar.GroupAtom(alts: alts) }
+    | a=IDENT { Metagrammar.IdentAtom(identifier: ident) }
+    | a=STRING { Metagrammar.StringAtom(string: string) }
     ;
 
-item[Item]:
-    | '[' ~ alts ']' { Opt(alts) }
-    |  atom '?' { Opt(atom) }
-    |  atom '*' { Repeat0(atom) }
-    |  atom '+' { Repeat1(atom) }
-    |  sep=atom '.' node=atom '+' { Gather(sep, node) }
-    |  atom { atom }
+swiftType[Metagrammar.SwiftType]:
+    | '[' ~ type=swiftType ']' { .init(name: "[" + type.name + "]") }
+    | '(' ~ types=swiftTypeList ')' { .init(name: "(" + types.map(\.name).joined(separator: ", ") + ")") }
+    | name=IDENT '<' ~ types=swiftTypeList '>' '?' { .init(name: name.identifier + "<" + types.map(\.name).joined(separator: ", ") + ">?") }
+    | name=IDENT '<' ~ types=swiftTypeList '>' { .init(name: name.identifier + "<" + types.map(\.name).joined(separator: ", ") + ">") }
+    | name=IDENT '.' ~ inner=swiftType { .init(name: name.identifier + "." + inner.name) }
+    | name=IDENT '?' { .init(name: name.identifier + "?") }
+    | name=IDENT { .init(name: name.identifier) }
     ;
 
-atom[Plain]:
-    | '(' ~ alts ')' { Group(alts) }
-    | a=NAME { NameLeaf(a.string) }
-    | a=STRING { StringLeaf(a.string) }
+swiftTypeList[[Metagrammar.SwiftType]]:
+    | type=swiftType ',' types=swiftTypeList { [type] + types }
+    | type=swiftType { [type] }
     ;
 
 # Mini-grammar for the actions
 
-action[str]: "{" ~ target_atoms "}" { target_atoms } ;
-
-target_atoms[str]:
-    | target_atom target_atoms { target_atom + " " + target_atoms }
-    | target_atom { target_atom }
+action[Metagrammar.Action]:
+    | "{" ~ balancedTokens "}" { .init(balancedTokens: balancedTokens) }
     ;
 
-target_atom[str]:
-    | "{" ~ target_atoms "}" { "{" + target_atoms + "}" }
-    | a=NAME { a.string }
-    | a=NUMBER { a.string }
-    | a=STRING { a.string }
-    | "?" { "?" }
-    | ":" { ":" }
-    | !"}" a=OP { a.string }
+balancedTokens[Metagrammar.BalancedTokens]:
+    | balancedToken balancedTokens  { .init(tokens: balancedToken.tokens + balancedTokens.tokens) }
+    | balancedToken  { balancedToken }
+    ;
+
+balancedToken[Metagrammar.BalancedTokens]:
+    | '{' balancedTokens '}' { .init(tokens: ["{"] + balancedTokens.tokens + ["}"]) }
+    | '[' balancedTokens ']' { .init(tokens: ["["] + balancedTokens.tokens + ["]"]) }
+    | '<' balancedTokens '>' { .init(tokens: ["<"] + balancedTokens.tokens + [">"]) }
+    | '(' balancedTokens ')' { .init(tokens: ["("] + balancedTokens.tokens + [")"]) }
+    | '[' ~ ']' { .init(tokens: ["(", ")"]) }
+    | '{' ~ '}' { .init(tokens: ["{", "}"]) }
+    | '<' ~ '>' { .init(tokens: ["<", ">"]) }
+    | '(' ~ ')' { .init(tokens: ["(", ")"]) }
+    | token=balancedTokenAtom { .init(tokens: [token.string]) }
+    ;
+
+balancedTokenAtom[Token]:
+    | IDENT
+    | DIGITS
+    | STRING
+    | ':'
+    | ';'
+    | '|'
+    | '='
+    | '~'
+    | '*'
+    | '+'
+    | '?'
+    | ','
+    | '.'
+    | '@'
+    | '/'
+    | '\'
     ;

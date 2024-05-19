@@ -115,7 +115,7 @@ class MetagrammarParserTests: XCTestCase {
         assertEqual(result.alts.count, 2)
     }
 
-    func testAlt_withAction_emptyAction_returnsAlt() throws {
+    func testAlt_withAction_emptyAction_returnsNil() throws {
         let stubTokenizer = stubTestTokenizer([
             "'a'", "'b'", "{", "}",
         ])
@@ -123,8 +123,7 @@ class MetagrammarParserTests: XCTestCase {
 
         let result = try assertUnwrap(sut.alt())
 
-        assertNotNil(result.action)
-        assertNil(result.action?.balancedTokens)
+        assertNil(result.action)
     }
 
     func testAlt_withAction_filledAction_returnsAlt() throws {

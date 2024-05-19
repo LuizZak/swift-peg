@@ -3,54 +3,89 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
     : PEGParser<RawTokenizer> where RawTokenizer.Token == Metagrammar.MetagrammarToken
 {
     /// ```
-    /// start: grammar ;
+    /// start[Grammar]: grammar { grammar };
     /// ```
     @memoized("start")
     @inlinable
     public func _start() throws -> Metagrammar.Grammar? {
-        try grammar()
-    }
-
-    /// ```
-    /// grammar: metas? rules ;
-    /// 
-    /// metas: meta+ ;
-    /// rules: rule+ ;
-    /// ```
-    @memoized("grammar")
-    @inlinable
-    public func _grammar() throws -> Metagrammar.Grammar? {
         let mark = self.mark()
-        let metas = try self.metas() ?? []
-        if let rules = try self.rules() {
-            return .init(metas: metas, rules: rules)
+        
+        if
+            let grammar = try grammar()
+        {
+            return grammar
         }
+
         self.restore(mark)
         return nil
     }
 
     /// ```
-    /// metas: meta+ ;
+    /// grammar[Grammar]:
+    ///     | metas rules { Metagrammar.Grammar(metas: metas, rules: rules) }
+    ///     | rules { Metagrammar.Grammar(metas: [], rules: rules) }
+    ///     ;
+    /// ```
+    @memoized("grammar")
+    @inlinable
+    public func _grammar() throws -> Metagrammar.Grammar? {
+        let mark = self.mark()
+
+        if
+            let metas = try self.metas(),
+            let rules = try self.rules()
+        {
+            return .init(metas: metas, rules: rules)
+        }
+
+        self.restore(mark)
+
+        if
+            let rules = try self.rules()
+        {
+            return .init(metas: [], rules: rules)
+        }
+
+        self.restore(mark)
+
+        return nil
+    }
+
+    /// ```
+    /// metas[[Metagrammar.Meta]]:
+    ///     | meta metas { [meta] + metas }
+    ///     | meta { [meta] }
+    ///     ;
     /// ```
     @memoized("metas")
     @inlinable
     public func _metas() throws -> [Metagrammar.Meta]? {
         let mark = self.mark()
-        guard let meta = try self.meta() else {
-            self.restore(mark)
-            return nil
+
+        if
+            let meta = try self.meta(),
+            let metas = try self.metas()
+        {
+            return [meta] + metas
         }
 
-        var result: [Metagrammar.Meta] = [meta]
-        while let meta = try self.meta() {
-            result.append(meta)
+        self.restore(mark)
+
+        if
+            let meta = try self.meta()
+        {
+            return [meta]
         }
-        return result
+
+        self.restore(mark)
+
+        return nil
     }
 
     /// ```
     /// meta:
-    ///     | '@' name=IDENT metaValue? ';'
+    ///     | "@" name=IDENT value=metaValue ';' { .init(name: name, value: value) }
+    ///     | "@" name=IDENT ';' { .init(name: name, value: nil) }
     ///     ;
     /// ```
     @memoized("meta")
@@ -61,10 +96,10 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
         if
             try self.expect(kind: .at) != nil,
             let name = try self.identToken(),
-            let metaValue = try self.metaValue(),
+            let value = try self.metaValue(),
             try self.expect(kind: .semicolon) != nil
         {
-            return .init(name: name, value: metaValue)
+            return .init(name: name, value: value)
         }
 
         self.restore(mark)
@@ -84,8 +119,8 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
 
     /// ```
     /// metaValue:
-    ///     | metaValueIdent
-    ///     | metaValueString
+    ///     | ident=IDENT { Metagrammar.MetaIdentifierValue(identifier: ident) }
+    ///     | string=STRING { Metagrammar.MetaStringValue(string: string) }
     ///     ;
     /// ```
     @memoized("metaValue")
@@ -94,53 +129,17 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
         let mark = self.mark()
 
         if
-            let metaValueIdent = try self.metaValueIdent()
-        {
-            return metaValueIdent
-        }
-
-        self.restore(mark)
-
-        if
-            let metaValueString = try self.metaValueString()
-        {
-            return metaValueString
-        }
-
-        self.restore(mark)
-        return nil
-    }
-
-    /// ```
-    /// metaValueIdent: IDENT ;
-    /// ```
-    @memoized("metaValueIdent")
-    @inlinable
-    public func _metaValueIdent() throws -> Metagrammar.MetaIdentifierValue? {
-        let mark = self.mark()
-
-        if
             let ident = try self.identToken()
         {
-            return .init(identifier: ident)
+            return Metagrammar.MetaIdentifierValue(identifier: ident)
         }
 
         self.restore(mark)
-        return nil
-    }
-
-    /// ```
-    /// metaValueString: STRING ;
-    /// ```
-    @memoized("metaValueString")
-    @inlinable
-    public func _metaValueString() throws -> Metagrammar.MetaStringValue? {
-        let mark = self.mark()
 
         if
             let string = try self.stringToken()
         {
-            return .init(string: string)
+            return Metagrammar.MetaStringValue(string: string)
         }
 
         self.restore(mark)
@@ -148,27 +147,40 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
     }
 
     /// ```
-    /// rules: rule+ ;
+    /// rules[[Metagrammar.Rule]]:
+    ///     | rule rules { [rule] + rules }
+    ///     | rule { [rule] }
+    ///     ;
     /// ```
     @memoized("rules")
     @inlinable
     public func _rules() throws -> [Metagrammar.Rule]? {
         let mark = self.mark()
-        guard let rule = try self.rule() else {
-            self.restore(mark)
-            return nil
+
+        if
+            let rule = try self.rule(),
+            let rules = try self.rules()
+        {
+            return [rule] + rules
         }
 
-        var result: [Metagrammar.Rule] = [rule]
-        while let rule = try self.rule() {
-            result.append(rule)
+        self.restore(mark)
+
+        if
+            let rule = try self.rule()
+        {
+            return [rule]
         }
-        return result
+
+        self.restore(mark)
+
+        return nil
     }
 
     /// ```
     /// rule:
-    ///     | ruleName ':' '|'? alts ';'
+    ///     | ruleName ':' '|' alts ';'
+    ///     | ruleName ':' alts ';'
     ///     ;
     /// ```
     @memoized("rule")
@@ -179,9 +191,20 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
         if
             let ruleName = try self.ruleName(),
             try self.expect(kind: .colon) != nil,
-            (try self.maybe(kind: .bar) || true),
+            try self.expect(kind: .bar) != nil,
             let alts = try self.alts(),
             try self.expect(kind: .semicolon) != nil
+        {
+            return .init(name: ruleName, alts: alts)
+        }
+
+        self.restore(mark)
+
+        if
+            let ruleName = try self.ruleName(),
+            let _ = try self.expect(kind: .colon),
+            let alts = try self.alts(),
+            let _ = try self.expect(kind: .semicolon)
         {
             return .init(name: ruleName, alts: alts)
         }
@@ -192,7 +215,8 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
 
     /// ```
     /// ruleName:
-    ///     | name=IDENT ('[' type=IDENT ']')?
+    ///     | name=IDENT '[' type=swiftType ']' { .init(name: name, type: type) }
+    ///     | name=IDENT { .init(name: name, type: nil) }
     ///     ;
     /// ```
     @memoized("ruleName")
@@ -203,7 +227,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
         if
             let name = try self.identToken(),
             try self.expect(kind: .leftSquare) != nil,
-            let type = try self.identToken(),
+            let type = try self.swiftType(),
             try self.expect(kind: .rightSquare) != nil
         {
             return .init(name: name, type: type)
@@ -221,31 +245,40 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
         return nil
     }
 
-    /// ```
-    /// alts: '|'.alt+;
-    /// ```
+    /// alts[[Metagrammar.Alt]]:
+    ///     | alt "|" alts { Rhs([alt] + alts.alts) }
+    ///     | alt { Rhs([alt]) }
+    ///     ;
     @memoized("alts")
     @inlinable
     public func _alts() throws -> [Metagrammar.Alt]? {
-        var mark = self.mark()
+        let mark = self.mark()
 
-        var result: [Metagrammar.Alt] = []
-        repeat {
-            guard let alt = try self.alt() else {
-                break
-            }
-
-            result.append(alt)
-            mark = self.mark()
-        } while try self.maybe(kind: .bar)
+        if
+            let alt = try self.alt(),
+            let _ = try self.expect(kind: .bar),
+            let alts = try self.alts()
+        {
+            return [alt] + alts
+        }
 
         self.restore(mark)
-        return result.isEmpty ? nil : result
+
+        if
+            let alt = try self.alt()
+        {
+            return [alt]
+        }
+
+        self.restore(mark)
+
+        return nil
     }
 
     /// ```
     /// alt:
-    ///     | namedItems action?
+    ///     | namedItems action { .init(namedItems: namedItems, action: action) }
+    ///     | namedItems { .init(namedItems: namedItems, action: nil) }
     ///     ;
     /// ```
     @memoized("alt")
@@ -254,10 +287,18 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
         let mark = self.mark()
 
         if
+            let namedItems = try self.namedItems(),
+            let action = try self.action()
+        {
+            return .init(namedItems: namedItems, action: action)
+        }
+
+        self.restore(mark)
+
+        if
             let namedItems = try self.namedItems()
         {
-            let action = try? self.action()
-            return .init(namedItems: namedItems, action: action)
+            return .init(namedItems: namedItems, action: nil)
         }
 
         self.restore(mark)
@@ -265,27 +306,39 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
     }
 
     /// ```
-    /// namedItems: namedItem+ ;
+    /// namedItems[[Metagrammar.NamedItem]]:
+    ///     | namedItem namedItems { [namedItem] + namedItems }
+    ///     | namedItem { [namedItem] }
+    ///     ;
     /// ```
     @memoized("namedItems")
     @inlinable
     public func _namedItems() throws -> [Metagrammar.NamedItem]? {
         let mark = self.mark()
-        guard let namedItem = try self.namedItem() else {
-            self.restore(mark)
-            return nil
+
+        if
+            let namedItem = try self.namedItem(),
+            let namedItems = try self.namedItems()
+        {
+            return [namedItem] + namedItems
         }
 
-        var result: [Metagrammar.NamedItem] = [namedItem]
-        while let namedItem = try self.namedItem() {
-            result.append(namedItem)
+        self.restore(mark)
+
+        if
+            let namedItem = try self.namedItem()
+        {
+            return [namedItem]
         }
-        return result
+
+        self.restore(mark)
+
+        return nil
     }
 
     /// ```
     /// namedItem:
-    ///     | name=IDENT '[' type=IDENT ']' '=' ~ item
+    ///     | name=IDENT '[' type=swiftType ']' '=' ~ item
     ///     | name=IDENT '=' ~ item
     ///     | item
     ///     | lookahead
@@ -300,13 +353,13 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
         if
             let name = try self.identToken(),
             try self.expect(kind: .leftSquare) != nil,
-            try self.identToken() != nil,
+            let swiftType = try self.swiftType(),
             try self.expect(kind: .rightSquare) != nil,
             try self.expect(kind: .equals) != nil,
             cut.toggleOn(),
             let item = try self.item()
         {
-            return .init(name: name, item: item, lookahead: nil)
+            return .init(name: name, item: item, type: swiftType, lookahead: nil)
         }
 
         self.restore(mark)
@@ -321,7 +374,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
             cut.toggleOn(),
             let item = try self.item()
         {
-            return .init(name: name, item: item, lookahead: nil)
+            return .init(name: name, item: item, type: nil, lookahead: nil)
         }
 
         self.restore(mark)
@@ -333,7 +386,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
         if
             let item = try self.item()
         {
-            return .init(name: nil, item: item, lookahead: nil)
+            return .init(name: nil, item: item, type: nil, lookahead: nil)
         }
 
         self.restore(mark)
@@ -341,7 +394,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
         if
             let lookahead = try self.lookahead()
         {
-            return .init(name: nil, item: nil, lookahead: lookahead)
+            return .init(name: nil, item: nil, type: nil, lookahead: lookahead)
         }
 
         self.restore(mark)
@@ -361,81 +414,34 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
         let mark = self.mark()
 
         if
-            let positiveLookahead = try self.positiveLookahead()
-        {
-            return positiveLookahead
-        }
-
-        self.restore(mark)
-
-        if
-            let negativeLookahead = try self.negativeLookahead()
-        {
-            return negativeLookahead
-        }
-
-        self.restore(mark)
-
-        if
-            let cut = try self.cut()
-        {
-            return cut
-        }
-
-        self.restore(mark)
-        return nil
-    }
-
-    /// ```
-    /// '&' atom ;
-    /// ```
-    @memoized("positiveLookahead")
-    @inlinable
-    public func _positiveLookahead() throws -> Metagrammar.PositiveLookahead? {
-        let mark = self.mark()
-
-        if
             try self.expect(kind: .ampersand) != nil,
             let atom = try self.atom()
         {
-            return .init(atom: atom)
+            return Metagrammar.PositiveLookahead(atom: atom)
         }
 
         self.restore(mark)
-        return nil
-    }
-
-    /// ```
-    /// '!' atom ;
-    /// ```
-    @memoized("negativeLookahead")
-    @inlinable
-    public func _negativeLookahead() throws -> Metagrammar.NegativeLookahead? {
-        let mark = self.mark()
 
         if
             try self.expect(kind: .exclamationMark) != nil,
             let atom = try self.atom()
         {
-            return .init(atom: atom)
+            return Metagrammar.NegativeLookahead(atom: atom)
         }
 
         self.restore(mark)
-        return nil
-    }
 
-    /// ```
-    /// '~' ;
-    /// ```
-    @memoized("cut")
-    @inlinable
-    public func _cut() throws -> Metagrammar.Cut? {
-        let mark = self.mark()
+        if
+            try self.expect(kind: .exclamationMark) != nil,
+            let atom = try self.atom()
+        {
+            return Metagrammar.NegativeLookahead(atom: atom)
+        }
 
         if
             try self.expect(kind: .tilde) != nil
         {
-            return .init()
+            return Metagrammar.Cut()
         }
 
         self.restore(mark)
@@ -523,9 +529,9 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
 
     /// ```
     /// atom:
-    ///     | '(' ~ alts ')'
-    ///     | IDENT
-    ///     | STRING
+    ///     | '(' ~ alts ')' { Metagrammar.GroupAtom(alts: alts) }
+    ///     | IDENT { Metagrammar.IdentAtom(identifier: ident) }
+    ///     | STRING { Metagrammar.StringAtom(string: string) }
     ///     ;
     /// ```
     @memoized("atom")
@@ -568,7 +574,140 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
     }
 
     /// ```
-    /// action: '{' balancedTokens? '}' ;
+    /// swiftType[SwiftType]:
+    ///     | '[' ~ type=swiftType ']' { .init(name: "[" + type.name + "]") }
+    ///     | '(' ~ types=swiftTypeList ')' { .init(name: "(" + types.map(\.name).joined(separator: ", ") + ")") }
+    ///     | name=IDENT '<' ~ types=swiftTypeList '>' { .init(name: name.identifier + "<" + types.map(\.name).joined(separator: ", ") + ">") }
+    ///     | name=IDENT '.' inner=swiftType { .init(name: name.identifier + "." + inner.name) }
+    ///     | name=IDENT '?' { .init(name: name.identifier + "?") }
+    ///     | name=IDENT { .init(name: name.identifier) }
+    ///     ;
+    /// ```
+    @memoized("swiftType")
+    @inlinable
+    public func _swiftType() throws -> Metagrammar.SwiftType? {
+        let mark = self.mark()
+        var cut = CutFlag()
+
+        if
+            try self.expect(kind: .leftSquare) != nil,
+            cut.toggleOn(),
+            let type = try self.swiftType(),
+            try self.expect(kind: .rightSquare) != nil
+        {
+            return .init(name: "[" + type.name + "]")
+        }
+
+        self.restore(mark)
+
+        if cut.isOn {
+            return nil
+        }
+
+        if
+            try self.expect(kind: .leftParen) != nil,
+            cut.toggleOn(),
+            let types = try self.swiftTypes(),
+            try self.expect(kind: .rightParen) != nil
+        {
+            return .init(name: "(" + types.map(\.name).joined(separator: ", ") + ")")
+        }
+
+        self.restore(mark)
+
+        if cut.isOn {
+            return nil
+        }
+
+        if
+            let name = try self.identToken(),
+            try self.expect(kind: .leftAngle) != nil,
+            cut.toggleOn(),
+            let types = try self.swiftTypes(),
+            try self.expect(kind: .rightAngle) != nil,
+            try self.expect(kind: .questionMark) != nil
+        {
+            return .init(name: name.identifier + "<" + types.map(\.name).joined(separator: ", ") + ">?")
+        }
+
+        self.restore(mark)
+
+        if cut.isOn {
+            return nil
+        }
+
+        if
+            let name = try self.identToken(),
+            try self.expect(kind: .leftAngle) != nil,
+            cut.toggleOn(),
+            let types = try self.swiftTypes(),
+            try self.expect(kind: .rightAngle) != nil
+        {
+            return .init(name: name.identifier + "<" + types.map(\.name).joined(separator: ", ") + ">")
+        }
+
+        self.restore(mark)
+
+        if cut.isOn {
+            return nil
+        }
+        
+        if
+            let name = try self.identToken(),
+            try self.expect(kind: .period) != nil,
+            cut.toggleOn(),
+            let inner = try self.swiftType()
+        {
+            return .init(name: name.identifier + "." + inner.name)
+        }
+
+        self.restore(mark)
+
+        if cut.isOn {
+            return nil
+        }
+        
+        if
+            let name = try self.identToken(),
+            try self.expect(kind: .questionMark) != nil
+        {
+            return .init(name: name.identifier + "?")
+        }
+
+        self.restore(mark)
+
+        if cut.isOn {
+            return nil
+        }
+        
+        if
+            let name = try self.identToken()
+        {
+            return .init(name: name.identifier)
+        }
+
+        self.restore(mark)
+
+        if cut.isOn {
+            return nil
+        }
+        return nil
+    }
+
+    /// ```
+    /// swiftTypeList[[SwiftType]]:
+    ///     | type=swiftType ',' types=swiftTypeList { [type] + types }
+    ///     | type=swiftType { [type] }
+    ///     ;
+    /// ```
+    @memoized("swiftTypes")
+    @inlinable
+    public func _swiftTypes() throws -> [Metagrammar.SwiftType]? {
+        return []
+    }
+
+    /// ```
+    /// action: '{' ~ balancedTokens '}' ;
     /// ```
     @memoized("action")
     @inlinable
@@ -584,22 +723,13 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
         }
 
         self.restore(mark)
-
-        if
-            try self.expect(kind: .leftBrace) != nil,
-            try self.expect(kind: .rightBrace) != nil
-        {
-            return .init(balancedTokens: nil)
-        }
-
-        self.restore(mark)
         return nil
     }
 
     /// ```
     /// balancedTokens:
-    ///     | balancedToken balancedTokens
-    ///     | balancedToken
+    ///     | balancedToken balancedTokens { .init(tokens: balancedToken.tokens + balancedTokens.tokens) }
+    ///     | balancedToken { balancedToken }
     ///     ;
     /// ```
     @memoized("balancedTokens")
@@ -628,28 +758,15 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
 
     /// ```
     /// balancedToken:
-    ///     | '[' balancedTokens ']'
-    ///     | '{' balancedTokens '}'
-    ///     | '(' balancedTokens ')'
-    ///     | '[' ~ ']'
-    ///     | '{' ~ '}'
-    ///     | '(' ~ ')'
-    ///     | IDENT
-    ///     | DIGITS
-    ///     | STRING
-    ///     | ':'
-    ///     | ';'
-    ///     | '|'
-    ///     | '='
-    ///     | '~'
-    ///     | '*'
-    ///     | '+'
-    ///     | '?'
-    ///     | ','
-    ///     | '.'
-    ///     | '@'
-    ///     | '/'
-    ///     | '\'
+    ///     | '{' balancedTokens '}' { .init(tokens: ["{"] + balancedTokens.tokens + ["}"]) }
+    ///     | '[' balancedTokens ']' { .init(tokens: ["["] + balancedTokens.tokens + ["]"]) }
+    ///     | '<' balancedTokens '>' { .init(tokens: ["<"] + balancedTokens.tokens + [">"]) }
+    ///     | '(' balancedTokens ')' { .init(tokens: ["("] + balancedTokens.tokens + [")"]) }
+    ///     | '[' ~ ']' { .init(tokens: ["(", ")"]) }
+    ///     | '{' ~ '}' { .init(tokens: ["{", "}"]) }
+    ///     | '<' ~ '>' { .init(tokens: ["<", ">"]) }
+    ///     | '(' ~ ')' { .init(tokens: ["(", ")"]) }
+    ///     | token=balancedTokenAtom { .init(tokens: [token.string]) }
     ///     ;
     /// ```
     @memoized("balancedToken")
@@ -698,10 +815,10 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
 
         if
             try self.expect(kind: .leftBrace) != nil,
-            let balancedTokens = try self.balancedTokens(),
+            cut.toggleOn(),
             try self.expect(kind: .rightBrace) != nil
         {
-            return .init(tokens: ["{"] + balancedTokens.tokens + ["}"])
+            return .init(tokens: ["{", "}"])
         }
 
         self.restore(mark)
@@ -749,13 +866,48 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
         }
 
         if
+            let token = try self.balancedTokenAtom()
+        {
+            return .init(tokens: [token.string])
+        }
+
+        self.restore(mark)
+        return nil
+    }
+
+    /// ```
+    /// balancedTokenAtom[Token]:
+    ///     | IDENT
+    ///     | DIGITS
+    ///     | STRING
+    ///     | ':'
+    ///     | ';'
+    ///     | '|'
+    ///     | '='
+    ///     | '~'
+    ///     | '*'
+    ///     | '+'
+    ///     | '?'
+    ///     | ','
+    ///     | '.'
+    ///     | '@'
+    ///     | '/'
+    ///     | '\'
+    ///     ;
+    /// ```
+    @memoized("balancedTokenAtom")
+    @inlinable
+    public func _balancedTokenAtom() throws -> Token? {
+        let mark = self.mark()
+
+        if
             let token = try self.expect(oneOfKind: [
                 .identifier, .digits, .string, .colon, .semicolon, .bar, .equals,
                 .tilde, .star, .plus, .questionMark, .comma, .period, .at,
                 .forwardSlash, .backslash,
             ])
         {
-            return .init(tokens: [token.string])
+            return token
         }
 
         self.restore(mark)
