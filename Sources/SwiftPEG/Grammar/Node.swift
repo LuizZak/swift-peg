@@ -28,7 +28,8 @@ open class Node {
     /// method.
     /// 
     /// Subclasses of `Node` can override this method to customize the visit call
-    /// that is made to the visitor.
+    /// that is made to the visitor and support specialized `NodeVisitorType`
+    /// types.
     open func accept<Visitor>(_ visitor: Visitor) where Visitor: NodeVisitorType {
         visitor.visit(self)
     }

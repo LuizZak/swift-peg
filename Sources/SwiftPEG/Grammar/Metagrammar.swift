@@ -6,6 +6,14 @@ public enum Metagrammar {}
 #if true
 
 extension Metagrammar {
+    /// Base class for metagrammar nodes.
+    public class MetagrammarNode: Node {
+        /// Accepts a given metagrammar-node visitor into this node.
+        public func accept<Visitor>(_ visitor: Visitor) where Visitor: MetagrammarNodeVisitorType {
+            super.accept(visitor)
+        }
+    }
+
     /// A grammar file.
     /// 
     /// Represents the construct:
@@ -19,7 +27,7 @@ extension Metagrammar {
     /// rules: rule+ ;
     /// ```
     @GeneratedNodeType<Node>
-    public final class Grammar: Node {
+    public final class Grammar: MetagrammarNode {
         /// List of meta-properties described in the grammar.
         @NodeProperty
         private var _metas: [Meta] = []
@@ -27,6 +35,11 @@ extension Metagrammar {
         /// List of rules in the grammar.
         @NodeProperty
         private var _rules: [Rule] = []
+
+        /// Accepts a given metagrammar-node visitor into this node.
+        public override func accept<Visitor>(_ visitor: Visitor) where Visitor: MetagrammarNodeVisitorType {
+            visitor.visit(self)
+        }
     }
 
     /// A grammar meta-property.
@@ -38,7 +51,7 @@ extension Metagrammar {
     ///     ;
     /// ```
     @GeneratedNodeType<Node>
-    public final class Meta: Node {
+    public final class Meta: MetagrammarNode {
         /// The name of this meta-property.
         @NodeProperty
         var _name: IdentifierToken
@@ -46,6 +59,11 @@ extension Metagrammar {
         /// The value associated with this meta-property.
         @NodeProperty
         var _value: MetaValue?
+
+        /// Accepts a given metagrammar-node visitor into this node.
+        public override func accept<Visitor>(_ visitor: Visitor) where Visitor: MetagrammarNodeVisitorType {
+            visitor.visit(self)
+        }
     }
 
     /// Base class for meta property value nodes.
@@ -57,7 +75,7 @@ extension Metagrammar {
     ///     | metaValueString
     ///     ;
     /// ```
-    public class MetaValue: Node { }
+    public class MetaValue: MetagrammarNode { }
 
     /// A value of a meta-property that is an identifier.
     /// 
@@ -70,6 +88,11 @@ extension Metagrammar {
         /// The associated identifier value.
         @NodeProperty
         var _identifier: IdentifierToken
+
+        /// Accepts a given metagrammar-node visitor into this node.
+        public override func accept<Visitor>(_ visitor: Visitor) where Visitor: MetagrammarNodeVisitorType {
+            visitor.visit(self)
+        }
     }
 
     /// A value of a meta-property that is a string.
@@ -83,6 +106,11 @@ extension Metagrammar {
         /// The associated string value.
         @NodeProperty
         var _string: StringToken
+
+        /// Accepts a given metagrammar-node visitor into this node.
+        public override func accept<Visitor>(_ visitor: Visitor) where Visitor: MetagrammarNodeVisitorType {
+            visitor.visit(self)
+        }
     }
 
     /// A grammar rule.
@@ -95,7 +123,7 @@ extension Metagrammar {
     ///     ;
     /// ```
     @GeneratedNodeType<Node>
-    public final class Rule: Node {
+    public final class Rule: MetagrammarNode {
         /// The name of this rule.
         @NodeProperty
         var _name: RuleName
@@ -103,6 +131,11 @@ extension Metagrammar {
         /// List of one or more alts associated with this rule.
         @NodeProperty
         var _alts: [Alt]
+
+        /// Accepts a given metagrammar-node visitor into this node.
+        public override func accept<Visitor>(_ visitor: Visitor) where Visitor: MetagrammarNodeVisitorType {
+            visitor.visit(self)
+        }
     }
 
     /// A grammar rule's name.
@@ -114,7 +147,7 @@ extension Metagrammar {
     ///     ;
     /// ```
     @GeneratedNodeType<Node>
-    public final class RuleName: Node {
+    public final class RuleName: MetagrammarNode {
         /// The rule's name.
         @NodeProperty
         var _name: IdentifierToken
@@ -122,6 +155,11 @@ extension Metagrammar {
         /// A type name directly associated with this rule.
         @NodeProperty
         var _type: SwiftType?
+
+        /// Accepts a given metagrammar-node visitor into this node.
+        public override func accept<Visitor>(_ visitor: Visitor) where Visitor: MetagrammarNodeVisitorType {
+            visitor.visit(self)
+        }
     }
 
     /// An alternative, or a sequence of items that must succeed sequentially
@@ -134,7 +172,7 @@ extension Metagrammar {
     ///     ;
     /// ```
     @GeneratedNodeType<Node>
-    public final class Alt: Node {
+    public final class Alt: MetagrammarNode {
         /// The items belonging to this alt.
         @NodeProperty
         var _namedItems: [NamedItem]
@@ -142,6 +180,11 @@ extension Metagrammar {
         /// An optional action associated with this alt.
         @NodeProperty
         var _action: Action?
+
+        /// Accepts a given metagrammar-node visitor into this node.
+        public override func accept<Visitor>(_ visitor: Visitor) where Visitor: MetagrammarNodeVisitorType {
+            visitor.visit(self)
+        }
     }
 
     /// An item, or segment of an alt, for which a name can be attributed.
@@ -156,7 +199,7 @@ extension Metagrammar {
     ///     ;
     /// ```
     @GeneratedNodeType<Node>
-    public final class NamedItem: Node {
+    public final class NamedItem: MetagrammarNode {
         /// An optional name associated with this item.
         @NodeProperty
         var _name: IdentifierToken?
@@ -172,6 +215,11 @@ extension Metagrammar {
         /// Lookahead associated with this named item.
         @NodeProperty
         var _lookahead: LookaheadOrCut?
+
+        /// Accepts a given metagrammar-node visitor into this node.
+        public override func accept<Visitor>(_ visitor: Visitor) where Visitor: MetagrammarNodeVisitorType {
+            visitor.visit(self)
+        }
     }
 
     /// Base class for a node that represents either a positive/negative lookahead,
@@ -185,7 +233,7 @@ extension Metagrammar {
     ///     | '~'
     ///     ;
     /// ```
-    public class LookaheadOrCut: Node { }
+    public class LookaheadOrCut: MetagrammarNode { }
 
     /// A positive lookahead.
     /// 
@@ -203,6 +251,11 @@ extension Metagrammar {
         var _atom: Atom
 
         public override var shortDebugDescription: String { "&" }
+
+        /// Accepts a given metagrammar-node visitor into this node.
+        public override func accept<Visitor>(_ visitor: Visitor) where Visitor: MetagrammarNodeVisitorType {
+            visitor.visit(self)
+        }
     }
 
     /// A negative lookahead.
@@ -220,6 +273,11 @@ extension Metagrammar {
         var _atom: Atom
 
         public override var shortDebugDescription: String { "!" }
+
+        /// Accepts a given metagrammar-node visitor into this node.
+        public override func accept<Visitor>(_ visitor: Visitor) where Visitor: MetagrammarNodeVisitorType {
+            visitor.visit(self)
+        }
     }
 
     /// A cut ('~') node.
@@ -234,6 +292,11 @@ extension Metagrammar {
     /// ```
     public final class Cut: LookaheadOrCut {
         public override var shortDebugDescription: String { "~" }
+
+        /// Accepts a given metagrammar-node visitor into this node.
+        public override func accept<Visitor>(_ visitor: Visitor) where Visitor: MetagrammarNodeVisitorType {
+            visitor.visit(self)
+        }
     }
 
     /// Base class for items; an atom or similar single-value construct that is
@@ -250,7 +313,7 @@ extension Metagrammar {
     ///     | atom
     ///     ;
     /// ```
-    public class Item: Node { }
+    public class Item: MetagrammarNode { }
 
     /// An optional set of items.
     /// 
@@ -268,6 +331,11 @@ extension Metagrammar {
         var _alts: [Alt]
 
         public override var shortDebugDescription: String { "?" }
+
+        /// Accepts a given metagrammar-node visitor into this node.
+        public override func accept<Visitor>(_ visitor: Visitor) where Visitor: MetagrammarNodeVisitorType {
+            visitor.visit(self)
+        }
     }
 
     /// An optional item attached to a single atom.
@@ -291,6 +359,11 @@ extension Metagrammar {
         var _atom: Atom
 
         public override var shortDebugDescription: String { "?" }
+
+        /// Accepts a given metagrammar-node visitor into this node.
+        public override func accept<Visitor>(_ visitor: Visitor) where Visitor: MetagrammarNodeVisitorType {
+            visitor.visit(self)
+        }
     }
 
     /// An item that must match its associated atom zero or more times to succeed.
@@ -309,6 +382,11 @@ extension Metagrammar {
         var _atom: Atom
 
         public override var shortDebugDescription: String { "*" }
+
+        /// Accepts a given metagrammar-node visitor into this node.
+        public override func accept<Visitor>(_ visitor: Visitor) where Visitor: MetagrammarNodeVisitorType {
+            visitor.visit(self)
+        }
     }
 
     /// An item that must match its associated atom one or more times to succeed.
@@ -327,6 +405,11 @@ extension Metagrammar {
         var _atom: Atom
 
         public override var shortDebugDescription: String { "+" }
+
+        /// Accepts a given metagrammar-node visitor into this node.
+        public override func accept<Visitor>(_ visitor: Visitor) where Visitor: MetagrammarNodeVisitorType {
+            visitor.visit(self)
+        }
     }
 
     /// A gather match, or a sequence of atoms that are separated by another atom.
@@ -353,6 +436,11 @@ extension Metagrammar {
         /// The item that is separated.
         @NodeProperty
         var _item: Atom
+
+        /// Accepts a given metagrammar-node visitor into this node.
+        public override func accept<Visitor>(_ visitor: Visitor) where Visitor: MetagrammarNodeVisitorType {
+            visitor.visit(self)
+        }
     }
 
     /// An item consisting of an atom.
@@ -365,6 +453,11 @@ extension Metagrammar {
     public final class AtomItem: Item {
         @NodeProperty
         var _atom: Atom
+
+        /// Accepts a given metagrammar-node visitor into this node.
+        public override func accept<Visitor>(_ visitor: Visitor) where Visitor: MetagrammarNodeVisitorType {
+            visitor.visit(self)
+        }
     }
 
     /// Base class for atoms of an alternative. Atoms are the smallest unit of
@@ -378,7 +471,7 @@ extension Metagrammar {
     ///     | STRING
     ///     ;
     /// ```
-    public class Atom: Node { }
+    public class Atom: MetagrammarNode { }
 
     /// A group atom with a sequence of alts in parenthesis.
     /// 
@@ -391,6 +484,11 @@ extension Metagrammar {
         /// The alts that are grouped.
         @NodeProperty
         var _alts: [Alt]
+
+        /// Accepts a given metagrammar-node visitor into this node.
+        public override func accept<Visitor>(_ visitor: Visitor) where Visitor: MetagrammarNodeVisitorType {
+            visitor.visit(self)
+        }
     }
 
     /// A string literal atom.
@@ -414,6 +512,11 @@ extension Metagrammar {
         public var valueTrimmingQuotes: String {
             _string.valueTrimmingQuotes
         }
+
+        /// Accepts a given metagrammar-node visitor into this node.
+        public override func accept<Visitor>(_ visitor: Visitor) where Visitor: MetagrammarNodeVisitorType {
+            visitor.visit(self)
+        }
     }
 
     /// An identifier atom.
@@ -431,6 +534,11 @@ extension Metagrammar {
         /// Convenience for `self.identifier.identifier`.
         public var name: String {
             _identifier.identifier
+        }
+
+        /// Accepts a given metagrammar-node visitor into this node.
+        public override func accept<Visitor>(_ visitor: Visitor) where Visitor: MetagrammarNodeVisitorType {
+            visitor.visit(self)
         }
     }
 
@@ -456,12 +564,17 @@ extension Metagrammar {
     ///     ;
     /// ```
     @GeneratedNodeType<Node>
-    public final class SwiftType: Node {
+    public final class SwiftType: MetagrammarNode {
         /// The name of the type.
         @NodeRequired
         public var name: String
 
         public override var shortDebugDescription: String { self.name }
+
+        /// Accepts a given metagrammar-node visitor into this node.
+        public override func accept<Visitor>(_ visitor: Visitor) where Visitor: MetagrammarNodeVisitorType {
+            visitor.visit(self)
+        }
     }
 
     /// An action of an alt. Represents a segment of code that is inserted on
@@ -472,7 +585,7 @@ extension Metagrammar {
     /// action: '{' ~ balancedTokens? '}' ;
     /// ```
     @GeneratedNodeType<Node>
-    public final class Action: Node {
+    public final class Action: MetagrammarNode {
         /// Balanced tokens contained within this action.
         @NodeProperty
         var _balancedTokens: BalancedTokens?
@@ -483,6 +596,11 @@ extension Metagrammar {
             }
 
             return "{ \(balancedTokens.tokens.joined()) }"
+        }
+
+        /// Accepts a given metagrammar-node visitor into this node.
+        public override func accept<Visitor>(_ visitor: Visitor) where Visitor: MetagrammarNodeVisitorType {
+            visitor.visit(self)
         }
     }
 
@@ -513,12 +631,17 @@ extension Metagrammar {
     ///     ;
     /// ```
     @GeneratedNodeType<Node>
-    public final class BalancedTokens: Node {
+    public final class BalancedTokens: MetagrammarNode {
         /// A list of tokens contained within this balanced token set.
         @NodeRequired
         public var tokens: [String]
 
         public override var shortDebugDescription: String { "[\(tokens.map { #""\#($0)""# }.joined(separator: ", "))]" }
+
+        /// Accepts a given metagrammar-node visitor into this node.
+        public override func accept<Visitor>(_ visitor: Visitor) where Visitor: MetagrammarNodeVisitorType {
+            visitor.visit(self)
+        }
     }
 
     /// Base meta-grammar string token.
@@ -1019,6 +1142,78 @@ extension Metagrammar {
 
             self = value
         }
+    }
+
+    /// Protocol for visiting Metagrammar node types.
+    public protocol MetagrammarNodeVisitorType: NodeVisitorType {
+        /// Visits a Grammar node.
+        func visit(_ node: Grammar)
+
+        /// Visits a Meta-property node.
+        func visit(_ node: Meta)
+
+        /// Visits a Meta-property identifier value node.
+        func visit(_ node: MetaIdentifierValue)
+
+        /// Visits a Meta-property string value node.
+        func visit(_ node: MetaStringValue)
+
+        /// Visits a Rule node.
+        func visit(_ node: Rule)
+
+        /// Visits a Rule Name node.
+        func visit(_ node: RuleName)
+
+        /// Visits an Alt node.
+        func visit(_ node: Alt)
+
+        /// Visits a Named Item node.
+        func visit(_ node: NamedItem)
+
+        /// Visits a Positive Lookahead node.
+        func visit(_ node: PositiveLookahead)
+
+        /// Visits a Negative Lookahead node.
+        func visit(_ node: NegativeLookahead)
+
+        /// Visits a Cut node.
+        func visit(_ node: Cut)
+
+        /// Visits an Optional Alts node.
+        func visit(_ node: OptionalItems)
+
+        /// Visits an Optional Atom node.
+        func visit(_ node: OptionalItem)
+
+        /// Visits a Zero Or More Item node.
+        func visit(_ node: ZeroOrMoreItem)
+
+        /// Visits a One Or More Item node.
+        func visit(_ node: OneOrMoreItem)
+
+        /// Visits a Gather Item node.
+        func visit(_ node: GatherItem)
+
+        /// Visits an Atom Item node.
+        func visit(_ node: AtomItem)
+
+        /// Visits a Group Atom node.
+        func visit(_ node: GroupAtom)
+
+        /// Visits a String Atom node.
+        func visit(_ node: StringAtom)
+
+        /// Visits an Identifier Atom node.
+        func visit(_ node: IdentAtom)
+
+        /// Visits a Swift Type node.
+        func visit(_ node: SwiftType)
+
+        /// Visits an Action node.
+        func visit(_ node: Action)
+
+        /// Visits a Balanced Tokens node.
+        func visit(_ node: BalancedTokens)
     }
 }
 
