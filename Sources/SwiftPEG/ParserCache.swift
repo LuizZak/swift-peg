@@ -1,6 +1,6 @@
-/// A class for caching results of parser method invocations by tokenizer's mark
+/// An object for caching results of parser method invocations by tokenizer's mark
 /// and optionally a parameter set for the arguments.
-public final class ParserCache<RawTokenizer: RawTokenizerType> {
+public struct ParserCache<RawTokenizer: RawTokenizerType> {
     public typealias Mark = Tokenizer<RawTokenizer>.Mark
 
     @usableFromInline
@@ -14,6 +14,18 @@ public final class ParserCache<RawTokenizer: RawTokenizerType> {
     /// remain unchanged.
     public var enabled: Bool = true
 
+    @inlinable
+    public subscript<Value>(key: Key) -> CacheEntry<Value>? {
+        get { fetch(key) }
+        set {
+            if let newValue {
+                store(key, value: newValue)
+            } else {
+                removeValue(forKey: key)
+            }
+        }
+    }
+
     /// Returns `true` if cache contains a given key.
     @inlinable
     public func has(_ key: Key) -> Bool {
@@ -22,7 +34,7 @@ public final class ParserCache<RawTokenizer: RawTokenizerType> {
 
     /// Stores the given key/value pair in this cache.
     @inlinable
-    public func store<T>(_ key: Key, value: CacheEntry<T>?) {
+    public mutating func store<T>(_ key: consuming Key, value: CacheEntry<T>) {
         _cache[key] = value
     }
 
@@ -39,7 +51,7 @@ public final class ParserCache<RawTokenizer: RawTokenizerType> {
         guard enabled, let cached = _cache[key] else {
             return nil
         }
-        
+
         return cached as? CacheEntry<Value>
     }
 
@@ -54,14 +66,14 @@ public final class ParserCache<RawTokenizer: RawTokenizerType> {
     /// Removes an entry to this cache with a given key.
     @inlinable
     @discardableResult
-    public func removeValue(forKey key: Key) -> Any?? {
+    public mutating func removeValue(forKey key: Key) -> Any?? {
         _cache.removeValue(forKey: key)
     }
 
     /// Removes all cached entries within the cache that have a mark greater than
     /// `mark`.
     @inlinable
-    public func removePast(mark: Mark) {
+    public mutating func removePast(mark: Mark) {
         for key in _cache.keys {
             if key.mark > mark {
                 removeValue(forKey: key)
@@ -74,7 +86,7 @@ public final class ParserCache<RawTokenizer: RawTokenizerType> {
     /// If the metadata key associated with `key` is an Int, increment it by
     /// one. If it it doesn't exist yet, creates and stores 1.
     @inlinable
-    public func incrementMetadata(_ key: String) {
+    public mutating func incrementMetadata(_ key: String) {
         if let value: Int = fetchMetadata(key) {
             storeMetadata(key, value + 1)
         } else if _metadata[key] == nil {
@@ -84,7 +96,7 @@ public final class ParserCache<RawTokenizer: RawTokenizerType> {
 
     /// Stores metadata on this cache.
     @inlinable
-    public func storeMetadata(_ key: String, _ value: Any) {
+    public mutating func storeMetadata(_ key: consuming String, _ value: consuming Any) {
         _metadata[key] = value
     }
 

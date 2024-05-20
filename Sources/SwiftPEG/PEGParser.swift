@@ -5,7 +5,7 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
     public typealias CacheEntry<T> = ParserCache<RawTokenizer>.CacheEntry<T>
 
     /// The cache associated with this parser.
-    public let cache: ParserCache<RawTokenizer> = ParserCache()
+    public var cache: ParserCache<RawTokenizer> = ParserCache()
     
     /// The tokenizer associated with this parser.
     public let tokenizer: Tokenizer<RawTokenizer>
@@ -171,18 +171,20 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
     }
 
     /// Returns the kind of the next token on the tokenizer, if not at EOF.
-    @memoized("peekKind")
+    /// 
+    /// - note: Call is not memoized.
     @inlinable
-    public func __peekKind() throws -> Token.TokenKind? {
+    public func peekKind() throws -> Token.TokenKind? {
         return try tokenizer.peekToken()?.kind
     }
 
     /// Fetches the next token in the stream and compares its kind against `kind`,
     /// returning the token if it matches. If the method fails, `nil` is returned
     /// and the tokenizer position is reset.
-    @memoized("expect")
+    /// 
+    /// - note: Call is not memoized.
     @inlinable
-    public func __expect(kind: Token.TokenKind) throws -> Token? {
+    public func expect(kind: Token.TokenKind) throws -> Token? {
         let mark = self.mark()
         if let next = try tokenizer.next(), next.kind == kind {
             return next
@@ -195,9 +197,10 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
     /// sequence of toke kinds `kinds`, returning the token if it matches one of
     /// them. If the method fails, `nil` is returned and the tokenizer position
     /// is reset.
-    @memoized("expect")
+    /// 
+    /// - note: Call is not memoized.
     @inlinable
-    public func __expect(oneOfKind kinds: [Token.TokenKind]) throws -> Token? {
+    public func expect(oneOfKind kinds: [Token.TokenKind]) throws -> Token? {
         let mark = self.mark()
         if let next = try tokenizer.next(), kinds.contains(next.kind) {
             return next
@@ -209,9 +212,10 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
     /// Fetches the next token in the stream and compares it to `token`, returning
     /// the token if it is equal. If the method fails, `nil` is returned and the
     /// tokenizer position is reset.
-    @memoized("expect")
+    /// 
+    /// - note: Call is not memoized.
     @inlinable
-    public func __expect(_ token: Token) throws -> Token? {
+    public func expect(_ token: Token) throws -> Token? {
         let mark = self.mark()
         if try tokenizer.next() == token {
             return token
@@ -222,9 +226,10 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
 
     /// Fetches the next token in the stream and compares to `token`, and if it
     /// matches, consumes it and returns `true`, otherwise returns `false`.
-    @memoized("maybe")
+    /// 
+    /// - note: Call is not memoized.
     @inlinable
-    public func __maybe(_ token: Token) throws -> Bool {
+    public func maybe(_ token: Token) throws -> Bool {
         if try tokenizer.peekToken() == token {
             _ = try tokenizer.next()
             return true
@@ -235,9 +240,10 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
     /// Fetches the next token in the stream and compares its kind to `kind`,
     /// and if it matches, consumes it and returns `true`, otherwise returns
     /// `false`.
-    @memoized("maybe")
+    /// 
+    /// - note: Call is not memoized.
     @inlinable
-    public func __maybe(kind: Token.TokenKind) throws -> Bool {
+    public func maybe(kind: Token.TokenKind) throws -> Bool {
         if try tokenizer.peekToken()?.kind == kind {
             _ = try tokenizer.next()
             return true
@@ -246,9 +252,10 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
     }
 
     /// Fetches the next token in the stream and returns it unconditionally.
-    @memoized("nextToken")
+    /// 
+    /// - note: Call is not memoized.
     @inlinable
-    public func __nextToken() throws -> Token? {
+    public func nextToken() throws -> Token? {
         return try tokenizer.next()
     }
 

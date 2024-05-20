@@ -103,17 +103,14 @@ public struct ParserMemoizeMacro: PeerMacro {
                 /// Memoized version of `\(nonMemoizedMethod)`.\(raw: attributes)
                 \(accessLevel)func \(memoizedMethod)\(genericParams)\(parameters) \(effects)-> \(typeToCache)\(genericWhere) {
                     let key = makeKey("\(memoizedMethod)", arguments: \(cacheParams))
-                    if let cached: CacheEntry<\(typeToCache)> = \(cache).fetch(key) {
+                    if let cached: CacheEntry<\(typeToCache)> = \(cache)[key] {
                         self.restore(cached.mark)
                         return cached.result
                     }
                     let result = \(invocation)
                     let mark = self.mark()
                     let priorReach = self.resetReach(mark)
-                    \(cache).store(
-                        key,
-                        value: CacheEntry(mark: self.mark(), reach: self.reach, result: result)
-                    )
+                    \(cache)[key] = CacheEntry(mark: mark, reach: self.reach, result: result)
                     let reach = self.resetReach(priorReach)
                     self.updateReach(reach)
 

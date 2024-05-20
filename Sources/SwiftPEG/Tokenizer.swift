@@ -32,6 +32,7 @@ open class Tokenizer<Raw: RawTokenizerType> {
     /// EOF.
     ///
     /// When at EOF, invocations of `next()` return `nil`.
+    @inlinable
     public var isEOF: Bool {
         return _raw.isEOF || tokenIndex == _rawEOFIndex
     }
@@ -100,7 +101,9 @@ open class Tokenizer<Raw: RawTokenizerType> {
     /// Returns a marker that points just before a given marker.
     @inlinable
     open func mark(before marker: Mark) -> Mark {
+#if DEBUG
         assert(marker.ownerUUID == self._uuid, "mark.ownerUUID != \(self._uuid)")
+#endif
 
         return Mark(owner: self, index: marker.index - 1)
     }
@@ -119,10 +122,9 @@ open class Tokenizer<Raw: RawTokenizerType> {
     /// instance's own `mark()` method.
     @inlinable
     open func restore(_ mark: Mark) {
-        precondition(
-            mark.ownerUUID == self._uuid,
-            "Attempt to restore() to a Mark created by a different tokenizer?"
-        )
+#if DEBUG
+        assert(mark.ownerUUID == self._uuid, "mark.ownerUUID != \(self._uuid)")
+#endif
 
         if mark.index != self.tokenIndex {
             self.tokenIndex = mark.index
@@ -133,7 +135,10 @@ open class Tokenizer<Raw: RawTokenizerType> {
     /// `mark`. If `self.reach > mark`, the reach is not updated.
     @inlinable
     public func updateReach(_ mark: Mark) {
+#if DEBUG
         assert(mark.ownerUUID == self._uuid, "mark.ownerUUID != \(self._uuid)")
+#endif
+
         _reach = max(_reach, mark.index)
     }
 
@@ -141,7 +146,9 @@ open class Tokenizer<Raw: RawTokenizerType> {
     /// value.
     @inlinable
     public func resetReach(_ mark: Mark) -> Mark {
+#if DEBUG
         assert(mark.ownerUUID == self._uuid, "mark.ownerUUID != \(self._uuid)")
+#endif
 
         let oldReach = reach
         _reach = max(_reach, mark.index)
@@ -151,14 +158,20 @@ open class Tokenizer<Raw: RawTokenizerType> {
     /// A marker created by `Tokenizer.mark()`. Can be used to later restore the
     /// token stream to a previous location.
     public struct Mark: Hashable, Comparable {
+#if DEBUG
         @usableFromInline
         var ownerUUID: String
+#endif
+
         @usableFromInline
         var index: Int
 
         @usableFromInline
         internal init(owner: Tokenizer<Raw>?, index: Int) {
+            #if DEBUG
             self.ownerUUID = owner?._uuid ?? ""
+            #endif
+
             self.index = index
         }
 
@@ -174,17 +187,11 @@ open class Tokenizer<Raw: RawTokenizerType> {
         /// tokenizer instances.
         @inlinable
         public static func < (lhs: Mark, rhs: Mark) -> Bool {
+#if DEBUG
             lhs.ownerUUID == rhs.ownerUUID && lhs.index < rhs.index
-        }
-
-        /// Returns `true` if `lhs` is a marker that points to the same location
-        /// as `rhs` on its tokenizer.
-        ///
-        /// - note: Always returns `false` for markers created by different
-        /// tokenizer instances.
-        @inlinable
-        public static func == (lhs: Self, rhs: Self) -> Bool {
-            lhs.ownerUUID == rhs.ownerUUID && lhs.index == rhs.index
+#else
+            lhs.index < rhs.index
+#endif
         }
     }
 }
