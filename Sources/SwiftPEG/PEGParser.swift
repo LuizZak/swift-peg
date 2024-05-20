@@ -200,7 +200,7 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
     /// 
     /// - note: Call is not memoized.
     @inlinable
-    public func expect(oneOfKind kinds: [Token.TokenKind]) throws -> Token? {
+    public func expect(oneOfKind kinds: Set<Token.TokenKind>) throws -> Token? {
         let mark = self.mark()
         if let next = try tokenizer.next(), kinds.contains(next.kind) {
             return next
