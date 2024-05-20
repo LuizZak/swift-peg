@@ -53,8 +53,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
 
     /// ```
     /// metas[[Metagrammar.Meta]]:
-    ///     | meta metas { [meta] + metas }
-    ///     | meta { [meta] }
+    ///     | metas=meta+ { metas }
     ///     ;
     /// ```
     @memoized("metas")
@@ -63,18 +62,9 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
         let mark = self.mark()
 
         if
-            let meta = try self.meta(),
-            let metas = try self.metas()
+            let metas = try self.repeatOneOrMore(self.meta)
         {
-            return [meta] + metas
-        }
-
-        self.restore(mark)
-
-        if
-            let meta = try self.meta()
-        {
-            return [meta]
+            return metas
         }
 
         self.restore(mark)
@@ -148,7 +138,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
 
     /// ```
     /// rules[[Metagrammar.Rule]]:
-    ///     | rule rules { [rule] + rules }
+    ///     | rules=rule+ { rules }
     ///     | rule { [rule] }
     ///     ;
     /// ```
@@ -158,18 +148,9 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
         let mark = self.mark()
 
         if
-            let rule = try self.rule(),
-            let rules = try self.rules()
+            let rules = try self.repeatOneOrMore(self.rule)
         {
-            return [rule] + rules
-        }
-
-        self.restore(mark)
-
-        if
-            let rule = try self.rule()
-        {
-            return [rule]
+            return rules
         }
 
         self.restore(mark)

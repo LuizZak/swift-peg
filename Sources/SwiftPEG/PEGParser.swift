@@ -252,6 +252,49 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
         return try tokenizer.next()
     }
 
+    /// Performs a given production repeatedly until it returns `nil`.
+    /// 
+    /// Always expects at least one positive result, so the return is either `nil`
+    /// or an array with at least one item.
+    /// 
+    /// - note: Call is not memoized.
+    @inlinable
+    public func repeatOneOrMore<T>(_ production: () throws -> T?) rethrows -> [T]? {
+        let mark = self.mark()
+
+        if
+            let first = try production()
+        {
+            var result: [T] = [first]
+
+            while let next = try production() {
+                result.append(next)
+            }
+
+            return result
+        }
+
+        self.restore(mark)
+        return nil
+    }
+
+    /// Performs a given production repeatedly until it returns `nil`.
+    /// 
+    /// Since it expects that the first production may be `nil`, it always succeeds,
+    /// returning an empty array if the first production failed.
+    /// 
+    /// - note: Call is not memoized.
+    @inlinable
+    public func repeatZeroOrMore<T>(_ production: () throws -> T?) rethrows -> [T] {
+        var result: [T] = []
+
+        while let next = try production() {
+            result.append(next)
+        }
+
+        return result
+    }
+
     /// Performs a positive lookahead for a token, returning `true` if the result
     /// of `production()` is non-nil.
     ///

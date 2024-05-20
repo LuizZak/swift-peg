@@ -11,7 +11,7 @@ class ParserMemoizeMacroTests: XCTestCase {
 
     func testMemoizeMacro_copiesAccessLevel() {
         assertMacroExpansion("""
-            @memoized("method", "other.cache[0]")
+            @memoized("method")
             public func __method__() -> Any {
                 return 0
             }
@@ -24,14 +24,49 @@ class ParserMemoizeMacroTests: XCTestCase {
             /// Memoized version of `__method__`.
             public func method() -> Any {
                 let key = makeKey("method", arguments: nil)
-                if let cached: CacheEntry<Any> = other.cache[0].fetch(key) {
+                if let cached: CacheEntry<Any> = self.cache.fetch(key) {
                     self.restore(cached.mark)
                     return cached.result
                 }
                 let result = __method__()
                 let mark = self.mark()
                 let priorReach = self.resetReach(mark)
-                other.cache[0].store(
+                self.cache.store(
+                    key,
+                    value: CacheEntry(mark: self.mark(), reach: self.reach, result: result)
+                )
+                let reach = self.resetReach(priorReach)
+                self.updateReach(reach)
+
+                return result
+            }
+            """,
+            macros: testMacros)
+    }
+
+    func testMemoizeMacro_copiesGenericParametersAndWhere() {
+        assertMacroExpansion("""
+            @memoized("method")
+            public func __method__<T>() -> T? where T: U {
+                return 0
+            }
+            """,
+            expandedSource: """
+            public func __method__<T>() -> T? where T: U {
+                return 0
+            }
+
+            /// Memoized version of `__method__`.
+            public func method<T>() -> T? where T: U {
+                let key = makeKey("method", arguments: nil)
+                if let cached: CacheEntry<T?> = self.cache.fetch(key) {
+                    self.restore(cached.mark)
+                    return cached.result
+                }
+                let result = __method__()
+                let mark = self.mark()
+                let priorReach = self.resetReach(mark)
+                self.cache.store(
                     key,
                     value: CacheEntry(mark: self.mark(), reach: self.reach, result: result)
                 )

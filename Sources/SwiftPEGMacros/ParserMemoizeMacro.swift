@@ -77,6 +77,8 @@ public struct ParserMemoizeMacro: PeerMacro {
             .name.trimmed
             .with(\.trailingTrivia, .spaces(1))
 
+        let genericParams = declaration.genericParameterClause?.trimmed
+        let genericWhere = declaration.genericWhereClause?.trimmed.withLeadingSpace()
         let leadingTrivia = declaration.ext_docComments()
         let typeToCache = returnType.trimmed
         let effects = declaration.signature.effectSpecifiers
@@ -99,7 +101,7 @@ public struct ParserMemoizeMacro: PeerMacro {
                 """
                 \(leadingTrivia)
                 /// Memoized version of `\(nonMemoizedMethod)`.\(raw: attributes)
-                \(accessLevel)func \(memoizedMethod)\(parameters) \(effects)-> \(typeToCache) {
+                \(accessLevel)func \(memoizedMethod)\(genericParams)\(parameters) \(effects)-> \(typeToCache)\(genericWhere) {
                     let key = makeKey("\(memoizedMethod)", arguments: \(cacheParams))
                     if let cached: CacheEntry<\(typeToCache)> = \(cache).fetch(key) {
                         self.restore(cached.mark)
