@@ -33,7 +33,7 @@ class GrammarParsingSample {
 
             var tokens: [String] = []
             while let next = try tokenizer.next() {
-                tokens.append(next.string)
+                tokens.append(next.token.string)
             }
 
             print(tokens)

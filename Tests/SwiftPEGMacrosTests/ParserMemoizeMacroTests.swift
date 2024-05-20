@@ -24,17 +24,14 @@ class ParserMemoizeMacroTests: XCTestCase {
             /// Memoized version of `__method__`.
             public func method() -> Any {
                 let key = makeKey("method", arguments: nil)
-                if let cached: CacheEntry<Any> = self.cache.fetch(key) {
+                if let cached: CacheEntry<Any> = self.cache[key] {
                     self.restore(cached.mark)
                     return cached.result
                 }
                 let result = __method__()
                 let mark = self.mark()
                 let priorReach = self.resetReach(mark)
-                self.cache.store(
-                    key,
-                    value: CacheEntry(mark: self.mark(), reach: self.reach, result: result)
-                )
+                self.cache[key] = CacheEntry(mark: mark, reach: self.reach, result: result)
                 let reach = self.resetReach(priorReach)
                 self.updateReach(reach)
 
@@ -59,17 +56,14 @@ class ParserMemoizeMacroTests: XCTestCase {
             /// Memoized version of `__method__`.
             public func method<T>() -> T? where T: U {
                 let key = makeKey("method", arguments: nil)
-                if let cached: CacheEntry<T?> = self.cache.fetch(key) {
+                if let cached: CacheEntry<T?> = self.cache[key] {
                     self.restore(cached.mark)
                     return cached.result
                 }
                 let result = __method__()
                 let mark = self.mark()
                 let priorReach = self.resetReach(mark)
-                self.cache.store(
-                    key,
-                    value: CacheEntry(mark: self.mark(), reach: self.reach, result: result)
-                )
+                self.cache[key] = CacheEntry(mark: mark, reach: self.reach, result: result)
                 let reach = self.resetReach(priorReach)
                 self.updateReach(reach)
 
@@ -94,17 +88,14 @@ class ParserMemoizeMacroTests: XCTestCase {
             /// Memoized version of `__method__`.
             func method() -> Any {
                 let key = makeKey("method", arguments: nil)
-                if let cached: CacheEntry<Any> = other.cache[0].fetch(key) {
+                if let cached: CacheEntry<Any> = other.cache[0] [key] {
                     self.restore(cached.mark)
                     return cached.result
                 }
                 let result = __method__()
                 let mark = self.mark()
                 let priorReach = self.resetReach(mark)
-                other.cache[0].store(
-                    key,
-                    value: CacheEntry(mark: self.mark(), reach: self.reach, result: result)
-                )
+                other.cache[0] [key] = CacheEntry(mark: mark, reach: self.reach, result: result)
                 let reach = self.resetReach(priorReach)
                 self.updateReach(reach)
 
@@ -129,17 +120,14 @@ class ParserMemoizeMacroTests: XCTestCase {
             /// Memoized version of `__method__`.
             func method() -> Any {
                 let key = makeKey("method", arguments: nil)
-                if let cached: CacheEntry<Any> = self.cache.fetch(key) {
+                if let cached: CacheEntry<Any> = self.cache[key] {
                     self.restore(cached.mark)
                     return cached.result
                 }
                 let result = __method__()
                 let mark = self.mark()
                 let priorReach = self.resetReach(mark)
-                self.cache.store(
-                    key,
-                    value: CacheEntry(mark: self.mark(), reach: self.reach, result: result)
-                )
+                self.cache[key] = CacheEntry(mark: mark, reach: self.reach, result: result)
                 let reach = self.resetReach(priorReach)
                 self.updateReach(reach)
 
@@ -164,17 +152,14 @@ class ParserMemoizeMacroTests: XCTestCase {
             /// Memoized version of `__method__`.
             func method() throws -> Any {
                 let key = makeKey("method", arguments: nil)
-                if let cached: CacheEntry<Any> = self.cache.fetch(key) {
+                if let cached: CacheEntry<Any> = self.cache[key] {
                     self.restore(cached.mark)
                     return cached.result
                 }
                 let result = try __method__()
                 let mark = self.mark()
                 let priorReach = self.resetReach(mark)
-                self.cache.store(
-                    key,
-                    value: CacheEntry(mark: self.mark(), reach: self.reach, result: result)
-                )
+                self.cache[key] = CacheEntry(mark: mark, reach: self.reach, result: result)
                 let reach = self.resetReach(priorReach)
                 self.updateReach(reach)
 
@@ -199,17 +184,14 @@ class ParserMemoizeMacroTests: XCTestCase {
             /// Memoized version of `__method__`.
             func method(a: Int, _ b: Float, c _c: Bool) throws -> Any {
                 let key = makeKey("method", arguments: [AnyHashable(a), AnyHashable(b), AnyHashable(_c)])
-                if let cached: CacheEntry<Any> = self.cache.fetch(key) {
+                if let cached: CacheEntry<Any> = self.cache[key] {
                     self.restore(cached.mark)
                     return cached.result
                 }
                 let result = try __method__(a: a, b, c: _c)
                 let mark = self.mark()
                 let priorReach = self.resetReach(mark)
-                self.cache.store(
-                    key,
-                    value: CacheEntry(mark: self.mark(), reach: self.reach, result: result)
-                )
+                self.cache[key] = CacheEntry(mark: mark, reach: self.reach, result: result)
                 let reach = self.resetReach(priorReach)
                 self.updateReach(reach)
 
@@ -234,17 +216,14 @@ class ParserMemoizeMacroTests: XCTestCase {
             /// Memoized version of `__method__`.
             func method() throws -> Int? {
                 let key = makeKey("method", arguments: nil)
-                if let cached: CacheEntry<Int?> = self.cache.fetch(key) {
+                if let cached: CacheEntry<Int?> = self.cache[key] {
                     self.restore(cached.mark)
                     return cached.result
                 }
                 let result = try __method__()
                 let mark = self.mark()
                 let priorReach = self.resetReach(mark)
-                self.cache.store(
-                    key,
-                    value: CacheEntry(mark: self.mark(), reach: self.reach, result: result)
-                )
+                self.cache[key] = CacheEntry(mark: mark, reach: self.reach, result: result)
                 let reach = self.resetReach(priorReach)
                 self.updateReach(reach)
 
@@ -272,17 +251,14 @@ class ParserMemoizeMacroTests: XCTestCase {
             /// Memoized version of `__method__`.
             func method() throws -> Int? {
                 let key = makeKey("method", arguments: nil)
-                if let cached: CacheEntry<Int?> = self.cache.fetch(key) {
+                if let cached: CacheEntry<Int?> = self.cache[key] {
                     self.restore(cached.mark)
                     return cached.result
                 }
                 let result = try __method__()
                 let mark = self.mark()
                 let priorReach = self.resetReach(mark)
-                self.cache.store(
-                    key,
-                    value: CacheEntry(mark: self.mark(), reach: self.reach, result: result)
-                )
+                self.cache[key] = CacheEntry(mark: mark, reach: self.reach, result: result)
                 let reach = self.resetReach(priorReach)
                 self.updateReach(reach)
 
@@ -313,17 +289,14 @@ class ParserMemoizeMacroTests: XCTestCase {
             @discardableResult
             func method() throws -> Int? {
                 let key = makeKey("method", arguments: nil)
-                if let cached: CacheEntry<Int?> = self.cache.fetch(key) {
+                if let cached: CacheEntry<Int?> = self.cache[key] {
                     self.restore(cached.mark)
                     return cached.result
                 }
                 let result = try __method__()
                 let mark = self.mark()
                 let priorReach = self.resetReach(mark)
-                self.cache.store(
-                    key,
-                    value: CacheEntry(mark: self.mark(), reach: self.reach, result: result)
-                )
+                self.cache[key] = CacheEntry(mark: mark, reach: self.reach, result: result)
                 let reach = self.resetReach(priorReach)
                 self.updateReach(reach)
 

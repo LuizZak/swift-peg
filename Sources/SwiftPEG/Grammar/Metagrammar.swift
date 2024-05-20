@@ -1144,6 +1144,22 @@ extension Metagrammar {
         }
     }
 
+    /// Specialization of `NodeWalker` for visitors of `MetagrammarNode` trees.
+    public class MetagrammarNodeWalker<Visitor: MetagrammarNodeVisitorType>: NodeWalker<Visitor> {
+        /// Starts walking in depth-first manner on a given metagrammar node's
+        /// hierarchy.
+        /// The `node` itself is also visited.
+        public func walk(_ node: MetagrammarNode) {
+            visitor.willVisit(node)
+            node.accept(visitor)
+
+            for child in node.children {
+                walk(child)
+            }
+            visitor.didVisit(node)
+        }
+    }
+
     /// Protocol for visiting Metagrammar node types.
     public protocol MetagrammarNodeVisitorType: NodeVisitorType {
         /// Visits a Grammar node.

@@ -5,12 +5,18 @@ public protocol RawTokenizerType {
     /// The token type that this tokenizer produces.
     associatedtype Token: TokenType
 
+    /// An associated type that indicates locations of tokens that are produced
+    /// by this tokenizer.
+    /// 
+    /// Usually used to diagnose parsing errors.
+    associatedtype Location: Hashable, Comparable
+
     /// Gets whether any more tokens can be consumed from this tokenizer.
     var isEOF: Bool { get }
 
-    /// Requests the next token from this raw tokenizer.
+    /// Requests the next token from this raw tokenizer, including its location.
     /// Returns `nil` to signal EOF for consumers.
     /// 
     /// Errors can be thrown to indicate an unknown token type.
-    mutating func next() throws -> Token?
+    mutating func next() throws -> (token: Token, location: Location)?
 }

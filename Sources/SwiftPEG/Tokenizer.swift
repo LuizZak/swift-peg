@@ -3,6 +3,7 @@ import Foundation
 /// A tokenizer with built-in caching support.
 open class Tokenizer<Raw: RawTokenizerType> {
     public typealias Token = Raw.Token
+    public typealias Location = Raw.Location
 
     /// Used for uniquely identifying tokenizers
     @usableFromInline
@@ -22,7 +23,7 @@ open class Tokenizer<Raw: RawTokenizerType> {
 
     /// Cached tokens to be returned for index-based token requests
     @usableFromInline
-    internal var cachedTokens: [Token] = []
+    internal var cachedTokens: [(token: Token, location: Location)] = []
 
     /// Index into `_cachedTokens` that tokens are fetched from, currently.
     @usableFromInline
@@ -64,7 +65,7 @@ open class Tokenizer<Raw: RawTokenizerType> {
 
         // Look into cached tokens
         if cachedTokens.count > tokenIndex {
-            return cachedTokens[tokenIndex]
+            return cachedTokens[tokenIndex].token
         }
 
         // Prevent probing raw tokenizer past its EOF.
@@ -75,7 +76,7 @@ open class Tokenizer<Raw: RawTokenizerType> {
         // Peek raw stream
         if let nextToken = try _raw.next() {
             cachedTokens.append(nextToken)
-            return nextToken
+            return nextToken.token
         } else {
             _rawEOFIndex = tokenIndex
             return nil

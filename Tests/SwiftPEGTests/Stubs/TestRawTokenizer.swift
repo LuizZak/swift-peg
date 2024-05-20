@@ -18,7 +18,7 @@ class TestRawTokenizer<T: TokenType> {
     var next_calls: [Result<T?, Error>] = []
     var next_callCount: Int = 0
 
-    func next() throws -> T? {
+    func next() throws -> (token: T, location: Int)? {
         next_callCount += 1
 
         guard !isEOF else {
@@ -34,7 +34,7 @@ class TestRawTokenizer<T: TokenType> {
         defer { index += 1 }
 
         next_calls.append(.success(tokens[index]))
-        return tokens[index]
+        return (tokens[index], index)
     }
 
     struct GenericError: Error { }
@@ -42,6 +42,7 @@ class TestRawTokenizer<T: TokenType> {
 
 extension TestRawTokenizer: RawTokenizerType {
     typealias Token = T
+    typealias Location = Int
 
     var isEOF: Bool { index >= tokens.count }
 }

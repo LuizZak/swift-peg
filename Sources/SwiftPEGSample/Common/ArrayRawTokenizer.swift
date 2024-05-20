@@ -9,15 +9,16 @@ class ArrayRawTokenizer<T: TokenType> {
         self.tokens = tokens
     }
 
-    func next() throws -> T? {
+    func next() throws -> (token: T, location: Int)? {
         guard index < tokens.count else { return nil }
         defer { index += 1 }
-        return tokens[index]
+        return (tokens[index], index)
     }
 }
 
 extension ArrayRawTokenizer: RawTokenizerType {
     typealias Token = T
+    typealias Location = Int
 
     var isEOF: Bool { index >= tokens.count }
 }

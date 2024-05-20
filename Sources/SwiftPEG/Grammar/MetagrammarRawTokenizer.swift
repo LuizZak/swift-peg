@@ -2,11 +2,16 @@
 /// Reads tokens out of a character stream.
 public class MetagrammarRawTokenizer: RawTokenizerType {
     public typealias Token = Metagrammar.MetagrammarToken
+    public typealias Location = FileSourceLocation
 
     @usableFromInline
     internal var _source: String
     @usableFromInline
     internal var _index: String.Index
+
+    /// Internal source location tracker
+    @usableFromInline
+    internal var _location: FileSourceLocation
 
     @inlinable
     public var isEOF: Bool {
@@ -17,10 +22,11 @@ public class MetagrammarRawTokenizer: RawTokenizerType {
     public init(source: String) {
         self._source = source
         _index = source.startIndex
+        _location = FileSourceLocation(line: 1, column: 1)
     }
 
     @inlinable
-    public func next() throws -> Token? {
+    public func next() throws -> (token: Token, location: Location)? {
         skipToContent()
 
         guard _index < _source.endIndex else {
@@ -34,9 +40,9 @@ public class MetagrammarRawTokenizer: RawTokenizerType {
             throw Error.unknownToken(index: _index)
         }
 
-        advance(by: token.tokenUTF8Length)
+        defer { advance(by: token.tokenUTF8Length) }
 
-        return token
+        return (token, _location)
     }
 
     @inlinable
@@ -75,7 +81,15 @@ public class MetagrammarRawTokenizer: RawTokenizerType {
 
     @inlinable
     internal func advance(by count: Int) {
-        _index = _source.utf8.index(_index, offsetBy: count)
+        for _ in 0..<count {
+            if _source[_index] == "\n" {
+                _location.column = 0
+                _location.line += 1
+            }
+
+            _index = _source.utf8.index(after: _index)
+            _location.column += 1
+        }
     }
 
     public enum Error: TokenizerError {

@@ -31,7 +31,7 @@ class PEGParserTests: XCTestCase {
         assertEqual(stubTokenizer.tokenIndex, 0)
     }
 
-    func testExpect_failure_repeated_isCached() throws {
+    func testExpect_failure_repeated_isNotCached() throws {
         let stubTokenizer = stubTestTokenizer([
             0, 1, 2,
         ])
@@ -44,12 +44,12 @@ class PEGParserTests: XCTestCase {
         assertEqual(result_0, nil)
         assertEqual(result_1, nil)
         assertEqual(result_2, nil)
-        assertEqual(stubTokenizer.next_callCount, 1)
+        assertEqual(stubTokenizer.next_callCount, 3)
         assertEqual(stubTokenizer.restore_callCount, 3)
         assertEqual(stubTokenizer.tokenIndex, 0)
     }
 
-    func testExpect_failure_repeated_isCached_perToken() throws {
+    func testExpect_failure_repeated_isNotCached_perToken() throws {
         let stubTokenizer = stubTestTokenizer([
             0, 1, 2,
         ])
@@ -77,7 +77,7 @@ class PEGParserTests: XCTestCase {
         let result = try sut.expect(0)
         
         assertEqual(result, 0)
-        assertEqual(stubTokenizer.next_callCount, 1)
+        assertEqual(stubTokenizer.next_callCount, 2)
         assertEqual(stubTokenizer.tokenIndex, 1)
     }
 
