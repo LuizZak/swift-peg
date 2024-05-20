@@ -9,8 +9,7 @@ grammar[Metagrammar.Grammar]:
     ;
 
 metas[[Metagrammar.Meta]]:
-    | meta metas { [meta] + metas }
-    | meta { [meta] }
+    | metas=meta+ { metas }
     ;
 
 meta[Metagrammar.Meta]:
@@ -24,8 +23,7 @@ metaValue[Metagrammar.MetaValue]:
     ;
 
 rules[[Metagrammar.Rule]]:
-    | rule rules { [rule] + rules }
-    | rule { [rule] }
+    | rules=rule+ { rules }
     ;
 
 rule[Metagrammar.Rule]:

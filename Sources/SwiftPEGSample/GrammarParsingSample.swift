@@ -57,6 +57,8 @@ class GrammarParsingSample {
                     print("\(rule.name.name.identifier)")
                 }
             }
+
+            let _ = try CodeGen(grammar)
         }
     }
 }
