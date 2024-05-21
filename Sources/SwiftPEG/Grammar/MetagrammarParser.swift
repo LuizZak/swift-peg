@@ -82,7 +82,6 @@ extension MetagrammarParser {
     @inlinable
     public func __start() throws -> Metagrammar.Grammar? {
         let mark = self.mark()
-        var cut = CutFlag()
 
         if
             let grammar = try self.grammar()
@@ -91,10 +90,6 @@ extension MetagrammarParser {
         }
 
         self.restore(mark)
-
-        if cut.isOn {
-            return nil
-        }
         return nil
     }
 
@@ -102,7 +97,6 @@ extension MetagrammarParser {
     @inlinable
     public func __grammar() throws -> Metagrammar.Grammar? {
         let mark = self.mark()
-        var cut = CutFlag()
 
         if
             let metas = try self.metas(),
@@ -113,10 +107,6 @@ extension MetagrammarParser {
 
         self.restore(mark)
 
-        if cut.isOn {
-            return nil
-        }
-
         if
             let rules = try self.rules()
         {
@@ -124,10 +114,6 @@ extension MetagrammarParser {
         }
 
         self.restore(mark)
-
-        if cut.isOn {
-            return nil
-        }
         return nil
     }
 
@@ -135,7 +121,6 @@ extension MetagrammarParser {
     @inlinable
     public func __metas() throws -> [Metagrammar.Meta]? {
         let mark = self.mark()
-        var cut = CutFlag()
 
         if
             let metas = try self.repeatOneOrMore({
@@ -146,10 +131,6 @@ extension MetagrammarParser {
         }
 
         self.restore(mark)
-
-        if cut.isOn {
-            return nil
-        }
         return nil
     }
 
@@ -157,7 +138,6 @@ extension MetagrammarParser {
     @inlinable
     public func __meta() throws -> Metagrammar.Meta? {
         let mark = self.mark()
-        var cut = CutFlag()
 
         if
             let _ = try self.expect("@"),
@@ -170,10 +150,6 @@ extension MetagrammarParser {
 
         self.restore(mark)
 
-        if cut.isOn {
-            return nil
-        }
-
         if
             let _ = try self.expect("@"),
             let name = try self.IDENT(),
@@ -183,10 +159,6 @@ extension MetagrammarParser {
         }
 
         self.restore(mark)
-
-        if cut.isOn {
-            return nil
-        }
         return nil
     }
 
@@ -194,7 +166,6 @@ extension MetagrammarParser {
     @inlinable
     public func __metaValue() throws -> Metagrammar.MetaValue? {
         let mark = self.mark()
-        var cut = CutFlag()
 
         if
             let ident = try self.IDENT()
@@ -204,10 +175,6 @@ extension MetagrammarParser {
 
         self.restore(mark)
 
-        if cut.isOn {
-            return nil
-        }
-
         if
             let string = try self.STRING()
         {
@@ -215,10 +182,6 @@ extension MetagrammarParser {
         }
 
         self.restore(mark)
-
-        if cut.isOn {
-            return nil
-        }
         return nil
     }
 
@@ -226,7 +189,6 @@ extension MetagrammarParser {
     @inlinable
     public func __rules() throws -> [Metagrammar.Rule]? {
         let mark = self.mark()
-        var cut = CutFlag()
 
         if
             let rules = try self.repeatOneOrMore({
@@ -237,10 +199,6 @@ extension MetagrammarParser {
         }
 
         self.restore(mark)
-
-        if cut.isOn {
-            return nil
-        }
         return nil
     }
 
@@ -248,7 +206,6 @@ extension MetagrammarParser {
     @inlinable
     public func __rule() throws -> Metagrammar.Rule? {
         let mark = self.mark()
-        var cut = CutFlag()
 
         if
             let ruleName = try self.ruleName(),
@@ -262,10 +219,6 @@ extension MetagrammarParser {
 
         self.restore(mark)
 
-        if cut.isOn {
-            return nil
-        }
-
         if
             let ruleName = try self.ruleName(),
             let _ = try self.expect(":"),
@@ -276,10 +229,6 @@ extension MetagrammarParser {
         }
 
         self.restore(mark)
-
-        if cut.isOn {
-            return nil
-        }
         return nil
     }
 
@@ -287,7 +236,6 @@ extension MetagrammarParser {
     @inlinable
     public func __ruleName() throws -> Metagrammar.RuleName? {
         let mark = self.mark()
-        var cut = CutFlag()
 
         if
             let name = try self.IDENT(),
@@ -300,10 +248,6 @@ extension MetagrammarParser {
 
         self.restore(mark)
 
-        if cut.isOn {
-            return nil
-        }
-
         if
             let name = try self.IDENT()
         {
@@ -311,10 +255,6 @@ extension MetagrammarParser {
         }
 
         self.restore(mark)
-
-        if cut.isOn {
-            return nil
-        }
         return nil
     }
 
@@ -322,7 +262,6 @@ extension MetagrammarParser {
     @inlinable
     public func __alts() throws -> [Metagrammar.Alt]? {
         let mark = self.mark()
-        var cut = CutFlag()
 
         if
             let alt = try self.alt(),
@@ -334,10 +273,6 @@ extension MetagrammarParser {
 
         self.restore(mark)
 
-        if cut.isOn {
-            return nil
-        }
-
         if
             let alt = try self.alt()
         {
@@ -345,10 +280,6 @@ extension MetagrammarParser {
         }
 
         self.restore(mark)
-
-        if cut.isOn {
-            return nil
-        }
         return nil
     }
 
@@ -356,7 +287,6 @@ extension MetagrammarParser {
     @inlinable
     public func __alt() throws -> Metagrammar.Alt? {
         let mark = self.mark()
-        var cut = CutFlag()
 
         if
             let namedItems = try self.namedItems(),
@@ -367,10 +297,6 @@ extension MetagrammarParser {
 
         self.restore(mark)
 
-        if cut.isOn {
-            return nil
-        }
-
         if
             let namedItems = try self.namedItems()
         {
@@ -378,10 +304,6 @@ extension MetagrammarParser {
         }
 
         self.restore(mark)
-
-        if cut.isOn {
-            return nil
-        }
         return nil
     }
 
@@ -389,7 +311,6 @@ extension MetagrammarParser {
     @inlinable
     public func __namedItems() throws -> [Metagrammar.NamedItem]? {
         let mark = self.mark()
-        var cut = CutFlag()
 
         if
             let namedItem = try self.namedItem(),
@@ -400,10 +321,6 @@ extension MetagrammarParser {
 
         self.restore(mark)
 
-        if cut.isOn {
-            return nil
-        }
-
         if
             let namedItem = try self.namedItem()
         {
@@ -411,10 +328,6 @@ extension MetagrammarParser {
         }
 
         self.restore(mark)
-
-        if cut.isOn {
-            return nil
-        }
         return nil
     }
 
@@ -794,7 +707,6 @@ extension MetagrammarParser {
     @inlinable
     public func __swiftTypeList() throws -> [Metagrammar.SwiftType]? {
         let mark = self.mark()
-        var cut = CutFlag()
 
         if
             let type = try self.swiftType(),
@@ -806,10 +718,6 @@ extension MetagrammarParser {
 
         self.restore(mark)
 
-        if cut.isOn {
-            return nil
-        }
-
         if
             let type = try self.swiftType()
         {
@@ -817,10 +725,6 @@ extension MetagrammarParser {
         }
 
         self.restore(mark)
-
-        if cut.isOn {
-            return nil
-        }
         return nil
     }
 
@@ -851,7 +755,6 @@ extension MetagrammarParser {
     @inlinable
     public func __balancedTokens() throws -> Metagrammar.BalancedTokens? {
         let mark = self.mark()
-        var cut = CutFlag()
 
         if
             let balancedToken = try self.balancedToken(),
@@ -862,10 +765,6 @@ extension MetagrammarParser {
 
         self.restore(mark)
 
-        if cut.isOn {
-            return nil
-        }
-
         if
             let balancedToken = try self.balancedToken()
         {
@@ -873,10 +772,6 @@ extension MetagrammarParser {
         }
 
         self.restore(mark)
-
-        if cut.isOn {
-            return nil
-        }
         return nil
     }
 
@@ -1028,7 +923,6 @@ extension MetagrammarParser {
     @inlinable
     public func __balancedTokenAtom() throws -> TokenNode<RawTokenizer.Token, RawTokenizer.Location>? {
         let mark = self.mark()
-        var cut = CutFlag()
 
         if
             let token = try self.IDENT()
@@ -1038,10 +932,6 @@ extension MetagrammarParser {
 
         self.restore(mark)
 
-        if cut.isOn {
-            return nil
-        }
-
         if
             let token = try self.DIGITS()
         {
@@ -1049,10 +939,6 @@ extension MetagrammarParser {
         }
 
         self.restore(mark)
-
-        if cut.isOn {
-            return nil
-        }
 
         if
             let token = try self.STRING()
@@ -1062,10 +948,6 @@ extension MetagrammarParser {
 
         self.restore(mark)
 
-        if cut.isOn {
-            return nil
-        }
-
         if
             let token = try self.expect(":")
         {
@@ -1073,10 +955,6 @@ extension MetagrammarParser {
         }
 
         self.restore(mark)
-
-        if cut.isOn {
-            return nil
-        }
 
         if
             let token = try self.expect(";")
@@ -1086,10 +964,6 @@ extension MetagrammarParser {
 
         self.restore(mark)
 
-        if cut.isOn {
-            return nil
-        }
-
         if
             let token = try self.expect("|")
         {
@@ -1097,10 +971,6 @@ extension MetagrammarParser {
         }
 
         self.restore(mark)
-
-        if cut.isOn {
-            return nil
-        }
 
         if
             let token = try self.expect("=")
@@ -1110,10 +980,6 @@ extension MetagrammarParser {
 
         self.restore(mark)
 
-        if cut.isOn {
-            return nil
-        }
-
         if
             let token = try self.expect("~")
         {
@@ -1121,10 +987,6 @@ extension MetagrammarParser {
         }
 
         self.restore(mark)
-
-        if cut.isOn {
-            return nil
-        }
 
         if
             let token = try self.expect("*")
@@ -1134,10 +996,6 @@ extension MetagrammarParser {
 
         self.restore(mark)
 
-        if cut.isOn {
-            return nil
-        }
-
         if
             let token = try self.expect("+")
         {
@@ -1145,10 +1003,6 @@ extension MetagrammarParser {
         }
 
         self.restore(mark)
-
-        if cut.isOn {
-            return nil
-        }
 
         if
             let token = try self.expect("?")
@@ -1158,10 +1012,6 @@ extension MetagrammarParser {
 
         self.restore(mark)
 
-        if cut.isOn {
-            return nil
-        }
-
         if
             let token = try self.expect(",")
         {
@@ -1169,10 +1019,6 @@ extension MetagrammarParser {
         }
 
         self.restore(mark)
-
-        if cut.isOn {
-            return nil
-        }
 
         if
             let token = try self.expect(".")
@@ -1182,10 +1028,6 @@ extension MetagrammarParser {
 
         self.restore(mark)
 
-        if cut.isOn {
-            return nil
-        }
-
         if
             let token = try self.expect("@")
         {
@@ -1193,10 +1035,6 @@ extension MetagrammarParser {
         }
 
         self.restore(mark)
-
-        if cut.isOn {
-            return nil
-        }
 
         if
             let token = try self.expect("/")
@@ -1206,10 +1044,6 @@ extension MetagrammarParser {
 
         self.restore(mark)
 
-        if cut.isOn {
-            return nil
-        }
-
         if
             let token = try self.expect("\\")
         {
@@ -1217,10 +1051,6 @@ extension MetagrammarParser {
         }
 
         self.restore(mark)
-
-        if cut.isOn {
-            return nil
-        }
         return nil
     }
 }

@@ -79,7 +79,9 @@ public class SwiftCodeGen {
             declContext.defineLocal(suggestedName: "cut")
 
             buffer.emitLine("let mark = self.mark()")
-            buffer.emitLine("var cut = CutFlag()")
+            if hasCut(rule) {
+                buffer.emitLine("var cut = CutFlag()")
+            }
 
             for alt in rule.alts {
                 try generateAlt(alt, in: rule)
@@ -121,10 +123,12 @@ public class SwiftCodeGen {
         buffer.emitNewline()
         buffer.emitLine("self.restore(mark)")
 
-        buffer.emitNewline()
-        buffer.emit("if cut.isOn ")
-        buffer.emitBlock {
-            buffer.emitLine("return nil")
+        if hasCut(rule) {
+            buffer.emitNewline()
+            buffer.emit("if cut.isOn ")
+            buffer.emitBlock {
+                buffer.emitLine("return nil")
+            }
         }
     }
 
@@ -331,6 +335,39 @@ extension SwiftCodeGen {
 
         case .group, .string:
             return nil
+        }
+    }
+}
+
+// MARK: - Cut detection
+
+extension SwiftCodeGen {
+
+    /// Returns `true` if the rule makes use of cut (`~`) in one of its primary
+    /// alts.
+    func hasCut(_ node: CodeGen.Rule) -> Bool {
+        hasCut(node.alts)
+    }
+
+    /// Returns `true` if one of the given alts makes use of cut (`~`) in one of
+    /// its primary items.
+    func hasCut(_ node: [CodeGen.Alt]) -> Bool {
+        node.contains(where: hasCut)
+    }
+
+    /// Returns `true` if the given alt makes use of cut (`~`) in one of its
+    /// primary items.
+    func hasCut(_ node: CodeGen.Alt) -> Bool {
+        node.items.contains(where: hasCut)
+    }
+
+    /// Returns `true` if the given named item makes use of cut (`~`).
+    func hasCut(_ node: CodeGen.NamedItem) -> Bool {
+        switch node {
+        case .lookahead(.cut):
+            return true
+        default:
+            return false
         }
     }
 }

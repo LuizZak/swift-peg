@@ -15,6 +15,7 @@ class SwiftCodeGenTests: XCTestCase {
             }
             """).diff(result)
     }
+
     func testGenerateParser_altAction() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
@@ -32,7 +33,6 @@ class SwiftCodeGenTests: XCTestCase {
                 @inlinable
                 public func __a() throws -> Node? {
                     let mark = self.mark()
-                    var cut = CutFlag()
 
                     if
                         let b = try self.b()
@@ -41,10 +41,6 @@ class SwiftCodeGenTests: XCTestCase {
                     }
 
                     self.restore(mark)
-
-                    if cut.isOn {
-                        return nil
-                    }
                     return nil
                 }
             }
@@ -68,7 +64,6 @@ class SwiftCodeGenTests: XCTestCase {
                 @inlinable
                 public func __a() throws -> ANode? {
                     let mark = self.mark()
-                    var cut = CutFlag()
 
                     if
                         let b = try self.b(),
@@ -81,10 +76,6 @@ class SwiftCodeGenTests: XCTestCase {
                     }
 
                     self.restore(mark)
-
-                    if cut.isOn {
-                        return nil
-                    }
                     return nil
                 }
             }
@@ -108,7 +99,6 @@ class SwiftCodeGenTests: XCTestCase {
                 @inlinable
                 public func __a() throws -> ANode? {
                     let mark = self.mark()
-                    var cut = CutFlag()
 
                     if
                         let b = try self.b(),
@@ -119,10 +109,6 @@ class SwiftCodeGenTests: XCTestCase {
                     }
 
                     self.restore(mark)
-
-                    if cut.isOn {
-                        return nil
-                    }
                     return nil
                 }
 
@@ -137,6 +123,40 @@ class SwiftCodeGenTests: XCTestCase {
                         let e = try self.e()
                     {
                         return Node()
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+            }
+            """).diff(result)
+    }
+
+    func testGenerateParser_generateCut() throws {
+        let grammar = makeGrammar([
+            .init(name: "a", alts: [
+                .init(items: ["b", .lookahead(.cut), "c"], action: "CustomAction()")
+            ])
+        ])
+        let sut = makeSut(grammar)
+
+        let result = try sut.generateParser()
+
+        diffTest(expected: """
+            // TestParser
+            extension TestParser {
+                @memoized("a")
+                @inlinable
+                public func __a() throws -> Node? {
+                    let mark = self.mark()
+                    var cut = CutFlag()
+
+                    if
+                        let b = try self.b(),
+                        cut.toggleOn(),
+                        let c = try self.c()
+                    {
+                        return CustomAction()
                     }
 
                     self.restore(mark)
