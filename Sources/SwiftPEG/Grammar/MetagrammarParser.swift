@@ -13,7 +13,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
         if
             let grammar = try grammar()
         {
-            return grammar
+            return setLocation(grammar, at: mark)
         }
 
         self.restore(mark)
@@ -22,8 +22,8 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
 
     /// ```
     /// grammar[Grammar]:
-    ///     | metas rules { Metagrammar.Grammar(metas: metas, rules: rules) }
-    ///     | rules { Metagrammar.Grammar(metas: [], rules: rules) }
+    ///     | metas rules { setLocation(.init(metas: metas, rules: rules), at: mark) }
+    ///     | rules { setLocation(.init(metas: [], rules: rules), at: mark) }
     ///     ;
     /// ```
     @memoized("grammar")
@@ -35,7 +35,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
             let metas = try self.metas(),
             let rules = try self.rules()
         {
-            return .init(metas: metas, rules: rules)
+            return self.setLocation(.init(metas: metas, rules: rules), at: mark)
         }
 
         self.restore(mark)
@@ -43,7 +43,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
         if
             let rules = try self.rules()
         {
-            return .init(metas: [], rules: rules)
+            return self.setLocation(.init(metas: [], rules: rules), at: mark)
         }
 
         self.restore(mark)
@@ -89,7 +89,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
             let value = try self.metaValue(),
             try self.expect(kind: .semicolon) != nil
         {
-            return .init(name: name, value: value)
+            return self.setLocation(.init(name: name, value: value), at: mark)
         }
 
         self.restore(mark)
@@ -99,7 +99,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
             let name = try self.identToken(),
             try self.expect(kind: .semicolon) != nil
         {
-            return .init(name: name, value: nil)
+            return self.setLocation(.init(name: name, value: nil), at: mark)
         }
 
         self.restore(mark)
@@ -121,7 +121,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
         if
             let ident = try self.identToken()
         {
-            return Metagrammar.MetaIdentifierValue(identifier: ident)
+            return self.setLocation(Metagrammar.MetaIdentifierValue(identifier: ident), at: mark)
         }
 
         self.restore(mark)
@@ -129,7 +129,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
         if
             let string = try self.stringToken()
         {
-            return Metagrammar.MetaStringValue(string: string)
+            return self.setLocation(Metagrammar.MetaStringValue(string: string), at: mark)
         }
 
         self.restore(mark)
@@ -176,7 +176,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
             let alts = try self.alts(),
             try self.expect(kind: .semicolon) != nil
         {
-            return .init(name: ruleName, alts: alts)
+            return self.setLocation(.init(name: ruleName, alts: alts), at: mark)
         }
 
         self.restore(mark)
@@ -187,7 +187,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
             let alts = try self.alts(),
             let _ = try self.expect(kind: .semicolon)
         {
-            return .init(name: ruleName, alts: alts)
+            return self.setLocation(.init(name: ruleName, alts: alts), at: mark)
         }
 
         self.restore(mark)
@@ -211,7 +211,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
             let type = try self.swiftType(),
             try self.expect(kind: .rightSquare) != nil
         {
-            return .init(name: name, type: type)
+            return self.setLocation(.init(name: name, type: type), at: mark)
         }
 
         self.restore(mark)
@@ -219,7 +219,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
         if
             let name = try self.identToken()
         {
-            return .init(name: name, type: nil)
+            return self.setLocation(.init(name: name, type: nil), at: mark)
         }
 
         self.restore(mark)
@@ -271,7 +271,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
             let namedItems = try self.namedItems(),
             let action = try self.action()
         {
-            return .init(namedItems: namedItems, action: action)
+            return self.setLocation(.init(namedItems: namedItems, action: action), at: mark)
         }
 
         self.restore(mark)
@@ -279,7 +279,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
         if
             let namedItems = try self.namedItems()
         {
-            return .init(namedItems: namedItems, action: nil)
+            return self.setLocation(.init(namedItems: namedItems, action: nil), at: mark)
         }
 
         self.restore(mark)
@@ -340,7 +340,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
             cut.toggleOn(),
             let item = try self.item()
         {
-            return .init(name: name, item: item, type: swiftType, lookahead: nil)
+            return self.setLocation(.init(name: name, item: item, type: swiftType, lookahead: nil), at: mark)
         }
 
         self.restore(mark)
@@ -355,7 +355,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
             cut.toggleOn(),
             let item = try self.item()
         {
-            return .init(name: name, item: item, type: nil, lookahead: nil)
+            return self.setLocation(.init(name: name, item: item, type: nil, lookahead: nil), at: mark)
         }
 
         self.restore(mark)
@@ -367,7 +367,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
         if
             let item = try self.item()
         {
-            return .init(name: nil, item: item, type: nil, lookahead: nil)
+            return self.setLocation(.init(name: nil, item: item, type: nil, lookahead: nil), at: mark)
         }
 
         self.restore(mark)
@@ -375,7 +375,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
         if
             let lookahead = try self.lookahead()
         {
-            return .init(name: nil, item: nil, type: nil, lookahead: lookahead)
+            return self.setLocation(.init(name: nil, item: nil, type: nil, lookahead: lookahead), at: mark)
         }
 
         self.restore(mark)
@@ -398,7 +398,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
             try self.expect(kind: .ampersand) != nil,
             let atom = try self.atom()
         {
-            return Metagrammar.PositiveLookahead(atom: atom)
+            return self.setLocation(Metagrammar.PositiveLookahead(atom: atom), at: mark)
         }
 
         self.restore(mark)
@@ -407,7 +407,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
             try self.expect(kind: .exclamationMark) != nil,
             let atom = try self.atom()
         {
-            return Metagrammar.NegativeLookahead(atom: atom)
+            return self.setLocation(Metagrammar.NegativeLookahead(atom: atom), at: mark)
         }
 
         self.restore(mark)
@@ -416,13 +416,13 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
             try self.expect(kind: .exclamationMark) != nil,
             let atom = try self.atom()
         {
-            return Metagrammar.NegativeLookahead(atom: atom)
+            return self.setLocation(Metagrammar.NegativeLookahead(atom: atom), at: mark)
         }
 
         if
             try self.expect(kind: .tilde) != nil
         {
-            return Metagrammar.Cut()
+            return self.setLocation(Metagrammar.Cut(), at: mark)
         }
 
         self.restore(mark)
@@ -451,7 +451,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
             let alts = try self.alts(),
             try self.expect(kind: .rightSquare) != nil
         {
-            return Metagrammar.OptionalItems(alts: alts)
+            return self.setLocation(Metagrammar.OptionalItems(alts: alts), at: mark)
         }
 
         self.restore(mark)
@@ -464,7 +464,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
             let atom = try self.atom(),
             try self.expect(kind: .questionMark) != nil
         {
-            return Metagrammar.OptionalItem(atom: atom)
+            return self.setLocation(Metagrammar.OptionalItem(atom: atom), at: mark)
         }
 
         self.restore(mark)
@@ -473,7 +473,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
             let atom = try self.atom(),
             try self.expect(kind: .star) != nil
         {
-            return Metagrammar.ZeroOrMoreItem(atom: atom)
+            return self.setLocation(Metagrammar.ZeroOrMoreItem(atom: atom), at: mark)
         }
 
         self.restore(mark)
@@ -482,7 +482,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
             let atom = try self.atom(),
             try self.expect(kind: .plus) != nil
         {
-            return Metagrammar.OneOrMoreItem(atom: atom)
+            return self.setLocation(Metagrammar.OneOrMoreItem(atom: atom), at: mark)
         }
 
         self.restore(mark)
@@ -493,7 +493,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
             let node = try self.atom(),
             try self.expect(kind: .plus) != nil
         {
-            return Metagrammar.GatherItem(sep: sep, item: node)
+            return self.setLocation(Metagrammar.GatherItem(sep: sep, item: node), at: mark)
         }
 
         self.restore(mark)
@@ -501,7 +501,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
         if
             let atom = try self.atom()
         {
-            return Metagrammar.AtomItem(atom: atom)
+            return self.setLocation(Metagrammar.AtomItem(atom: atom), at: mark)
         }
 
         self.restore(mark)
@@ -527,7 +527,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
             let alts = try self.alts(),
             try self.expect(kind: .rightParen) != nil
         {
-            return Metagrammar.GroupAtom(alts: alts)
+            return self.setLocation(Metagrammar.GroupAtom(alts: alts), at: mark)
         }
 
         self.restore(mark)
@@ -539,7 +539,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
         if
             let ident = try self.identToken()
         {
-            return Metagrammar.IdentAtom(identifier: ident)
+            return self.setLocation(Metagrammar.IdentAtom(identifier: ident), at: mark)
         }
 
         self.restore(mark)
@@ -547,7 +547,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
         if
             let string = try self.stringToken()
         {
-            return Metagrammar.StringAtom(string: string)
+            return self.setLocation(Metagrammar.StringAtom(string: string), at: mark)
         }
 
         self.restore(mark)
@@ -576,7 +576,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
             let type = try self.swiftType(),
             try self.expect(kind: .rightSquare) != nil
         {
-            return .init(name: "[" + type.name + "]")
+            return self.setLocation(.init(name: "[" + type.name + "]"), at: mark)
         }
 
         self.restore(mark)
@@ -591,7 +591,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
             let types = try self.swiftTypes(),
             try self.expect(kind: .rightParen) != nil
         {
-            return .init(name: "(" + types.map(\.name).joined(separator: ", ") + ")")
+            return self.setLocation(.init(name: "(" + types.map(\.name).joined(separator: ", ") + ")"), at: mark)
         }
 
         self.restore(mark)
@@ -608,7 +608,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
             try self.expect(kind: .rightAngle) != nil,
             try self.expect(kind: .questionMark) != nil
         {
-            return .init(name: name.identifier + "<" + types.map(\.name).joined(separator: ", ") + ">?")
+            return self.setLocation(.init(name: name.identifier + "<" + types.map(\.name).joined(separator: ", ") + ">?"), at: mark)
         }
 
         self.restore(mark)
@@ -624,7 +624,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
             let types = try self.swiftTypes(),
             try self.expect(kind: .rightAngle) != nil
         {
-            return .init(name: name.identifier + "<" + types.map(\.name).joined(separator: ", ") + ">")
+            return self.setLocation(.init(name: name.identifier + "<" + types.map(\.name).joined(separator: ", ") + ">"), at: mark)
         }
 
         self.restore(mark)
@@ -639,7 +639,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
             cut.toggleOn(),
             let inner = try self.swiftType()
         {
-            return .init(name: name.identifier + "." + inner.name)
+            return self.setLocation(.init(name: name.identifier + "." + inner.name), at: mark)
         }
 
         self.restore(mark)
@@ -652,7 +652,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
             let name = try self.identToken(),
             try self.expect(kind: .questionMark) != nil
         {
-            return .init(name: name.identifier + "?")
+            return self.setLocation(.init(name: name.identifier + "?"), at: mark)
         }
 
         self.restore(mark)
@@ -664,7 +664,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
         if
             let name = try self.identToken()
         {
-            return .init(name: name.identifier)
+            return self.setLocation(.init(name: name.identifier), at: mark)
         }
 
         self.restore(mark)
@@ -700,7 +700,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
             let balancedTokens = try self.balancedTokens(),
             try self.expect(kind: .rightBrace) != nil
         {
-            return .init(balancedTokens: balancedTokens)
+            return self.setLocation(.init(balancedTokens: balancedTokens), at: mark)
         }
 
         self.restore(mark)
@@ -722,7 +722,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
             let balancedToken = try self.balancedToken(),
             let balancedTokens = try self.balancedTokens()
         {
-            return .init(tokens: balancedToken.tokens + balancedTokens.tokens)
+            return self.setLocation(.init(tokens: balancedToken.tokens + balancedTokens.tokens), at: mark)
         }
 
         self.restore(mark)
@@ -761,7 +761,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
             let balancedTokens = try self.balancedTokens(),
             try self.expect(kind: .rightBrace) != nil
         {
-            return .init(tokens: ["{"] + balancedTokens.tokens + ["}"])
+            return self.setLocation(.init(tokens: ["{"] + balancedTokens.tokens + ["}"]), at: mark)
         }
 
         self.restore(mark)
@@ -771,7 +771,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
             let balancedTokens = try self.balancedTokens(),
             try self.expect(kind: .rightSquare) != nil
         {
-            return .init(tokens: ["["] + balancedTokens.tokens + ["]"])
+            return self.setLocation(.init(tokens: ["["] + balancedTokens.tokens + ["]"]), at: mark)
         }
 
         self.restore(mark)
@@ -781,7 +781,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
             let balancedTokens = try self.balancedTokens(),
             try self.expect(kind: .rightAngle) != nil
         {
-            return .init(tokens: ["<"] + balancedTokens.tokens + [">"])
+            return self.setLocation(.init(tokens: ["<"] + balancedTokens.tokens + [">"]), at: mark)
         }
 
         self.restore(mark)
@@ -791,7 +791,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
             let balancedTokens = try self.balancedTokens(),
             try self.expect(kind: .rightParen) != nil
         {
-            return .init(tokens: ["("] + balancedTokens.tokens + [")"])
+            return self.setLocation(.init(tokens: ["("] + balancedTokens.tokens + [")"]), at: mark)
         }
 
         if
@@ -799,7 +799,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
             cut.toggleOn(),
             try self.expect(kind: .rightBrace) != nil
         {
-            return .init(tokens: ["{", "}"])
+            return self.setLocation(.init(tokens: ["{", "}"]), at: mark)
         }
 
         self.restore(mark)
@@ -809,7 +809,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
             cut.toggleOn(),
             try self.expect(kind: .rightSquare) != nil
         {
-            return .init(tokens: ["[", "]"])
+            return self.setLocation(.init(tokens: ["[", "]"]), at: mark)
         }
 
         self.restore(mark)
@@ -823,7 +823,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
             cut.toggleOn(),
             try self.expect(kind: .rightAngle) != nil
         {
-            return .init(tokens: ["<", ">"])
+            return self.setLocation(.init(tokens: ["<", ">"]), at: mark)
         }
 
         self.restore(mark)
@@ -837,7 +837,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
             cut.toggleOn(),
             try self.expect(kind: .rightParen) != nil
         {
-            return .init(tokens: ["(", ")"])
+            return self.setLocation(.init(tokens: ["(", ")"]), at: mark)
         }
 
         self.restore(mark)
@@ -849,7 +849,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
         if
             let token = try self.balancedTokenAtom()
         {
-            return .init(tokens: [token.string])
+            return self.setLocation(.init(tokens: [token.string]), at: mark)
         }
 
         self.restore(mark)
@@ -888,7 +888,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
                 .forwardSlash, .backslash,
             ])
         {
-            return token
+            return token.token
         }
 
         self.restore(mark)
@@ -906,7 +906,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
         if
             let token = try self.expect(kind: .identifier)
         {
-            return .init(token: token.string)
+            return self.setLocation(.init(token: token.token.string, location: token.location), at: mark)
         }
 
         self.restore(mark)
@@ -924,7 +924,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
         if
             let token = try self.expect(kind: .string)
         {
-            return .init(token: token.string)
+            return self.setLocation(.init(token: token.token.string, location: token.location), at: mark)
         }
 
         self.restore(mark)

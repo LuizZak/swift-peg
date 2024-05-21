@@ -3,6 +3,8 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
     public typealias Token = RawTokenizer.Token
     public typealias Mark = Tokenizer<RawTokenizer>.Mark
     public typealias CacheEntry<T> = ParserCache<RawTokenizer>.CacheEntry<T>
+    /// Alias for results of parsing methods that query single tokens.
+    public typealias TokenResult = Tokenizer<RawTokenizer>.TokenResult
 
     /// The cache associated with this parser.
     public var cache: ParserCache<RawTokenizer> = ParserCache()
@@ -65,9 +67,9 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
         }
 
         return SyntaxError.expectedToken(
-            "\(errorLead): Found \"\(actual.string)\" but expected: \(expectEntries.map({ "\"\($0)\"" }).joined(separator: ", "))",
+            "\(errorLead): Found \"\(actual.token.string)\" but expected: \(expectEntries.map({ "\"\($0)\"" }).joined(separator: ", "))",
             errorMark,
-            received: actual,
+            received: actual.token,
             expected: expectEntries
         )
     }
@@ -116,9 +118,9 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
         }
 
         return SyntaxError.expectedToken(
-            "\(errorLead): Found \"\(actual.string)\" but expected: \(expectEntries.map({ "\"\($0)\"" }).joined(separator: ", "))",
+            "\(errorLead): Found \"\(actual.token.string)\" but expected: \(expectEntries.map({ "\"\($0)\"" }).joined(separator: ", "))",
             errorMark,
-            received: actual,
+            received: actual.token,
             expected: expectEntries
         )
     }
@@ -170,12 +172,26 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
         )
     }
 
+    /// Convenience for `self.tokenizer.location()`.
+    @inlinable
+    open func location() throws -> RawTokenizer.Location? {
+        try tokenizer.location()
+    }
+
+    /// Updates a node's location to point at a given mark.
+    /// Returns `node` back.
+    @inlinable
+    open func setLocation<T>(_ node: T, at mark: Mark) -> T where T: Node {
+        node.location = tokenizer.location(at: mark)
+        return node
+    }
+
     /// Returns the kind of the next token on the tokenizer, if not at EOF.
     /// 
     /// - note: Call is not memoized.
     @inlinable
     public func peekKind() throws -> Token.TokenKind? {
-        return try tokenizer.peekToken()?.kind
+        return try tokenizer.peekToken()?.token.kind
     }
 
     /// Fetches the next token in the stream and compares its kind against `kind`,
@@ -184,9 +200,9 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
     /// 
     /// - note: Call is not memoized.
     @inlinable
-    public func expect(kind: Token.TokenKind) throws -> Token? {
+    public func expect(kind: Token.TokenKind) throws -> TokenResult? {
         let mark = self.mark()
-        if let next = try tokenizer.next(), next.kind == kind {
+        if let next = try tokenizer.next(), next.token.kind == kind {
             return next
         }
         self.restore(mark)
@@ -200,9 +216,9 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
     /// 
     /// - note: Call is not memoized.
     @inlinable
-    public func expect(oneOfKind kinds: Set<Token.TokenKind>) throws -> Token? {
+    public func expect(oneOfKind kinds: Set<Token.TokenKind>) throws -> TokenResult? {
         let mark = self.mark()
-        if let next = try tokenizer.next(), kinds.contains(next.kind) {
+        if let next = try tokenizer.next(), kinds.contains(next.token.kind) {
             return next
         }
         self.restore(mark)
@@ -215,10 +231,10 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
     /// 
     /// - note: Call is not memoized.
     @inlinable
-    public func expect(_ token: Token) throws -> Token? {
+    public func expect(_ token: Token) throws -> TokenResult? {
         let mark = self.mark()
-        if try tokenizer.next() == token {
-            return token
+        if let next = try tokenizer.next(), next.token == token {
+            return next
         }
         self.restore(mark)
         return nil
@@ -230,7 +246,7 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
     /// - note: Call is not memoized.
     @inlinable
     public func maybe(_ token: Token) throws -> Bool {
-        if try tokenizer.peekToken() == token {
+        if try tokenizer.peekToken()?.token == token {
             _ = try tokenizer.next()
             return true
         }
@@ -244,7 +260,7 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
     /// - note: Call is not memoized.
     @inlinable
     public func maybe(kind: Token.TokenKind) throws -> Bool {
-        if try tokenizer.peekToken()?.kind == kind {
+        if try tokenizer.peekToken()?.token.kind == kind {
             _ = try tokenizer.next()
             return true
         }
@@ -255,7 +271,7 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
     /// 
     /// - note: Call is not memoized.
     @inlinable
-    public func nextToken() throws -> Token? {
+    public func nextToken() throws -> TokenResult? {
         return try tokenizer.next()
     }
 

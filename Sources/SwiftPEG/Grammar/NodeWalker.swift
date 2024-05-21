@@ -10,11 +10,13 @@ public class NodeWalker<Visitor: NodeVisitorType> {
     /// The `node` itself is also visited.
     public func walk(_ node: Node) {
         visitor.willVisit(node)
-        node.accept(visitor)
 
-        for child in node.children {
-            walk(child)
+        if node.accept(visitor) == .visitChildren {
+            for child in node.children {
+                walk(child)
+            }
         }
+
         visitor.didVisit(node)
     }
 }

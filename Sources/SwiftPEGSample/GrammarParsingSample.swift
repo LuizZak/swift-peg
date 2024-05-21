@@ -58,7 +58,11 @@ class GrammarParsingSample {
                 }
             }
 
-            let _ = try CodeGen(grammar)
+            let codeGen = try CodeGen(grammar, verbose: true)
+
+            for diagnostic in codeGen.diagnostics {
+                print(diagnostic.description)
+            }
         }
     }
 }

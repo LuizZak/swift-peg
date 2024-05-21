@@ -31,6 +31,10 @@ public struct NodeTypeMacro: MemberMacro {
 class NodeTypeMacroImplementation {
     private static let _nodePropertyAttributeName: String = "NodeProperty"
     private static let _nodeRequiredAttributeName: String = "NodeRequired"
+    private static let _overrideDeepCopyArg: String = "overrideDeepCopyType"
+    private static let _knownArgumentLabels: [String] = [
+        _overrideDeepCopyArg,
+    ]
 
     var node: AttributeSyntax
     var declaration: any DeclGroupSyntax
@@ -51,7 +55,7 @@ class NodeTypeMacroImplementation {
 
     func expand() throws -> [DeclSyntax] {
         let arguments = try _parseArguments()
-        
+
         // For nodes with no explicit access control, inherit the declaration's
         let accessLevel = declaration
             .ext_accessLevel()?
@@ -59,7 +63,7 @@ class NodeTypeMacroImplementation {
             .with(\.trailingTrivia, .spaces(1))
 
         // Collect members to generate based on private nodes decorated with @NodeProperty
-        let evaluatedType = try _collect()
+        let evaluatedType = try _collect(arguments)
 
         var decls: [DeclSyntax] = []
 
@@ -69,22 +73,32 @@ class NodeTypeMacroImplementation {
             accessLevel: accessLevel,
             arguments: arguments
         )
+        let deepCopy = _synthesizeDeepCopy(evaluatedType: evaluatedType, accessLevel: accessLevel)
 
         decls.append(contentsOf: properties)
         decls.append(children)
         if let initializer = _synthesizeInit(evaluatedType: evaluatedType, accessLevel: accessLevel) {
             decls.append(initializer)
         }
+        decls.append(deepCopy)
 
         return decls
     }
 
-    private func _collect() throws -> EvaluatedType {
+    private func _collect(_ arguments: MacroArguments) throws -> EvaluatedType {
         // For nodes with no explicit access control, inherit the declaration's
         let accessLevel = declaration
             .ext_accessLevel()?
             .name.trimmed
             .with(\.trailingTrivia, .spaces(1))
+        
+        let typeName: TokenSyntax
+
+        if let type = declaration.as(ClassDeclSyntax.self) {
+            typeName = type.name
+        } else {
+            throw MacroError.message("Cannot apply macro to non-class declaration \(declaration.kind)")
+        }
 
         // Collect members to generate based on private nodes decorated with @NodeProperty
         let properties = NodePropertyDecl.fromDeclGroupSyntax(
@@ -118,6 +132,8 @@ class NodeTypeMacroImplementation {
         }
 
         return EvaluatedType(
+            typeName: typeName,
+            deepCopyOverride: arguments.overrideDeepCopyType,
             properties: properties,
             required: required
         )
@@ -278,6 +294,50 @@ class NodeTypeMacroImplementation {
         """
     }
 
+    /// Synthesize the deep copy method:
+    /// 
+    /// ```
+    /// <accessLevel> func deepCopy() -> <TypeName> {
+    ///    return <TypeName>(<properties>.deepCopy()...)
+    /// }
+    /// ```
+    private func _synthesizeDeepCopy(
+        evaluatedType: EvaluatedType,
+        accessLevel: TokenSyntax?
+    ) -> DeclSyntax {
+
+        let methodName: TokenSyntax = "deepCopy"
+
+        let args = evaluatedType.synthesizeDeepCopyArguments()
+        let argList = LabeledExprListSyntax(
+            args.ext_commaSeparated(comma: .commaToken().withTrailingSpace())
+        )
+
+        var accessLevel = accessLevel
+        if accessLevel?.tokenKind == .keyword(.open) {
+            accessLevel = .keyword(.public).withTrailingSpace()
+        }
+
+        let overrideToken: TokenSyntax? =
+            evaluatedType
+                .deepCopyOverride
+                .map { _ in .keyword(.override).withTrailingSpace() }
+
+        let returnType =
+            evaluatedType
+                .deepCopyOverride
+                .map({
+                    TokenSyntax.identifier($0)
+                }) ?? evaluatedType.typeName
+
+        return """
+        \(_synthesizedComment())
+        \(accessLevel)\(overrideToken)func \(methodName)() -> \(returnType) {
+            return \(evaluatedType.typeName)(\(argList))
+        }
+        """
+    }
+
     private static func _nodeAttribute(
         named name: String,
         from member: VariableDeclSyntax
@@ -334,11 +394,53 @@ class NodeTypeMacroImplementation {
             )
         }
 
-        return MacroArguments(baseNodeType: genericArgument.argument)
+        var overrideDeepCopyType: String? = nil
+        if let arguments = node.arguments {
+            switch arguments {
+            case .argumentList(let list):
+                for expr in list {
+                    guard let label = expr.label?.trimmed else {
+                        throw MacroError.message("Unexpected argument \(expr). Known arguments: \(Self._knownArgumentLabels)")
+                    }
+                    guard Self._knownArgumentLabels.contains(label.description) else {
+                        throw MacroError.message("Unexpected argument \(expr). Known arguments: \(Self._knownArgumentLabels)")
+                    }
+
+
+                    if label.description == Self._overrideDeepCopyArg  {
+                        guard let string = expr.expression.as(StringLiteralExprSyntax.self) else {
+                            throw MacroError.message(
+                                "Expected \(Self._overrideDeepCopyArg) argument to have a string value"
+                            )
+                        }
+
+                        overrideDeepCopyType = string.segments.description
+                    } else {
+                        throw MacroError.message(
+                            "Unexpected argument \(expr). Known arguments: \(Self._knownArgumentLabels)"
+                        )
+                    }
+                }
+            default:
+                throw MacroError.message("Unsupported argument set \(arguments). Known arguments:  \(Self._knownArgumentLabels)")
+            }
+        }
+
+        return MacroArguments(
+            baseNodeType: genericArgument.argument,
+            overrideDeepCopyType: overrideDeepCopyType
+        )
     }
 
     /// Collects all properties evaluated within a type declaration.
     private struct EvaluatedType {
+        /// The type's name.
+        var typeName: TokenSyntax
+
+        /// A deep-copy override string optionally provided for overriding the
+        /// return type of generated `deepCopy()` method.
+        var deepCopyOverride: String?
+
         /// Properties tagged with `@NodeProperty`
         var properties: [NodePropertyDecl]
 
@@ -364,6 +466,47 @@ class NodeTypeMacroImplementation {
             for required in required {
                 result.append(
                     (required.member, required.synthesizeFunctionParameter())
+                )
+            }
+
+            return result.sorted {
+                $0.syntax.position < $1.syntax.position
+            }.map(\.param)
+        }
+
+        /// Generates function arguments for a `deepCopy()` call that receive all
+        /// properties and required nodes for the evaluated type, calling `deepCopy()`
+        /// on each node property, as required. Each argument receives the property
+        /// of the same name.
+        /// 
+        /// Order of the resulting arguments is significant: it is the same order
+        /// that the properties that generated the declarations are laid out within
+        /// the type.
+        /// 
+        /// - note: Generated arguments don't include commas.
+        func synthesizeDeepCopyArguments() -> [LabeledExprSyntax] {
+            var result: [(syntax: any SyntaxProtocol, param: LabeledExprSyntax)] = []
+
+            for property in properties {
+                var argument = property.synthesizeFunctionArgument()
+
+                let copyCall = property.childNodeType
+                    .synthesizeMemberCall(
+                        symbol: argument.expression,
+                        member: DeclReferenceExprSyntax(
+                            baseName: "deepCopy",
+                            argumentNames: DeclNameArgumentsSyntax(arguments: [])
+                        )
+                    )
+                argument.expression = copyCall
+
+                result.append(
+                    (property.member, argument)
+                )
+            }
+            for required in required {
+                result.append(
+                    (required.member, required.synthesizeFunctionArgument())
                 )
             }
 
@@ -454,6 +597,15 @@ class NodeTypeMacroImplementation {
                 firstName: member,
                 type: type,
                 trailingComma: needsComma ? .commaToken().withTrailingSpace() : nil
+            )
+        }
+
+        /// Synthesizes a function argument from this node's declaration.
+        func synthesizeFunctionArgument(needsComma: Bool = false) -> LabeledExprListSyntax.Element {
+            LabeledExprListSyntax.Element(
+                label: member,
+                colon: .colonToken().withTrailingSpace(),
+                expression: "\(member)" as ExprSyntax
             )
         }
     }
@@ -561,6 +713,15 @@ class NodeTypeMacroImplementation {
             )
         }
 
+        /// Synthesizes a function argument from this node's declaration.
+        func synthesizeFunctionArgument(needsComma: Bool = false) -> LabeledExprListSyntax.Element {
+            LabeledExprListSyntax.Element(
+                label: .identifier(synthesizedName),
+                colon: .colonToken().withTrailingSpace(),
+                expression: ExprSyntax(synthesizedNameExpr)
+            )
+        }
+
         /// Synthesizes the equivalent `<value>.parent = <expr>` expression
         /// according to this node's type.
         func synthesizeAssignParent(_ expr: ExprSyntax) -> ExprSyntax {
@@ -581,6 +742,15 @@ class NodeTypeMacroImplementation {
                 case .array:
                     return true
                 case .simple, .optional:
+                    return false
+                }
+            }
+
+            var isOptional: Bool {
+                switch self {
+                case .optional:
+                    return true
+                case .simple, .array:
                     return false
                 }
             }
@@ -618,6 +788,27 @@ class NodeTypeMacroImplementation {
                 }
             }
 
+            /// Synthesizes an expression that invokes `<member>()` on a base
+            /// expression `symbol` of the type defined by this value, returning
+            /// the resulting value of the call.
+            func synthesizeMemberCall(
+                symbol: ExprSyntax,
+                member: DeclReferenceExprSyntax
+            ) -> ExprSyntax {
+                switch self {
+                case .simple:
+                    return "\(symbol).\(member)"
+                case .array:
+                    return """
+                        \(symbol).map({
+                            $0.\(member)
+                        })
+                        """
+                case .optional:
+                    return "\(symbol)?.\(member)"
+                }
+            }
+
             static func fromType(_ type: TypeSyntax) -> Self {
                 // Array type
                 if let arraySugar = type.as(ArrayTypeSyntax.self) {
@@ -645,5 +836,6 @@ class NodeTypeMacroImplementation {
 
     struct MacroArguments {
         var baseNodeType: TypeSyntax
+        var overrideDeepCopyType: String?
     }
 }

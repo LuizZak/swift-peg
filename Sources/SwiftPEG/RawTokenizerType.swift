@@ -8,7 +8,8 @@ public protocol RawTokenizerType {
     /// An associated type that indicates locations of tokens that are produced
     /// by this tokenizer.
     /// 
-    /// Usually used to diagnose parsing errors.
+    /// Normally used to diagnose parsing errors according to line/column or some
+    /// other locatable, indexable value.
     associatedtype Location: Hashable, Comparable
 
     /// Gets whether any more tokens can be consumed from this tokenizer.

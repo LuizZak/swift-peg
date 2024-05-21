@@ -11,11 +11,13 @@ public final class PrintingNodeVisitor: NodeVisitorType {
         nodeStack.append(node)
     }
 
-    public func visit(_ node: Node) {
+    public func visit(_ node: Node) -> NodeVisitChildrenResult {
         let depth = nodeStack.count
         let spacer = depth == 1 ? "" : String(repeating: "--", count: depth - 1)
 
         print("\(spacer)> \(type(of: node)) " + node.shortDebugDescription)
+
+        return .visitChildren
     }
 
     public func didVisit(_ node: Node) {

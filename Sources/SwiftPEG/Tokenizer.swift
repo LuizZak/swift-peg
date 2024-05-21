@@ -4,6 +4,8 @@ import Foundation
 open class Tokenizer<Raw: RawTokenizerType> {
     public typealias Token = Raw.Token
     public typealias Location = Raw.Location
+    /// Alias for results of parsing methods that query single tokens.
+    public typealias TokenResult = (token: Token, location: Location)
 
     /// Used for uniquely identifying tokenizers
     @usableFromInline
@@ -57,15 +59,30 @@ open class Tokenizer<Raw: RawTokenizerType> {
         "\(mark.index)"
     }
 
+    /// Returns the next token's location in the token sequence, as reported by
+    /// the underlying raw tokenizer.
+    /// 
+    /// Returns `nil` if at EOF.
+    @inlinable
+    open func location() throws -> Raw.Location? {
+        try peekToken()?.location
+    }
+
+    /// Returns the location of the token pointed by `mark`.
+    @inlinable
+    open func location(at mark: Mark) -> Raw.Location {
+        cachedTokens[mark.index].location
+    }
+
     /// Peeks the next token from the underlying raw stream without advancing the
     /// token index.
     @inlinable
-    open func peekToken() throws -> Token? {
+    open func peekToken() throws -> TokenResult? {
         _reach = max(_reach, tokenIndex + 1)
 
         // Look into cached tokens
         if cachedTokens.count > tokenIndex {
-            return cachedTokens[tokenIndex].token
+            return cachedTokens[tokenIndex]
         }
 
         // Prevent probing raw tokenizer past its EOF.
@@ -76,7 +93,7 @@ open class Tokenizer<Raw: RawTokenizerType> {
         // Peek raw stream
         if let nextToken = try _raw.next() {
             cachedTokens.append(nextToken)
-            return nextToken.token
+            return nextToken
         } else {
             _rawEOFIndex = tokenIndex
             return nil
@@ -87,7 +104,7 @@ open class Tokenizer<Raw: RawTokenizerType> {
     /// forward to the next token.
     /// Returns `nil` to indicate the end of the token stream.
     @inlinable
-    open func next() throws -> Token? {
+    open func next() throws -> TokenResult? {
         if let next = try peekToken() {
             tokenIndex += 1
             _reach = max(_reach, tokenIndex)

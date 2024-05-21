@@ -1,5 +1,14 @@
 import XCTest
 
+private func _formatMessage(_ msg: String) -> String {
+    if msg.isEmpty {
+        return ""
+    }
+    return " - \(msg)"
+}
+
+// MARK: -
+
 /// Used as a stub for code paths that indicate success.
 func success() {}
 
@@ -182,13 +191,25 @@ func assertSuccessEqual<T>(
         assertEqual(lhs, rhs, message(), file: file, line: line)
 
     case (.failure(let lhs), .failure(let rhs)):
-        fail("Expected success in lhs and rhs, got: \(lhs) \(rhs)\(_formatMessage(message()))")
+        fail(
+            "Expected success in lhs and rhs, got: \(lhs) \(rhs)\(_formatMessage(message()))",
+            file: file,
+            line: line
+        )
 
     case (.failure(let lhs), _):
-        fail("Expected success in lhs, got: \(lhs)\(_formatMessage(message()))")
+        fail(
+            "Expected success in lhs, got: \(lhs)\(_formatMessage(message()))",
+            file: file,
+            line: line
+        )
 
     case (_, .failure(let rhs)):
-        fail("Expected success in rhs, got: \(rhs)\(_formatMessage(message()))")
+        fail(
+            "Expected success in rhs, got: \(rhs)\(_formatMessage(message()))",
+            file: file,
+            line: line
+        )
     }
 }
 
@@ -207,13 +228,25 @@ func assertSuccessEqual<T>(
         assertEqual(lhs, rhs, message(), file: file, line: line)
 
     case (.failure(let lhs), .failure(let rhs)):
-        fail("Expected success in lhs and rhs, got: \(lhs) \(rhs)\(_formatMessage(message()))")
+        fail(
+            "Expected success in lhs and rhs, got: \(lhs) \(rhs)\(_formatMessage(message()))",
+            file: file,
+            line: line
+        )
 
     case (.failure(let lhs), _):
-        fail("Expected success in lhs, got: \(lhs)\(_formatMessage(message()))")
+        fail(
+            "Expected success in lhs, got: \(lhs)\(_formatMessage(message()))",
+            file: file,
+            line: line
+        )
 
     case (_, .failure(let rhs)):
-        fail("Expected success in rhs, got: \(rhs)\(_formatMessage(message()))")
+        fail(
+            "Expected success in rhs, got: \(rhs)\(_formatMessage(message()))",
+            file: file,
+            line: line
+        )
     }
 }
 
@@ -265,9 +298,60 @@ func assertFailures<T>(
     }
 }
 
-private func _formatMessage(_ msg: String) -> String {
-    if msg.isEmpty {
-        return ""
+// MARK: Collection assertions
+
+/// Asserts a collection of items is empty.
+func assertEmpty(
+    _ value: some Collection,
+    file: StaticString = #file,
+    line: UInt = #line
+) {
+
+    if !value.isEmpty {
+        fail(
+            "Collection is not empty: \(value)",
+            file: file,
+            line: line
+        )
     }
-    return " - \(msg)"
+}
+
+/// Asserts that two collection of items contains the same set of `T` values the
+/// same number of times.
+func assertEqualUnordered<T>(
+    _ lhs: some Collection<T>,
+    _ rhs: some Collection<T>,
+    file: StaticString = #file,
+    line: UInt = #line
+) where T: Equatable {
+
+    if lhs.count != rhs.count {
+        fail(
+            "lhs.count != rhs.count (\(lhs.count) != \(rhs.count))",
+            file: file,
+            line: line
+        )
+        return
+    }
+
+    let signal: () -> Void = {
+        fail(
+            "lhs != rhs (\(lhs) != \(rhs))",
+            file: file,
+            line: line
+        )
+    }
+
+    var remaining = Array(lhs)
+    for item in rhs {
+        if let nextIndex = remaining.firstIndex(of: item) {
+            remaining.remove(at: nextIndex)
+        } else {
+            return signal()
+        }
+    }
+
+    if !remaining.isEmpty {
+        signal()
+    }
 }

@@ -13,8 +13,8 @@ public macro memoized(_ method: String, cacheTarget: String? = nil) =
 /// 
 /// To synthesize properties on nodes, the macro expects desired fields to be
 /// wrapped with `@NodeProperty`.
-@attached(member, names: arbitrary, named(children), named(init))
-public macro GeneratedNodeType<T>() =
+@attached(member, names: arbitrary, named(children), named(init), named(deepCopy))
+public macro GeneratedNodeType<T>(overrideDeepCopyType: String? = nil) =
     #externalMacro(module: "SwiftPEGMacros", type: "NodeTypeMacro")
 
 /// Property wrapper that is type-aliased into different constructs that are

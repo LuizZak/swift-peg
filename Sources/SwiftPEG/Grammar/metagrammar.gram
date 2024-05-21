@@ -1,11 +1,17 @@
 # Metagrammar for SwiftPEG - based on https://github.com/we-like-parsers/pegen_experiments/blob/master/pegen/metagrammar.gram (see LICENSE.pegen.md)
 # This metagrammar requires the MetagrammarRawTokenizer for tokenizing.
 
+@token IDENT;
+@token DIGITS;
+@token STRING;
+
+# Start of grammar
+
 start[Metagrammar.Grammar]: grammar { grammar } ;
 
 grammar[Metagrammar.Grammar]:
-    | metas rules { .init(metas: metas, rules: rules) }
-    | rules { .init(metas: [], rules: rules) }
+    | metas rules { self.setLocation(.init(metas: metas, rules: rules), at: mark) }
+    | rules { self.setLocation(.init(metas: [], rules: rules), at: mark) }
     ;
 
 metas[[Metagrammar.Meta]]:
@@ -13,27 +19,29 @@ metas[[Metagrammar.Meta]]:
     ;
 
 meta[Metagrammar.Meta]:
-    | "@" name=IDENT value=metaValue ';' { .init(name: name, value: value) }
-    | "@" name=IDENT ';' { .init(name: name, value: nil) }
+    | "@" name=IDENT value=metaValue ';' { self.setLocation(.init(name: name, value: value), at: mark) }
+    | "@" name=IDENT ';' { self.setLocation(.init(name: name, value: nil), at: mark) }
     ;
 
 metaValue[Metagrammar.MetaValue]:
-    | ident=IDENT { Metagrammar.MetaIdentifierValue(identifier: ident) }
-    | string=STRING { Metagrammar.MetaStringValue(string: string) }
+    | ident=IDENT { self.setLocation(Metagrammar.MetaIdentifierValue(identifier: ident), at: mark) }
+    | string=STRING { self.setLocation(Metagrammar.MetaStringValue(string: string), at: mark) }
     ;
+
+test: test '+' IDENT | IDENT ;
 
 rules[[Metagrammar.Rule]]:
     | rules=rule+ { rules }
     ;
 
 rule[Metagrammar.Rule]:
-    | ruleName ":" '|' alts ';' { .init(name: ruleName, alts: alts) }
-    | ruleName ":" alts ';' { .init(name: ruleName, alts: alts) }
+    | ruleName ":" '|' alts ';' { self.setLocation(.init(name: ruleName, alts: alts), at: mark) }
+    | ruleName ":" alts ';' { self.setLocation(.init(name: ruleName, alts: alts), at: mark) }
     ;
 
 ruleName[Metagrammar.RuleName]:
-    | a=IDENT '[' type=swiftType ']' { .init(name: name, type: type) }
-    | a=IDENT { .init(name: name, type: nil) }
+    | a=IDENT '[' type=swiftType ']' { self.setLocation(.init(name: name, type: type), at: mark) }
+    | a=IDENT { self.setLocation(.init(name: name, type: nil), at: mark) }
     ;
 
 alts[[Metagrammar.Alt]]:
@@ -42,8 +50,8 @@ alts[[Metagrammar.Alt]]:
     ;
 
 alt[Metagrammar.Alt]:
-    | namedItems action { .init(namedItems: namedItems, action: action) }
-    | namedItems { .init(namedItems: namedItems, action: nil) }
+    | namedItems action { self.setLocation(.init(namedItems: namedItems, action: action), at: mark) }
+    | namedItems { self.setLocation(.init(namedItems: namedItems, action: nil), at: mark) }
     ;
 
 namedItems[[Metagrammar.NamedItem]]:
@@ -52,41 +60,41 @@ namedItems[[Metagrammar.NamedItem]]:
     ;
 
 namedItem[Metagrammar.NamedItem]:
-    | name=IDENT '[' type=swiftType ']' '=' ~ item { .init(name: name, item: item, type: swiftType, lookahead: nil) }
-    | name=IDENT '=' ~ item { .init(name: name, item: item, type: nil, lookahead: nil) }
-    | item { .init(name: nil, item: item, type: nil, lookahead: nil) }
-    | lookahead { .init(name: nil, item: nil, type: nil, lookahead: lookahead) }
+    | name=IDENT '[' type=swiftType ']' '=' ~ item { self.setLocation(.init(name: name, item: item, type: swiftType, lookahead: nil), at: mark) }
+    | name=IDENT '=' ~ item { self.setLocation(.init(name: name, item: item, type: nil, lookahead: nil), at: mark) }
+    | item { self.setLocation(.init(name: nil, item: item, type: nil, lookahead: nil), at: mark) }
+    | lookahead { self.setLocation(.init(name: nil, item: nil, type: nil, lookahead: lookahead), at: mark) }
     ;
 
 lookahead[Metagrammar.LookaheadOrCut]:
-    | '&' ~ atom { Metagrammar.PositiveLookahead(atom: atom) }
-    | '!' ~ atom { Metagrammar.NegativeLookahead(atom: atom) }
-    | '~' { Metagrammar.Cut() }
+    | '&' ~ atom { self.setLocation(Metagrammar.PositiveLookahead(atom: atom), at: mark) }
+    | '!' ~ atom { self.setLocation(Metagrammar.NegativeLookahead(atom: atom), at: mark) }
+    | '~' { self.setLocation(Metagrammar.Cut(), at: mark) }
     ;
 
 item[Metagrammar.Item]:
-    | '[' ~ alts ']' { Metagrammar.OptionalItems(alts: alts) }
-    |  atom '?' { Metagrammar.OptionalItem(atom: atom) }
-    |  atom '*' { Metagrammar.ZeroOrMoreItem(atom: atom) }
-    |  atom '+' { Metagrammar.OneOrMoreItem(atom: atom) }
-    |  sep=atom '.' node=atom '+' { Metagrammar.GatherItem(sep: sep, item: node) }
-    |  atom { Metagrammar.AtomItem(atom: atom) }
+    | '[' ~ alts ']' { self.setLocation(Metagrammar.OptionalItems(alts: alts), at: mark) }
+    |  atom '?' { self.setLocation(Metagrammar.OptionalItem(atom: atom), at: mark) }
+    |  atom '*' { self.setLocation(Metagrammar.ZeroOrMoreItem(atom: atom), at: mark) }
+    |  atom '+' { self.setLocation(Metagrammar.OneOrMoreItem(atom: atom), at: mark) }
+    |  sep=atom '.' node=atom '+' { self.setLocation(Metagrammar.GatherItem(sep: sep, item: node), at: mark) }
+    |  atom { self.setLocation(Metagrammar.AtomItem(atom: atom), at: mark) }
     ;
 
 atom[Metagrammar.Atom]:
-    | '(' ~ alts ')' { Metagrammar.GroupAtom(alts: alts) }
-    | a=IDENT { Metagrammar.IdentAtom(identifier: ident) }
-    | a=STRING { Metagrammar.StringAtom(string: string) }
+    | '(' ~ alts ')' { self.setLocation(Metagrammar.GroupAtom(alts: alts), at: mark) }
+    | a=IDENT { self.setLocation(Metagrammar.IdentAtom(identifier: ident), at: mark) }
+    | a=STRING { self.setLocation(Metagrammar.StringAtom(string: string), at: mark) }
     ;
 
 swiftType[Metagrammar.SwiftType]:
-    | '[' ~ type=swiftType ']' { .init(name: "[" + type.name + "]") }
-    | '(' ~ types=swiftTypeList ')' { .init(name: "(" + types.map(\.name).joined(separator: ", ") + ")") }
-    | name=IDENT '<' ~ types=swiftTypeList '>' '?' { .init(name: name.identifier + "<" + types.map(\.name).joined(separator: ", ") + ">?") }
-    | name=IDENT '<' ~ types=swiftTypeList '>' { .init(name: name.identifier + "<" + types.map(\.name).joined(separator: ", ") + ">") }
-    | name=IDENT '.' ~ inner=swiftType { .init(name: name.identifier + "." + inner.name) }
-    | name=IDENT '?' { .init(name: name.identifier + "?") }
-    | name=IDENT { .init(name: name.identifier) }
+    | '[' ~ type=swiftType ']' { self.setLocation(.init(name: "[" + type.name + "]"), at: mark) }
+    | '(' ~ types=swiftTypeList ')' { self.setLocation(.init(name: "(" + types.map(\.name).joined(separator: ", ") + ")"), at: mark) }
+    | name=IDENT '<' ~ types=swiftTypeList '>' '?' { self.setLocation(.init(name: name.identifier + "<" + types.map(\.name).joined(separator: ", ") + ">?"), at: mark) }
+    | name=IDENT '<' ~ types=swiftTypeList '>' { self.setLocation(.init(name: name.identifier + "<" + types.map(\.name).joined(separator: ", ") + ">"), at: mark) }
+    | name=IDENT '.' ~ inner=swiftType { self.setLocation(.init(name: name.identifier + "." + inner.name), at: mark) }
+    | name=IDENT '?' { self.setLocation(.init(name: name.identifier + "?"), at: mark) }
+    | name=IDENT { self.setLocation(.init(name: name.identifier), at: mark) }
     ;
 
 swiftTypeList[[Metagrammar.SwiftType]]:
@@ -97,23 +105,23 @@ swiftTypeList[[Metagrammar.SwiftType]]:
 # Mini-grammar for the actions
 
 action[Metagrammar.Action]:
-    | "{" ~ balancedTokens "}" { .init(balancedTokens: balancedTokens) }
+    | "{" ~ balancedTokens "}" { self.setLocation(.init(balancedTokens: balancedTokens), at: mark) }
     ;
 
 balancedTokens[Metagrammar.BalancedTokens]:
-    | balancedToken balancedTokens  { .init(tokens: balancedToken.tokens + balancedTokens.tokens) }
+    | balancedToken balancedTokens  { self.setLocation(.init(tokens: balancedToken.tokens + balancedTokens.tokens), at: mark) }
     | balancedToken  { balancedToken }
     ;
 
 balancedToken[Metagrammar.BalancedTokens]:
-    | '{' balancedTokens '}' { .init(tokens: ["{"] + balancedTokens.tokens + ["}"]) }
-    | '[' balancedTokens ']' { .init(tokens: ["["] + balancedTokens.tokens + ["]"]) }
-    | '<' balancedTokens '>' { .init(tokens: ["<"] + balancedTokens.tokens + [">"]) }
-    | '(' balancedTokens ')' { .init(tokens: ["("] + balancedTokens.tokens + [")"]) }
-    | '[' ~ ']' { .init(tokens: ["(", ")"]) }
-    | '{' ~ '}' { .init(tokens: ["{", "}"]) }
-    | '<' ~ '>' { .init(tokens: ["<", ">"]) }
-    | '(' ~ ')' { .init(tokens: ["(", ")"]) }
+    | '{' balancedTokens '}' { self.setLocation(.init(tokens: ["{"] + balancedTokens.tokens + ["}"]), at: mark) }
+    | '[' balancedTokens ']' { self.setLocation(.init(tokens: ["["] + balancedTokens.tokens + ["]"]), at: mark) }
+    | '<' balancedTokens '>' { self.setLocation(.init(tokens: ["<"] + balancedTokens.tokens + [">"]), at: mark) }
+    | '(' balancedTokens ')' { self.setLocation(.init(tokens: ["("] + balancedTokens.tokens + [")"]), at: mark) }
+    | '[' ~ ']' { self.setLocation(.init(tokens: ["(", ")"]), at: mark) }
+    | '{' ~ '}' { self.setLocation(.init(tokens: ["{", "}"]), at: mark) }
+    | '<' ~ '>' { self.setLocation(.init(tokens: ["<", ">"]), at: mark) }
+    | '(' ~ ')' { self.setLocation(.init(tokens: ["(", ")"]), at: mark) }
     | token=balancedTokenAtom { .init(tokens: [token.string]) }
     ;
 

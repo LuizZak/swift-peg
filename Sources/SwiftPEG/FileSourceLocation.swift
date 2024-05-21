@@ -1,11 +1,16 @@
 /// A location for use in raw tokenizers that read contents from a file string
 /// buffer that can be located in terms of line/columns.
-public struct FileSourceLocation {
+public struct FileSourceLocation: CustomStringConvertible {
     /// The 1-based line index for this location.
     public var line: Int
 
     /// The 1-based column index for this location.
     public var column: Int
+
+    @inlinable
+    public var description: String {
+        "line \(line) column \(column)"
+    }
 
     @inlinable
     public init(line: Int, column: Int) {

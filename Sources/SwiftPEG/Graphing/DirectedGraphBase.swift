@@ -1,17 +1,40 @@
 /// A base class for directed graph class implementations in this module.
-public class DirectedGraphBase<Node, Edge: DirectedGraphBaseEdgeType>: DirectedGraph where Edge.Node == Node {
+class DirectedGraphBase<Node, Edge: DirectedGraphBaseEdgeType>: DirectedGraph where Edge.Node == Node {
     /// A list of all nodes contained in this graph
     internal(set) public var nodes: [Node] = []
     /// A list of all edges contained in this graph
     internal(set) public var edges: [Edge] = []
+
+    /// Initializes an empty directed graph.
+    required convenience init() {
+        self.init(nodes: [], edges: [])
+    }
 
     init(nodes: [Node], edges: [Edge]) {
         self.nodes = nodes
         self.edges = edges
     }
 
+    @inlinable
+    public func subgraph(of nodes: some Sequence<Node>) -> Self {
+        let nodeSet = Set(nodes)
+        let connectedEdges = self.edges.filter {
+            nodeSet.contains($0.start) && nodeSet.contains($0.end)
+        }
+
+        let graph = Self()
+        graph.addNodes(nodeSet)
+        
+        for edge in connectedEdges {
+            graph.addEdge(from: edge.start, to: edge.end)
+        }
+
+        return graph
+    }
+
     /// Returns `true` iff two node references represent the same underlying node
     /// in this graph.
+    @inlinable
     public func areNodesEqual(_ node1: Node, _ node2: Node) -> Bool {
         node1 === node2
     }
@@ -19,6 +42,7 @@ public class DirectedGraphBase<Node, Edge: DirectedGraphBaseEdgeType>: DirectedG
     /// Returns whether a given graph node exists in this graph.
     ///
     /// A reference equality test (===) is used to determine syntax node equality.
+    @inlinable
     public func containsNode(_ node: Node) -> Bool {
         nodes.contains { $0 === node }
     }
@@ -220,7 +244,7 @@ public class DirectedGraphBase<Node, Edge: DirectedGraphBaseEdgeType>: DirectedG
     }
 }
 
-public protocol DirectedGraphBaseEdgeType: AnyObject, DirectedGraphEdge {
+protocol DirectedGraphBaseEdgeType: AnyObject, DirectedGraphEdge {
     associatedtype Node: AnyObject & DirectedGraphNode
 
     var start: Node { get }

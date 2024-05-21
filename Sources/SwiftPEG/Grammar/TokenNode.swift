@@ -6,7 +6,11 @@ open class TokenNode: Node {
     /// The immutable token value associated with this node.
     public let token: any Hashable
 
-    public init(token: some Hashable) {
+    public init(token: some Hashable, location: some (Hashable & Comparable)) {
         self.token = token
+        
+        super.init()
+
+        self.location = location
     }
 }

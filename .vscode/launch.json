@@ -10,7 +10,8 @@
             "name": "Debug",
             "program": "${workspaceFolder}/.build/debug/SwiftPEGSample",
             "args": [],
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "Build (debug)"
         }
     ]
 }

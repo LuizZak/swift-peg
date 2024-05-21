@@ -11,7 +11,7 @@ class PEGParserTests: XCTestCase {
 
         let result = try sut.expect(0)
 
-        assertEqual(result, 0)
+        assertEqual(result?.token, 0)
         assertEqual(stubTokenizer.next_callCount, 1)
         assertEqual(stubTokenizer.restore_callCount, 0)
         assertEqual(stubTokenizer.tokenIndex, 1)
@@ -25,7 +25,7 @@ class PEGParserTests: XCTestCase {
 
         let result = try sut.expect(1)
 
-        assertEqual(result, nil)
+        assertEqual(result?.token, nil)
         assertEqual(stubTokenizer.next_callCount, 1)
         assertEqual(stubTokenizer.restore_callCount, 1)
         assertEqual(stubTokenizer.tokenIndex, 0)
@@ -41,9 +41,9 @@ class PEGParserTests: XCTestCase {
         let result_1 = try sut.expect(1)
         let result_2 = try sut.expect(1)
 
-        assertEqual(result_0, nil)
-        assertEqual(result_1, nil)
-        assertEqual(result_2, nil)
+        assertEqual(result_0?.token, nil)
+        assertEqual(result_1?.token, nil)
+        assertEqual(result_2?.token, nil)
         assertEqual(stubTokenizer.next_callCount, 3)
         assertEqual(stubTokenizer.restore_callCount, 3)
         assertEqual(stubTokenizer.tokenIndex, 0)
@@ -59,7 +59,7 @@ class PEGParserTests: XCTestCase {
         _ = try sut.expect(2)
         _ = try sut.expect(3)
 
-        assertEqual(result, nil)
+        assertEqual(result?.token, nil)
         assertEqual(stubTokenizer.next_callCount, 3)
         assertEqual(stubTokenizer.restore_callCount, 3)
         assertEqual(stubTokenizer.tokenIndex, 0)
@@ -76,7 +76,7 @@ class PEGParserTests: XCTestCase {
         sut.restore(mark)
         let result = try sut.expect(0)
         
-        assertEqual(result, 0)
+        assertEqual(result?.token, 0)
         assertEqual(stubTokenizer.next_callCount, 2)
         assertEqual(stubTokenizer.tokenIndex, 1)
     }

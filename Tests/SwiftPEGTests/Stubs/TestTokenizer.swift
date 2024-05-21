@@ -12,8 +12,8 @@ class TestTokenizer<Raw: RawTokenizerType>: Tokenizer<Raw> {
     }
 
     var next_callCount: Int = 0
-    var next_calls: [Token?] = []
-    override func next() throws -> Token? {
+    var next_calls: [TokenResult?] = []
+    override func next() throws -> TokenResult? {
         let result = try super.next()
         next_callCount += 1
         next_calls.append(result)
@@ -21,8 +21,8 @@ class TestTokenizer<Raw: RawTokenizerType>: Tokenizer<Raw> {
     }
 
     var peekToken_callCount: Int = 0
-    var peekToken_calls: [Token?] = []
-    override func peekToken() throws -> Token? {
+    var peekToken_calls: [TokenResult?] = []
+    override func peekToken() throws -> TokenResult? {
         let result = try super.peekToken()
         peekToken_callCount += 1
         peekToken_calls.append(result)
