@@ -2,6 +2,8 @@
 # This metagrammar requires the MetagrammarRawTokenizer for tokenizing.
 
 @parserHeader """
+// HEADS UP! This is a generated file
+
 /// A parser for SwiftPEG grammar files.
 public final class MetagrammarParser<RawTokenizer: RawTokenizerType>: PEGParser<RawTokenizer>
     where RawTokenizer.Token == Metagrammar.MetagrammarToken, RawTokenizer.Location == FileSourceLocation
