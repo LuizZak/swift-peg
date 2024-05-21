@@ -1,9 +1,11 @@
 # Metagrammar for SwiftPEG - based on https://github.com/we-like-parsers/pegen_experiments/blob/master/pegen/metagrammar.gram (see LICENSE.pegen.md)
 # This metagrammar requires the MetagrammarRawTokenizer for tokenizing.
 
-@token IDENT;
-@token DIGITS;
-@token STRING;
+@parserName "MetagrammarParser" ;
+
+@token IDENT ;
+@token DIGITS ;
+@token STRING ;
 
 # Start of grammar
 
@@ -28,8 +30,6 @@ metaValue[Metagrammar.MetaValue]:
     | string=STRING { self.setLocation(Metagrammar.MetaStringValue(string: string), at: mark) }
     ;
 
-test: test '+' IDENT | IDENT ;
-
 rules[[Metagrammar.Rule]]:
     | rules=rule+ { rules }
     ;
@@ -40,8 +40,8 @@ rule[Metagrammar.Rule]:
     ;
 
 ruleName[Metagrammar.RuleName]:
-    | a=IDENT '[' type=swiftType ']' { self.setLocation(.init(name: name, type: type), at: mark) }
-    | a=IDENT { self.setLocation(.init(name: name, type: nil), at: mark) }
+    | name=IDENT '[' type=swiftType ']' { self.setLocation(.init(name: name, type: type), at: mark) }
+    | name=IDENT { self.setLocation(.init(name: name, type: nil), at: mark) }
     ;
 
 alts[[Metagrammar.Alt]]:
@@ -60,7 +60,7 @@ namedItems[[Metagrammar.NamedItem]]:
     ;
 
 namedItem[Metagrammar.NamedItem]:
-    | name=IDENT '[' type=swiftType ']' '=' ~ item { self.setLocation(.init(name: name, item: item, type: swiftType, lookahead: nil), at: mark) }
+    | name=IDENT '[' type=swiftType ']' '=' ~ item { self.setLocation(.init(name: name, item: item, type: type, lookahead: nil), at: mark) }
     | name=IDENT '=' ~ item { self.setLocation(.init(name: name, item: item, type: nil, lookahead: nil), at: mark) }
     | item { self.setLocation(.init(name: nil, item: item, type: nil, lookahead: nil), at: mark) }
     | lookahead { self.setLocation(.init(name: nil, item: nil, type: nil, lookahead: lookahead), at: mark) }
@@ -83,8 +83,8 @@ item[Metagrammar.Item]:
 
 atom[Metagrammar.Atom]:
     | '(' ~ alts ')' { self.setLocation(Metagrammar.GroupAtom(alts: alts), at: mark) }
-    | a=IDENT { self.setLocation(Metagrammar.IdentAtom(identifier: ident), at: mark) }
-    | a=STRING { self.setLocation(Metagrammar.StringAtom(string: string), at: mark) }
+    | IDENT { self.setLocation(Metagrammar.IdentAtom(identifier: ident, identity: .unresolved), at: mark) }
+    | STRING { self.setLocation(Metagrammar.StringAtom(string: string), at: mark) }
     ;
 
 swiftType[Metagrammar.SwiftType]:
@@ -126,20 +126,20 @@ balancedToken[Metagrammar.BalancedTokens]:
     ;
 
 balancedTokenAtom[Token]:
-    | IDENT
-    | DIGITS
-    | STRING
-    | ':'
-    | ';'
-    | '|'
-    | '='
-    | '~'
-    | '*'
-    | '+'
-    | '?'
-    | ','
-    | '.'
-    | '@'
-    | '/'
-    | '\'
+    | token=IDENT { token.token }
+    | token=DIGITS { token.token }
+    | token=STRING { token.token }
+    | token=':' { token.token }
+    | token=';' { token.token }
+    | token='|' { token.token }
+    | token='=' { token.token }
+    | token='~' { token.token }
+    | token='*' { token.token }
+    | token='+' { token.token }
+    | token='?' { token.token }
+    | token=',' { token.token }
+    | token='.' { token.token }
+    | token='@' { token.token }
+    | token='/' { token.token }
+    | token='\' { token.token }
     ;

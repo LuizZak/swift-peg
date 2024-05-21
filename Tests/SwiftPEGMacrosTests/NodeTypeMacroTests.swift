@@ -24,6 +24,11 @@ class NodeTypeMacroTests: XCTestCase {
                 override var children: [BaseNode] {
                     Self.makeNodeList()
                 }
+
+                /// Synthesized with `NodeTypeMacro`.
+                func deepCopy() -> Node {
+                    return Node()
+                }
             }
             """#,
             macros: testMacros)
@@ -89,6 +94,11 @@ class NodeTypeMacroTests: XCTestCase {
                     self._subNode1.parent = self
                     self._subNode2.parent = self
                 }
+
+                /// Synthesized with `NodeTypeMacro`.
+                func deepCopy() -> Node {
+                    return Node(subNode1: subNode1.deepCopy(), subNode2: subNode2.deepCopy())
+                }
             }
             """#,
             macros: testMacros)
@@ -138,6 +148,13 @@ class NodeTypeMacroTests: XCTestCase {
                         $0.parent = self
                     })
                 }
+
+                /// Synthesized with `NodeTypeMacro`.
+                func deepCopy() -> Node {
+                    return Node(nodes: nodes.map({
+                    $0.deepCopy()
+                            }))
+                }
             }
             """#,
             macros: testMacros)
@@ -180,6 +197,11 @@ class NodeTypeMacroTests: XCTestCase {
                     super.init()
 
                     self._maybeNode?.parent = self
+                }
+
+                /// Synthesized with `NodeTypeMacro`.
+                func deepCopy() -> Node {
+                    return Node(maybeNode: maybeNode?.deepCopy())
                 }
             }
             """#,
@@ -247,6 +269,13 @@ class NodeTypeMacroTests: XCTestCase {
                         $0.parent = self
                     })
                     self._subNode2.parent = self
+                }
+
+                /// Synthesized with `NodeTypeMacro`.
+                func deepCopy() -> Node {
+                    return Node(nodes: nodes.map({
+                    $0.deepCopy()
+                            }), subNode2: subNode2.deepCopy())
                 }
             }
             """#,
@@ -319,6 +348,11 @@ class NodeTypeMacroTests: XCTestCase {
                     self._subNode1.parent = self
                     self._subNode2.parent = self
                 }
+
+                /// Synthesized with `NodeTypeMacro`.
+                func deepCopy() -> Node {
+                    return Node(subNode1: subNode1.deepCopy(), subNode2: subNode2.deepCopy())
+                }
             }
             """#,
             macros: testMacros)
@@ -390,6 +424,11 @@ class NodeTypeMacroTests: XCTestCase {
                     self._subNode1.parent = self
                     self._subNode2.parent = self
                 }
+
+                /// Synthesized with `NodeTypeMacro`.
+                public func deepCopy() -> Node {
+                    return Node(subNode1: subNode1.deepCopy(), subNode2: subNode2.deepCopy())
+                }
             }
             """#,
             macros: testMacros)
@@ -418,6 +457,11 @@ class NodeTypeMacroTests: XCTestCase {
                     self.notANode = notANode
 
                     super.init()
+                }
+
+                /// Synthesized with `NodeTypeMacro`.
+                func deepCopy() -> Node {
+                    return Node(notANode: notANode)
                 }
             }
             """#,
@@ -468,6 +512,11 @@ class NodeTypeMacroTests: XCTestCase {
                     super.init()
 
                     self._subNode1.parent = self
+                }
+
+                /// Synthesized with `NodeTypeMacro`.
+                func deepCopy() -> Node {
+                    return Node(subNode1: subNode1.deepCopy(), notANode: notANode)
                 }
             }
             """#,
@@ -538,6 +587,11 @@ class NodeTypeMacroTests: XCTestCase {
 
                     self._subNode1.parent = self
                     self._subNode2.parent = self
+                }
+
+                /// Synthesized with `NodeTypeMacro`.
+                func deepCopy() -> Node {
+                    return Node(subNode1: subNode1.deepCopy(), notANode: notANode, subNode2: subNode2.deepCopy())
                 }
             }
             """#,

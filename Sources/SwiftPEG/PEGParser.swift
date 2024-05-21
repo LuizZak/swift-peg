@@ -267,12 +267,38 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
         return false
     }
 
+    /// Returns a doubly-wrapped optional value that wraps the optional result
+    /// of a given production into `Optional<T>.some(<result>)`.
+    /// This method can be used to chain optional productions into if-let statements
+    /// without failing the whole check.
+    @inlinable
+    public func optional<T>(_ production: () throws -> T?) rethrows -> T?? {
+        .some(try production())
+    }
+
     /// Fetches the next token in the stream and returns it unconditionally.
     /// 
     /// - note: Call is not memoized.
     @inlinable
     public func nextToken() throws -> TokenResult? {
         return try tokenizer.next()
+    }
+
+    /// Performs a given production repeatedly until it returns `nil`.
+    /// 
+    /// Since it expects that the first production may be `nil`, it always succeeds,
+    /// returning an empty array if the first production failed.
+    /// 
+    /// - note: Call is not memoized.
+    @inlinable
+    public func repeatZeroOrMore<T>(_ production: () throws -> T?) rethrows -> [T] {
+        var result: [T] = []
+
+        while let next = try production() {
+            result.append(next)
+        }
+
+        return result
     }
 
     /// Performs a given production repeatedly until it returns `nil`.
@@ -299,23 +325,6 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
 
         self.restore(mark)
         return nil
-    }
-
-    /// Performs a given production repeatedly until it returns `nil`.
-    /// 
-    /// Since it expects that the first production may be `nil`, it always succeeds,
-    /// returning an empty array if the first production failed.
-    /// 
-    /// - note: Call is not memoized.
-    @inlinable
-    public func repeatZeroOrMore<T>(_ production: () throws -> T?) rethrows -> [T] {
-        var result: [T] = []
-
-        while let next = try production() {
-            result.append(next)
-        }
-
-        return result
     }
 
     /// Performs a positive lookahead for a token, returning `true` if the result

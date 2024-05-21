@@ -6,7 +6,7 @@ public protocol NodeVisitorType {
     /// Called by a generic node to indicate a visit within.
     /// If result is `NodeVisitChildrenResult.skipChildren`, the node will be
     /// visited with `visit` but children of the node will not.
-    func visit(_ node: Node) -> NodeVisitChildrenResult
+    func visit(_ node: Node) throws -> NodeVisitChildrenResult
 
     /// Called by a node walker to indicate that a node hierarchy was fully
     /// visited.

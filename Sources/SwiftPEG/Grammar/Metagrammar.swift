@@ -9,17 +9,17 @@ extension Metagrammar {
     /// Base class for metagrammar nodes.
     public class MetagrammarNode: Node {
         /// Accepts a given metagrammar-node visitor into this node.
-        public override func accept<Visitor>(_ visitor: Visitor) -> NodeVisitChildrenResult where Visitor: NodeVisitorType {
+        public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: NodeVisitorType {
             if let cast = visitor as? MetagrammarNodeVisitorType {
-                return self.accept(cast)
+                return try self.accept(cast)
             }
 
-            return super.accept(visitor)
+            return try super.accept(visitor)
         }
 
         /// Accepts a given metagrammar-node visitor into this node.
-        public func accept<Visitor>(_ visitor: Visitor) -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
-            super.accept(visitor)
+        public func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
+            try super.accept(visitor)
         }
     }
 
@@ -46,8 +46,8 @@ extension Metagrammar {
         private var _rules: [Rule] = []
 
         /// Accepts a given metagrammar-node visitor into this node.
-        public override func accept<Visitor>(_ visitor: Visitor) -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
-            visitor.visit(self)
+        public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
+            try visitor.visit(self)
         }
     }
 
@@ -70,8 +70,8 @@ extension Metagrammar {
         var _value: MetaValue?
 
         /// Accepts a given metagrammar-node visitor into this node.
-        public override func accept<Visitor>(_ visitor: Visitor) -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
-            visitor.visit(self)
+        public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
+            try visitor.visit(self)
         }
     }
 
@@ -106,8 +106,8 @@ extension Metagrammar {
         public override var shortDebugDescription: String { _identifier.shortDebugDescription }
 
         /// Accepts a given metagrammar-node visitor into this node.
-        public override func accept<Visitor>(_ visitor: Visitor) -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
-            visitor.visit(self)
+        public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
+            try visitor.visit(self)
         }
     }
 
@@ -126,8 +126,8 @@ extension Metagrammar {
         public override var shortDebugDescription: String { _string.shortDebugDescription }
 
         /// Accepts a given metagrammar-node visitor into this node.
-        public override func accept<Visitor>(_ visitor: Visitor) -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
-            visitor.visit(self)
+        public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
+            try visitor.visit(self)
         }
     }
 
@@ -158,8 +158,8 @@ extension Metagrammar {
         var isLeftRecursiveLead: Bool = false
 
         /// Accepts a given metagrammar-node visitor into this node.
-        public override func accept<Visitor>(_ visitor: Visitor) -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
-            visitor.visit(self)
+        public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
+            try visitor.visit(self)
         }
 
         /// Internal nullability visitor method to check if this rule is nullable.
@@ -207,8 +207,8 @@ extension Metagrammar {
         public override var shortDebugDescription: String { name.shortDebugDescription }
 
         /// Accepts a given metagrammar-node visitor into this node.
-        public override func accept<Visitor>(_ visitor: Visitor) -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
-            visitor.visit(self)
+        public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
+            try visitor.visit(self)
         }
     }
 
@@ -232,8 +232,8 @@ extension Metagrammar {
         var _action: Action?
 
         /// Accepts a given metagrammar-node visitor into this node.
-        public override func accept<Visitor>(_ visitor: Visitor) -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
-            visitor.visit(self)
+        public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
+            try visitor.visit(self)
         }
 
         /// Internal nullability visitor method to check if rules are nullable.
@@ -291,8 +291,8 @@ extension Metagrammar {
         var nullable: Bool = false
 
         /// Accepts a given metagrammar-node visitor into this node.
-        public override func accept<Visitor>(_ visitor: Visitor) -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
-            visitor.visit(self)
+        public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
+            try visitor.visit(self)
         }
 
         /// Internal nullability visitor method to check if rules are nullable.
@@ -360,8 +360,8 @@ extension Metagrammar {
         public override var shortDebugDescription: String { "&" }
 
         /// Accepts a given metagrammar-node visitor into this node.
-        public override func accept<Visitor>(_ visitor: Visitor) -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
-            visitor.visit(self)
+        public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
+            try visitor.visit(self)
         }
     }
 
@@ -382,8 +382,8 @@ extension Metagrammar {
         public override var shortDebugDescription: String { "!" }
 
         /// Accepts a given metagrammar-node visitor into this node.
-        public override func accept<Visitor>(_ visitor: Visitor) -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
-            visitor.visit(self)
+        public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
+            try visitor.visit(self)
         }
     }
 
@@ -401,8 +401,8 @@ extension Metagrammar {
         public override var shortDebugDescription: String { "~" }
 
         /// Accepts a given metagrammar-node visitor into this node.
-        public override func accept<Visitor>(_ visitor: Visitor) -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
-            visitor.visit(self)
+        public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
+            try visitor.visit(self)
         }
     }
 
@@ -454,8 +454,8 @@ extension Metagrammar {
         public override var shortDebugDescription: String { "?" }
 
         /// Accepts a given metagrammar-node visitor into this node.
-        public override func accept<Visitor>(_ visitor: Visitor) -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
-            visitor.visit(self)
+        public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
+            try visitor.visit(self)
         }
 
         override func visitNullable(_ visitor: NullabilityVisitor) -> Bool {
@@ -490,8 +490,8 @@ extension Metagrammar {
         public override var shortDebugDescription: String { "?" }
 
         /// Accepts a given metagrammar-node visitor into this node.
-        public override func accept<Visitor>(_ visitor: Visitor) -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
-            visitor.visit(self)
+        public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
+            try visitor.visit(self)
         }
 
         override func visitNullable(_ visitor: NullabilityVisitor) -> Bool {
@@ -521,8 +521,8 @@ extension Metagrammar {
         public override var shortDebugDescription: String { "*" }
 
         /// Accepts a given metagrammar-node visitor into this node.
-        public override func accept<Visitor>(_ visitor: Visitor) -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
-            visitor.visit(self)
+        public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
+            try visitor.visit(self)
         }
 
         override func visitNullable(_ visitor: NullabilityVisitor) -> Bool {
@@ -552,8 +552,8 @@ extension Metagrammar {
         public override var shortDebugDescription: String { "+" }
 
         /// Accepts a given metagrammar-node visitor into this node.
-        public override func accept<Visitor>(_ visitor: Visitor) -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
-            visitor.visit(self)
+        public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
+            try visitor.visit(self)
         }
 
         override func visitNullable(_ visitor: NullabilityVisitor) -> Bool {
@@ -591,8 +591,8 @@ extension Metagrammar {
         var _item: Atom
 
         /// Accepts a given metagrammar-node visitor into this node.
-        public override func accept<Visitor>(_ visitor: Visitor) -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
-            visitor.visit(self)
+        public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
+            try visitor.visit(self)
         }
 
         override func visitNullable(_ visitor: NullabilityVisitor) -> Bool {
@@ -616,8 +616,8 @@ extension Metagrammar {
         var _atom: Atom
 
         /// Accepts a given metagrammar-node visitor into this node.
-        public override func accept<Visitor>(_ visitor: Visitor) -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
-            visitor.visit(self)
+        public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
+            try visitor.visit(self)
         }
 
         override func visitNullable(_ visitor: NullabilityVisitor) -> Bool {
@@ -668,8 +668,8 @@ extension Metagrammar {
         var _alts: [Alt]
 
         /// Accepts a given metagrammar-node visitor into this node.
-        public override func accept<Visitor>(_ visitor: Visitor) -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
-            visitor.visit(self)
+        public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
+            try visitor.visit(self)
         }
 
         override func visitNullable(_ visitor: NullabilityVisitor) -> Bool {
@@ -709,8 +709,8 @@ extension Metagrammar {
         }
 
         /// Accepts a given metagrammar-node visitor into this node.
-        public override func accept<Visitor>(_ visitor: Visitor) -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
-            visitor.visit(self)
+        public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
+            try visitor.visit(self)
         }
 
         override func visitNullable(_ visitor: NullabilityVisitor) -> Bool {
@@ -730,14 +730,18 @@ extension Metagrammar {
         @NodeProperty
         var _identifier: IdentifierToken
 
+        /// The identity of this atom.
+        @NodeRequired
+        public var identity: Identity
+
         /// Convenience for `self.identifier.identifier`.
         public var name: String {
             _identifier.identifier
         }
 
         /// Accepts a given metagrammar-node visitor into this node.
-        public override func accept<Visitor>(_ visitor: Visitor) -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
-            visitor.visit(self)
+        public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
+            try visitor.visit(self)
         }
 
         override func visitNullable(_ visitor: NullabilityVisitor) -> Bool {
@@ -750,6 +754,18 @@ extension Metagrammar {
 
         override func initialNames() -> Set<String> {
             return [name]
+        }
+
+        /// Specifies the identity of an identifier atom.
+        public enum Identity: Hashable {
+            /// The identifier refers to a rule in the grammar.
+            case ruleName
+
+            /// The identifier refers to a token in the grammar.
+            case token
+
+            /// The identifier is unresolved.
+            case unresolved
         }
     }
 
@@ -783,8 +799,8 @@ extension Metagrammar {
         public override var shortDebugDescription: String { self.name }
 
         /// Accepts a given metagrammar-node visitor into this node.
-        public override func accept<Visitor>(_ visitor: Visitor) -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
-            visitor.visit(self)
+        public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
+            try visitor.visit(self)
         }
     }
 
@@ -810,8 +826,8 @@ extension Metagrammar {
         }
 
         /// Accepts a given metagrammar-node visitor into this node.
-        public override func accept<Visitor>(_ visitor: Visitor) -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
-            visitor.visit(self)
+        public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
+            try visitor.visit(self)
         }
     }
 
@@ -850,8 +866,8 @@ extension Metagrammar {
         public override var shortDebugDescription: String { "[\(tokens.map { #""\#($0)""# }.joined(separator: ", "))]" }
 
         /// Accepts a given metagrammar-node visitor into this node.
-        public override func accept<Visitor>(_ visitor: Visitor) -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
-            visitor.visit(self)
+        public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
+            try visitor.visit(self)
         }
     }
 
@@ -1378,100 +1394,100 @@ extension Metagrammar {
     /// Protocol for visiting Metagrammar node types.
     public protocol MetagrammarNodeVisitorType: NodeVisitorType {
         /// Visits a Grammar node.
-        func visit(_ node: Grammar) -> NodeVisitChildrenResult
+        func visit(_ node: Grammar) throws -> NodeVisitChildrenResult
 
         /// Visits a Meta-property node.
-        func visit(_ node: Meta) -> NodeVisitChildrenResult
+        func visit(_ node: Meta) throws -> NodeVisitChildrenResult
 
         /// Visits a Meta-property identifier value node.
-        func visit(_ node: MetaIdentifierValue) -> NodeVisitChildrenResult
+        func visit(_ node: MetaIdentifierValue) throws -> NodeVisitChildrenResult
 
         /// Visits a Meta-property string value node.
-        func visit(_ node: MetaStringValue) -> NodeVisitChildrenResult
+        func visit(_ node: MetaStringValue) throws -> NodeVisitChildrenResult
 
         /// Visits a Rule node.
-        func visit(_ node: Rule) -> NodeVisitChildrenResult
+        func visit(_ node: Rule) throws -> NodeVisitChildrenResult
 
         /// Visits a Rule Name node.
-        func visit(_ node: RuleName) -> NodeVisitChildrenResult
+        func visit(_ node: RuleName) throws -> NodeVisitChildrenResult
 
         /// Visits an Alt node.
-        func visit(_ node: Alt) -> NodeVisitChildrenResult
+        func visit(_ node: Alt) throws -> NodeVisitChildrenResult
 
         /// Visits a Named Item node.
-        func visit(_ node: NamedItem) -> NodeVisitChildrenResult
+        func visit(_ node: NamedItem) throws -> NodeVisitChildrenResult
 
         /// Visits a Positive Lookahead node.
-        func visit(_ node: PositiveLookahead) -> NodeVisitChildrenResult
+        func visit(_ node: PositiveLookahead) throws -> NodeVisitChildrenResult
 
         /// Visits a Negative Lookahead node.
-        func visit(_ node: NegativeLookahead) -> NodeVisitChildrenResult
+        func visit(_ node: NegativeLookahead) throws -> NodeVisitChildrenResult
 
         /// Visits a Cut node.
-        func visit(_ node: Cut) -> NodeVisitChildrenResult
+        func visit(_ node: Cut) throws -> NodeVisitChildrenResult
 
         /// Visits an Optional Alts node.
-        func visit(_ node: OptionalItems) -> NodeVisitChildrenResult
+        func visit(_ node: OptionalItems) throws -> NodeVisitChildrenResult
 
         /// Visits an Optional Atom node.
-        func visit(_ node: OptionalItem) -> NodeVisitChildrenResult
+        func visit(_ node: OptionalItem) throws -> NodeVisitChildrenResult
 
         /// Visits a Zero Or More Item node.
-        func visit(_ node: ZeroOrMoreItem) -> NodeVisitChildrenResult
+        func visit(_ node: ZeroOrMoreItem) throws -> NodeVisitChildrenResult
 
         /// Visits a One Or More Item node.
-        func visit(_ node: OneOrMoreItem) -> NodeVisitChildrenResult
+        func visit(_ node: OneOrMoreItem) throws -> NodeVisitChildrenResult
 
         /// Visits a Gather Item node.
-        func visit(_ node: GatherItem) -> NodeVisitChildrenResult
+        func visit(_ node: GatherItem) throws -> NodeVisitChildrenResult
 
         /// Visits an Atom Item node.
-        func visit(_ node: AtomItem) -> NodeVisitChildrenResult
+        func visit(_ node: AtomItem) throws -> NodeVisitChildrenResult
 
         /// Visits a Group Atom node.
-        func visit(_ node: GroupAtom) -> NodeVisitChildrenResult
+        func visit(_ node: GroupAtom) throws -> NodeVisitChildrenResult
 
         /// Visits a String Atom node.
-        func visit(_ node: StringAtom) -> NodeVisitChildrenResult
+        func visit(_ node: StringAtom) throws -> NodeVisitChildrenResult
 
         /// Visits an Identifier Atom node.
-        func visit(_ node: IdentAtom) -> NodeVisitChildrenResult
+        func visit(_ node: IdentAtom) throws -> NodeVisitChildrenResult
 
         /// Visits a Swift Type node.
-        func visit(_ node: SwiftType) -> NodeVisitChildrenResult
+        func visit(_ node: SwiftType) throws -> NodeVisitChildrenResult
 
         /// Visits an Action node.
-        func visit(_ node: Action) -> NodeVisitChildrenResult
+        func visit(_ node: Action) throws -> NodeVisitChildrenResult
 
         /// Visits a Balanced Tokens node.
-        func visit(_ node: BalancedTokens) -> NodeVisitChildrenResult
+        func visit(_ node: BalancedTokens) throws -> NodeVisitChildrenResult
     }
 }
 
 public extension Metagrammar.MetagrammarNodeVisitorType {
-    func visit(_ node: Metagrammar.Grammar) -> NodeVisitChildrenResult { .visitChildren }
-    func visit(_ node: Metagrammar.Meta) -> NodeVisitChildrenResult { .visitChildren }
-    func visit(_ node: Metagrammar.MetaIdentifierValue) -> NodeVisitChildrenResult { .visitChildren }
-    func visit(_ node: Metagrammar.MetaStringValue) -> NodeVisitChildrenResult { .visitChildren }
-    func visit(_ node: Metagrammar.Rule) -> NodeVisitChildrenResult { .visitChildren }
-    func visit(_ node: Metagrammar.RuleName) -> NodeVisitChildrenResult { .visitChildren }
-    func visit(_ node: Metagrammar.Alt) -> NodeVisitChildrenResult { .visitChildren }
-    func visit(_ node: Metagrammar.NamedItem) -> NodeVisitChildrenResult { .visitChildren }
-    func visit(_ node: Metagrammar.PositiveLookahead) -> NodeVisitChildrenResult { .visitChildren }
-    func visit(_ node: Metagrammar.NegativeLookahead) -> NodeVisitChildrenResult { .visitChildren }
-    func visit(_ node: Metagrammar.Cut) -> NodeVisitChildrenResult { .visitChildren }
-    func visit(_ node: Metagrammar.OptionalItems) -> NodeVisitChildrenResult { .visitChildren }
-    func visit(_ node: Metagrammar.OptionalItem) -> NodeVisitChildrenResult { .visitChildren }
-    func visit(_ node: Metagrammar.ZeroOrMoreItem) -> NodeVisitChildrenResult { .visitChildren }
-    func visit(_ node: Metagrammar.OneOrMoreItem) -> NodeVisitChildrenResult { .visitChildren }
-    func visit(_ node: Metagrammar.GatherItem) -> NodeVisitChildrenResult { .visitChildren }
-    func visit(_ node: Metagrammar.AtomItem) -> NodeVisitChildrenResult { .visitChildren }
-    func visit(_ node: Metagrammar.GroupAtom) -> NodeVisitChildrenResult { .visitChildren }
-    func visit(_ node: Metagrammar.StringAtom) -> NodeVisitChildrenResult { .visitChildren }
-    func visit(_ node: Metagrammar.IdentAtom) -> NodeVisitChildrenResult { .visitChildren }
-    func visit(_ node: Metagrammar.SwiftType) -> NodeVisitChildrenResult { .visitChildren }
-    func visit(_ node: Metagrammar.Action) -> NodeVisitChildrenResult { .visitChildren }
-    func visit(_ node: Metagrammar.BalancedTokens) -> NodeVisitChildrenResult { .visitChildren }
+    func visit(_ node: Metagrammar.Grammar) throws -> NodeVisitChildrenResult { .visitChildren }
+    func visit(_ node: Metagrammar.Meta) throws -> NodeVisitChildrenResult { .visitChildren }
+    func visit(_ node: Metagrammar.MetaIdentifierValue) throws -> NodeVisitChildrenResult { .visitChildren }
+    func visit(_ node: Metagrammar.MetaStringValue) throws -> NodeVisitChildrenResult { .visitChildren }
+    func visit(_ node: Metagrammar.Rule) throws -> NodeVisitChildrenResult { .visitChildren }
+    func visit(_ node: Metagrammar.RuleName) throws -> NodeVisitChildrenResult { .visitChildren }
+    func visit(_ node: Metagrammar.Alt) throws -> NodeVisitChildrenResult { .visitChildren }
+    func visit(_ node: Metagrammar.NamedItem) throws -> NodeVisitChildrenResult { .visitChildren }
+    func visit(_ node: Metagrammar.PositiveLookahead) throws -> NodeVisitChildrenResult { .visitChildren }
+    func visit(_ node: Metagrammar.NegativeLookahead) throws -> NodeVisitChildrenResult { .visitChildren }
+    func visit(_ node: Metagrammar.Cut) throws -> NodeVisitChildrenResult { .visitChildren }
+    func visit(_ node: Metagrammar.OptionalItems) throws -> NodeVisitChildrenResult { .visitChildren }
+    func visit(_ node: Metagrammar.OptionalItem) throws -> NodeVisitChildrenResult { .visitChildren }
+    func visit(_ node: Metagrammar.ZeroOrMoreItem) throws -> NodeVisitChildrenResult { .visitChildren }
+    func visit(_ node: Metagrammar.OneOrMoreItem) throws -> NodeVisitChildrenResult { .visitChildren }
+    func visit(_ node: Metagrammar.GatherItem) throws -> NodeVisitChildrenResult { .visitChildren }
+    func visit(_ node: Metagrammar.AtomItem) throws -> NodeVisitChildrenResult { .visitChildren }
+    func visit(_ node: Metagrammar.GroupAtom) throws -> NodeVisitChildrenResult { .visitChildren }
+    func visit(_ node: Metagrammar.StringAtom) throws -> NodeVisitChildrenResult { .visitChildren }
+    func visit(_ node: Metagrammar.IdentAtom) throws -> NodeVisitChildrenResult { .visitChildren }
+    func visit(_ node: Metagrammar.SwiftType) throws -> NodeVisitChildrenResult { .visitChildren }
+    func visit(_ node: Metagrammar.Action) throws -> NodeVisitChildrenResult { .visitChildren }
+    func visit(_ node: Metagrammar.BalancedTokens) throws -> NodeVisitChildrenResult { .visitChildren }
 }
 
 #endif

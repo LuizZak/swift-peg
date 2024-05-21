@@ -8,12 +8,12 @@ public class NodeWalker<Visitor: NodeVisitorType> {
 
     /// Starts walking in depth-first manner on a given node's hierarchy.
     /// The `node` itself is also visited.
-    public func walk(_ node: Node) {
+    public func walk(_ node: Node) throws {
         visitor.willVisit(node)
 
-        if node.accept(visitor) == .visitChildren {
+        if try node.accept(visitor) == .visitChildren {
             for child in node.children {
-                walk(child)
+                try walk(child)
             }
         }
 

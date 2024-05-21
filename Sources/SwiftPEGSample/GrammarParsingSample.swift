@@ -23,7 +23,7 @@ class GrammarParsingSample {
         if !tokenizer.isEOF {
             let visitor = PrintingNodeVisitor()
             let walker = NodeWalker(visitor: visitor)
-            walker.walk(grammar)
+            try walker.walk(grammar)
 
             print("Warning: Tokenizer did not consume entire file!")
 
@@ -63,6 +63,14 @@ class GrammarParsingSample {
             for diagnostic in codeGen.diagnostics {
                 print(diagnostic.description)
             }
+
+            let swiftCodeGen = SwiftCodeGen(grammar: codeGen.generatedGrammar())
+
+            let parser = try swiftCodeGen.generateParser()
+
+            print("Generated parser code:")
+            print("-------------------------------------------------")
+            print(parser)
         }
     }
 }

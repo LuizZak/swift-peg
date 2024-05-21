@@ -49,8 +49,8 @@ open class Node {
     /// Subclasses of `Node` can override this method to customize the visit call
     /// that is made to the visitor and support specialized `NodeVisitorType`
     /// types.
-    open func accept<Visitor>(_ visitor: Visitor) -> NodeVisitChildrenResult where Visitor: NodeVisitorType {
-        visitor.visit(self)
+    open func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: NodeVisitorType {
+        try visitor.visit(self)
     }
 
     /// Returns the first ancestor of this node that can be type-cast into `T`.

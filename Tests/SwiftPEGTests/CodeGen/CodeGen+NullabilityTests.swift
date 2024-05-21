@@ -46,11 +46,14 @@ private func makeAlt(_ items: [Metagrammar.NamedItem]) -> Metagrammar.Alt {
     )
 }
 
-private func makeItem(_ ident: String) -> Metagrammar.NamedItem {
+private func makeItem(_ ident: String, identity: Metagrammar.IdentAtom.Identity = .ruleName) -> Metagrammar.NamedItem {
     .init(
         name: nil,
         item: Metagrammar.AtomItem(
-            atom: Metagrammar.IdentAtom(identifier: makeIdent(ident))
+            atom: Metagrammar.IdentAtom(
+                identifier: makeIdent(ident),
+                identity: identity
+            )
         ),
         type: nil,
         lookahead: nil
