@@ -304,7 +304,12 @@ public class CodeGen {
                     return .identifier(value.identifier.identifier)
 
                 case let value as Metagrammar.MetaStringValue:
-                    return .string(value.string.valueTrimmingQuotes)
+                    switch value.string.token {
+                    case .string(.tripleQuote(let contents)) where contents.hasPrefix("\n"):
+                        return .string(String(contents.dropFirst()))
+                    default:
+                        return .string(value.string.valueTrimmingQuotes)
+                    }
                 
                 default:
                     fatalError("Unknown meta-property value type \(type(of: node))")

@@ -11,7 +11,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>: PEGParser<
     /// ```
     @memoized("WHITESPACE")
     @inlinable
-    public func _WHITESPACE() throws -> Metagrammar.IdentifierToken? {
+    public func _WHITESPACE() throws -> TokenNode<Metagrammar.MetagrammarToken, RawTokenizer.Location>? {
         let mark = self.mark()
 
         if
@@ -195,7 +195,7 @@ balancedTokens[Metagrammar.BalancedTokens]:
     ;
 
 balancedToken[Metagrammar.BalancedTokens]:
-    | token=WHITESPACE { token }
+    | token=WHITESPACE { self.setLocation(.init(tokens: [token]), at: mark) }
     | l='{' balancedTokens r='}' { self.setLocation(.init(tokens: [.init(l)] + balancedTokens.tokens + [.init(r)]), at: mark) }
     | l='[' balancedTokens r=']' { self.setLocation(.init(tokens: [.init(l)] + balancedTokens.tokens + [.init(r)]), at: mark) }
     | l='<' balancedTokens r='>' { self.setLocation(.init(tokens: [.init(l)] + balancedTokens.tokens + [.init(r)]), at: mark) }

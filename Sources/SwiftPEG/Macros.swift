@@ -8,6 +8,15 @@ import SwiftPEGMacros
 public macro memoized(_ method: String, cacheTarget: String? = nil) =
     #externalMacro(module: "SwiftPEGMacros", type: "ParserMemoizeMacro")
 
+/// Synthesizes a memoized version of the attached function, with support for
+/// handling left-recursive rule reentry.
+/// 
+/// Expects that the function's return type is not `Void`, and all parameters, if
+/// present, conform to `Hashable`.
+@attached(peer, names: arbitrary)
+public macro memoizedLeftRecursive(_ method: String, cacheTarget: String? = nil) =
+    #externalMacro(module: "SwiftPEGMacros", type: "ParserMemoizeLeftRecursiveMacro")
+
 /// Synthesizes properties wrapping existing `Node`-typed fields and `children`
 /// member for node types.
 /// 

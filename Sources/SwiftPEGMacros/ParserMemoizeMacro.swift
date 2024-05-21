@@ -10,11 +10,12 @@ public struct ParserMemoizeMacro: PeerMacro {
     ) throws -> [DeclSyntax] {
 
         do {
-            return try _expansion(
+            let impl = ParserMemoizeMacroImplementation(
                 of: node,
                 providingPeersOf: declaration,
                 in: context
             )
+            return try impl.expand()
         } catch MacroError.diagnostic(let diag) {
             context.diagnose(diag)
             return []
@@ -22,12 +23,24 @@ public struct ParserMemoizeMacro: PeerMacro {
             throw error
         }
     }
+}
 
-    static func _expansion(
+class ParserMemoizeMacroImplementation {
+    let node: AttributeSyntax
+    let declaration: any DeclSyntaxProtocol
+    let context: any MacroExpansionContext
+
+    init(
         of node: AttributeSyntax,
         providingPeersOf declaration: some DeclSyntaxProtocol,
         in context: some MacroExpansionContext
-    ) throws -> [DeclSyntax] {
+    ) {
+        self.node = node
+        self.declaration = declaration
+        self.context = context
+    }
+
+    func expand() throws -> [DeclSyntax] {
         // Validate declaration
         guard let declaration = declaration.as(FunctionDeclSyntax.self) else {
             throw MacroError.message("Only functions can be memoized with this macro")
@@ -43,7 +56,7 @@ public struct ParserMemoizeMacro: PeerMacro {
         }
 
         // Fetch macro argument
-        let macroArguments = try parseArguments(node, in: context)
+        let macroArguments = try parseArguments()
 
         guard !macroArguments.memoizedName.isEmpty else {
             throw MacroError.diagnostic(
@@ -95,6 +108,14 @@ public struct ParserMemoizeMacro: PeerMacro {
             invocation = "try \(invocation)"
         }
 
+        let cacheMiss = self.expandCacheMiss(
+            cache: cache,
+            invocation: invocation,
+            typeToCache: typeToCache
+        )
+
+        _=CodeBlockItemListSyntax.init()
+
         // TODO: Reduce duplication when producing metadata and diagnostics constructs
         if !macroArguments.debugDiagnostics {
             return [
@@ -107,12 +128,7 @@ public struct ParserMemoizeMacro: PeerMacro {
                         self.restore(cached.mark)
                         return cached.result
                     }
-                    let result = \(invocation)
-                    let mark = self.mark()
-                    let priorReach = self.resetReach(mark)
-                    \(cache)[key] = CacheEntry(mark: mark, reach: self.reach, result: result)
-                    let reach = self.resetReach(priorReach)
-                    self.updateReach(reach)
+                    \(cacheMiss)
 
                     return result
                 }
@@ -152,11 +168,22 @@ public struct ParserMemoizeMacro: PeerMacro {
         }
     }
 
-    static func parseArguments(
-        _ node: AttributeSyntax,
-        in context: some MacroExpansionContext
-    ) throws -> MacroArguments {
+    func expandCacheMiss(
+        cache: ExprSyntax,
+        invocation: ExprSyntax,
+        typeToCache: TypeSyntax
+    ) -> CodeBlockItemListSyntax {
+        return """
+        let result = \(invocation)
+        let mark = self.mark()
+        let priorReach = self.resetReach(mark)
+        \(cache)[key] = CacheEntry(mark: mark, reach: self.reach, result: result)
+        let reach = self.resetReach(priorReach)
+        self.updateReach(reach)
+        """
+    }
 
+    func parseArguments() throws -> MacroArguments {
         guard let arguments = node.ext_arguments(), !arguments.isEmpty else {
             throw MacroError.message("Macro expects at least one argument")
         }

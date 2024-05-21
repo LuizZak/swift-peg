@@ -406,7 +406,6 @@ class NodeTypeMacroImplementation {
                         throw MacroError.message("Unexpected argument \(expr). Known arguments: \(Self._knownArgumentLabels)")
                     }
 
-
                     if label.description == Self._overrideDeepCopyArg  {
                         guard let string = expr.expression.as(StringLiteralExprSyntax.self) else {
                             throw MacroError.message(
@@ -422,7 +421,7 @@ class NodeTypeMacroImplementation {
                     }
                 }
             default:
-                throw MacroError.message("Unsupported argument set \(arguments). Known arguments:  \(Self._knownArgumentLabels)")
+                throw MacroError.message("Unsupported argument set \(arguments). Known arguments: \(Self._knownArgumentLabels)")
             }
         }
 

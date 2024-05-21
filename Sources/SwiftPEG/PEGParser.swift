@@ -251,6 +251,15 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
     @inlinable
     public func expect(_ token: Token) throws -> TokenResult? {
         let mark = self.mark()
+
+        // If expected kind is not explicitly a whitespace, skip all whitespace
+        // tokens first
+        if !token.isWhitespace {
+            while try tokenizer.peekToken()?.token.isWhitespace == true {
+                _=try tokenizer.next()
+            }
+        }
+
         if let next = try tokenizer.next(), next.token == token {
             return next
         }
