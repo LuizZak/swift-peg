@@ -3,7 +3,7 @@ import XCTest
 @testable import SwiftPEG
 
 class MetagrammarParserTests: XCTestCase {
-    typealias Sut = MetagrammarParser<TestRawTokenizer<Metagrammar.MetagrammarToken>>
+    typealias Sut = MetagrammarParser<TestMetagrammarTokenizer>
 
     func testGrammar_emptyGrammar_returnsNil() throws {
         let stubTokenizer = stubTestTokenizer([
@@ -136,7 +136,7 @@ class MetagrammarParserTests: XCTestCase {
 
         assertNotNil(result.action)
         assertNotNil(result.action?.balancedTokens)
-        assertEqual(result.action?.balancedTokens?.tokens, [
+        assertEqual(result.action?.balancedTokens?.tokens.map(\.token.string), [
             ".", ",",
         ])
     }
@@ -148,6 +148,6 @@ private func makeSut<Raw: RawTokenizerType>(_ tokenizer: Raw) -> MetagrammarPars
     return MetagrammarParser(raw: tokenizer)
 }
 
-private func stubTestTokenizer(_ tokens: [Metagrammar.MetagrammarToken]) -> TestRawTokenizer<Metagrammar.MetagrammarToken> {
-    return TestRawTokenizer(tokens: tokens)
+private func stubTestTokenizer(_ tokens: [Metagrammar.MetagrammarToken]) -> TestMetagrammarTokenizer {
+    return TestMetagrammarTokenizer(tokens: tokens)
 }

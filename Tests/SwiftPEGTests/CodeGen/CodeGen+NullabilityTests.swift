@@ -15,7 +15,16 @@ class CodeGen_NullabilityTests: XCTestCase {
             makeAlt([ makeItem("rule1"), makeItem("b") ]),
             makeAlt([ makeItem("c"), makeItem("d") ]),
         ])
-        let grammar = makeGrammar([start, rule1, rule2])
+        let grammar = makeGrammar(
+            metas: [
+                // Non-rule identifiers must be declared as tokens
+                makeMeta(name: "token", value: "a"),
+                makeMeta(name: "token", value: "b"),
+                makeMeta(name: "token", value: "c"),
+                makeMeta(name: "token", value: "d"),
+            ],
+            [start, rule1, rule2]
+        )
 
         let sut = try CodeGen(grammar)
 
@@ -25,14 +34,24 @@ class CodeGen_NullabilityTests: XCTestCase {
 
 // MARK: - Test internals
 
-private func makeGrammar(_ rules: [Metagrammar.Rule]) -> Metagrammar.Grammar {
-    return Metagrammar.Grammar(metas: [], rules: rules)
+private func makeGrammar(
+    metas: [Metagrammar.Meta] = [],
+    _ rules: [Metagrammar.Rule]
+) -> Metagrammar.Grammar {
+    return Metagrammar.Grammar(metas: metas, rules: rules)
+}
+
+private func makeMeta(name: String, value: String) -> Metagrammar.Meta {
+    Metagrammar.Meta(
+        name: makeIdent(name),
+        value: Metagrammar.MetaIdentifierValue(identifier: makeIdent(value))
+    )
 }
 
 private func makeRule(name: String, _ alts: [Metagrammar.Alt]) -> Metagrammar.Rule {
     Metagrammar.Rule(
         name: .init(
-            name: .init(token: name, location: 0),
+            name: .init(token: .identifier(name), location: .init(line: 0, column: 0)),
             type: nil
         ),
         alts: alts
@@ -61,5 +80,5 @@ private func makeItem(_ ident: String, identity: Metagrammar.IdentAtom.Identity 
 }
 
 private func makeIdent(_ ident: String) -> Metagrammar.IdentifierToken {
-    .init(token: ident, location: 0)
+    .init(token: .identifier(ident), location: .init(line: 0, column: 0))
 }

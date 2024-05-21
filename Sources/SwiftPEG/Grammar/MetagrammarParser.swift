@@ -1,6 +1,6 @@
 /// A parser for SwiftPEG grammar files.
-public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
-    : PEGParser<RawTokenizer> where RawTokenizer.Token == Metagrammar.MetagrammarToken
+public final class MetagrammarParser<RawTokenizer: RawTokenizerType>: PEGParser<RawTokenizer>
+    where RawTokenizer.Token == Metagrammar.MetagrammarToken, RawTokenizer.Location == FileSourceLocation
 {
     /// ```
     /// IDENT ;
@@ -13,7 +13,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
         if
             let token = try self.expect(kind: .identifier)
         {
-            return self.setLocation(.init(token: token.token.string, location: token.location), at: mark)
+            return self.setLocation(.init(token), at: mark)
         }
 
         self.restore(mark)
@@ -31,7 +31,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
         if
             let token = try self.expect(kind: .digits)
         {
-            return self.setLocation(.init(token: token.token.string, location: token.location), at: mark)
+            return self.setLocation(.init(token), at: mark)
         }
 
         self.restore(mark)
@@ -49,7 +49,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
         if
             let token = try self.expect(kind: .string)
         {
-            return self.setLocation(.init(token: token.token.string, location: token.location), at: mark)
+            return self.setLocation(.init(token), at: mark)
         }
 
         self.restore(mark)
@@ -1943,59 +1943,59 @@ extension MetagrammarParser {
         var cut = CutFlag()
 
         if
-            try self.expect(kind: .leftBrace) != nil,
+            let l = try self.expect(kind: .leftBrace),
             let balancedTokens = try self.balancedTokens(),
-            try self.expect(kind: .rightBrace) != nil
+            let r = try self.expect(kind: .rightBrace)
         {
-            return self.setLocation(.init(tokens: ["{"] + balancedTokens.tokens + ["}"]), at: mark)
+            return self.setLocation(.init(tokens: [.init(l)] + balancedTokens.tokens + [.init(r)]), at: mark)
         }
 
         self.restore(mark)
 
         if
-            try self.expect(kind: .leftSquare) != nil,
+            let l = try self.expect(kind: .leftSquare),
             let balancedTokens = try self.balancedTokens(),
-            try self.expect(kind: .rightSquare) != nil
+            let r = try self.expect(kind: .rightSquare)
         {
-            return self.setLocation(.init(tokens: ["["] + balancedTokens.tokens + ["]"]), at: mark)
+            return self.setLocation(.init(tokens: [.init(l)] + balancedTokens.tokens + [.init(r)]), at: mark)
         }
 
         self.restore(mark)
 
         if
-            try self.expect(kind: .leftAngle) != nil,
+            let l = try self.expect(kind: .leftAngle),
             let balancedTokens = try self.balancedTokens(),
-            try self.expect(kind: .rightAngle) != nil
+            let r = try self.expect(kind: .rightAngle)
         {
-            return self.setLocation(.init(tokens: ["<"] + balancedTokens.tokens + [">"]), at: mark)
+            return self.setLocation(.init(tokens: [.init(l)] + balancedTokens.tokens + [.init(r)]), at: mark)
         }
 
         self.restore(mark)
 
         if
-            try self.expect(kind: .leftParen) != nil,
+            let l = try self.expect(kind: .leftParen),
             let balancedTokens = try self.balancedTokens(),
-            try self.expect(kind: .rightParen) != nil
+            let r = try self.expect(kind: .rightParen)
         {
-            return self.setLocation(.init(tokens: ["("] + balancedTokens.tokens + [")"]), at: mark)
+            return self.setLocation(.init(tokens: [.init(l)] + balancedTokens.tokens + [.init(r)]), at: mark)
         }
 
         if
-            try self.expect(kind: .leftBrace) != nil,
+            let l = try self.expect(kind: .leftBrace),
             cut.toggleOn(),
-            try self.expect(kind: .rightBrace) != nil
+            let r = try self.expect(kind: .rightBrace)
         {
-            return self.setLocation(.init(tokens: ["{", "}"]), at: mark)
+            return self.setLocation(.init(tokens: [.init(l), .init(r)]), at: mark)
         }
 
         self.restore(mark)
 
         if
-            try self.expect(kind: .leftSquare) != nil,
+            let l = try self.expect(kind: .leftSquare),
             cut.toggleOn(),
-            try self.expect(kind: .rightSquare) != nil
+            let r = try self.expect(kind: .rightSquare)
         {
-            return self.setLocation(.init(tokens: ["[", "]"]), at: mark)
+            return self.setLocation(.init(tokens: [.init(l), .init(r)]), at: mark)
         }
 
         self.restore(mark)
@@ -2005,11 +2005,11 @@ extension MetagrammarParser {
         }
 
         if
-            try self.expect(kind: .leftAngle) != nil,
+            let l = try self.expect(kind: .leftAngle),
             cut.toggleOn(),
-            try self.expect(kind: .rightAngle) != nil
+            let r = try self.expect(kind: .rightAngle)
         {
-            return self.setLocation(.init(tokens: ["<", ">"]), at: mark)
+            return self.setLocation(.init(tokens: [.init(l), .init(r)]), at: mark)
         }
 
         self.restore(mark)
@@ -2019,11 +2019,11 @@ extension MetagrammarParser {
         }
 
         if
-            try self.expect(kind: .leftParen) != nil,
+            let l = try self.expect(kind: .leftParen),
             cut.toggleOn(),
-            try self.expect(kind: .rightParen) != nil
+            let r = try self.expect(kind: .rightParen)
         {
-            return self.setLocation(.init(tokens: ["(", ")"]), at: mark)
+            return self.setLocation(.init(tokens: [.init(l), .init(r)]), at: mark)
         }
 
         self.restore(mark)
@@ -2035,7 +2035,7 @@ extension MetagrammarParser {
         if
             let token = try self.balancedTokenAtom()
         {
-            return self.setLocation(.init(tokens: [token.string]), at: mark)
+            return self.setLocation(.init(tokens: [token]), at: mark)
         }
 
         self.restore(mark)
@@ -2064,7 +2064,7 @@ extension MetagrammarParser {
     /// ```
     @memoized("balancedTokenAtom")
     @inlinable
-    public func _balancedTokenAtom() throws -> Token? {
+    public func _balancedTokenAtom() throws -> TokenNode<RawTokenizer.Token, RawTokenizer.Location>? {
         let mark = self.mark()
 
         if
@@ -2074,7 +2074,7 @@ extension MetagrammarParser {
                 .forwardSlash, .backslash,
             ])
         {
-            return token.token
+            return .init(token)
         }
 
         self.restore(mark)
@@ -2092,7 +2092,7 @@ extension MetagrammarParser {
         if
             let token = try self.expect(kind: .identifier)
         {
-            return self.setLocation(.init(token: token.token.string, location: token.location), at: mark)
+            return self.setLocation(.init(token), at: mark)
         }
 
         self.restore(mark)
@@ -2110,7 +2110,7 @@ extension MetagrammarParser {
         if
             let token = try self.expect(kind: .string)
         {
-            return self.setLocation(.init(token: token.token.string, location: token.location), at: mark)
+            return self.setLocation(.init(token), at: mark)
         }
 
         self.restore(mark)

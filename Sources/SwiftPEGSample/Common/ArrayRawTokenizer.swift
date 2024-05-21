@@ -9,16 +9,16 @@ class ArrayRawTokenizer<T: TokenType> {
         self.tokens = tokens
     }
 
-    func next() throws -> (token: T, location: Int)? {
+    func next() throws -> (token: T, location: FileSourceLocation)? {
         guard index < tokens.count else { return nil }
         defer { index += 1 }
-        return (tokens[index], index)
+        return (tokens[index], FileSourceLocation(line: 0, column: 1))
     }
 }
 
 extension ArrayRawTokenizer: RawTokenizerType {
     typealias Token = T
-    typealias Location = Int
+    typealias Location = FileSourceLocation
 
     var isEOF: Bool { index >= tokens.count }
 }

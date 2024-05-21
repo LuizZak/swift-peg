@@ -15,6 +15,12 @@ public protocol TokenType: Hashable {
     /// stream.
     var string: TokenString { get }
 
+    /// Gets the length of this token. The logical meaning is dependent on the
+    /// underlying raw tokenizer that produced this token, but for string-based
+    /// tokenization, this is the length in unicode grapheme clusters (i.e. Swift's
+    /// `String.count` property).
+    var length: Int { get }
+
     /// Produces a dummy token construction of a given type.
     /// The construction must have `TokenType.kind` be the same as the provided
     /// `kind`.

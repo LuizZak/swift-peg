@@ -1,13 +1,13 @@
 import SwiftPEG
 
-class TestRawTokenizer<T: TokenType> {
-    let tokens: [T]
+class TestMetagrammarTokenizer {
+    let tokens: [Metagrammar.MetagrammarToken]
     var index: Int = 0
 
     /// Lists errors to serve at specific indices instead of tokens.
     var errorIndices: [Int: Error] = [:]
 
-    init(tokens: [T]) {
+    init(tokens: [Metagrammar.MetagrammarToken]) {
         self.tokens = tokens
     }
 
@@ -15,10 +15,10 @@ class TestRawTokenizer<T: TokenType> {
         errorIndices[index] = error
     }
 
-    var next_calls: [Result<T?, Error>] = []
+    var next_calls: [Result<Metagrammar.MetagrammarToken?, Error>] = []
     var next_callCount: Int = 0
 
-    func next() throws -> (token: T, location: Int)? {
+    func next() throws -> (token: Metagrammar.MetagrammarToken, location: FileSourceLocation)? {
         next_callCount += 1
 
         guard !isEOF else {
@@ -34,34 +34,15 @@ class TestRawTokenizer<T: TokenType> {
         defer { index += 1 }
 
         next_calls.append(.success(tokens[index]))
-        return (tokens[index], index)
+        return (tokens[index], .init(line: 1, column: index))
     }
 
     struct GenericError: Error { }
 }
 
-extension TestRawTokenizer: RawTokenizerType {
-    typealias Token = T
-    typealias Location = Int
+extension TestMetagrammarTokenizer: RawTokenizerType {
+    typealias Token = Metagrammar.MetagrammarToken
+    typealias Location = FileSourceLocation
 
     var isEOF: Bool { index >= tokens.count }
-}
-
-extension Int: TokenType {
-    public var kind: Int {
-        return self
-    }
-
-    public var string: String {
-        self.description
-    }
-
-    public var length: Int {
-        return 1
-    }
-
-    public static func produceDummy(_ kind: TokenKind) -> Self { kind }
-}
-
-extension Int: TokenKindType {
 }

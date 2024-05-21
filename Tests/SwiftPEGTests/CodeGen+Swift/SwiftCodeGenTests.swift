@@ -29,15 +29,22 @@ class SwiftCodeGenTests: XCTestCase {
             // TestParser
             extension TestParser {
                 @memoized("a")
-                func __a() throws -> Node? {
+                @inlinable
+                public func __a() throws -> Node? {
                     let mark = self.mark()
                     var cut = CutFlag()
+
                     if
                         let b = try self.b()
                     {
                         return CustomAction()
                     }
+
                     self.restore(mark)
+
+                    if cut.isOn {
+                        return nil
+                    }
                     return nil
                 }
             }
@@ -58,9 +65,11 @@ class SwiftCodeGenTests: XCTestCase {
             // TestParser
             extension TestParser {
                 @memoized("a")
-                func __a() throws -> ANode? {
+                @inlinable
+                public func __a() throws -> ANode? {
                     let mark = self.mark()
                     var cut = CutFlag()
+
                     if
                         let b = try self.b(),
                         let c = try self.c(),
@@ -70,7 +79,12 @@ class SwiftCodeGenTests: XCTestCase {
                     {
                         return ANode()
                     }
+
                     self.restore(mark)
+
+                    if cut.isOn {
+                        return nil
+                    }
                     return nil
                 }
             }
@@ -91,9 +105,11 @@ class SwiftCodeGenTests: XCTestCase {
             // TestParser
             extension TestParser {
                 @memoized("a")
-                func __a() throws -> ANode? {
+                @inlinable
+                public func __a() throws -> ANode? {
                     let mark = self.mark()
                     var cut = CutFlag()
+
                     if
                         let b = try self.b(),
                         let c = try self.c(),
@@ -101,20 +117,33 @@ class SwiftCodeGenTests: XCTestCase {
                     {
                         return ANode()
                     }
+
                     self.restore(mark)
+
+                    if cut.isOn {
+                        return nil
+                    }
                     return nil
                 }
+
                 @memoized("_a__group_")
-                func ___a__group_() throws -> Node? {
+                @inlinable
+                public func ___a__group_() throws -> Node? {
                     let mark = self.mark()
                     var cut = CutFlag()
+
                     if
                         let d = try self.d(),
                         let e = try self.e()
                     {
                         return Node()
                     }
+
                     self.restore(mark)
+
+                    if cut.isOn {
+                        return nil
+                    }
                     return nil
                 }
             }

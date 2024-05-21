@@ -822,7 +822,7 @@ extension Metagrammar {
                 return ""
             }
 
-            return "{ \(balancedTokens.tokens.joined()) }"
+            return "{ \(balancedTokens.tokens.map(\.token.string).joined()) }"
         }
 
         /// Accepts a given metagrammar-node visitor into this node.
@@ -861,9 +861,9 @@ extension Metagrammar {
     public final class BalancedTokens: MetagrammarNode {
         /// A list of tokens contained within this balanced token set.
         @NodeRequired
-        public var tokens: [String]
+        public var tokens: [TokenNode<MetagrammarToken, MetagrammarRawTokenizer.Location>]
 
-        public override var shortDebugDescription: String { "[\(tokens.map { #""\#($0)""# }.joined(separator: ", "))]" }
+        public override var shortDebugDescription: String { "[\(tokens.map { #""\#($0.token)""# }.joined(separator: ", "))]" }
 
         /// Accepts a given metagrammar-node visitor into this node.
         public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
@@ -882,18 +882,12 @@ extension Metagrammar {
     ///     | '"' ~ <all except newline and "> '"'
     ///     | '"""' ~ <all except """> '"""'
     /// ```
-    public final class StringToken: TokenNode {
+    public final class StringToken: TokenNode<MetagrammarToken, MetagrammarRawTokenizer.Location> {
         /// The string associated with this atom.
         /// 
         /// - note: Includes the quotes.
         public var value: String {
-            token as! String
-        }
-
-        /// The source location where a `MetagrammarRawTokenizer` parsed this
-        /// token.
-        public var sourceLocation: MetagrammarRawTokenizer.Location {
-            location as! MetagrammarRawTokenizer.Location
+            token.string
         }
 
         /// Returns the value of `self.value` with any surrounding string quotes
@@ -909,16 +903,8 @@ extension Metagrammar {
 
         public override var shortDebugDescription: String { value }
 
-        public init() {
-            super.init(token: "", location: 0)
-        }
-
-        public init(token: String, location: some (Hashable & Comparable)) {
-            super.init(token: token, location: location)
-        }
-
         public func deepCopy() -> StringToken {
-            return StringToken(token: value, location: location)
+            return StringToken(token: token, location: location as! MetagrammarRawTokenizer.Location)
         }
     }
 
@@ -930,29 +916,15 @@ extension Metagrammar {
     /// ```
     /// IDENT ;
     /// ```
-    public final class IdentifierToken: TokenNode {
+    public final class IdentifierToken: TokenNode<MetagrammarToken, MetagrammarRawTokenizer.Location> {
         public var identifier: String {
-            token as! String
-        }
-
-        /// The source location where a `MetagrammarRawTokenizer` parsed this
-        /// token.
-        public var sourceLocation: MetagrammarRawTokenizer.Location {
-            location as! MetagrammarRawTokenizer.Location
+            token.string
         }
 
         public override var shortDebugDescription: String { identifier }
 
-        public init() {
-            super.init(token: "", location: 0)
-        }
-
-        public init(token: String, location: some (Hashable & Comparable)) {
-            super.init(token: token, location: location)
-        }
-
         public func deepCopy() -> IdentifierToken {
-            return IdentifierToken(token: identifier, location: location)
+            return IdentifierToken(token: token, location: location as! MetagrammarRawTokenizer.Location)
         }
     }
 
@@ -1115,6 +1087,11 @@ extension Metagrammar {
         @inlinable
         public var tokenUTF8Length: Int {
             string.utf8.count
+        }
+
+        @inlinable
+        public var length: Int {
+            string.count
         }
 
         /// Attempts to construct a token from a given string literal value.

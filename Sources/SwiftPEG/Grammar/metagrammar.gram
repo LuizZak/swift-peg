@@ -1,6 +1,67 @@
 # Metagrammar for SwiftPEG - based on https://github.com/we-like-parsers/pegen_experiments/blob/master/pegen/metagrammar.gram (see LICENSE.pegen.md)
 # This metagrammar requires the MetagrammarRawTokenizer for tokenizing.
 
+@parserHeader """
+/// A parser for SwiftPEG grammar files.
+public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
+    : PEGParser<RawTokenizer> where RawTokenizer.Token == Metagrammar.MetagrammarToken
+{
+    /// ```
+    /// IDENT ;
+    /// ```
+    @memoized("IDENT")
+    @inlinable
+    public func _IDENT() throws -> Metagrammar.IdentifierToken? {
+        let mark = self.mark()
+
+        if
+            let token = try self.expect(kind: .identifier)
+        {
+            return self.setLocation(.init(token), at: mark)
+        }
+
+        self.restore(mark)
+        return nil
+    }
+
+    /// ```
+    /// IDENT ;
+    /// ```
+    @memoized("DIGITS")
+    @inlinable
+    public func _DIGITS() throws -> Metagrammar.IdentifierToken? {
+        let mark = self.mark()
+
+        if
+            let token = try self.expect(kind: .digits)
+        {
+            return self.setLocation(.init(token), at: mark)
+        }
+
+        self.restore(mark)
+        return nil
+    }
+
+    /// ```
+    /// STRING ;
+    /// ```
+    @memoized("STRING")
+    @inlinable
+    public func _STRING() throws -> Metagrammar.StringToken? {
+        let mark = self.mark()
+
+        if
+            let token = try self.expect(kind: .string)
+        {
+            return self.setLocation(.init(token), at: mark)
+        }
+
+        self.restore(mark)
+        return nil
+    }
+}
+""" ;
+
 @parserName "MetagrammarParser" ;
 
 @token IDENT ;
@@ -114,32 +175,32 @@ balancedTokens[Metagrammar.BalancedTokens]:
     ;
 
 balancedToken[Metagrammar.BalancedTokens]:
-    | '{' balancedTokens '}' { self.setLocation(.init(tokens: ["{"] + balancedTokens.tokens + ["}"]), at: mark) }
-    | '[' balancedTokens ']' { self.setLocation(.init(tokens: ["["] + balancedTokens.tokens + ["]"]), at: mark) }
-    | '<' balancedTokens '>' { self.setLocation(.init(tokens: ["<"] + balancedTokens.tokens + [">"]), at: mark) }
-    | '(' balancedTokens ')' { self.setLocation(.init(tokens: ["("] + balancedTokens.tokens + [")"]), at: mark) }
-    | '[' ~ ']' { self.setLocation(.init(tokens: ["(", ")"]), at: mark) }
-    | '{' ~ '}' { self.setLocation(.init(tokens: ["{", "}"]), at: mark) }
-    | '<' ~ '>' { self.setLocation(.init(tokens: ["<", ">"]), at: mark) }
-    | '(' ~ ')' { self.setLocation(.init(tokens: ["(", ")"]), at: mark) }
-    | token=balancedTokenAtom { .init(tokens: [token.string]) }
+    | l='{' balancedTokens r='}' { self.setLocation(.init(tokens: [.init(l)] + balancedTokens.tokens + [.init(r)]), at: mark) }
+    | l='[' balancedTokens r=']' { self.setLocation(.init(tokens: [.init(l)] + balancedTokens.tokens + [.init(r)]), at: mark) }
+    | l='<' balancedTokens r='>' { self.setLocation(.init(tokens: [.init(l)] + balancedTokens.tokens + [.init(r)]), at: mark) }
+    | l='(' balancedTokens r=')' { self.setLocation(.init(tokens: [.init(l)] + balancedTokens.tokens + [.init(r)]), at: mark) }
+    | l='[' ~ r=']' { self.setLocation(.init(tokens: [.init(l), .init(r)]), at: mark) }
+    | l='{' ~ r='}' { self.setLocation(.init(tokens: [.init(l), .init(r)]), at: mark) }
+    | l='<' ~ r='>' { self.setLocation(.init(tokens: [.init(l), .init(r)]), at: mark) }
+    | l='(' ~ r=')' { self.setLocation(.init(tokens: [.init(l), .init(r)]), at: mark) }
+    | token=balancedTokenAtom { .init(tokens: [token]) }
     ;
 
-balancedTokenAtom[Token]:
-    | token=IDENT { token.token }
-    | token=DIGITS { token.token }
-    | token=STRING { token.token }
-    | token=':' { token.token }
-    | token=';' { token.token }
-    | token='|' { token.token }
-    | token='=' { token.token }
-    | token='~' { token.token }
-    | token='*' { token.token }
-    | token='+' { token.token }
-    | token='?' { token.token }
-    | token=',' { token.token }
-    | token='.' { token.token }
-    | token='@' { token.token }
-    | token='/' { token.token }
-    | token='\' { token.token }
+balancedTokenAtom[TokenNode]:
+    | token=IDENT { token }
+    | token=DIGITS { token }
+    | token=STRING { token }
+    | token=':' { .init(token) }
+    | token=';' { .init(token) }
+    | token='|' { .init(token) }
+    | token='=' { .init(token) }
+    | token='~' { .init(token) }
+    | token='*' { .init(token) }
+    | token='+' { .init(token) }
+    | token='?' { .init(token) }
+    | token=',' { .init(token) }
+    | token='.' { .init(token) }
+    | token='@' { .init(token) }
+    | token='/' { .init(token) }
+    | token='\' { .init(token) }
     ;

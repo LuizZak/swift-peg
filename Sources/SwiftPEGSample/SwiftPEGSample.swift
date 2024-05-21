@@ -11,8 +11,16 @@ struct SwiftPEGSample {
                 print("Running benchmark...")
                 try PerformanceTest.run()
             } else {
-                print("Parsing \(SwiftPEG.Resources.metagrammarFile.relativePath)...")
-                try GrammarParsingSample.run()
+                let verbose = args.contains("--verbose")
+
+                if verbose {
+                    print("Parsing \(SwiftPEG.Resources.metagrammarFile.relativePath)...")
+                }
+
+                let sample = GrammarParsingSample()
+                sample.verbose = verbose
+
+                try sample.run()
             }
         } catch let error as ParserError {
             print(error.description)

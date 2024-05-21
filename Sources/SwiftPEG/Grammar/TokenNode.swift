@@ -2,13 +2,23 @@ import SwiftPEGMacros
 
 /// A terminal Token node.
 /// Must be subclassed by specific grammars to wrap the tokens read by the tokenizer.
-open class TokenNode: Node {
+open class TokenNode<Token, Location>: Node where Token: TokenType, Location: Hashable & Comparable {
     /// The immutable token value associated with this node.
-    public let token: any Hashable
+    public let token: Token
 
-    public init(token: some Hashable, location: some (Hashable & Comparable)) {
+    public override var shortDebugDescription: String { #""\#(token.string)""# }
+
+    public init(token: Token, location: Location) {
         self.token = token
         
+        super.init()
+
+        self.location = location
+    }
+
+    public init(_ token: (token: Token, location: Location)) {
+        self.token = token.token
+
         super.init()
 
         self.location = location

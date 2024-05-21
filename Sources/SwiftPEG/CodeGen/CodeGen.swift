@@ -256,7 +256,10 @@ public class CodeGen {
         public var metas: [MetaProperty] = []
         public var rules: [Rule]
 
-        public static func from(_ node: Metagrammar.Grammar) -> Self {
+        public static func from(
+            _ node: Metagrammar.Grammar
+        ) -> Self {
+
             .init(
                 metas: node.metas.map(MetaProperty.from),
                 rules: node.rules.map(Rule.from)
@@ -274,7 +277,10 @@ public class CodeGen {
         public var name: String
         public var value: Value? = nil
 
-        public static func from(_ node: Metagrammar.Meta) -> Self {
+        public static func from(
+            _ node: Metagrammar.Meta
+        ) -> Self {
+
             .init(
                 name: node.name.identifier,
                 value: node.value.map(Value.from)
@@ -289,7 +295,10 @@ public class CodeGen {
             /// Note: Does not include quotes.
             case string(String)
 
-            public static func from(_ node: Metagrammar.MetaValue) -> Self {
+            public static func from(
+                _ node: Metagrammar.MetaValue
+            ) -> Self {
+
                 switch node {
                 case let value as Metagrammar.MetaIdentifierValue:
                     return .identifier(value.identifier.identifier)
@@ -339,7 +348,10 @@ public class CodeGen {
             return copy
         }
 
-        public static func from(_ node: Metagrammar.Rule) -> Self {
+        public static func from(
+            _ node: Metagrammar.Rule
+        ) -> Self {
+
             .init(
                 name: node.name.name.identifier,
                 type: node.name.type.map(SwiftType.from),
@@ -355,8 +367,13 @@ public class CodeGen {
         public var items: [NamedItem]
         public var action: Action? = nil
 
-        public static func from(_ node: Metagrammar.Alt) -> Self {
-            .init(items: node.namedItems.map(NamedItem.from), action: node.action.map(Action.from))
+        public static func from(
+            _ node: Metagrammar.Alt
+        ) -> Self {
+            .init(
+                items: node.namedItems.map(NamedItem.from),
+                action: node.action.map(Action.from)
+            )
         }
     }
 
@@ -364,8 +381,16 @@ public class CodeGen {
     public struct Action: Hashable {
         public var string: String
 
-        public static func from(_ node: Metagrammar.Action) -> Self {
-            return .init(string: node.balancedTokens?.tokens.joined() ?? "")
+        public static func from(
+            _ node: Metagrammar.Action
+        ) -> Self {
+            guard let tokens = node.balancedTokens?.tokens else {
+                return .init(string: "")
+            }
+
+            return .init(
+                string: tokens.map(\.token.string).joined(separator: " ")
+            )
         }
     }
 
@@ -381,7 +406,9 @@ public class CodeGen {
         /// ```
         case lookahead(Lookahead)
 
-        public static func from(_ node: Metagrammar.NamedItem) -> Self {
+        public static func from(
+            _ node: Metagrammar.NamedItem
+        ) -> Self {
             if let item = node.item {
                 return .item(name: node.name?.identifier, .from(item), type: node.type.map(SwiftType.from))
             } else {
@@ -404,7 +431,10 @@ public class CodeGen {
         /// `atom`
         case atom(Atom)
 
-        public static func from(_ node: Metagrammar.Item) -> Self {
+        public static func from(
+            _ node: Metagrammar.Item
+        ) -> Self {
+
             switch node {
             case let item as Metagrammar.OptionalItems:
                 return .optionalItems(item.alts.map(Alt.from(_:)))
@@ -441,7 +471,10 @@ public class CodeGen {
         /// `~`
         case cut
 
-        public static func from(_ node: Metagrammar.LookaheadOrCut) -> Self {
+        public static func from(
+            _ node: Metagrammar.LookaheadOrCut
+        ) -> Self {
+
             switch node {
             case let positive as Metagrammar.PositiveLookahead:
                 return .positive(Atom.from(positive.atom))
@@ -475,7 +508,10 @@ public class CodeGen {
             }
         }
 
-        public static func from(_ node: Metagrammar.Atom) -> Self {
+        public static func from(
+            _ node: Metagrammar.Atom
+        ) -> Self {
+
             switch node {
             case let group as Metagrammar.GroupAtom:
                 return .group(group.alts.map(Alt.from(_:)))
@@ -506,7 +542,9 @@ public class CodeGen {
 
         public var description: String { name }
 
-        public static func from(_ node: Metagrammar.SwiftType) -> Self {
+        public static func from(
+            _ node: Metagrammar.SwiftType
+        ) -> Self {
             .init(name: node.name)
         }
     }

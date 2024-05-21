@@ -1,6 +1,12 @@
 import SwiftPEG
 
 class GrammarParsingSample {
+    var verbose: Bool = false
+
+    func run() throws {
+        try parse()
+    }
+
     func parse() throws {
         let file = SwiftPEG.Resources.metagrammarFile
 
@@ -11,14 +17,18 @@ class GrammarParsingSample {
 
         let stopwatch = Stopwatch.start()
 
-        print("Parsing metagrammar.gram...")
+        if verbose {
+            print("Parsing metagrammar.gram...")
+        }
 
         guard let grammar = try parser.grammar() else {
             throw parser.makeSyntaxError()
         }
 
         let duration = stopwatch.stop()
-        print("Success! Parsed in \(String(format: "%.2lf", duration))s")
+        if verbose {
+            print("Success! Parsed in \(String(format: "%.2lf", duration))s")
+        }
 
         if !tokenizer.isEOF {
             let visitor = PrintingNodeVisitor()
@@ -38,27 +48,29 @@ class GrammarParsingSample {
 
             print(tokens)
         } else {
-            print("Number of meta-properties: \(grammar.metas.count)")
+            if verbose {
+                print("Number of meta-properties: \(grammar.metas.count)")
 
-            for property in grammar.metas {
-                if let value = property.value {
-                    print("@\(property.name.identifier) = \(value.shortDebugDescription)")
-                } else {
-                    print("@\(property.name.identifier)")
+                for property in grammar.metas {
+                    if let value = property.value {
+                        print("@\(property.name.identifier) = \(value.shortDebugDescription)")
+                    } else {
+                        print("@\(property.name.identifier)")
+                    }
+                }
+
+                print("Number of rules: \(grammar.rules.count)")
+
+                for rule in grammar.rules {
+                    if let type = rule.name.type {
+                        print("\(rule.name.name.identifier) (of type \(type.name))")
+                    } else {
+                        print("\(rule.name.name.identifier)")
+                    }
                 }
             }
 
-            print("Number of rules: \(grammar.rules.count)")
-
-            for rule in grammar.rules {
-                if let type = rule.name.type {
-                    print("\(rule.name.name.identifier) (of type \(type.name))")
-                } else {
-                    print("\(rule.name.name.identifier)")
-                }
-            }
-
-            let codeGen = try CodeGen(grammar, verbose: true)
+            let codeGen = try CodeGen(grammar, verbose: verbose)
 
             for diagnostic in codeGen.diagnostics {
                 print(diagnostic.description)
@@ -68,16 +80,11 @@ class GrammarParsingSample {
 
             let parser = try swiftCodeGen.generateParser()
 
-            print("Generated parser code:")
-            print("-------------------------------------------------")
+            if verbose {
+                print("Generated parser code:")
+                print("-------------------------------------------------")
+            }
             print(parser)
         }
-    }
-}
-
-extension GrammarParsingSample {
-    static func run() throws {
-        let sample = GrammarParsingSample()
-        try sample.parse()
     }
 }
