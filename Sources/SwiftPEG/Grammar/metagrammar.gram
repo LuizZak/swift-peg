@@ -3,8 +3,8 @@
 
 @parserHeader """
 /// A parser for SwiftPEG grammar files.
-public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
-    : PEGParser<RawTokenizer> where RawTokenizer.Token == Metagrammar.MetagrammarToken
+public final class MetagrammarParser<RawTokenizer: RawTokenizerType>: PEGParser<RawTokenizer>
+    where RawTokenizer.Token == Metagrammar.MetagrammarToken, RawTokenizer.Location == FileSourceLocation
 {
     /// ```
     /// WHITESPACE ;
@@ -168,6 +168,7 @@ atom[Metagrammar.Atom]:
     ;
 
 swiftType[Metagrammar.SwiftType]:
+    | raw=STRING { self.setLocation(.init(name: raw.valueTrimmingQuotes), at: mark) }
     | '[' ~ type=swiftType ']' { self.setLocation(.init(name: "[" + type.name + "]"), at: mark) }
     | '(' ~ types=swiftTypeList ')' { self.setLocation(.init(name: "(" + types.map(\.name).joined(separator: ", ") + ")"), at: mark) }
     | name=IDENT '<' ~ types=swiftTypeList '>' '?' { self.setLocation(.init(name: name.identifier + "<" + types.map(\.name).joined(separator: ", ") + ">?"), at: mark) }
@@ -206,7 +207,7 @@ balancedToken[Metagrammar.BalancedTokens]:
     | token=balancedTokenAtom { .init(tokens: [token]) }
     ;
 
-balancedTokenAtom[TokenNode]:
+balancedTokenAtom["TokenNode<RawTokenizer.Token, RawTokenizer.Location>"]:
     | token=IDENT { token }
     | token=DIGITS { token }
     | token=STRING { token }

@@ -1742,6 +1742,7 @@ extension MetagrammarParser {
 
     /// ```
     /// swiftType[SwiftType]:
+    ///     | raw=STRING { self.setLocation(.init(name: raw.valueTrimmingQuotes), at: mark) }
     ///     | '[' ~ type=swiftType ']' { .init(name: "[" + type.name + "]") }
     ///     | '(' ~ types=swiftTypeList ')' { .init(name: "(" + types.map(\.name).joined(separator: ", ") + ")") }
     ///     | name=IDENT '<' ~ types=swiftTypeList '>' { .init(name: name.identifier + "<" + types.map(\.name).joined(separator: ", ") + ">") }
@@ -1755,6 +1756,12 @@ extension MetagrammarParser {
     public func _swiftType() throws -> Metagrammar.SwiftType? {
         let mark = self.mark()
         var cut = CutFlag()
+
+        if
+            let raw = try self.STRING()
+        {
+            return self.setLocation(.init(name: raw.valueTrimmingQuotes), at: mark)
+        }
 
         if
             try self.expect(kind: .leftSquare) != nil,
