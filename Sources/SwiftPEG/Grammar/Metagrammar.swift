@@ -835,26 +835,36 @@ extension Metagrammar {
     ///
     /// Represents the construct:
     /// ```
-    /// balancedTokens:
-    ///     | '[' ~ balancedTokens* ']'
-    ///     | '{' ~ balancedTokens* '}'
-    ///     | '(' ~ balancedTokens* ')'
-    ///     | balancedToken+
+    /// balancedToken:
+    ///     | token=balancedTokenAtom { .init(tokens: [token.string]) }
+    ///     | '{' balancedTokens '}' { .init(tokens: ["{"] + balancedTokens.tokens + ["}"]) }
+    ///     | '[' balancedTokens ']' { .init(tokens: ["["] + balancedTokens.tokens + ["]"]) }
+    ///     | '<' balancedTokens '>' { .init(tokens: ["<"] + balancedTokens.tokens + [">"]) }
+    ///     | '(' balancedTokens ')' { .init(tokens: ["("] + balancedTokens.tokens + [")"]) }
+    ///     | '[' ~ ']' { .init(tokens: ["(", ")"]) }
+    ///     | '{' ~ '}' { .init(tokens: ["{", "}"]) }
+    ///     | '<' ~ '>' { .init(tokens: ["<", ">"]) }
+    ///     | '(' ~ ')' { .init(tokens: ["(", ")"]) }
     ///     ;
     ///
-    /// balancedToken:
+    /// balancedTokenAtom[Token]:
+    ///     | WHITESPACE    # Includes newlines
     ///     | IDENT
     ///     | DIGITS
     ///     | STRING
-    ///     | WHITESPACE  # Includes newline
+    ///     | ':'
+    ///     | ';'
+    ///     | '|'
+    ///     | '='
+    ///     | '~'
     ///     | '*'
     ///     | '+'
-    ///     | '-'
-    ///     | '.'
     ///     | '?'
-    ///     | '|'
-    ///     | '&'
-    ///     | '~'
+    ///     | ','
+    ///     | '.'
+    ///     | '@'
+    ///     | '/'
+    ///     | '\'
     ///     ;
     /// ```
     @GeneratedNodeType<Node>
@@ -933,6 +943,10 @@ extension Metagrammar {
         public typealias TokenKind = MetagrammarTokenKind
         public typealias TokenString = String
 
+        /// The regular expression pattern for matching `MetagrammarToken.whitespace()`
+        /// values from a string.
+        public static let whitespace_pattern = #/\s+/#
+
         /// The regular expression pattern for matching `MetagrammarToken.identifier()`
         /// values from a string.
         public static let identifier_pattern = #/[A-Za-z_][0-9A-Za-z_]*/#
@@ -950,6 +964,10 @@ extension Metagrammar {
         /// 
         /// Alias for `Self.period`
         public static let dot = Self.period
+
+        /// A set of whitespace or newlines, with no other non-whitespace character
+        /// in between.
+        case whitespace(String)
 
         /// A Swift-compatible identifier token.
         case identifier(String)
@@ -1020,6 +1038,7 @@ extension Metagrammar {
         @inlinable
         public var kind: MetagrammarTokenKind {
             switch self {
+            case .whitespace: return .whitespace
             case .identifier: return .identifier
             case .digits: return .digits
             case .string: return .string
@@ -1053,6 +1072,7 @@ extension Metagrammar {
         @inlinable
         public var string: TokenString {
             switch self {
+            case .whitespace(let value): return value
             case .identifier(let value): return value
             case .digits(let value): return value
             case .string(let value): return value.description
@@ -1110,6 +1130,7 @@ extension Metagrammar {
         @inlinable
         public static func produceDummy(_ kind: TokenKind) -> Self {
             switch kind {
+            case .whitespace: return .whitespace(" ")
             case .identifier: return .identifier("<dummy>")
             case .digits: return .digits("<dummy>")
             case .string: return .string(.singleQuote("<dummy>"))
@@ -1144,7 +1165,12 @@ extension Metagrammar {
         /// If the token is not recognized, `nil` is returned, instead.
         @inlinable
         public static func from<S: StringProtocol>(string: S) -> Self? {
+            var isWhitespace = false
+
             switch string.first {
+            case " ", "\t", "\r", "\n":
+                isWhitespace = true
+                break
             case "(": return .leftParen
             case ")": return .rightParen
             case "{": return .leftBrace
@@ -1174,6 +1200,10 @@ extension Metagrammar {
             }
 
             if let string = string as? Substring {
+                // Whitespace
+                if isWhitespace, let match = try? whitespace_pattern.prefixMatch(in: string) {
+                    return .whitespace(String(match.0))
+                }
                 // Try identifier
                 if let ident = try? identifier_pattern.prefixMatch(in: string) {
                     return .identifier(String(ident.0))
@@ -1187,6 +1217,10 @@ extension Metagrammar {
                     return .string(string)
                 }
             } else if let string = string as? String {
+                // Whitespace
+                if isWhitespace, let match = try? whitespace_pattern.prefixMatch(in: string) {
+                    return .whitespace(String(match.0))
+                }
                 // Try identifier
                 if let ident = try? identifier_pattern.prefixMatch(in: string) {
                     return .identifier(String(ident.0))
@@ -1286,6 +1320,9 @@ extension Metagrammar {
         /// 
         /// Alias for `Self.period`
         public static let dot = Self.period
+
+        /// Whitespace characters.
+        case whitespace = "WHITESPACE"
 
         /// A Swift-compatible identifier token.
         case identifier = "IDENTIFIER"

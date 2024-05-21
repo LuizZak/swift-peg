@@ -140,6 +140,23 @@ class MetagrammarParserTests: XCTestCase {
             ".", ",",
         ])
     }
+
+    func testAlt_withAction_whitespaceIsPreserved() throws {
+        let stubTokenizer = stubTestTokenizer([
+            "'a'", "{",
+                " ", ".", "\t", "[", "\n", ",", "]", "   ",
+            "}",
+        ])
+        let sut = makeSut(stubTokenizer)
+
+        let result = try assertUnwrap(sut.alt())
+
+        assertNotNil(result.action)
+        assertNotNil(result.action?.balancedTokens)
+        assertEqual(result.action?.balancedTokens?.tokens.map(\.token.string), [
+            " ", ".", "\t", "[", "\n", ",", "]", "   ",
+        ])
+    }
 }
 
 // MARK: - Test internals

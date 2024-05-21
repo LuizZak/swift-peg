@@ -64,4 +64,5 @@ extension Int: TokenType {
 }
 
 extension Int: TokenKindType {
+    public static var whitespace: Int { -999 }
 }

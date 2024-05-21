@@ -56,7 +56,12 @@ open class Tokenizer<Raw: RawTokenizerType> {
     /// Returns a human-readable location for a specified mark.
     @inlinable
     open func readableLocation(for mark: Mark) -> String {
-        "\(mark.index)"
+        if mark.index < cachedTokens.count {
+            let token = cachedTokens[mark.index]
+            return "\(token.location)"
+        } else {
+            return "\(mark.index)"
+        }
     }
 
     /// Returns the next token's location in the token sequence, as reported by

@@ -202,6 +202,15 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
     @inlinable
     public func expect(kind: Token.TokenKind) throws -> TokenResult? {
         let mark = self.mark()
+
+        // If expected kind is not explicitly a whitespace, skip all whitespace
+        // tokens first
+        if kind != .whitespace {
+            while try tokenizer.peekToken()?.token.isWhitespace == true {
+                _=try tokenizer.next()
+            }
+        }
+
         if let next = try tokenizer.next(), next.token.kind == kind {
             return next
         }
@@ -218,6 +227,15 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
     @inlinable
     public func expect(oneOfKind kinds: Set<Token.TokenKind>) throws -> TokenResult? {
         let mark = self.mark()
+        
+        // If expected kind is not explicitly a whitespace, skip all whitespace
+        // tokens first
+        if !kinds.contains(.whitespace) {
+            while try tokenizer.peekToken()?.token.isWhitespace == true {
+                _=try tokenizer.next()
+            }
+        }
+
         if let next = try tokenizer.next(), kinds.contains(next.token.kind) {
             return next
         }

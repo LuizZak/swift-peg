@@ -1943,99 +1943,99 @@ extension MetagrammarParser {
         var cut = CutFlag()
 
         if
-            let l = try self.expect(kind: .leftBrace),
-            let balancedTokens = try self.balancedTokens(),
-            let r = try self.expect(kind: .rightBrace)
-        {
-            return self.setLocation(.init(tokens: [.init(l)] + balancedTokens.tokens + [.init(r)]), at: mark)
-        }
-
-        self.restore(mark)
-
-        if
-            let l = try self.expect(kind: .leftSquare),
-            let balancedTokens = try self.balancedTokens(),
-            let r = try self.expect(kind: .rightSquare)
-        {
-            return self.setLocation(.init(tokens: [.init(l)] + balancedTokens.tokens + [.init(r)]), at: mark)
-        }
-
-        self.restore(mark)
-
-        if
-            let l = try self.expect(kind: .leftAngle),
-            let balancedTokens = try self.balancedTokens(),
-            let r = try self.expect(kind: .rightAngle)
-        {
-            return self.setLocation(.init(tokens: [.init(l)] + balancedTokens.tokens + [.init(r)]), at: mark)
-        }
-
-        self.restore(mark)
-
-        if
-            let l = try self.expect(kind: .leftParen),
-            let balancedTokens = try self.balancedTokens(),
-            let r = try self.expect(kind: .rightParen)
-        {
-            return self.setLocation(.init(tokens: [.init(l)] + balancedTokens.tokens + [.init(r)]), at: mark)
-        }
-
-        if
-            let l = try self.expect(kind: .leftBrace),
-            cut.toggleOn(),
-            let r = try self.expect(kind: .rightBrace)
-        {
-            return self.setLocation(.init(tokens: [.init(l), .init(r)]), at: mark)
-        }
-
-        self.restore(mark)
-
-        if
-            let l = try self.expect(kind: .leftSquare),
-            cut.toggleOn(),
-            let r = try self.expect(kind: .rightSquare)
-        {
-            return self.setLocation(.init(tokens: [.init(l), .init(r)]), at: mark)
-        }
-
-        self.restore(mark)
-
-        if cut.isOn {
-            return nil
-        }
-
-        if
-            let l = try self.expect(kind: .leftAngle),
-            cut.toggleOn(),
-            let r = try self.expect(kind: .rightAngle)
-        {
-            return self.setLocation(.init(tokens: [.init(l), .init(r)]), at: mark)
-        }
-
-        self.restore(mark)
-
-        if cut.isOn {
-            return nil
-        }
-
-        if
-            let l = try self.expect(kind: .leftParen),
-            cut.toggleOn(),
-            let r = try self.expect(kind: .rightParen)
-        {
-            return self.setLocation(.init(tokens: [.init(l), .init(r)]), at: mark)
-        }
-
-        self.restore(mark)
-        
-        if cut.isOn {
-            return nil
-        }
-
-        if
             let token = try self.balancedTokenAtom()
         {
             return self.setLocation(.init(tokens: [token]), at: mark)
+        }
+
+        self.restore(mark)
+
+        if cut.isOn {
+            return nil
+        }
+
+        if
+            let l = try self.expect(kind: .leftBrace),
+            let balancedTokens = try self.balancedTokens(),
+            let r = try self.expect(kind: .rightBrace)
+        {
+            return self.setLocation(.init(tokens: [.init(l)] + balancedTokens.tokens + [.init(r)]), at: mark)
+        }
+
+        self.restore(mark)
+
+        if
+            let l = try self.expect(kind: .leftSquare),
+            let balancedTokens = try self.balancedTokens(),
+            let r = try self.expect(kind: .rightSquare)
+        {
+            return self.setLocation(.init(tokens: [.init(l)] + balancedTokens.tokens + [.init(r)]), at: mark)
+        }
+
+        self.restore(mark)
+
+        if
+            let l = try self.expect(kind: .leftAngle),
+            let balancedTokens = try self.balancedTokens(),
+            let r = try self.expect(kind: .rightAngle)
+        {
+            return self.setLocation(.init(tokens: [.init(l)] + balancedTokens.tokens + [.init(r)]), at: mark)
+        }
+
+        self.restore(mark)
+
+        if
+            let l = try self.expect(kind: .leftParen),
+            let balancedTokens = try self.balancedTokens(),
+            let r = try self.expect(kind: .rightParen)
+        {
+            return self.setLocation(.init(tokens: [.init(l)] + balancedTokens.tokens + [.init(r)]), at: mark)
+        }
+
+        if
+            let l = try self.expect(kind: .leftBrace),
+            cut.toggleOn(),
+            let r = try self.expect(kind: .rightBrace)
+        {
+            return self.setLocation(.init(tokens: [.init(l), .init(r)]), at: mark)
+        }
+
+        self.restore(mark)
+
+        if
+            let l = try self.expect(kind: .leftSquare),
+            cut.toggleOn(),
+            let r = try self.expect(kind: .rightSquare)
+        {
+            return self.setLocation(.init(tokens: [.init(l), .init(r)]), at: mark)
+        }
+
+        self.restore(mark)
+
+        if cut.isOn {
+            return nil
+        }
+
+        if
+            let l = try self.expect(kind: .leftAngle),
+            cut.toggleOn(),
+            let r = try self.expect(kind: .rightAngle)
+        {
+            return self.setLocation(.init(tokens: [.init(l), .init(r)]), at: mark)
+        }
+
+        self.restore(mark)
+
+        if cut.isOn {
+            return nil
+        }
+
+        if
+            let l = try self.expect(kind: .leftParen),
+            cut.toggleOn(),
+            let r = try self.expect(kind: .rightParen)
+        {
+            return self.setLocation(.init(tokens: [.init(l), .init(r)]), at: mark)
         }
 
         self.restore(mark)
@@ -2044,6 +2044,7 @@ extension MetagrammarParser {
 
     /// ```
     /// balancedTokenAtom[Token]:
+    ///     | WHITESPACE    # Includes newlines
     ///     | IDENT
     ///     | DIGITS
     ///     | STRING
@@ -2069,9 +2070,9 @@ extension MetagrammarParser {
 
         if
             let token = try self.expect(oneOfKind: [
-                .identifier, .digits, .string, .colon, .semicolon, .bar, .equals,
-                .tilde, .star, .plus, .questionMark, .comma, .period, .at,
-                .forwardSlash, .backslash,
+                .whitespace, .identifier, .digits, .string, .colon, .semicolon,
+                .bar, .equals, .tilde, .star, .plus, .questionMark, .comma, .period,
+                .at, .forwardSlash, .backslash,
             ])
         {
             return .init(token)

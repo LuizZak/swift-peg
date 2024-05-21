@@ -50,16 +50,8 @@ public class MetagrammarRawTokenizer: RawTokenizerType {
         var lastIndex = _index
         repeat {
             lastIndex = _index
-            skipWhitespace()
             skipComments()
         } while _index < _source.endIndex && lastIndex != _index
-    }
-
-    @inlinable
-    internal func skipWhitespace() {
-        while _index < _source.endIndex && _source[_index].isWhitespace {
-            advance(by: 1)
-        }
     }
 
     @inlinable

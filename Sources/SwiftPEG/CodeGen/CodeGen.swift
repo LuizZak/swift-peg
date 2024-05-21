@@ -389,7 +389,7 @@ public class CodeGen {
             }
 
             return .init(
-                string: tokens.map(\.token.string).joined(separator: " ")
+                string: tokens.map(\.token.string).joined().trimmingWhitespace()
             )
         }
     }

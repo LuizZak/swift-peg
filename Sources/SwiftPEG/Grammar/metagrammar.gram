@@ -7,6 +7,24 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
     : PEGParser<RawTokenizer> where RawTokenizer.Token == Metagrammar.MetagrammarToken
 {
     /// ```
+    /// WHITESPACE ;
+    /// ```
+    @memoized("WHITESPACE")
+    @inlinable
+    public func _WHITESPACE() throws -> Metagrammar.IdentifierToken? {
+        let mark = self.mark()
+
+        if
+            let token = try self.expect(kind: .whitespace)
+        {
+            return self.setLocation(.init(token), at: mark)
+        }
+
+        self.restore(mark)
+        return nil
+    }
+
+    /// ```
     /// IDENT ;
     /// ```
     @memoized("IDENT")
@@ -64,6 +82,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>
 
 @parserName "MetagrammarParser" ;
 
+@token WHITESPACE ;
 @token IDENT ;
 @token DIGITS ;
 @token STRING ;
@@ -175,6 +194,7 @@ balancedTokens[Metagrammar.BalancedTokens]:
     ;
 
 balancedToken[Metagrammar.BalancedTokens]:
+    | token=WHITESPACE { token }
     | l='{' balancedTokens r='}' { self.setLocation(.init(tokens: [.init(l)] + balancedTokens.tokens + [.init(r)]), at: mark) }
     | l='[' balancedTokens r=']' { self.setLocation(.init(tokens: [.init(l)] + balancedTokens.tokens + [.init(r)]), at: mark) }
     | l='<' balancedTokens r='>' { self.setLocation(.init(tokens: [.init(l)] + balancedTokens.tokens + [.init(r)]), at: mark) }

@@ -21,6 +21,9 @@ public protocol TokenType: Hashable {
     /// `String.count` property).
     var length: Int { get }
 
+    /// Returns `true` if this token represents a sequence of whitespace characters.
+    var isWhitespace: Bool { get }
+
     /// Produces a dummy token construction of a given type.
     /// The construction must have `TokenType.kind` be the same as the provided
     /// `kind`.
@@ -29,7 +32,17 @@ public protocol TokenType: Hashable {
     static func produceDummy(_ kind: TokenKind) -> Self
 }
 
+extension TokenType {
+    /// Returns `true` if `self.kind == TokenKind.whitespace`.
+    @inlinable
+    public var isWhitespace: Bool {
+        self.kind == .whitespace
+    }
+}
+
 /// Specifies a kind of a token.
 public protocol TokenKindType: Hashable, CustomStringConvertible {
-
+    /// Gets the token type associated with whitespace, or other spacing tokens
+    /// that can be skipped in regular parsing.
+    static var whitespace: Self { get }
 }
