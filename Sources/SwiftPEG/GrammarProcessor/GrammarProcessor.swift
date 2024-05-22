@@ -139,16 +139,10 @@ public class GrammarProcessor {
 
     func validateNamedItems() throws {
         let visitor = NamedItemVisitor { node in
-            guard let name = node.name?.identifier else {
+            guard let name = node.name?.identifier, name != "_" else {
                 return
             }
-            
-            if name == "_" {
-                throw GrammarProcessorError.invalidNamedItem(
-                    desc: "Name cannot be '_'",
-                    node
-                )
-            }
+
             if name == "cut" {
                 // TODO: Lift this restriction by dynamically deriving a suitable name for a cut local?
                 throw GrammarProcessorError.invalidNamedItem(

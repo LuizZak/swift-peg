@@ -152,7 +152,7 @@ extension MetagrammarParser {
 
     /// ```
     /// meta[Metagrammar.Meta]:
-    ///     | "@" name=IDENT value=metaValue ~ ';' { self.setLocation(.init(name: name, value: value), at: mark) }
+    ///     | "@" name=IDENT value=metaValue ';' { self.setLocation(.init(name: name, value: value), at: mark) }
     ///     | "@" name=IDENT ';' { self.setLocation(.init(name: name, value: nil), at: mark) }
     ///     ;
     /// ```
@@ -160,23 +160,17 @@ extension MetagrammarParser {
     @inlinable
     public func __meta() throws -> Metagrammar.Meta? {
         let mark = self.mark()
-        var cut = CutFlag()
 
         if
             let _ = try self.expect("@"),
             let name = try self.IDENT(),
             let value = try self.metaValue(),
-            cut.toggleOn(),
             let _ = try self.expect(";")
         {
             return self.setLocation(.init(name: name, value: value), at: mark)
         }
 
         self.restore(mark)
-
-        if cut.isOn {
-            return nil
-        }
 
         if
             let _ = try self.expect("@"),
@@ -187,10 +181,6 @@ extension MetagrammarParser {
         }
 
         self.restore(mark)
-
-        if cut.isOn {
-            return nil
-        }
         return nil
     }
 
@@ -247,25 +237,20 @@ extension MetagrammarParser {
 
     /// ```
     /// rule[Metagrammar.Rule]:
-    ///     | !"@" ruleName ":" '|' alts ~ ';' { self.setLocation(.init(name: ruleName, alts: alts), at: mark) }
-    ///     | !"@" ruleName ":" alts ';' { self.setLocation(.init(name: ruleName, alts: alts), at: mark) }
+    ///     | ruleName ":" '|' alts ';' { self.setLocation(.init(name: ruleName, alts: alts), at: mark) }
+    ///     | ruleName ":" alts ';' { self.setLocation(.init(name: ruleName, alts: alts), at: mark) }
     ///     ;
     /// ```
     @memoized("rule")
     @inlinable
     public func __rule() throws -> Metagrammar.Rule? {
         let mark = self.mark()
-        var cut = CutFlag()
 
         if
-            try self.negativeLookahead({
-                try self.expect("@")
-            }),
             let ruleName = try self.ruleName(),
             let _ = try self.expect(":"),
             let _ = try self.expect("|"),
             let alts = try self.alts(),
-            cut.toggleOn(),
             let _ = try self.expect(";")
         {
             return self.setLocation(.init(name: ruleName, alts: alts), at: mark)
@@ -273,14 +258,7 @@ extension MetagrammarParser {
 
         self.restore(mark)
 
-        if cut.isOn {
-            return nil
-        }
-
         if
-            try self.negativeLookahead({
-                try self.expect("@")
-            }),
             let ruleName = try self.ruleName(),
             let _ = try self.expect(":"),
             let alts = try self.alts(),
@@ -290,10 +268,6 @@ extension MetagrammarParser {
         }
 
         self.restore(mark)
-
-        if cut.isOn {
-            return nil
-        }
         return nil
     }
 

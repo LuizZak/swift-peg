@@ -16,6 +16,48 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
+    func testGenerateParser_wildcardName() throws {
+        let grammar = makeGrammar([
+            .init(name: "a", alts: [
+                .init(items: [
+                    .item("b"),
+                    .item(name: "_", "c"),
+                    .item(name: "_", "d"),
+                ]),
+            ]),
+        ])
+        let sut = makeSut(grammar)
+
+        let result = try sut.generateParser()
+
+        diffTest(expected: """
+            // TestParser
+            extension TestParser {
+                /// ```
+                /// a:
+                ///     | b _=c _=d
+                ///     ;
+                /// ```
+                @memoized("a")
+                @inlinable
+                public func __a() throws -> Node? {
+                    let mark = self.mark()
+
+                    if
+                        let b = try self.b(),
+                        let _ = try self.c(),
+                        let _ = try self.d()
+                    {
+                        return Node()
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+            }
+            """).diff(result)
+    }
+
     func testGenerateParser_altReturnsSingleNamedItemIfNoActionSpecified() throws {
         let grammar = makeGrammar([
             .init(name: "a", type: "SomeType", alts: [
@@ -268,7 +310,7 @@ class SwiftCodeGenTests: XCTestCase {
 
     func testGenerateParser_fullGrammar() throws {
         let parserHeader = #"""
-                import SwiftPEG
+        import SwiftPEG
 
         @usableFromInline
         enum TestGrammarAST {
@@ -463,7 +505,7 @@ class SwiftCodeGenTests: XCTestCase {
         }
 
         @usableFromInline
-        class TestGrammarRawTokenizer: RawTokenizerType {
+        final class TestGrammarRawTokenizer: RawTokenizerType {
             @usableFromInline
             typealias Token = TestGrammarAST.Token
             @usableFromInline
@@ -563,7 +605,7 @@ class SwiftCodeGenTests: XCTestCase {
             }
         }
 
-        class TestGrammarParser<Raw: RawTokenizerType>: PEGParser<Raw> where Raw.Token == TestGrammarAST.Token {
+        final class TestGrammarParser<Raw: RawTokenizerType>: PEGParser<Raw> where Raw.Token == TestGrammarAST.Token {
             @inlinable
             func NAME() throws -> String? {
                 if let token = try self.expect(kind: .name) {
@@ -603,7 +645,7 @@ class SwiftCodeGenTests: XCTestCase {
         @token NEWLINE ;
 
         start[TestGrammarAST.Expression]:
-            | expr NEWLINE? { expr }
+            | expr _=NEWLINE? { expr }
             ;
 
         expr[TestGrammarAST.Expr]:
@@ -638,7 +680,7 @@ class SwiftCodeGenTests: XCTestCase {
             extension TestGrammarParser {
                 /// ```
                 /// start[TestGrammarAST.Expression]:
-                ///     | expr NEWLINE? { expr }
+                ///     | expr _=NEWLINE? { expr }
                 ///     ;
                 /// ```
                 @memoized("start")
@@ -648,7 +690,7 @@ class SwiftCodeGenTests: XCTestCase {
 
                     if
                         let expr = try self.expr(),
-                        let newline = try self.optional({
+                        let _ = try self.optional({
                             try self.NEWLINE()
                         })
                     {

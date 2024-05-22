@@ -193,7 +193,7 @@ enum TestGrammarAST {
 }
 
 @usableFromInline
-class TestGrammarRawTokenizer: RawTokenizerType {
+final class TestGrammarRawTokenizer: RawTokenizerType {
     @usableFromInline
     typealias Token = TestGrammarAST.Token
     @usableFromInline
@@ -293,7 +293,7 @@ class TestGrammarRawTokenizer: RawTokenizerType {
     }
 }
 
-class TestGrammarParser<Raw: RawTokenizerType>: PEGParser<Raw> where Raw.Token == TestGrammarAST.Token {
+final class TestGrammarParser<Raw: RawTokenizerType>: PEGParser<Raw> where Raw.Token == TestGrammarAST.Token {
     @inlinable
     func NAME() throws -> String? {
         if let token = try self.expect(kind: .name) {
@@ -325,7 +325,7 @@ class TestGrammarParser<Raw: RawTokenizerType>: PEGParser<Raw> where Raw.Token =
 extension TestGrammarParser {
     /// ```
     /// start[TestGrammarAST.Expr]:
-    ///     | expr NEWLINE? { expr }
+    ///     | expr _=NEWLINE? { expr }
     ///     ;
     /// ```
     @memoized("start")
@@ -335,7 +335,7 @@ extension TestGrammarParser {
 
         if
             let expr = try self.expr(),
-            let newline = try self.optional({
+            let _ = try self.optional({
                 try self.NEWLINE()
             })
         {

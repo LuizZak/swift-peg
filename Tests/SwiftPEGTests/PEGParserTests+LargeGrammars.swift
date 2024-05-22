@@ -20,6 +20,12 @@ class PEGParserLargeGrammarsTests: XCTestCase {
     func testGrammar_100_copies() throws {
         try runTest(copies: 100)
     }
+
+#if !DEBUG
+    func testGrammar_10_000_copies() throws {
+        try runTest(copies: 10_000)
+    }
+#endif
 }
 
 // MARK: - Test internals

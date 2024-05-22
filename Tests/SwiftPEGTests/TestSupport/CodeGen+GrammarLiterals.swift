@@ -18,6 +18,16 @@ extension GrammarProcessor.NamedItem: ExpressibleByStringLiteral {
     }
 }
 
+extension GrammarProcessor.Item: ExpressibleByStringLiteral {
+    public init(stringLiteral value: String) {
+        if value.allSatisfy({ $0.isUppercase }) {
+            self = .atom(.token(value))
+        } else {
+            self = .atom(.ruleName(value))
+        }
+    }
+}
+
 extension GrammarProcessor.Atom: ExpressibleByStringLiteral {
     public init(stringLiteral value: String) {
         if value.allSatisfy({ $0.isUppercase }) {
