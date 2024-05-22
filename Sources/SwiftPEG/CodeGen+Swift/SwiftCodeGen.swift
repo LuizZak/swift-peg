@@ -60,6 +60,21 @@ public class SwiftCodeGen {
         let type = rule.type?.name ?? "Node"
         let name = alias(for: rule)
 
+        // Derive a doc comment for the generated rule
+        let linePrefix = "///"
+
+        buffer.emitLine("\(linePrefix) ```")
+        buffer.emit("\(linePrefix) \(rule.name)")
+        if let type = rule.type {
+            buffer.emit("[\(type.name)]")
+        }
+        buffer.emitLine(":")
+        for alt in rule.alts {
+            buffer.emitLine("\(linePrefix)     | \(alt)")
+        }
+        buffer.emitLine("\(linePrefix)     ;")
+        buffer.emitLine("\(linePrefix) ```")
+
         // @memoized/@memoizedLeftRecursive
         if rule.isRecursiveLeader {
             buffer.emitLine(#"@memoizedLeftRecursive("\#(name)")"#)

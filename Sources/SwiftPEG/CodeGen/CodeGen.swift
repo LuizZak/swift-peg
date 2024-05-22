@@ -368,9 +368,17 @@ public class CodeGen {
     }
 
     /// `namedItems action?`
-    public struct Alt: Hashable {
+    public struct Alt: Hashable, CustomStringConvertible {
         public var items: [NamedItem]
         public var action: Action? = nil
+
+        public var description: String {
+            let items = self.items.map(\.description).joined(separator: " ")
+            if let action = action {
+                return "\(items) \(action)"
+            }
+            return items
+        }
 
         public static func from(
             _ node: Metagrammar.Alt
@@ -383,8 +391,12 @@ public class CodeGen {
     }
 
     /// `'{' balancedTokens '}'`
-    public struct Action: Hashable {
+    public struct Action: Hashable, CustomStringConvertible {
         public var string: String
+
+        public var description: String {
+            return "{ \(string) }"
+        }
 
         public static func from(
             _ node: Metagrammar.Action
@@ -399,7 +411,7 @@ public class CodeGen {
         }
     }
 
-    public enum NamedItem: Hashable {
+    public enum NamedItem: Hashable, CustomStringConvertible {
         /// `name=IDENT? item ('[' swiftType ']')?`
         case item(name: String? = nil, Item, type: SwiftType? = nil)
         /// ```
@@ -410,6 +422,21 @@ public class CodeGen {
         ///     ;
         /// ```
         case lookahead(Lookahead)
+
+        public var description: String {
+            switch self {
+            case .item(let name?, let item, let type?):
+                return "\(name)=\(item)[\(type)]"
+            case .item(let name?, let item, nil):
+                return "\(name)=\(item)"
+            case .item(nil, let item, let type?):
+                return "\(item)[\(type)]"
+            case .item(nil, let item, nil):
+                return item.description
+            case .lookahead(let lookahead):
+                return lookahead.description
+            }
+        }
 
         public static func from(
             _ node: Metagrammar.NamedItem
@@ -422,7 +449,7 @@ public class CodeGen {
         }
     }
 
-    public enum Item: Hashable {
+    public enum Item: Hashable, CustomStringConvertible {
         /// `'[' alts ']'`
         case optionalItems([Alt])
         /// `atom '?'`
@@ -435,6 +462,23 @@ public class CodeGen {
         case gather(sep: Atom, node: Atom)
         /// `atom`
         case atom(Atom)
+
+        public var description: String {
+            switch self {
+            case .atom(let atom):
+                return atom.description
+            case .gather(let sep, let node):
+                return "\(sep).\(node)+"
+            case .zeroOrMore(let atom):
+                return "\(atom)*"
+            case .oneOrMore(let atom):
+                return "\(atom)+"
+            case .optional(let atom):
+                return "\(atom)?"
+            case .optionalItems(let alts):
+                return "[\(alts)]"
+            }
+        }
 
         public static func from(
             _ node: Metagrammar.Item
@@ -468,13 +512,24 @@ public class CodeGen {
         }
     }
 
-    public indirect enum Lookahead: Hashable {
+    public indirect enum Lookahead: Hashable, CustomStringConvertible {
         /// `'!' atom`
         case negative(Atom)
         /// `'&' atom`
         case positive(Atom)
         /// `~`
         case cut
+
+        public var description: String {
+            switch self {
+            case .negative(let atom):
+                return "!\(atom)"
+            case .positive(let atom):
+                return "&\(atom)"
+            case .cut:
+                return "~"
+            }
+        }
 
         public static func from(
             _ node: Metagrammar.LookaheadOrCut
@@ -493,7 +548,7 @@ public class CodeGen {
         }
     }
 
-    public indirect enum Atom: Hashable {
+    public indirect enum Atom: Hashable, CustomStringConvertible {
         /// `'(' alts ')'`
         case group([Alt])
 
@@ -505,6 +560,19 @@ public class CodeGen {
 
         /// `STRING`
         case string(String, trimmed: String)
+
+        public var description: String {
+            switch self {
+            case .group(let alts):
+                return "(\(alts))"
+            case .ruleName(let ident):
+                return ident
+            case .token(let ident):
+                return ident
+            case .string(let str, _):
+                return str
+            }
+        }
 
         public var isGroup: Bool {
             switch self {
