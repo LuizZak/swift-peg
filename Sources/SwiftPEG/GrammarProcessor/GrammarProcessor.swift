@@ -470,7 +470,7 @@ public class GrammarProcessor {
             case .optional(let atom):
                 return "\(atom)?"
             case .optionalItems(let alts):
-                return "[\(alts)]"
+                return "[\(alts.map(\.description).joined(separator: " | "))]"
             }
         }
 
@@ -558,7 +558,7 @@ public class GrammarProcessor {
         public var description: String {
             switch self {
             case .group(let alts):
-                return "(\(alts))"
+                return "(\(alts.map(\.description).joined(separator: " | ")))"
             case .ruleName(let ident):
                 return ident
             case .token(let ident):

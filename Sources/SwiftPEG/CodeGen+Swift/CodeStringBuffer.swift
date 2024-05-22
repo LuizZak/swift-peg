@@ -388,7 +388,7 @@ public extension CodeStringBuffer {
     }
 
     /// Emits a left brace, a newline, indents by one, invokes `block` and
-    /// finally unindent before emitting a right brace without issuing a newline.
+    /// finally unindents before emitting a right brace without issuing a newline.
     ///
     /// ```
     /// <current line's contents> {

@@ -285,7 +285,7 @@ class SwiftCodeGenTests: XCTestCase {
             extension TestParser {
                 /// ```
                 /// a[ANode]:
-                ///     | b c ([d e])
+                ///     | b c (d e)
                 ///     ;
                 /// ```
                 @memoized("a")
