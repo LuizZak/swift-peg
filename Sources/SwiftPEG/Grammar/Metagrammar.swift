@@ -150,7 +150,7 @@ extension Metagrammar {
         @NodeProperty
         var _alts: [Alt]
 
-        /// Flag used by `CodeGen` to indicate whether this rule is left-recursive.
+        /// Flag used by `GrammarProcessor` to indicate whether this rule is left-recursive.
         var isLeftRecursive: Bool = false
 
         /// If `isLeftRecursive` is `true`, indicates whether this rule is the

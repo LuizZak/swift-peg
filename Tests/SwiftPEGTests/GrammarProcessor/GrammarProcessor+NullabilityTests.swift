@@ -2,7 +2,7 @@ import XCTest
 
 @testable import SwiftPEG
 
-class CodeGen_NullabilityTests: XCTestCase {
+class GrammarProcessor_NullabilityTests: XCTestCase {
     func testDetectLeftRecursiveRules_indirect() throws {
         let start = makeRule(name: "start", [
             makeAlt([ makeItem("rule1") ]),
@@ -26,7 +26,7 @@ class CodeGen_NullabilityTests: XCTestCase {
             [start, rule1, rule2]
         )
 
-        let sut = try CodeGen(grammar)
+        let sut = try GrammarProcessor(grammar)
 
         assertEmpty(sut.diagnostics)
     }

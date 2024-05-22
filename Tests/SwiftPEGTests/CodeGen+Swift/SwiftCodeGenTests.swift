@@ -233,15 +233,15 @@ class SwiftCodeGenTests: XCTestCase {
 
 // MARK: - Test internals
 
-private func makeSut(_ grammar: CodeGen.Grammar) -> SwiftCodeGen {
+private func makeSut(_ grammar: GrammarProcessor.Grammar) -> SwiftCodeGen {
     SwiftCodeGen(grammar: grammar)
 }
 
 private func makeGrammar(
     parserName: String = "TestParser",
     parserHeader: String = "// TestParser",
-    _ rules: [CodeGen.Rule]
-) -> CodeGen.Grammar {
+    _ rules: [GrammarProcessor.Rule]
+) -> GrammarProcessor.Grammar {
 
     .init(
         metas: [

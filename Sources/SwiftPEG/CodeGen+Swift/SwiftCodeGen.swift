@@ -10,18 +10,18 @@ public class SwiftCodeGen {
     public static let parserName: String = "parserName"
 
     let parserName: String
-    let grammar: CodeGen.Grammar
+    let grammar: GrammarProcessor.Grammar
     let buffer: CodeStringBuffer
     var declContext: DeclarationsContext
 
-    var remaining: [CodeGen.Rule] = []
+    var remaining: [GrammarProcessor.Rule] = []
     var ruleAliases: [String: String] = [:]
 
     /// Initializes a new `SwiftCodeGen`, preparing to generate a given grammar.
     /// 
     /// - Parameters:
     ///   - grammar: The grammar to generate.
-    public init(grammar: CodeGen.Grammar) {
+    public init(grammar: GrammarProcessor.Grammar) {
         self.grammar = grammar
         parserName = grammar.parserName() ?? "Parser"
         buffer = CodeStringBuffer()
@@ -56,7 +56,7 @@ public class SwiftCodeGen {
         }
     }
 
-    func generateRule(_ rule: CodeGen.Rule) throws {
+    func generateRule(_ rule: GrammarProcessor.Rule) throws {
         let type = rule.type?.name ?? "Node"
         let name = alias(for: rule)
 
@@ -109,7 +109,7 @@ public class SwiftCodeGen {
         buffer.ensureDoubleNewline()
     }
 
-    func generateAlt(_ alt: CodeGen.Alt, in rule: CodeGen.Rule) throws {
+    func generateAlt(_ alt: GrammarProcessor.Alt, in rule: GrammarProcessor.Rule) throws {
         if alt.items.isEmpty { return }
 
         declContext.push()
@@ -149,8 +149,8 @@ public class SwiftCodeGen {
 
     /// Generates items as a sequence of optional bindings.
     func generateNamedItems(
-        _ namedItems: [CodeGen.NamedItem],
-        in rule: CodeGen.Rule
+        _ namedItems: [GrammarProcessor.NamedItem],
+        in rule: GrammarProcessor.Rule
     ) throws {
         let commaEmitter = buffer.startConditionalEmitter()
         for namedItem in namedItems {
@@ -159,9 +159,9 @@ public class SwiftCodeGen {
     }
 
     func generateNamedItem(
-        _ namedItem: CodeGen.NamedItem,
+        _ namedItem: GrammarProcessor.NamedItem,
         _ commaEmitter: CodeStringBuffer.ConditionalEmitter,
-        in rule: CodeGen.Rule
+        in rule: GrammarProcessor.Rule
     ) throws {
 
         commaEmitter.conditional { buffer in
@@ -180,7 +180,7 @@ public class SwiftCodeGen {
         }
     }
 
-    func generateItem(_ item: CodeGen.Item, in rule: CodeGen.Rule) throws {
+    func generateItem(_ item: GrammarProcessor.Item, in rule: GrammarProcessor.Rule) throws {
         switch item {
         case .optional(let atom):
             buffer.emit("try self.optional(")
@@ -217,8 +217,8 @@ public class SwiftCodeGen {
     }
 
     func generateLookahead(
-        _ lookahead: CodeGen.Lookahead,
-        in rule: CodeGen.Rule
+        _ lookahead: GrammarProcessor.Lookahead,
+        in rule: GrammarProcessor.Rule
     ) throws {
         switch lookahead {
         case .positive(let atom):
@@ -241,8 +241,8 @@ public class SwiftCodeGen {
     }
 
     func generateAtom(
-        _ atom: CodeGen.Atom,
-        in rule: CodeGen.Rule
+        _ atom: GrammarProcessor.Atom,
+        in rule: GrammarProcessor.Rule
     ) throws {
         switch atom {
         case .group(let group):
@@ -282,9 +282,9 @@ extension SwiftCodeGen {
     /// Returns the deduplicated, unique method name to use as a reference for
     /// further code generation.
     func enqueueAuxiliaryRule(
-        for rule: CodeGen.Rule,
+        for rule: GrammarProcessor.Rule,
         suffix: String,
-        _ alts: [CodeGen.Alt]
+        _ alts: [GrammarProcessor.Alt]
     ) -> String {
 
         let name = "_\(rule.name)_\(suffix)"
@@ -293,7 +293,7 @@ extension SwiftCodeGen {
 
     /// Enqueues a given auxiliary rule, returning its deduplicated name for
     /// further referencing.
-    func enqueueAuxiliaryRule(_ rule: CodeGen.Rule) -> String {
+    func enqueueAuxiliaryRule(_ rule: GrammarProcessor.Rule) -> String {
         let decl = declContext.defineMethod(suggestedName: rule.name)
         var rule = rule
         rule.name = decl.name
@@ -308,7 +308,7 @@ extension SwiftCodeGen {
 
 extension SwiftCodeGen {
 
-    func alias(for rule: CodeGen.Rule) -> String {
+    func alias(for rule: GrammarProcessor.Rule) -> String {
         if let alias = self.ruleAliases[rule.name] {
             return alias
         }
@@ -316,7 +316,7 @@ extension SwiftCodeGen {
         return rule.name
     }
 
-    func alias(for namedItem: CodeGen.NamedItem) -> String? {
+    func alias(for namedItem: GrammarProcessor.NamedItem) -> String? {
         switch namedItem {
         case .item(let name?, _, _):
             return name
@@ -327,7 +327,7 @@ extension SwiftCodeGen {
         }
     }
 
-    func alias(for item: CodeGen.Item) -> String? {
+    func alias(for item: GrammarProcessor.Item) -> String? {
         switch item {
         case .atom(let atom),
             .zeroOrMore(let atom),
@@ -340,7 +340,7 @@ extension SwiftCodeGen {
         }
     }
 
-    func alias(for atom: CodeGen.Atom) -> String? {
+    func alias(for atom: GrammarProcessor.Atom) -> String? {
         switch atom {
         case .token(let ident):
             return ident.lowercased()
@@ -360,24 +360,24 @@ extension SwiftCodeGen {
 
     /// Returns `true` if the rule makes use of cut (`~`) in one of its primary
     /// alts.
-    func hasCut(_ node: CodeGen.Rule) -> Bool {
+    func hasCut(_ node: GrammarProcessor.Rule) -> Bool {
         hasCut(node.alts)
     }
 
     /// Returns `true` if one of the given alts makes use of cut (`~`) in one of
     /// its primary items.
-    func hasCut(_ node: [CodeGen.Alt]) -> Bool {
+    func hasCut(_ node: [GrammarProcessor.Alt]) -> Bool {
         node.contains(where: hasCut)
     }
 
     /// Returns `true` if the given alt makes use of cut (`~`) in one of its
     /// primary items.
-    func hasCut(_ node: CodeGen.Alt) -> Bool {
+    func hasCut(_ node: GrammarProcessor.Alt) -> Bool {
         node.items.contains(where: hasCut)
     }
 
     /// Returns `true` if the given named item makes use of cut (`~`).
-    func hasCut(_ node: CodeGen.NamedItem) -> Bool {
+    func hasCut(_ node: GrammarProcessor.NamedItem) -> Bool {
         switch node {
         case .lookahead(.cut):
             return true
@@ -389,7 +389,7 @@ extension SwiftCodeGen {
 
 // MARK: - Convenience extensions
 
-private extension CodeGen.Grammar {
+private extension GrammarProcessor.Grammar {
     func parserHeader() -> String? {
         return _stringOrIdentMeta(named: SwiftCodeGen.parserHeader)
     }

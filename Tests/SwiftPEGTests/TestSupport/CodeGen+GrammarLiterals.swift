@@ -2,13 +2,13 @@
 
 // MARK: Literal initialization
 
-extension CodeGen.Alt: ExpressibleByArrayLiteral {
-    public init(arrayLiteral elements: CodeGen.NamedItem...) {
+extension GrammarProcessor.Alt: ExpressibleByArrayLiteral {
+    public init(arrayLiteral elements: GrammarProcessor.NamedItem...) {
         self.init(items: elements)
     }
 }
 
-extension CodeGen.NamedItem: ExpressibleByStringLiteral {
+extension GrammarProcessor.NamedItem: ExpressibleByStringLiteral {
     public init(stringLiteral value: String) {
         if value.allSatisfy({ $0.isUppercase }) {
             self = .item(name: nil, .atom(.token(value)), type: nil)
@@ -18,7 +18,7 @@ extension CodeGen.NamedItem: ExpressibleByStringLiteral {
     }
 }
 
-extension CodeGen.Atom: ExpressibleByStringLiteral {
+extension GrammarProcessor.Atom: ExpressibleByStringLiteral {
     public init(stringLiteral value: String) {
         if value.allSatisfy({ $0.isUppercase }) {
             self = .token(value)
@@ -28,7 +28,7 @@ extension CodeGen.Atom: ExpressibleByStringLiteral {
     }
 }
 
-extension CodeGen.Action: ExpressibleByStringLiteral {
+extension GrammarProcessor.Action: ExpressibleByStringLiteral {
     public init(stringLiteral value: String) {
         self.init(string: value)
     }
@@ -36,7 +36,7 @@ extension CodeGen.Action: ExpressibleByStringLiteral {
 
 // MARK: Operator support
 
-extension CodeGen.Alt {
+extension GrammarProcessor.Alt {
     /// Constructs `alts: alt | alt`
     static func | (lhs: Self, rhs: Self) -> [Self] {
         return [lhs, rhs]
@@ -48,7 +48,7 @@ extension CodeGen.Alt {
     }
 }
 
-extension CodeGen.NamedItem {
+extension GrammarProcessor.NamedItem {
     /// Constructs `namedItems: namedItem+`
     static func .. (lhs: Self, rhs: Self) -> [Self] {
         return [lhs, rhs]
@@ -60,35 +60,35 @@ extension CodeGen.NamedItem {
     }
 }
 
-extension CodeGen.Atom {
+extension GrammarProcessor.Atom {
     /// Constructs `self?`
-    var opt: CodeGen.Item {
+    var opt: GrammarProcessor.Item {
         return .optional(self)
     }
 
     /// Constructs `value+`
-    static postfix func + (_ value: Self) -> CodeGen.Item {
+    static postfix func + (_ value: Self) -> GrammarProcessor.Item {
         .oneOrMore(value)
     }
 
     /// Constructs `value*`
-    static postfix func * (_ value: Self) -> CodeGen.Item {
+    static postfix func * (_ value: Self) -> GrammarProcessor.Item {
         .oneOrMore(value)
     }
 }
 
 // MARK: - SupportsWith
 
-extension CodeGen.Grammar: SupportsWith { }
-extension CodeGen.MetaProperty: SupportsWith { }
-extension CodeGen.Rule: SupportsWith { }
-extension CodeGen.Alt: SupportsWith { }
-extension CodeGen.Action: SupportsWith { }
-extension CodeGen.NamedItem: SupportsWith { }
-extension CodeGen.Item: SupportsWith { }
-extension CodeGen.Lookahead: SupportsWith { }
-extension CodeGen.Atom: SupportsWith { }
-extension CodeGen.SwiftType: SupportsWith { }
+extension GrammarProcessor.Grammar: SupportsWith { }
+extension GrammarProcessor.MetaProperty: SupportsWith { }
+extension GrammarProcessor.Rule: SupportsWith { }
+extension GrammarProcessor.Alt: SupportsWith { }
+extension GrammarProcessor.Action: SupportsWith { }
+extension GrammarProcessor.NamedItem: SupportsWith { }
+extension GrammarProcessor.Item: SupportsWith { }
+extension GrammarProcessor.Lookahead: SupportsWith { }
+extension GrammarProcessor.Atom: SupportsWith { }
+extension GrammarProcessor.SwiftType: SupportsWith { }
 
 protocol SupportsWith {
     func with<V>(_ keypath: WritableKeyPath<Self, V>, value: V) -> Self

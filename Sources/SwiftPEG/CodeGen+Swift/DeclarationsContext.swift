@@ -67,7 +67,7 @@ public final class DeclarationsContext {
     @discardableResult
     public func defineMethod(fixedName: String) throws -> Declaration {
         guard declaration(named: fixedName, ofKind: .method) == nil else {
-            throw CodeGen.CodeGenError.message(
+            throw GrammarProcessor.GrammarProcessorError.message(
                 "Attempted to create duplicate method with name \(fixedName)"
             )
         }

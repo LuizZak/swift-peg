@@ -70,7 +70,7 @@ class GrammarParsingSample {
                 }
             }
 
-            let codeGen = try CodeGen(grammar, verbose: verbose)
+            let codeGen = try GrammarProcessor(grammar, verbose: verbose)
 
             for diagnostic in codeGen.diagnostics {
                 print(diagnostic.description)

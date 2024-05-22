@@ -1,6 +1,6 @@
-extension CodeGen {
+extension GrammarProcessor {
     /// Computes nullable rules.
-    /// 
+    ///
     /// Rules are nullable if they can be satisfied while matching no input.
     func computeNullables(_ rules: [String: Metagrammar.Rule]) throws {
         let visitor = NullabilityVisitor(rulesMap: rules)
@@ -53,7 +53,7 @@ extension CodeGen {
 
                     rule.isLeftRecursiveLead = true
                 } else {
-                    throw CodeGenError.unresolvedLeftRecursion(ruleNames: component.map(\.ruleName))
+                    throw GrammarProcessorError.unresolvedLeftRecursion(ruleNames: component.map(\.ruleName))
                 }
             }
         }
