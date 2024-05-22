@@ -190,7 +190,12 @@ public class SwiftCodeGen {
 
         switch namedItem {
         case .item(_, let item, _):
-            buffer.emit("let \(escapeIdentifier(alias)) = ")
+            var resolvedName = alias
+            if alias != "_" {
+                resolvedName = declContext.defineLocal(suggestedName: alias, type: nil).name
+            }
+
+            buffer.emit("let \(escapeIdentifier(resolvedName)) = ")
             try generateItem(item, in: rule)
 
         case .lookahead(let lookahead):

@@ -89,8 +89,8 @@ public class DiffingTest {
                 
                 \(makeDiffStringSection(expected: expectedDiff.string, actual: actual))
                 """,
-                inFile: file,
-                atLine: line,
+                inFile: expectedDiff.location.file,
+                atLine: expectedDiff.location.line,
                 expected: true
             )
         } else {
@@ -114,8 +114,8 @@ public class DiffingTest {
                 
                 \(makeDiffStringSection(expected: expectedDiff.string, actual: actual))
                 """,
-                inFile: file,
-                atLine: line,
+                inFile: expectedDiff.location.file,
+                atLine: expectedDiff.location.line,
                 expected: true
             )
         }

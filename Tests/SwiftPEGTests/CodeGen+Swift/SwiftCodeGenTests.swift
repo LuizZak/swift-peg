@@ -16,6 +16,106 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
+    func testGenerateParser_deduplicatesIdentifiers() throws {
+        let grammar = makeGrammar([
+            .init(name: "a", alts: [
+                .init(items: [
+                    .item("b"),
+                    .item(name: "_", "c"),
+                    .item("b"),
+                ]),
+            ]),
+        ])
+        let sut = makeSut(grammar)
+
+        let result = try sut.generateParser()
+
+        diffTest(expected: """
+            // TestParser
+            extension TestParser {
+                /// ```
+                /// a:
+                ///     | b _=c b
+                ///     ;
+                /// ```
+                @memoized("a")
+                @inlinable
+                public func __a() throws -> Node? {
+                    let mark = self.mark()
+
+                    if
+                        let b = try self.b(),
+                        let _ = try self.c(),
+                        let b1 = try self.b()
+                    {
+                        return Node()
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+            }
+            """).diff(result)
+    }
+
+    func testGenerateParser_deduplication_runsPerAlt() throws {
+        let grammar = makeGrammar([
+            .init(name: "a", alts: [
+                .init(items: [
+                    .item("b"),
+                    .item(name: "_", "c"),
+                    .item("b"),
+                ]),
+                .init(items: [
+                    .item("b"),
+                    .item(name: "_", "c"),
+                    .item("b"),
+                ]),
+            ]),
+        ])
+        let sut = makeSut(grammar)
+
+        let result = try sut.generateParser()
+
+        diffTest(expected: """
+            // TestParser
+            extension TestParser {
+                /// ```
+                /// a:
+                ///     | b _=c b
+                ///     | b _=c b
+                ///     ;
+                /// ```
+                @memoized("a")
+                @inlinable
+                public func __a() throws -> Node? {
+                    let mark = self.mark()
+
+                    if
+                        let b = try self.b(),
+                        let _ = try self.c(),
+                        let b1 = try self.b()
+                    {
+                        return Node()
+                    }
+
+                    self.restore(mark)
+
+                    if
+                        let b = try self.b(),
+                        let _ = try self.c(),
+                        let b1 = try self.b()
+                    {
+                        return Node()
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+            }
+            """).diff(result)
+    }
+
     func testGenerateParser_wildcardName() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
