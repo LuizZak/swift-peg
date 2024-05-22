@@ -29,6 +29,11 @@ class SwiftCodeGenTests: XCTestCase {
         diffTest(expected: """
             // TestParser
             extension TestParser {
+                /// ```
+                /// a:
+                ///     | b { CustomAction() }
+                ///     ;
+                /// ```
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Node? {
@@ -60,6 +65,11 @@ class SwiftCodeGenTests: XCTestCase {
         diffTest(expected: """
             // TestParser
             extension TestParser {
+                /// ```
+                /// a[ANode]:
+                ///     | b c d?
+                ///     ;
+                /// ```
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> ANode? {
@@ -95,6 +105,11 @@ class SwiftCodeGenTests: XCTestCase {
         diffTest(expected: """
             // TestParser
             extension TestParser {
+                /// ```
+                /// a[ANode]:
+                ///     | b c ([d e])
+                ///     ;
+                /// ```
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> ANode? {
@@ -112,11 +127,15 @@ class SwiftCodeGenTests: XCTestCase {
                     return nil
                 }
 
+                /// ```
+                /// _a__group_:
+                ///     | d e
+                ///     ;
+                /// ```
                 @memoized("_a__group_")
                 @inlinable
                 public func ___a__group_() throws -> Node? {
                     let mark = self.mark()
-                    var cut = CutFlag()
 
                     if
                         let d = try self.d(),
@@ -145,6 +164,11 @@ class SwiftCodeGenTests: XCTestCase {
         diffTest(expected: """
             // TestParser
             extension TestParser {
+                /// ```
+                /// a:
+                ///     | b ~ c { CustomAction() }
+                ///     ;
+                /// ```
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Node? {
@@ -164,6 +188,42 @@ class SwiftCodeGenTests: XCTestCase {
                     if cut.isOn {
                         return nil
                     }
+                    return nil
+                }
+            }
+            """).diff(result)
+    }
+
+    func testGenerateParser_leftRecursiveRule() throws {
+        let grammar = makeGrammar([
+            .init(name: "a", alts: [
+                .init(items: ["b"])
+            ]).with(\.isRecursiveLeader, value: true)
+        ])
+        let sut = makeSut(grammar)
+
+        let result = try sut.generateParser()
+
+        diffTest(expected: """
+            // TestParser
+            extension TestParser {
+                /// ```
+                /// a:
+                ///     | b
+                ///     ;
+                /// ```
+                @memoizedLeftRecursive("a")
+                @inlinable
+                public func __a() throws -> Node? {
+                    let mark = self.mark()
+
+                    if
+                        let b = try self.b()
+                    {
+                        return Node()
+                    }
+
+                    self.restore(mark)
                     return nil
                 }
             }
