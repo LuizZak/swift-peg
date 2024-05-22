@@ -141,6 +141,27 @@ func assertEqual<T, E>(
     XCTAssertEqual(lhs, rhs, message(), file: file, line: line)
 }
 
+/// Asserts a block does not throw an error.
+func assertNoThrow<T>(
+    _ block: () throws -> T,
+    _ message: @autoclosure () -> String = "",
+    file: StaticString = #file,
+    line: UInt = #line
+) throws -> T {
+
+    do {
+        return try block()
+    } catch {
+        fail(
+            "Expected no error to be thrown \(_formatMessage(message()))",
+            file: file,
+            line: line
+        )
+
+        throw TestError.unexpectedThrow("")
+    }
+}
+
 /// Asserts a block throws an error.
 func assertThrows<T>(
     _ block: () throws -> T,
@@ -151,7 +172,7 @@ func assertThrows<T>(
     do {
         _=try block()
         fail(
-            "Expected error to be thrown\(_formatMessage(message()))",
+            "Expected error to be thrown \(_formatMessage(message()))",
             file: file,
             line: line
         )
@@ -353,5 +374,18 @@ func assertEqualUnordered<T>(
 
     if !remaining.isEmpty {
         signal()
+    }
+}
+
+// MARK: - Definitions
+
+enum TestError: Error, CustomStringConvertible {
+    case unexpectedThrow(String)
+    
+    var description: String {
+        switch self {
+        case .unexpectedThrow(let message):
+            return message
+        }
     }
 }

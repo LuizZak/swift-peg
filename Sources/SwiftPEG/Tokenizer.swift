@@ -204,10 +204,24 @@ open class Tokenizer<Raw: RawTokenizerType> {
             hasher.combine(index)
         }
 
+        /// Returns `true` if `lhs` is a marker that matches the same position
+        /// as `rhs` on its tokenizer.
+        ///
+        /// - note: In debug builds, always returns `false` for markers created
+        /// by different tokenizer instances.
+        @inlinable
+        public static func == (lhs: Mark, rhs: Mark) -> Bool {
+#if DEBUG
+            lhs.ownerUUID == rhs.ownerUUID && lhs.index == rhs.index
+#else
+            lhs.index == rhs.index
+#endif
+        }
+
         /// Returns `true` if `lhs` is a marker that precedes `rhs` on its tokenizer.
         ///
-        /// - note: Always returns `false` for markers created by different
-        /// tokenizer instances.
+        /// - note: In debug builds, always returns `false` for markers created
+        /// by different tokenizer instances.
         @inlinable
         public static func < (lhs: Mark, rhs: Mark) -> Bool {
 #if DEBUG

@@ -46,7 +46,7 @@ class ParserMemoizeLeftRecursiveMacroImplementation: ParserMemoizeMacroImplement
             self.restore(mark)
             let priorReach = self.resetReach(mark)
 
-            let result = try \(invocation)()
+            let result = \(invocation)
 
             let endMark = self.mark()
             let reach = self.resetReach(priorReach)
@@ -55,7 +55,7 @@ class ParserMemoizeLeftRecursiveMacroImplementation: ParserMemoizeMacroImplement
             if result == nil {
                 break
             }
-            if endMark < lastMark {
+            if endMark <= lastMark {
                 break
             }
 

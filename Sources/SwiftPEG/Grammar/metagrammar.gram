@@ -1,6 +1,7 @@
 # Metagrammar for SwiftPEG - based on https://github.com/we-like-parsers/pegen_experiments/blob/master/pegen/metagrammar.gram (see LICENSE.pegen.md)
 # This metagrammar requires the MetagrammarRawTokenizer for tokenizing.
 
+@parserName "MetagrammarParser" ;
 @parserHeader """
 // HEADS UP! This is a generated file
 
@@ -81,8 +82,6 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>: PEGParser<
     }
 }
 """ ;
-
-@parserName "MetagrammarParser" ;
 
 @token WHITESPACE ;
 @token IDENT ;

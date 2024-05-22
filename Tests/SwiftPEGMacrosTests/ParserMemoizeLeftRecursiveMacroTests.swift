@@ -41,7 +41,7 @@ class ParserMemoizeLeftRecursiveMacroTests: XCTestCase {
                     self.restore(mark)
                     let priorReach = self.resetReach(mark)
 
-                    let result = try __method__()()
+                    let result = __method__()
 
                     let endMark = self.mark()
                     let reach = self.resetReach(priorReach)
@@ -50,7 +50,7 @@ class ParserMemoizeLeftRecursiveMacroTests: XCTestCase {
                     if result == nil {
                         break
                     }
-                    if endMark < lastMark {
+                    if endMark <= lastMark {
                         break
                     }
 

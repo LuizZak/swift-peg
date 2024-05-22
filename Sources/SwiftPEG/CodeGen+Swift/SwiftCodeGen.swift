@@ -126,12 +126,7 @@ public class SwiftCodeGen {
 
         // return <result>
         buffer.emitBlock {
-            buffer.emit("return ")
-            if let action = alt.action {
-                buffer.emitLine(action.string)
-            } else {
-                buffer.emitLine("\(rule.type?.name ?? "Node")()")
-            }
+            generateAltReturn(alt, in: rule)
         }
         
         // Alt failure results in a restore to a previous mark
@@ -145,6 +140,29 @@ public class SwiftCodeGen {
                 buffer.emitLine("return nil")
             }
         }
+    }
+
+    /// Generates `return <alt result>` for a successful alt match.
+    func generateAltReturn(
+        _ alt: GrammarProcessor.Alt,
+        in rule: GrammarProcessor.Rule
+    ) {
+        buffer.emit("return ")
+
+        if let action = alt.action {
+            buffer.emitLine(action.string)
+            return
+        }
+
+        // If no action is specified, attempt to return instead the named
+        // item within the alt, if it's the only named item in the alt.
+        if alt.items.count == 1, let alias = alias(for: alt.items[0]) {
+            buffer.emitLine(escapeIdentifier(alias))
+            return
+        }
+
+        // Fallback: Return an initialization of the associated node type.
+        buffer.emitLine("\(rule.type?.name ?? "Node")()")
     }
 
     /// Generates items as a sequence of optional bindings.
@@ -172,7 +190,7 @@ public class SwiftCodeGen {
 
         switch namedItem {
         case .item(_, let item, _):
-            buffer.emit("let \(alias) = ")
+            buffer.emit("let \(escapeIdentifier(alias)) = ")
             try generateItem(item, in: rule)
 
         case .lookahead(let lookahead):
@@ -229,7 +247,7 @@ public class SwiftCodeGen {
             buffer.emit(")")
 
         case .negative(let atom):
-            buffer.emit("try self.positiveLookahead(")
+            buffer.emit("try self.negativeLookahead(")
             try buffer.emitInlinedBlock {
                 try generateAtom(atom, in: rule)
             }
@@ -249,14 +267,14 @@ public class SwiftCodeGen {
             let aux = enqueueAuxiliaryRule(for: rule, suffix: "_group_", group)
 
             buffer.emit("try self.\(aux)()")
-        
+
         case .ruleName(let ident):
-            buffer.emit("try self.\(ident)()")
+            buffer.emit("try self.\(escapeIdentifier(ident))()")
 
         case .token(let ident):
-            buffer.emit("try self.\(ident)()")
+            buffer.emit("try self.\(escapeIdentifier(ident))()")
 
-        // Token
+        // Token literal
         case .string(let string, let raw):
             var result = string
 
@@ -308,6 +326,27 @@ extension SwiftCodeGen {
 
 extension SwiftCodeGen {
 
+    /// Escapes the given identifier to something that can be declared as a local
+    /// or method name in Swift.
+    func escapeIdentifier(_ ident: String) -> String {
+        // Wildcard; return unchanged
+        if ident == "_" {
+            return ident
+        }
+
+        // Identifier already escaped; return unchanged
+        if ident.hasPrefix("`") && ident.hasSuffix("`") {
+            return ident
+        }
+
+        if GrammarProcessor.invalidBareIdentifiers.contains(ident) {
+            return "`\(ident)`"
+        }
+
+        return ident
+    }
+
+    /// Returns the alias for referencing the given rule in code with `self.<rule alias>()`.
     func alias(for rule: GrammarProcessor.Rule) -> String {
         if let alias = self.ruleAliases[rule.name] {
             return alias
@@ -316,6 +355,10 @@ extension SwiftCodeGen {
         return rule.name
     }
 
+    /// Returns the alias for referencing the given named item in a matched alt's
+    /// `if let <alias> = <item>` statement.
+    /// 
+    /// Returns `nil` if no suitable alias was found.
     func alias(for namedItem: GrammarProcessor.NamedItem) -> String? {
         switch namedItem {
         case .item(let name?, _, _):
@@ -327,6 +370,10 @@ extension SwiftCodeGen {
         }
     }
 
+    /// Returns the alias for referencing the given item in a matched alt's
+    /// `if let <alias> = <item>` statement.
+    /// 
+    /// Returns `nil` if no suitable alias was found.
     func alias(for item: GrammarProcessor.Item) -> String? {
         switch item {
         case .atom(let atom),
@@ -340,6 +387,11 @@ extension SwiftCodeGen {
         }
     }
 
+    /// Returns the alias for referencing the given atom in a matched alt's
+    /// `if let <alias> = <item>` statement.
+    /// 
+    /// If the alt is a token, returns the token's identifier lowercased. If
+    /// it's a rule name, return the rule name itself, otherwise returns `nil`.
     func alias(for atom: GrammarProcessor.Atom) -> String? {
         switch atom {
         case .token(let ident):

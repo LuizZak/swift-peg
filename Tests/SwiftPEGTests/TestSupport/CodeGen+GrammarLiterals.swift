@@ -34,6 +34,12 @@ extension GrammarProcessor.Action: ExpressibleByStringLiteral {
     }
 }
 
+extension GrammarProcessor.SwiftType: ExpressibleByStringLiteral {
+    public init(stringLiteral value: String) {
+        self.init(name: value)
+    }
+}
+
 // MARK: Operator support
 
 extension GrammarProcessor.Alt {

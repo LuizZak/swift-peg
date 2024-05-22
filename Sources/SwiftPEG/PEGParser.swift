@@ -38,90 +38,24 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
 
         typealias TokenKindType = Token.TokenKind
 
-        let errorMark = tokenizer.mark(before: reach)
+        let errorMark = tokenizer.mark(before: self.reach)
         let errorLead = "Syntax error @ \(tokenizer.readableLocation(for: errorMark))"
 
-        let keys = cache.fetchAllKeys(at: errorMark)
-        if keys.isEmpty {
+        guard let tokens = cache.fetchTokenKinds(at: errorMark) else {
             return SyntaxError.invalidSyntax(errorLead, errorMark)
         }
+        
+        // Check EOF
         tokenizer.restore(errorMark)
         guard let actual = try? tokenizer.peekToken() else {
             return SyntaxError.unexpectedEof("\(errorLead): Unexpected end-of-stream", errorMark)
         }
-        let expectEntries: [TokenKindType] = keys.compactMap { key -> TokenKindType? in
-            guard let arguments = key.arguments else {
-                return nil
-            }
-            guard key.ruleName == "expect" && arguments.count == 1 else {
-                return nil
-            }
-            if let entry = arguments[0].base as? TokenKindType {
-                return entry
-            }
-            if let entry = arguments[0].base as? Token {
-                return entry.kind
-            }
-
-            return nil
-        }
 
         return SyntaxError.expectedToken(
-            "\(errorLead): Found \"\(actual.token.string)\" but expected: \(expectEntries.map({ "\"\($0)\"" }).joined(separator: ", "))",
+            "\(errorLead): Found \"\(actual.token.string)\" but expected: \(tokens.map({ "\"\($0)\"" }).joined(separator: ", "))",
             errorMark,
             received: actual.token,
-            expected: expectEntries
-        )
-    }
-
-    /// Produces a syntax error description from the latest token position that
-    /// the marker attempted to parse.
-    @inlinable
-    open func makeSyntaxError() -> ParserError where Token.TokenKind: RawRepresentable, Token.TokenKind.RawValue == String {
-        let mark = self.mark()
-        defer { self.restore(mark) }
-
-        typealias TokenKindType = Token.TokenKind
-
-        let errorMark = tokenizer.mark(before: reach)
-        let errorLead = "Syntax error @ \(tokenizer.readableLocation(for: errorMark))"
-
-        let keys = cache.fetchAllKeys(at: errorMark)
-        if keys.isEmpty {
-            return SyntaxError.invalidSyntax(errorLead, errorMark)
-        }
-        tokenizer.restore(errorMark)
-        guard let actual = try? tokenizer.peekToken() else {
-            return SyntaxError.unexpectedEof("\(errorLead): Unexpected end-of-stream", errorMark)
-        }
-        let expectEntries: [TokenKindType] = keys.compactMap { key -> TokenKindType? in
-            guard let arguments = key.arguments else {
-                return nil
-            }
-            guard key.ruleName == "expect" && arguments.count == 1 else {
-                return nil
-            }
-            if let entry = arguments[0].base as? TokenKindType {
-                return entry
-            }
-            if let entry = arguments[0].base as? Token {
-                return entry.kind
-            }
-            if
-                let entry = arguments[0].base as? String,
-                let kind = TokenKindType(rawValue: entry)
-            {
-                return kind
-            }
-
-            return nil
-        }
-
-        return SyntaxError.expectedToken(
-            "\(errorLead): Found \"\(actual.token.string)\" but expected: \(expectEntries.map({ "\"\($0)\"" }).joined(separator: ", "))",
-            errorMark,
-            received: actual.token,
-            expected: expectEntries
+            expected: tokens
         )
     }
 
@@ -211,6 +145,8 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
             }
         }
 
+        self.cache.storeTokenKind(at: self.mark(), kind)
+
         if let next = try tokenizer.next(), next.token.kind == kind {
             return next
         }
@@ -236,6 +172,8 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
             }
         }
 
+        self.cache.storeUniqueTokenKinds(at: self.mark(), kinds)
+
         if let next = try tokenizer.next(), kinds.contains(next.token.kind) {
             return next
         }
@@ -259,6 +197,8 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
                 _=try tokenizer.next()
             }
         }
+
+        self.cache.storeTokenKind(at: self.mark(), token.kind)
 
         if let next = try tokenizer.next(), next.token == token {
             return next
@@ -357,7 +297,8 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
     /// Performs a positive lookahead for a token, returning `true` if the result
     /// of `production()` is non-nil.
     ///
-    /// Restores the position of the tokenizer after the lookahead.
+    /// Restores the position of the tokenizer to the previous position
+    /// before the lookahead.
     @inlinable
     public func positiveLookahead<T>(_ production: () throws -> T?) rethrows -> Bool {
         let mark = self.mark()
@@ -368,7 +309,8 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
     /// Performs a positive lookahead for a token, returning `true` if the result
     /// of `production()` is nil.
     ///
-    /// Restores the position of the tokenizer after the lookahead.
+    /// Restores the position of the tokenizer to the previous position
+    /// before the lookahead.
     @inlinable
     public func negativeLookahead<T>(_ production: () throws -> T?) rethrows -> Bool {
         let mark = self.mark()

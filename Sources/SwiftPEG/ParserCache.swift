@@ -2,11 +2,18 @@
 /// and optionally a parameter set for the arguments.
 public struct ParserCache<RawTokenizer: RawTokenizerType> {
     public typealias Mark = Tokenizer<RawTokenizer>.Mark
+    public typealias TokenKind = RawTokenizer.Token.TokenKind
 
     @usableFromInline
     internal var _cache: [Key: Any] = [:]
     @usableFromInline
     internal var _metadata: [String: Any] = [:]
+
+    /// Dictionary to store requests for tokens within the parser.
+    /// 
+    /// Used during error recovery/syntax error generation.
+    @usableFromInline
+    internal var _tokenHits: [Mark: [TokenKind]] = [:]
 
     /// Whether enable or disable the cache.
     /// When disabled, `has()`, `fetch()`, and `fetchAny()` behave as if the cache
@@ -14,6 +21,20 @@ public struct ParserCache<RawTokenizer: RawTokenizerType> {
     /// remain unchanged.
     public var enabled: Bool = true
 
+    /// Fetches or stores a cached token hit list on a given marker within this
+    /// cache. Returns `nil` if no token hits have occurred at that point.
+    @inlinable
+    public subscript(tokenAt mark: Mark) -> [TokenKind]? {
+        get {
+            fetchTokenKinds(at: mark)
+        }
+        set {
+            replaceTokenKinds(at: mark, newValue)
+        }
+    }
+
+    /// Fetches or stores a cached entry with a given key within this cache.
+    /// Returns `nil` if no entries are stored with the given key.
     @inlinable
     public subscript<Value>(key: Key) -> CacheEntry<Value>? {
         get { fetch(key) }
@@ -25,6 +46,77 @@ public struct ParserCache<RawTokenizer: RawTokenizerType> {
             }
         }
     }
+
+    // MARK: - Token requests
+
+    /// Returns `true` if there are token requests at a specified mark within this
+    /// cache.
+    @inlinable
+    public func hasTokenKinds(at mark: Mark) -> Bool {
+        return _tokenHits[mark] != nil
+    }
+
+    /// Stores a request for a token of the given kind at a given point in this
+    /// cache.
+    @inlinable
+    public mutating func storeTokenKind(at mark: Mark, _ tokenKind: TokenKind) {
+        _tokenHits[mark, default: []].append(tokenKind)
+    }
+
+    /// Stores a request for a token of the given kind at a given point in this
+    /// cache, ignoring the request if the token kind is already present at that
+    /// point.
+    @inlinable
+    public mutating func storeUniqueTokenKind(at mark: Mark, _ tokenKind: TokenKind) {
+        guard _tokenHits[mark]?.contains(tokenKind) != true else {
+            return
+        }
+
+        storeTokenKind(at: mark, tokenKind)
+    }
+
+    /// Stores a set of token requests at a given point in this cache, adding
+    /// them to the set of existing tokens.
+    @inlinable
+    public mutating func storeTokenKinds(at mark: Mark, _ tokenKinds: some Sequence<TokenKind>) {
+        _tokenHits[mark, default: []].append(contentsOf: tokenKinds)
+    }
+
+    /// Stores a set of token requests at a given point in this cache, adding
+    /// them to the set of existing tokens, while ignoring duplicated entries.
+    @inlinable
+    public mutating func storeUniqueTokenKinds(at mark: Mark, _ tokenKinds: some Sequence<TokenKind>) {
+        if let existing = _tokenHits[mark] {
+            let newTokens = Set(tokenKinds).subtracting(existing)
+
+            _tokenHits[mark] = existing + newTokens
+        } else {
+            _tokenHits[mark] = Array(tokenKinds)
+        }
+    }
+
+    /// Returns a list of all cached token fetches that occurred at a given index.
+    /// If no token fetch has happened at that point, `nil` is returned, instead.
+    @inlinable
+    public func fetchTokenKinds(at mark: Mark) -> [TokenKind]? {
+        _tokenHits[mark]
+    }
+
+    /// Replaces the cached token kinds at a given point in this cache.
+    @inlinable
+    public mutating func replaceTokenKinds(at mark: Mark, _ tokenKinds: [TokenKind]?) {
+        _tokenHits[mark] = tokenKinds
+    }
+
+    /// Removes all cached token kind hits that occurred at a given mark from
+    /// this cache. Returns the cached value, if present.
+    @inlinable
+    @discardableResult
+    public mutating func removeTokenKinds(at mark: Mark) -> [TokenKind]? {
+        _tokenHits.removeValue(forKey: mark)
+    }
+
+    // MARK: - Rule production
 
     /// Returns `true` if cache contains a given key.
     @inlinable
@@ -63,7 +155,7 @@ public struct ParserCache<RawTokenizer: RawTokenizerType> {
         }
     }
 
-    /// Removes an entry to this cache with a given key.
+    /// Removes an entry from this cache with a given key.
     @inlinable
     @discardableResult
     public mutating func removeValue(forKey key: Key) -> Any?? {
@@ -74,6 +166,10 @@ public struct ParserCache<RawTokenizer: RawTokenizerType> {
     /// `mark`.
     @inlinable
     public mutating func removePast(mark: Mark) {
+        // Tokens
+        removeTokenKinds(at: mark)
+
+        // Productions
         for key in _cache.keys {
             if key.mark > mark {
                 removeValue(forKey: key)
