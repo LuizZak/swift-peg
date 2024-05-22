@@ -216,9 +216,16 @@ public class SwiftCodeGen {
             let aux = enqueueAuxiliaryRule(for: rule, suffix: "_opt", alts)
             buffer.emit("try self.\(aux)()")
 
-        case .gather(let sep, let node):
-            // TODO: Decompose gathers
-            break
+        case .gather(let sep, let item):
+            buffer.emit("try self.gather(separator: ")
+                try buffer.emitInlinedBlock {
+                    try generateAtom(sep, in: rule)
+                }
+            buffer.emit(", item: ")
+                try buffer.emitInlinedBlock {
+                    try generateAtom(item, in: rule)
+                }
+            buffer.emit(")")
 
         case .zeroOrMore(let atom):
             buffer.emit("try self.repeatZeroOrMore(")
@@ -294,6 +301,14 @@ public class SwiftCodeGen {
             result = result.replacing("\\", with: #"\\"#)
 
             buffer.emit("try self.expect(\(result))")
+        }
+    }
+
+    /// Describes an error that can be raised during Swift parser code generation.
+    public enum Error: Swift.Error, CustomStringConvertible {
+        public var description: String {
+            switch self {
+            }
         }
     }
 }
@@ -386,8 +401,11 @@ extension SwiftCodeGen {
             .oneOrMore(let atom),
             .optional(let atom):
             return alias(for: atom)
+        
+        case .gather(_, let node):
+            return alias(for: node)
 
-        case .gather, .optionalItems:
+        case .optionalItems:
             return nil
         }
     }

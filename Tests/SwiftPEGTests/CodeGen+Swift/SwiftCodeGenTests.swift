@@ -194,6 +194,46 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
+    func testGenerateParser_gather() throws {
+        let grammar = makeGrammar([
+            .init(name: "a", alts: [
+                .init(items: [.item(.gather(sep: "b", node: "c"))]),
+            ]),
+        ])
+        let sut = makeSut(grammar)
+
+        let result = try sut.generateParser()
+
+        diffTest(expected: """
+            // TestParser
+            extension TestParser {
+                /// ```
+                /// a:
+                ///     | b.c+
+                ///     ;
+                /// ```
+                @memoized("a")
+                @inlinable
+                public func __a() throws -> Node? {
+                    let mark = self.mark()
+
+                    if
+                        let c = try self.gather(separator: {
+                            try self.b()
+                        }, item: {
+                            try self.c()
+                        })
+                    {
+                        return c
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+            }
+            """).diff(result)
+    }
+
     func testGenerateParser_altAction() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [

@@ -81,6 +81,46 @@ class PEGParserTests: XCTestCase {
         assertEqual(stubTokenizer.tokenIndex, 1)
     }
 
+    func testGather() throws {
+        let stubTokenizer = stubTestTokenizer([
+            0, 1, 0, 1, 0, 1, 0, 2,
+        ])
+        let sut = makeSut(stubTokenizer)
+
+        let result = try assertUnwrap(
+            try sut.gather(
+                separator: {
+                    try sut.expect(1)
+                }, item: {
+                    try sut.expect(0)
+                })
+        )
+        
+        assertEqual(result.map(\.token), [0, 0, 0, 0])
+        assertEqual(stubTokenizer.next_callCount, 8)
+        assertEqual(stubTokenizer.tokenIndex, 7)
+    }
+
+    func testGather_trailingSeparator_returnsNil() throws {
+        let stubTokenizer = stubTestTokenizer([
+            0, 1, 0, 1, 0, 1, 2,
+        ])
+        let sut = makeSut(stubTokenizer)
+
+        let result = try assertUnwrap(
+            try sut.gather(
+                separator: {
+                    try sut.expect(1)
+                }, item: {
+                    try sut.expect(0)
+                })
+        )
+        
+        assertEqual(result.map(\.token), [0, 0, 0])
+        assertEqual(stubTokenizer.next_callCount, 7)
+        assertEqual(stubTokenizer.tokenIndex, 5)
+    }
+
     func testPositiveLookahead_success() throws {
         let stubTokenizer = stubTestTokenizer([
             0, 1, 2,

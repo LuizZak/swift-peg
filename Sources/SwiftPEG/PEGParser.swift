@@ -128,6 +128,14 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
         return try tokenizer.peekToken()?.token.kind
     }
 
+    /// Fetches the next token in the stream and returns it unconditionally.
+    /// 
+    /// - note: Call is not memoized.
+    @inlinable
+    public func nextToken() throws -> TokenResult? {
+        return try tokenizer.next()
+    }
+
     /// Fetches the next token in the stream and compares its kind against `kind`,
     /// returning the token if it matches. If the method fails, `nil` is returned
     /// and the tokenizer position is reset.
@@ -243,14 +251,6 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
         .some(try production())
     }
 
-    /// Fetches the next token in the stream and returns it unconditionally.
-    /// 
-    /// - note: Call is not memoized.
-    @inlinable
-    public func nextToken() throws -> TokenResult? {
-        return try tokenizer.next()
-    }
-
     /// Performs a given production repeatedly until it returns `nil`.
     /// 
     /// Since it expects that the first production may be `nil`, it always succeeds,
@@ -293,6 +293,38 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
         self.restore(mark)
         return nil
     }
+
+    /// Performs a 'gather' construction (`<sep>.<item>+`), which serves as an
+    /// alias for `<item> (<sep> <item>)*`.
+    @inlinable
+    public func gather<S, T>(
+        separator separatorProducer: () throws -> S?,
+        item itemProducer: () throws -> T?
+    ) throws -> [T]? {
+
+        var mark = self.mark()
+
+        guard let item = try itemProducer() else {
+            self.restore(mark)
+            return nil
+        }
+
+        mark = self.mark()
+
+        var result: [T] = [item]
+
+        while try separatorProducer() != nil {
+            guard let next = try itemProducer() else {
+                break
+            }
+
+            result.append(next)
+            mark = self.mark()
+        }
+
+        self.restore(mark)
+        return result
+    } 
 
     /// Performs a positive lookahead for a token, returning `true` if the result
     /// of `production()` is non-nil.
