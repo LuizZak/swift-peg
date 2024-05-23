@@ -32,7 +32,8 @@ let package = Package(
                 "SwiftPEGMacros",
             ],
             resources: [
-                .copy("Grammar/metagrammar.gram")
+                .copy("Grammar/metagrammar.gram"),
+                .copy("Grammar/metagrammar.tokens"),
             ]
         ),
         .executableTarget(

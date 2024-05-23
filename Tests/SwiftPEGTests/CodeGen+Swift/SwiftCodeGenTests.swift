@@ -1023,7 +1023,7 @@ private func parseGrammar(
         throw parser.makeSyntaxError()
     }
 
-    let processor = try GrammarProcessor(grammar)
+    let processor = try GrammarProcessor(grammar, delegate: nil)
     
     return processor.generatedGrammar()
 }

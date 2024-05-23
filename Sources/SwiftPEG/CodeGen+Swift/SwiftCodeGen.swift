@@ -9,6 +9,14 @@ public class SwiftCodeGen {
     /// Assumes that the type exists already.
     public static let parserName: String = "parserName"
 
+    /// Name of optional meta-property (`@<name> <value>`) from grammar file that
+    /// indicates the strategy of token call to emit; by default token checks
+    /// are emitted with `PEGParser.expect(_:)`, and specifying a value of
+    /// 'expectKind' for this meta-property indicates that the code generator
+    /// should emit `PEGParser.expect(kind:)`, calls for the string literals,
+    /// instead.
+    public static let tokenCall: String = "tokenCall"
+
     let parserName: String
     let grammar: GrammarProcessor.Grammar
     let buffer: CodeStringBuffer
@@ -300,7 +308,11 @@ public class SwiftCodeGen {
             // Escape backslashes contents
             result = result.replacing("\\", with: #"\\"#)
 
-            buffer.emit("try self.expect(\(result))")
+            if grammar.tokenCall() == "expectKind" {
+                buffer.emit("try self.expect(kind: \(result))")
+            } else {
+                buffer.emit("try self.expect(\(result))")
+            }
         }
     }
 
@@ -418,6 +430,10 @@ private extension GrammarProcessor.Grammar {
 
     func parserName() -> String? {
         return _stringOrIdentMeta(named: SwiftCodeGen.parserName)
+    }
+
+    func tokenCall() -> String? {
+        return _stringOrIdentMeta(named: SwiftCodeGen.tokenCall)
     }
 
     private func _stringOrIdentMeta(named name: String) -> String? {

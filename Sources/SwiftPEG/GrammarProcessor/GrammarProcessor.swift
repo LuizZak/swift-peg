@@ -13,7 +13,13 @@ public class GrammarProcessor {
         "self",
     ]
 
+    /// Name of optional @meta-property that is queried for loading a .tokens
+    /// file with extra token definition information.
+    public static let tokensFile = "tokensFile"
+
     let grammar: Metagrammar.Grammar
+    var tokensFileName: String? = nil
+    var tokensFile: [Metagrammar.TokenDefinition] = []
 
     /// Rules remaining to be generated.
     var remaining: [String: Metagrammar.Rule] = [:]
@@ -28,12 +34,21 @@ public class GrammarProcessor {
     /// If `true`, prints diagnostics into stdout.
     public var verbose: Bool
 
+    /// The delegate for this grammar processor.
+    public weak var delegate: Delegate?
+
     /// Prepares a `GrammarProcessor` instance based on a given parsed grammar.
-    public init(_ grammar: Metagrammar.Grammar, verbose: Bool = false) throws {
+    public init(
+        _ grammar: Metagrammar.Grammar,
+        delegate: Delegate?,
+        verbose: Bool = false
+    ) throws {
         self.grammar = grammar
+        self.delegate = delegate
         self.verbose = verbose
 
         let knownRules = try validateRuleNames()
+        tokensFile = try loadTokensFile()
         let tokens = try validateTokenReferences()
         try validateReferences(tokens: tokens)
 
@@ -45,6 +60,12 @@ public class GrammarProcessor {
     /// Returns the reduced and tagged grammar for grammar analysis.
     public func generatedGrammar() -> Grammar {
         .from(grammar)
+    }
+
+    /// Returns the token definitions that where loaded from an associated tokens
+    /// file.
+    public func tokenDefinitions() -> [TokenDefinition] {
+        tokensFile.map(TokenDefinition.from)
     }
 
     func validateRuleNames() throws -> [String: Metagrammar.Rule] {
@@ -78,8 +99,36 @@ public class GrammarProcessor {
         return ruleName
     }
 
+    func loadTokensFile() throws -> [Metagrammar.TokenDefinition] {
+        guard let tokensMeta = grammar.metas.first(where: { $0.name.token.string == Self.tokensFile }) else {
+            return []
+        }
+        guard let fileName = tokensMeta.value as? Metagrammar.MetaStringValue else {
+            throw GrammarProcessorError.failedToLoadTokensFile(tokensMeta)
+        }
+        self.tokensFileName = String(fileName.string.valueTrimmingQuotes)
+
+        guard let fileContents = try delegate?.grammarProcessor(self, loadTokensFileNamed: String(fileName.string.valueTrimmingQuotes)) else {
+            throw GrammarProcessorError.failedToLoadTokensFile(tokensMeta)
+        }
+
+        let parser = MetagrammarParser(raw: MetagrammarRawTokenizer(source: fileContents))
+        
+        do {
+            guard let tokens = try parser.tokensFile(), parser.tokenizer.isEOF else {
+                throw GrammarProcessorError.tokensFileSyntaxError(tokensMeta, parser.makeSyntaxError())
+            }
+            
+            return tokens
+        } catch let error as ParserError {
+            throw GrammarProcessorError.tokensFileSyntaxError(tokensMeta, error)
+        } catch {
+            throw error
+        }
+    }
+
     func validateTokenReferences() throws -> Set<String> {
-        var knownTokens: [String: Metagrammar.Meta] = [:]
+        var metaTokens: [String: Metagrammar.Meta] = [:]
         var issuedWarnings: Set<String> = []
 
         for token in tokenMetaProperties() {
@@ -93,17 +142,22 @@ public class GrammarProcessor {
                 continue
             }
 
-            if let prior = knownTokens[name] {
+            if let prior = metaTokens[name] {
                 diagnostics.append(
                     .repeatedTokenDeclaration(name: name, token, prior: prior)
                 )
                 issuedWarnings.insert(name)
             } else {
-                knownTokens[name] = token
+                metaTokens[name] = token
             }
         }
 
-        return Set(knownTokens.keys)
+        var tokensFromFile: Set<String> = []
+        for token in tokensFile {
+            tokensFromFile.insert(String(token.identifier.identifier))
+        }
+
+        return Set(metaTokens.keys).union(tokensFromFile)
     }
 
     func validateReferences(tokens: Set<String>) throws {
@@ -133,7 +187,7 @@ public class GrammarProcessor {
                 fatalError("Found atom \(ref.name) @ \(ref.location) that has no Rule parent?")
             }
 
-            throw GrammarProcessorError.unknownReference(ref, rule)
+            throw GrammarProcessorError.unknownReference(ref, rule, tokensFileName: self.tokensFileName)
         }
     }
 
@@ -188,11 +242,19 @@ public class GrammarProcessor {
         case invalidNamedItem(desc: String, Metagrammar.NamedItem)
         /// An identifier was found in a rule that could not be resolved to a
         /// rule or token name.
-        case unknownReference(Metagrammar.IdentAtom, Metagrammar.Rule)
+        case unknownReference(Metagrammar.IdentAtom, Metagrammar.Rule, tokensFileName: String? = nil)
 
         /// An attempt at resolving a left recursion and find a leader rule from
         /// a set of rules has failed.
         case unresolvedLeftRecursion(ruleNames: [String])
+
+        /// A '@tokensFile' meta-property references a file that could not be
+        /// loaded.
+        case failedToLoadTokensFile(Metagrammar.Meta)
+
+        /// A '@tokensFile' meta-property references a tokens file that contains
+        /// syntax errors.
+        case tokensFileSyntaxError(Metagrammar.Meta, ParserError)
 
         /// A generic error with an attached message.
         case message(String)
@@ -205,13 +267,17 @@ public class GrammarProcessor {
                 return "Rule name '\(rule.name.name.identifier)' @ \(rule.location) is not valid: \(desc)"
             case .invalidNamedItem(let desc, let item):
                 return "Named item '\(item.name?.identifier ?? "<nil>")' @ \(item.location) is not valid: \(desc)"
-            case .unknownReference(let atom, let rule):
+            case .unknownReference(let atom, let rule, let tokensFileName):
                 return """
                 Reference to unknown identifier '\(atom.name)' @ \(atom.location) in rule '\(rule.name.shortDebugDescription)'. \
-                Did you forget to forward-declare a token with '@token \(atom.name);'?
+                Did you forget to forward-declare a token with '@token \(atom.name);' or define it in '@tokensFile \"\(tokensFileName ?? "<file.tokens>")\"'?
                 """
             case .unresolvedLeftRecursion(let ruleNames):
                 return "Could not resolve left recursion with a lead rule in the set \(ruleNames)"
+            case .failedToLoadTokensFile(let meta):
+                return "@tokenFile @ \(meta.location) references a file that could not be loaded."
+            case .tokensFileSyntaxError(let meta, let error):
+                return "@tokenFile @ \(meta.location) failed to parse due to syntax errors: \(error)"
             case .message(let message):
                 return message
             }
@@ -223,7 +289,7 @@ public class GrammarProcessor {
         /// A token has been declared multiple times with '@token'.
         /// Only reported the first time a duplicated token with a matching name
         /// is declared.
-        case repeatedTokenDeclaration(name: String, Metagrammar.Meta, prior: Metagrammar.Meta)
+        case repeatedTokenDeclaration(name: String, Metagrammar.MetagrammarNode, prior: Metagrammar.MetagrammarNode)
 
         /// A '@token' meta-property is missing an identifier as its value.
         case tokenMissingName(Metagrammar.Meta)
@@ -238,7 +304,42 @@ public class GrammarProcessor {
         }
     }
 
-    // MARK: - Internal representation
+    /// Delegate for `GrammarProcessor` operations.
+    public protocol Delegate: AnyObject {
+        /// Called by a grammar processor to resolve references to `@tokensFile`
+        /// meta-property.
+        func grammarProcessor(
+            _ processor: GrammarProcessor,
+            loadTokensFileNamed name: String
+        ) throws -> String
+    }
+}
+
+// MARK: - Internal representation
+extension GrammarProcessor {
+    /// ```
+    /// tokenDefinition:
+    ///     | IDENTIFIER ':' STRING ';'
+    ///     ;
+    /// ```
+    public struct TokenDefinition: CustomStringConvertible {
+        public var identifier: String
+        public var string: String
+
+        public var description: String {
+            "\(identifier) : \(string) ;"
+        }
+        
+        public static func from(
+            _ node: Metagrammar.TokenDefinition
+        ) -> Self {
+
+            .init(
+                identifier: String(node.identifier.identifier),
+                string: String(node.string.valueTrimmingQuotes)
+            )
+        }
+    }
 
     /// ```
     /// grammar:

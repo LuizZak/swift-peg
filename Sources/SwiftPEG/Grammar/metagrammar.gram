@@ -28,9 +28,9 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>: PEGParser<
     }
 
     /// ```
-    /// IDENT ;
+    /// IDENTIFIER ;
     /// ```
-    @memoized("IDENT")
+    @memoized("IDENTIFIER")
     @inlinable
     public func _IDENT() throws -> Metagrammar.IdentifierToken? {
         let mark = self.mark()
@@ -46,7 +46,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>: PEGParser<
     }
 
     /// ```
-    /// IDENT ;
+    /// IDENTIFIER ;
     /// ```
     @memoized("DIGITS")
     @inlinable
@@ -83,10 +83,8 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>: PEGParser<
 }
 """ ;
 
-@token WHITESPACE ;
-@token IDENT ;
-@token DIGITS ;
-@token STRING ;
+@tokensFile "metagrammar.tokens" ;
+@tokenCall expectKind ;
 
 # Start of grammar
 
@@ -102,12 +100,12 @@ metas[[Metagrammar.Meta]]:
     ;
 
 meta[Metagrammar.Meta]:
-    | "@" name=IDENT value=metaValue ';' { self.setLocation(.init(name: name, value: value), at: mark) }
-    | "@" name=IDENT ';' { self.setLocation(.init(name: name, value: nil), at: mark) }
+    | "@" name=IDENTIFIER value=metaValue ';' { self.setLocation(.init(name: name, value: value), at: mark) }
+    | "@" name=IDENTIFIER ';' { self.setLocation(.init(name: name, value: nil), at: mark) }
     ;
 
 metaValue[Metagrammar.MetaValue]:
-    | ident=IDENT { self.setLocation(Metagrammar.MetaIdentifierValue(identifier: ident), at: mark) }
+    | ident=IDENTIFIER { self.setLocation(Metagrammar.MetaIdentifierValue(identifier: ident), at: mark) }
     | string=STRING { self.setLocation(Metagrammar.MetaStringValue(string: string), at: mark) }
     ;
 
@@ -121,8 +119,8 @@ rule[Metagrammar.Rule]:
     ;
 
 ruleName[Metagrammar.RuleName]:
-    | name=IDENT '[' type=swiftType ']' { self.setLocation(.init(name: name, type: type), at: mark) }
-    | name=IDENT { self.setLocation(.init(name: name, type: nil), at: mark) }
+    | name=IDENTIFIER '[' type=swiftType ']' { self.setLocation(.init(name: name, type: type), at: mark) }
+    | name=IDENTIFIER { self.setLocation(.init(name: name, type: nil), at: mark) }
     ;
 
 alts[[Metagrammar.Alt]]:
@@ -141,8 +139,8 @@ namedItems[[Metagrammar.NamedItem]]:
     ;
 
 namedItem[Metagrammar.NamedItem]:
-    | name=IDENT '[' type=swiftType ']' '=' ~ item { self.setLocation(.init(name: name, item: item, type: type, lookahead: nil), at: mark) }
-    | name=IDENT '=' ~ item { self.setLocation(.init(name: name, item: item, type: nil, lookahead: nil), at: mark) }
+    | name=IDENTIFIER '[' type=swiftType ']' '=' ~ item { self.setLocation(.init(name: name, item: item, type: type, lookahead: nil), at: mark) }
+    | name=IDENTIFIER '=' ~ item { self.setLocation(.init(name: name, item: item, type: nil, lookahead: nil), at: mark) }
     | item { self.setLocation(.init(name: nil, item: item, type: nil, lookahead: nil), at: mark) }
     | lookahead { self.setLocation(.init(name: nil, item: nil, type: nil, lookahead: lookahead), at: mark) }
     ;
@@ -164,7 +162,7 @@ item[Metagrammar.Item]:
 
 atom[Metagrammar.Atom]:
     | '(' ~ alts ')' { self.setLocation(Metagrammar.GroupAtom(alts: alts), at: mark) }
-    | IDENT { self.setLocation(Metagrammar.IdentAtom(identifier: ident, identity: .unresolved), at: mark) }
+    | IDENTIFIER { self.setLocation(Metagrammar.IdentAtom(identifier: identifier, identity: .unresolved), at: mark) }
     | STRING { self.setLocation(Metagrammar.StringAtom(string: string), at: mark) }
     ;
 
@@ -172,11 +170,11 @@ swiftType[Metagrammar.SwiftType]:
     | raw=STRING { self.setLocation(.init(name: raw.valueTrimmingQuotes), at: mark) }
     | '[' ~ type=swiftType ']' { self.setLocation(.init(name: "[" + type.name + "]"), at: mark) }
     | '(' ~ types=swiftTypeList ')' { self.setLocation(.init(name: "(" + types.map(\.name).joined(separator: ", ") + ")"), at: mark) }
-    | name=IDENT '<' ~ types=swiftTypeList '>' '?' { self.setLocation(.init(name: name.identifier + "<" + types.map(\.name).joined(separator: ", ") + ">?"), at: mark) }
-    | name=IDENT '<' ~ types=swiftTypeList '>' { self.setLocation(.init(name: name.identifier + "<" + types.map(\.name).joined(separator: ", ") + ">"), at: mark) }
-    | name=IDENT '.' ~ inner=swiftType { self.setLocation(.init(name: name.identifier + "." + inner.name), at: mark) }
-    | name=IDENT '?' { self.setLocation(.init(name: name.identifier + "?"), at: mark) }
-    | name=IDENT { self.setLocation(.init(name: name.identifier), at: mark) }
+    | name=IDENTIFIER '<' ~ types=swiftTypeList '>' '?' { self.setLocation(.init(name: name.identifier + "<" + types.map(\.name).joined(separator: ", ") + ">?"), at: mark) }
+    | name=IDENTIFIER '<' ~ types=swiftTypeList '>' { self.setLocation(.init(name: name.identifier + "<" + types.map(\.name).joined(separator: ", ") + ">"), at: mark) }
+    | name=IDENTIFIER '.' ~ inner=swiftType { self.setLocation(.init(name: name.identifier + "." + inner.name), at: mark) }
+    | name=IDENTIFIER '?' { self.setLocation(.init(name: name.identifier + "?"), at: mark) }
+    | name=IDENTIFIER { self.setLocation(.init(name: name.identifier), at: mark) }
     ;
 
 swiftTypeList[[Metagrammar.SwiftType]]:
@@ -209,7 +207,7 @@ balancedToken[Metagrammar.BalancedTokens]:
     ;
 
 balancedTokenAtom["TokenNode<RawTokenizer.Token, RawTokenizer.Location>"]:
-    | token=IDENT { token }
+    | token=IDENTIFIER { token }
     | token=DIGITS { token }
     | token=STRING { token }
     | token=':' { .init(token) }
@@ -225,4 +223,14 @@ balancedTokenAtom["TokenNode<RawTokenizer.Token, RawTokenizer.Location>"]:
     | token='@' { .init(token) }
     | token='/' { .init(token) }
     | token='\' { .init(token) }
+    ;
+
+# Tokens file grammar
+
+tokensFile[[Metagrammar.TokenDefinition]]:
+    | tokens=tokenDefinition* { tokens }
+    ;
+
+tokenDefinition[Metagrammar.TokenDefinition]:
+    | IDENTIFIER ':' STRING ';' { self.setLocation(.init(identifier: identifier, string: string), at: mark) }
     ;

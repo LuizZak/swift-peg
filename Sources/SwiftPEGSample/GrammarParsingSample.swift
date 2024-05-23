@@ -70,7 +70,7 @@ class GrammarParsingSample {
                 }
             }
 
-            let codeGen = try GrammarProcessor(grammar, verbose: verbose)
+            let codeGen = try GrammarProcessor(grammar, delegate: self, verbose: verbose)
 
             for diagnostic in codeGen.diagnostics {
                 print(diagnostic.description)
@@ -86,5 +86,24 @@ class GrammarParsingSample {
             }
             print(parser)
         }
+    }
+}
+
+extension GrammarParsingSample: GrammarProcessor.Delegate {
+
+    func grammarProcessor(
+        _ processor: GrammarProcessor,
+        loadTokensFileNamed name: String
+    ) throws -> String {
+
+        guard let url = SwiftPEG.Resources.resources.url(forResource: name, withExtension: nil) else {
+            throw Error.tokensFileNotFound(name)
+        }
+
+        return try String(contentsOf: url)
+    }
+
+    enum Error: Swift.Error {
+        case tokensFileNotFound(String)
     }
 }

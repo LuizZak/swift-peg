@@ -136,6 +136,32 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
         return try tokenizer.next()
     }
 
+    /// Fetches the next token in the stream and compares it to `token`, returning
+    /// the token if it is equal. If the method fails, `nil` is returned and the
+    /// tokenizer position is reset.
+    /// 
+    /// - note: Call is not memoized.
+    @inlinable
+    public func expect(_ token: Token) throws -> TokenResult? {
+        let mark = self.mark()
+
+        // If expected kind is not explicitly a whitespace, skip all whitespace
+        // tokens first
+        if !token.isWhitespace {
+            while try tokenizer.peekToken()?.token.isWhitespace == true {
+                _=try tokenizer.next()
+            }
+        }
+
+        self.cache.storeTokenKind(at: self.mark(), token.kind)
+
+        if let next = try tokenizer.next(), next.token == token {
+            return next
+        }
+        self.restore(mark)
+        return nil
+    }
+
     /// Fetches the next token in the stream and compares its kind against `kind`,
     /// returning the token if it matches. If the method fails, `nil` is returned
     /// and the tokenizer position is reset.
@@ -189,32 +215,6 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
         return nil
     }
 
-    /// Fetches the next token in the stream and compares it to `token`, returning
-    /// the token if it is equal. If the method fails, `nil` is returned and the
-    /// tokenizer position is reset.
-    /// 
-    /// - note: Call is not memoized.
-    @inlinable
-    public func expect(_ token: Token) throws -> TokenResult? {
-        let mark = self.mark()
-
-        // If expected kind is not explicitly a whitespace, skip all whitespace
-        // tokens first
-        if !token.isWhitespace {
-            while try tokenizer.peekToken()?.token.isWhitespace == true {
-                _=try tokenizer.next()
-            }
-        }
-
-        self.cache.storeTokenKind(at: self.mark(), token.kind)
-
-        if let next = try tokenizer.next(), next.token == token {
-            return next
-        }
-        self.restore(mark)
-        return nil
-    }
-
     /// Fetches the next token in the stream and compares to `token`, and if it
     /// matches, consumes it and returns `true`, otherwise returns `false`.
     /// 
@@ -254,11 +254,12 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
     /// Performs a given production repeatedly until it returns `nil`.
     /// 
     /// Since it expects that the first production may be `nil`, it always succeeds,
-    /// returning an empty array if the first production failed.
+    /// returning an empty array if the first production failed, but retains an
+    /// optional return signature for convenience when generating Swift code.
     /// 
     /// - note: Call is not memoized.
     @inlinable
-    public func repeatZeroOrMore<T>(_ production: () throws -> T?) rethrows -> [T] {
+    public func repeatZeroOrMore<T>(_ production: () throws -> T?) rethrows -> [T]? {
         var result: [T] = []
 
         while let next = try production() {

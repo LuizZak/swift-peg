@@ -25,8 +25,9 @@ class GrammarProcessor_NullabilityTests: XCTestCase {
             ],
             [start, rule1, rule2]
         )
+        let delegate = stubDelegate()
 
-        let sut = try GrammarProcessor(grammar)
+        let sut = try GrammarProcessor(grammar, delegate: delegate)
 
         assertEmpty(sut.diagnostics)
     }
@@ -39,6 +40,10 @@ private func makeGrammar(
     _ rules: [Metagrammar.Rule]
 ) -> Metagrammar.Grammar {
     return Metagrammar.Grammar(metas: metas, rules: rules)
+}
+
+private func stubDelegate() -> TestGrammarProcessorDelegate {
+    return TestGrammarProcessorDelegate()
 }
 
 private func makeMeta(name: String, value: String) -> Metagrammar.Meta {

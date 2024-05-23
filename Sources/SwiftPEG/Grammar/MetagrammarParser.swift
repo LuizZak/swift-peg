@@ -23,9 +23,9 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>: PEGParser<
     }
 
     /// ```
-    /// IDENT ;
+    /// IDENTIFIER ;
     /// ```
-    @memoized("IDENT")
+    @memoized("IDENTIFIER")
     @inlinable
     public func _IDENT() throws -> Metagrammar.IdentifierToken? {
         let mark = self.mark()
@@ -41,7 +41,7 @@ public final class MetagrammarParser<RawTokenizer: RawTokenizerType>: PEGParser<
     }
 
     /// ```
-    /// IDENT ;
+    /// IDENTIFIER ;
     /// ```
     @memoized("DIGITS")
     @inlinable
@@ -152,8 +152,8 @@ extension MetagrammarParser {
 
     /// ```
     /// meta[Metagrammar.Meta]:
-    ///     | "@" name=IDENT value=metaValue ';' { self.setLocation(.init(name: name, value: value), at: mark) }
-    ///     | "@" name=IDENT ';' { self.setLocation(.init(name: name, value: nil), at: mark) }
+    ///     | "@" name=IDENTIFIER value=metaValue ';' { self.setLocation(.init(name: name, value: value), at: mark) }
+    ///     | "@" name=IDENTIFIER ';' { self.setLocation(.init(name: name, value: nil), at: mark) }
     ///     ;
     /// ```
     @memoized("meta")
@@ -162,10 +162,10 @@ extension MetagrammarParser {
         let mark = self.mark()
 
         if
-            let _ = try self.expect("@"),
-            let name = try self.IDENT(),
+            let _ = try self.expect(kind: "@"),
+            let name = try self.IDENTIFIER(),
             let value = try self.metaValue(),
-            let _ = try self.expect(";")
+            let _ = try self.expect(kind: ";")
         {
             return self.setLocation(.init(name: name, value: value), at: mark)
         }
@@ -173,9 +173,9 @@ extension MetagrammarParser {
         self.restore(mark)
 
         if
-            let _ = try self.expect("@"),
-            let name = try self.IDENT(),
-            let _ = try self.expect(";")
+            let _ = try self.expect(kind: "@"),
+            let name = try self.IDENTIFIER(),
+            let _ = try self.expect(kind: ";")
         {
             return self.setLocation(.init(name: name, value: nil), at: mark)
         }
@@ -186,7 +186,7 @@ extension MetagrammarParser {
 
     /// ```
     /// metaValue[Metagrammar.MetaValue]:
-    ///     | ident=IDENT { self.setLocation(Metagrammar.MetaIdentifierValue(identifier: ident), at: mark) }
+    ///     | ident=IDENTIFIER { self.setLocation(Metagrammar.MetaIdentifierValue(identifier: ident), at: mark) }
     ///     | string=STRING { self.setLocation(Metagrammar.MetaStringValue(string: string), at: mark) }
     ///     ;
     /// ```
@@ -196,7 +196,7 @@ extension MetagrammarParser {
         let mark = self.mark()
 
         if
-            let ident = try self.IDENT()
+            let ident = try self.IDENTIFIER()
         {
             return self.setLocation(Metagrammar.MetaIdentifierValue(identifier: ident), at: mark)
         }
@@ -248,10 +248,10 @@ extension MetagrammarParser {
 
         if
             let ruleName = try self.ruleName(),
-            let _ = try self.expect(":"),
-            let _ = try self.expect("|"),
+            let _ = try self.expect(kind: ":"),
+            let _ = try self.expect(kind: "|"),
             let alts = try self.alts(),
-            let _ = try self.expect(";")
+            let _ = try self.expect(kind: ";")
         {
             return self.setLocation(.init(name: ruleName, alts: alts), at: mark)
         }
@@ -260,9 +260,9 @@ extension MetagrammarParser {
 
         if
             let ruleName = try self.ruleName(),
-            let _ = try self.expect(":"),
+            let _ = try self.expect(kind: ":"),
             let alts = try self.alts(),
-            let _ = try self.expect(";")
+            let _ = try self.expect(kind: ";")
         {
             return self.setLocation(.init(name: ruleName, alts: alts), at: mark)
         }
@@ -273,8 +273,8 @@ extension MetagrammarParser {
 
     /// ```
     /// ruleName[Metagrammar.RuleName]:
-    ///     | name=IDENT '[' type=swiftType ']' { self.setLocation(.init(name: name, type: type), at: mark) }
-    ///     | name=IDENT { self.setLocation(.init(name: name, type: nil), at: mark) }
+    ///     | name=IDENTIFIER '[' type=swiftType ']' { self.setLocation(.init(name: name, type: type), at: mark) }
+    ///     | name=IDENTIFIER { self.setLocation(.init(name: name, type: nil), at: mark) }
     ///     ;
     /// ```
     @memoized("ruleName")
@@ -283,10 +283,10 @@ extension MetagrammarParser {
         let mark = self.mark()
 
         if
-            let name = try self.IDENT(),
-            let _ = try self.expect("["),
+            let name = try self.IDENTIFIER(),
+            let _ = try self.expect(kind: "["),
             let type = try self.swiftType(),
-            let _ = try self.expect("]")
+            let _ = try self.expect(kind: "]")
         {
             return self.setLocation(.init(name: name, type: type), at: mark)
         }
@@ -294,7 +294,7 @@ extension MetagrammarParser {
         self.restore(mark)
 
         if
-            let name = try self.IDENT()
+            let name = try self.IDENTIFIER()
         {
             return self.setLocation(.init(name: name, type: nil), at: mark)
         }
@@ -316,7 +316,7 @@ extension MetagrammarParser {
 
         if
             let alt = try self.alt(),
-            let _ = try self.expect("|"),
+            let _ = try self.expect(kind: "|"),
             let alts = try self.alts()
         {
             return [alt] + alts
@@ -396,8 +396,8 @@ extension MetagrammarParser {
 
     /// ```
     /// namedItem[Metagrammar.NamedItem]:
-    ///     | name=IDENT '[' type=swiftType ']' '=' ~ item { self.setLocation(.init(name: name, item: item, type: type, lookahead: nil), at: mark) }
-    ///     | name=IDENT '=' ~ item { self.setLocation(.init(name: name, item: item, type: nil, lookahead: nil), at: mark) }
+    ///     | name=IDENTIFIER '[' type=swiftType ']' '=' ~ item { self.setLocation(.init(name: name, item: item, type: type, lookahead: nil), at: mark) }
+    ///     | name=IDENTIFIER '=' ~ item { self.setLocation(.init(name: name, item: item, type: nil, lookahead: nil), at: mark) }
     ///     | item { self.setLocation(.init(name: nil, item: item, type: nil, lookahead: nil), at: mark) }
     ///     | lookahead { self.setLocation(.init(name: nil, item: nil, type: nil, lookahead: lookahead), at: mark) }
     ///     ;
@@ -409,11 +409,11 @@ extension MetagrammarParser {
         var cut = CutFlag()
 
         if
-            let name = try self.IDENT(),
-            let _ = try self.expect("["),
+            let name = try self.IDENTIFIER(),
+            let _ = try self.expect(kind: "["),
             let type = try self.swiftType(),
-            let _ = try self.expect("]"),
-            let _ = try self.expect("="),
+            let _ = try self.expect(kind: "]"),
+            let _ = try self.expect(kind: "="),
             cut.toggleOn(),
             let item = try self.item()
         {
@@ -427,8 +427,8 @@ extension MetagrammarParser {
         }
 
         if
-            let name = try self.IDENT(),
-            let _ = try self.expect("="),
+            let name = try self.IDENTIFIER(),
+            let _ = try self.expect(kind: "="),
             cut.toggleOn(),
             let item = try self.item()
         {
@@ -481,7 +481,7 @@ extension MetagrammarParser {
         var cut = CutFlag()
 
         if
-            let _ = try self.expect("&"),
+            let _ = try self.expect(kind: "&"),
             cut.toggleOn(),
             let atom = try self.atom()
         {
@@ -495,7 +495,7 @@ extension MetagrammarParser {
         }
 
         if
-            let _ = try self.expect("!"),
+            let _ = try self.expect(kind: "!"),
             cut.toggleOn(),
             let atom = try self.atom()
         {
@@ -509,7 +509,7 @@ extension MetagrammarParser {
         }
 
         if
-            let _ = try self.expect("~")
+            let _ = try self.expect(kind: "~")
         {
             return self.setLocation(Metagrammar.Cut(), at: mark)
         }
@@ -539,10 +539,10 @@ extension MetagrammarParser {
         var cut = CutFlag()
 
         if
-            let _ = try self.expect("["),
+            let _ = try self.expect(kind: "["),
             cut.toggleOn(),
             let alts = try self.alts(),
-            let _ = try self.expect("]")
+            let _ = try self.expect(kind: "]")
         {
             return self.setLocation(Metagrammar.OptionalItems(alts: alts), at: mark)
         }
@@ -555,7 +555,7 @@ extension MetagrammarParser {
 
         if
             let atom = try self.atom(),
-            let _ = try self.expect("?")
+            let _ = try self.expect(kind: "?")
         {
             return self.setLocation(Metagrammar.OptionalItem(atom: atom), at: mark)
         }
@@ -568,7 +568,7 @@ extension MetagrammarParser {
 
         if
             let atom = try self.atom(),
-            let _ = try self.expect("*")
+            let _ = try self.expect(kind: "*")
         {
             return self.setLocation(Metagrammar.ZeroOrMoreItem(atom: atom), at: mark)
         }
@@ -581,7 +581,7 @@ extension MetagrammarParser {
 
         if
             let atom = try self.atom(),
-            let _ = try self.expect("+")
+            let _ = try self.expect(kind: "+")
         {
             return self.setLocation(Metagrammar.OneOrMoreItem(atom: atom), at: mark)
         }
@@ -594,9 +594,9 @@ extension MetagrammarParser {
 
         if
             let sep = try self.atom(),
-            let _ = try self.expect("."),
+            let _ = try self.expect(kind: "."),
             let node = try self.atom(),
-            let _ = try self.expect("+")
+            let _ = try self.expect(kind: "+")
         {
             return self.setLocation(Metagrammar.GatherItem(sep: sep, item: node), at: mark)
         }
@@ -624,7 +624,7 @@ extension MetagrammarParser {
     /// ```
     /// atom[Metagrammar.Atom]:
     ///     | '(' ~ alts ')' { self.setLocation(Metagrammar.GroupAtom(alts: alts), at: mark) }
-    ///     | IDENT { self.setLocation(Metagrammar.IdentAtom(identifier: ident, identity: .unresolved), at: mark) }
+    ///     | IDENTIFIER { self.setLocation(Metagrammar.IdentAtom(identifier: identifier, identity: .unresolved), at: mark) }
     ///     | STRING { self.setLocation(Metagrammar.StringAtom(string: string), at: mark) }
     ///     ;
     /// ```
@@ -635,10 +635,10 @@ extension MetagrammarParser {
         var cut = CutFlag()
 
         if
-            let _ = try self.expect("("),
+            let _ = try self.expect(kind: "("),
             cut.toggleOn(),
             let alts = try self.alts(),
-            let _ = try self.expect(")")
+            let _ = try self.expect(kind: ")")
         {
             return self.setLocation(Metagrammar.GroupAtom(alts: alts), at: mark)
         }
@@ -650,9 +650,9 @@ extension MetagrammarParser {
         }
 
         if
-            let ident = try self.IDENT()
+            let identifier = try self.IDENTIFIER()
         {
-            return self.setLocation(Metagrammar.IdentAtom(identifier: ident, identity: .unresolved), at: mark)
+            return self.setLocation(Metagrammar.IdentAtom(identifier: identifier, identity: .unresolved), at: mark)
         }
 
         self.restore(mark)
@@ -680,11 +680,11 @@ extension MetagrammarParser {
     ///     | raw=STRING { self.setLocation(.init(name: raw.valueTrimmingQuotes), at: mark) }
     ///     | '[' ~ type=swiftType ']' { self.setLocation(.init(name: "[" + type.name + "]"), at: mark) }
     ///     | '(' ~ types=swiftTypeList ')' { self.setLocation(.init(name: "(" + types.map(\.name).joined(separator: ", ") + ")"), at: mark) }
-    ///     | name=IDENT '<' ~ types=swiftTypeList '>' '?' { self.setLocation(.init(name: name.identifier + "<" + types.map(\.name).joined(separator: ", ") + ">?"), at: mark) }
-    ///     | name=IDENT '<' ~ types=swiftTypeList '>' { self.setLocation(.init(name: name.identifier + "<" + types.map(\.name).joined(separator: ", ") + ">"), at: mark) }
-    ///     | name=IDENT '.' ~ inner=swiftType { self.setLocation(.init(name: name.identifier + "." + inner.name), at: mark) }
-    ///     | name=IDENT '?' { self.setLocation(.init(name: name.identifier + "?"), at: mark) }
-    ///     | name=IDENT { self.setLocation(.init(name: name.identifier), at: mark) }
+    ///     | name=IDENTIFIER '<' ~ types=swiftTypeList '>' '?' { self.setLocation(.init(name: name.identifier + "<" + types.map(\.name).joined(separator: ", ") + ">?"), at: mark) }
+    ///     | name=IDENTIFIER '<' ~ types=swiftTypeList '>' { self.setLocation(.init(name: name.identifier + "<" + types.map(\.name).joined(separator: ", ") + ">"), at: mark) }
+    ///     | name=IDENTIFIER '.' ~ inner=swiftType { self.setLocation(.init(name: name.identifier + "." + inner.name), at: mark) }
+    ///     | name=IDENTIFIER '?' { self.setLocation(.init(name: name.identifier + "?"), at: mark) }
+    ///     | name=IDENTIFIER { self.setLocation(.init(name: name.identifier), at: mark) }
     ///     ;
     /// ```
     @memoized("swiftType")
@@ -706,10 +706,10 @@ extension MetagrammarParser {
         }
 
         if
-            let _ = try self.expect("["),
+            let _ = try self.expect(kind: "["),
             cut.toggleOn(),
             let type = try self.swiftType(),
-            let _ = try self.expect("]")
+            let _ = try self.expect(kind: "]")
         {
             return self.setLocation(.init(name: "[" + type.name + "]"), at: mark)
         }
@@ -721,10 +721,10 @@ extension MetagrammarParser {
         }
 
         if
-            let _ = try self.expect("("),
+            let _ = try self.expect(kind: "("),
             cut.toggleOn(),
             let types = try self.swiftTypeList(),
-            let _ = try self.expect(")")
+            let _ = try self.expect(kind: ")")
         {
             return self.setLocation(.init(name: "(" + types.map(\.name).joined(separator: ", ") + ")"), at: mark)
         }
@@ -736,12 +736,12 @@ extension MetagrammarParser {
         }
 
         if
-            let name = try self.IDENT(),
-            let _ = try self.expect("<"),
+            let name = try self.IDENTIFIER(),
+            let _ = try self.expect(kind: "<"),
             cut.toggleOn(),
             let types = try self.swiftTypeList(),
-            let _ = try self.expect(">"),
-            let _ = try self.expect("?")
+            let _ = try self.expect(kind: ">"),
+            let _ = try self.expect(kind: "?")
         {
             return self.setLocation(.init(name: name.identifier + "<" + types.map(\.name).joined(separator: ", ") + ">?"), at: mark)
         }
@@ -753,11 +753,11 @@ extension MetagrammarParser {
         }
 
         if
-            let name = try self.IDENT(),
-            let _ = try self.expect("<"),
+            let name = try self.IDENTIFIER(),
+            let _ = try self.expect(kind: "<"),
             cut.toggleOn(),
             let types = try self.swiftTypeList(),
-            let _ = try self.expect(">")
+            let _ = try self.expect(kind: ">")
         {
             return self.setLocation(.init(name: name.identifier + "<" + types.map(\.name).joined(separator: ", ") + ">"), at: mark)
         }
@@ -769,8 +769,8 @@ extension MetagrammarParser {
         }
 
         if
-            let name = try self.IDENT(),
-            let _ = try self.expect("."),
+            let name = try self.IDENTIFIER(),
+            let _ = try self.expect(kind: "."),
             cut.toggleOn(),
             let inner = try self.swiftType()
         {
@@ -784,8 +784,8 @@ extension MetagrammarParser {
         }
 
         if
-            let name = try self.IDENT(),
-            let _ = try self.expect("?")
+            let name = try self.IDENTIFIER(),
+            let _ = try self.expect(kind: "?")
         {
             return self.setLocation(.init(name: name.identifier + "?"), at: mark)
         }
@@ -797,7 +797,7 @@ extension MetagrammarParser {
         }
 
         if
-            let name = try self.IDENT()
+            let name = try self.IDENTIFIER()
         {
             return self.setLocation(.init(name: name.identifier), at: mark)
         }
@@ -823,7 +823,7 @@ extension MetagrammarParser {
 
         if
             let type = try self.swiftType(),
-            let _ = try self.expect(","),
+            let _ = try self.expect(kind: ","),
             let types = try self.swiftTypeList()
         {
             return [type] + types
@@ -853,10 +853,10 @@ extension MetagrammarParser {
         var cut = CutFlag()
 
         if
-            let _ = try self.expect("{"),
+            let _ = try self.expect(kind: "{"),
             cut.toggleOn(),
             let balancedTokens = try self.balancedTokens(),
-            let _ = try self.expect("}")
+            let _ = try self.expect(kind: "}")
         {
             return self.setLocation(.init(balancedTokens: balancedTokens), at: mark)
         }
@@ -932,9 +932,9 @@ extension MetagrammarParser {
         }
 
         if
-            let l = try self.expect("{"),
+            let l = try self.expect(kind: "{"),
             let balancedTokens = try self.balancedTokens(),
-            let r = try self.expect("}")
+            let r = try self.expect(kind: "}")
         {
             return self.setLocation(.init(tokens: [.init(l)] + balancedTokens.tokens + [.init(r)]), at: mark)
         }
@@ -946,9 +946,9 @@ extension MetagrammarParser {
         }
 
         if
-            let l = try self.expect("["),
+            let l = try self.expect(kind: "["),
             let balancedTokens = try self.balancedTokens(),
-            let r = try self.expect("]")
+            let r = try self.expect(kind: "]")
         {
             return self.setLocation(.init(tokens: [.init(l)] + balancedTokens.tokens + [.init(r)]), at: mark)
         }
@@ -960,9 +960,9 @@ extension MetagrammarParser {
         }
 
         if
-            let l = try self.expect("<"),
+            let l = try self.expect(kind: "<"),
             let balancedTokens = try self.balancedTokens(),
-            let r = try self.expect(">")
+            let r = try self.expect(kind: ">")
         {
             return self.setLocation(.init(tokens: [.init(l)] + balancedTokens.tokens + [.init(r)]), at: mark)
         }
@@ -974,9 +974,9 @@ extension MetagrammarParser {
         }
 
         if
-            let l = try self.expect("("),
+            let l = try self.expect(kind: "("),
             let balancedTokens = try self.balancedTokens(),
-            let r = try self.expect(")")
+            let r = try self.expect(kind: ")")
         {
             return self.setLocation(.init(tokens: [.init(l)] + balancedTokens.tokens + [.init(r)]), at: mark)
         }
@@ -988,9 +988,9 @@ extension MetagrammarParser {
         }
 
         if
-            let l = try self.expect("["),
+            let l = try self.expect(kind: "["),
             cut.toggleOn(),
-            let r = try self.expect("]")
+            let r = try self.expect(kind: "]")
         {
             return self.setLocation(.init(tokens: [.init(l), .init(r)]), at: mark)
         }
@@ -1002,9 +1002,9 @@ extension MetagrammarParser {
         }
 
         if
-            let l = try self.expect("{"),
+            let l = try self.expect(kind: "{"),
             cut.toggleOn(),
-            let r = try self.expect("}")
+            let r = try self.expect(kind: "}")
         {
             return self.setLocation(.init(tokens: [.init(l), .init(r)]), at: mark)
         }
@@ -1016,9 +1016,9 @@ extension MetagrammarParser {
         }
 
         if
-            let l = try self.expect("<"),
+            let l = try self.expect(kind: "<"),
             cut.toggleOn(),
-            let r = try self.expect(">")
+            let r = try self.expect(kind: ">")
         {
             return self.setLocation(.init(tokens: [.init(l), .init(r)]), at: mark)
         }
@@ -1030,9 +1030,9 @@ extension MetagrammarParser {
         }
 
         if
-            let l = try self.expect("("),
+            let l = try self.expect(kind: "("),
             cut.toggleOn(),
-            let r = try self.expect(")")
+            let r = try self.expect(kind: ")")
         {
             return self.setLocation(.init(tokens: [.init(l), .init(r)]), at: mark)
         }
@@ -1059,7 +1059,7 @@ extension MetagrammarParser {
 
     /// ```
     /// balancedTokenAtom[TokenNode<RawTokenizer.Token, RawTokenizer.Location>]:
-    ///     | token=IDENT { token }
+    ///     | token=IDENTIFIER { token }
     ///     | token=DIGITS { token }
     ///     | token=STRING { token }
     ///     | token=':' { .init(token) }
@@ -1083,7 +1083,7 @@ extension MetagrammarParser {
         let mark = self.mark()
 
         if
-            let token = try self.IDENT()
+            let token = try self.IDENTIFIER()
         {
             return token
         }
@@ -1107,7 +1107,7 @@ extension MetagrammarParser {
         self.restore(mark)
 
         if
-            let token = try self.expect(":")
+            let token = try self.expect(kind: ":")
         {
             return .init(token)
         }
@@ -1115,7 +1115,7 @@ extension MetagrammarParser {
         self.restore(mark)
 
         if
-            let token = try self.expect(";")
+            let token = try self.expect(kind: ";")
         {
             return .init(token)
         }
@@ -1123,7 +1123,7 @@ extension MetagrammarParser {
         self.restore(mark)
 
         if
-            let token = try self.expect("|")
+            let token = try self.expect(kind: "|")
         {
             return .init(token)
         }
@@ -1131,7 +1131,7 @@ extension MetagrammarParser {
         self.restore(mark)
 
         if
-            let token = try self.expect("=")
+            let token = try self.expect(kind: "=")
         {
             return .init(token)
         }
@@ -1139,7 +1139,7 @@ extension MetagrammarParser {
         self.restore(mark)
 
         if
-            let token = try self.expect("~")
+            let token = try self.expect(kind: "~")
         {
             return .init(token)
         }
@@ -1147,7 +1147,7 @@ extension MetagrammarParser {
         self.restore(mark)
 
         if
-            let token = try self.expect("*")
+            let token = try self.expect(kind: "*")
         {
             return .init(token)
         }
@@ -1155,7 +1155,7 @@ extension MetagrammarParser {
         self.restore(mark)
 
         if
-            let token = try self.expect("+")
+            let token = try self.expect(kind: "+")
         {
             return .init(token)
         }
@@ -1163,7 +1163,7 @@ extension MetagrammarParser {
         self.restore(mark)
 
         if
-            let token = try self.expect("?")
+            let token = try self.expect(kind: "?")
         {
             return .init(token)
         }
@@ -1171,7 +1171,7 @@ extension MetagrammarParser {
         self.restore(mark)
 
         if
-            let token = try self.expect(",")
+            let token = try self.expect(kind: ",")
         {
             return .init(token)
         }
@@ -1179,7 +1179,7 @@ extension MetagrammarParser {
         self.restore(mark)
 
         if
-            let token = try self.expect(".")
+            let token = try self.expect(kind: ".")
         {
             return .init(token)
         }
@@ -1187,7 +1187,7 @@ extension MetagrammarParser {
         self.restore(mark)
 
         if
-            let token = try self.expect("@")
+            let token = try self.expect(kind: "@")
         {
             return .init(token)
         }
@@ -1195,7 +1195,7 @@ extension MetagrammarParser {
         self.restore(mark)
 
         if
-            let token = try self.expect("/")
+            let token = try self.expect(kind: "/")
         {
             return .init(token)
         }
@@ -1203,9 +1203,54 @@ extension MetagrammarParser {
         self.restore(mark)
 
         if
-            let token = try self.expect("\\")
+            let token = try self.expect(kind: "\\")
         {
             return .init(token)
+        }
+
+        self.restore(mark)
+        return nil
+    }
+
+    /// ```
+    /// tokensFile[[Metagrammar.TokenDefinition]]:
+    ///     | tokens=tokenDefinition* { tokens }
+    ///     ;
+    /// ```
+    @memoized("tokensFile")
+    @inlinable
+    public func __tokensFile() throws -> [Metagrammar.TokenDefinition]? {
+        let mark = self.mark()
+
+        if
+            let tokens = try self.repeatZeroOrMore({
+                try self.tokenDefinition()
+            })
+        {
+            return tokens
+        }
+
+        self.restore(mark)
+        return nil
+    }
+
+    /// ```
+    /// tokenDefinition[Metagrammar.TokenDefinition]:
+    ///     | IDENTIFIER ':' STRING ';' { self.setLocation(.init(identifier: identifier, string: string), at: mark) }
+    ///     ;
+    /// ```
+    @memoized("tokenDefinition")
+    @inlinable
+    public func __tokenDefinition() throws -> Metagrammar.TokenDefinition? {
+        let mark = self.mark()
+
+        if
+            let identifier = try self.IDENTIFIER(),
+            let _ = try self.expect(kind: ":"),
+            let string = try self.STRING(),
+            let _ = try self.expect(kind: ";")
+        {
+            return self.setLocation(.init(identifier: identifier, string: string), at: mark)
         }
 
         self.restore(mark)

@@ -938,6 +938,25 @@ extension Metagrammar {
         }
     }
 
+    /// Represents a token definition collected from a tokens file.
+    ///
+    /// Represents the construct:
+    /// ```
+    /// tokenDefinition:
+    ///     | IDENTIFIER ':' STRING ';'
+    ///     ;
+    /// ```
+    @GeneratedNodeType<Node>
+    public final class TokenDefinition: MetagrammarNode {
+        /// The identifier for the token.
+        @NodeProperty
+        var _identifier: IdentifierToken
+
+        /// The string literal associated with the token.
+        @NodeProperty
+        var _string: StringToken
+    }
+
     /// A token in a metagrammar.
     public enum MetagrammarToken: TokenType, ExpressibleByStringLiteral {
         public typealias TokenKind = MetagrammarTokenKind
