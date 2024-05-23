@@ -10,27 +10,29 @@ extension GrammarProcessor.Alt: ExpressibleByArrayLiteral {
 
 extension GrammarProcessor.NamedItem: ExpressibleByStringLiteral {
     public init(stringLiteral value: String) {
-        if value.allSatisfy({ $0.isUppercase }) {
-            self = .item(name: nil, .atom(.token(value)), type: nil)
-        } else {
-            self = .item(name: nil, .atom(.ruleName(value)), type: nil)
-        }
+        self = .item(.init(stringLiteral: value))
     }
 }
 
 extension GrammarProcessor.Item: ExpressibleByStringLiteral {
     public init(stringLiteral value: String) {
-        if value.allSatisfy({ $0.isUppercase }) {
-            self = .atom(.token(value))
-        } else {
-            self = .atom(.ruleName(value))
-        }
+        self = .atom(.init(stringLiteral: value))
     }
 }
 
 extension GrammarProcessor.Atom: ExpressibleByStringLiteral {
+    var asString: Self {
+        switch self {
+        case .token(let tok): return .string(#""\#(tok)""#, trimmed: tok)
+        case .ruleName(let name): return .string(#""\#(name)""#, trimmed: name)
+        case .group, .string: return self
+        }
+    }
+
     public init(stringLiteral value: String) {
-        if value.allSatisfy({ $0.isUppercase }) {
+        if value.hasPrefix("'") && value.hasSuffix("'") && value.count > 2 {
+            self = .string(value, trimmed: String(value.dropFirst().dropLast()))
+        } else if value.allSatisfy({ $0.isUppercase }) {
             self = .token(value)
         } else {
             self = .ruleName(value)

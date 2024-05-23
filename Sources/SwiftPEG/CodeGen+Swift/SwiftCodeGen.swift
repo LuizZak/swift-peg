@@ -156,7 +156,7 @@ public class SwiftCodeGen {
 
         // If no action is specified, attempt to return instead the named
         // item within the alt, if it's the only named item in the alt.
-        if alt.items.count == 1, let alias = alias(for: alt.items[0]) {
+        if alt.items.count == 1, let alias = alt.items[0].alias {
             buffer.emitLine(escapeIdentifier(alias))
             return
         }
@@ -186,7 +186,7 @@ public class SwiftCodeGen {
             buffer.emitLine(",")
         }
 
-        let alias = self.alias(for: namedItem) ?? "_"
+        let alias = namedItem.alias ?? "_"
 
         switch namedItem {
         case .item(_, let item, _):
@@ -373,59 +373,6 @@ extension SwiftCodeGen {
         }
 
         return rule.name
-    }
-
-    /// Returns the alias for referencing the given named item in a matched alt's
-    /// `if let <alias> = <item>` statement.
-    /// 
-    /// Returns `nil` if no suitable alias was found.
-    func alias(for namedItem: GrammarProcessor.NamedItem) -> String? {
-        switch namedItem {
-        case .item(let name?, _, _):
-            return name
-        case .item(_, let item, _):
-            return alias(for: item)
-        case .lookahead:
-            return nil
-        }
-    }
-
-    /// Returns the alias for referencing the given item in a matched alt's
-    /// `if let <alias> = <item>` statement.
-    /// 
-    /// Returns `nil` if no suitable alias was found.
-    func alias(for item: GrammarProcessor.Item) -> String? {
-        switch item {
-        case .atom(let atom),
-            .zeroOrMore(let atom),
-            .oneOrMore(let atom),
-            .optional(let atom):
-            return alias(for: atom)
-        
-        case .gather(_, let node):
-            return alias(for: node)
-
-        case .optionalItems:
-            return nil
-        }
-    }
-
-    /// Returns the alias for referencing the given atom in a matched alt's
-    /// `if let <alias> = <item>` statement.
-    /// 
-    /// If the alt is a token, returns the token's identifier lowercased. If
-    /// it's a rule name, return the rule name itself, otherwise returns `nil`.
-    func alias(for atom: GrammarProcessor.Atom) -> String? {
-        switch atom {
-        case .token(let ident):
-            return ident.lowercased()
-            
-        case .ruleName(let ident):
-            return ident
-
-        case .group, .string:
-            return nil
-        }
     }
 }
 
