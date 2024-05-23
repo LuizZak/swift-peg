@@ -12,9 +12,7 @@ class PerformanceTest {
                 "|", "'f'", "'g'", "'h'",
                 ";",
         ]
-
         let copies = 10_000
-        let tokenCount = tokensToCopy.count * copies
 
         if useStringBuffer {
             let tokenString = tokensToCopy.map(\.string).joined(separator: " ")
@@ -25,8 +23,13 @@ class PerformanceTest {
             let tokenizer = stringRawTokenizer(buffer)
             let parser = makeParser(tokenizer)
 
-            try runParser(tokenCount: tokenCount, parser)
+            print("Parsing sample with \(buffer.count) characters...")
+            try runParser(parser)
         } else {
+            let tokenCount = tokensToCopy.count * copies
+
+            print("Parsing sample with \(tokenCount) tokens...")
+
             var tokens: [Metagrammar.MetagrammarToken] = []
             for _ in 0..<copies {
                 tokens.append(contentsOf: tokensToCopy)
@@ -34,14 +37,12 @@ class PerformanceTest {
             let tokenizer = arrayRawTokenizer(tokens)
             let parser = makeParser(tokenizer)
 
-            try runParser(tokenCount: tokenCount, parser)
+            try runParser(parser)
         }
     }
 
-    func runParser<R: RawTokenizerType>(tokenCount: Int, _ parser: MetagrammarParser<R>) throws {
+    func runParser<R: RawTokenizerType>(_ parser: MetagrammarParser<R>) throws {
         let stopwatch = Stopwatch.start()
-
-        print("Parsing sample with \(tokenCount) tokens...")
 
         guard let result = try parser.grammar(), parser.tokenizer.isEOF else {
             throw parser.makeSyntaxError()
