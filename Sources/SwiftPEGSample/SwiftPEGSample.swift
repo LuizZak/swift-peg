@@ -9,7 +9,9 @@ struct SwiftPEGSample {
         do {
             if args.first == "benchmark" {
                 print("Running benchmark...")
-                try PerformanceTest.run()
+                let sample = PerformanceTest()
+                sample.useStringBuffer = args.contains("--use-strings")
+                try sample.run()
             } else {
                 let verbose = args.contains("--verbose")
 

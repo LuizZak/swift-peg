@@ -41,7 +41,7 @@ class GrammarParsingSample {
 
             print("Remaining tokens:")
 
-            var tokens: [String] = []
+            var tokens: [Metagrammar.MetagrammarToken.TokenString] = []
             while let next = try tokenizer.next() {
                 tokens.append(next.token.string)
             }

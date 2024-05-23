@@ -1,7 +1,8 @@
 import Foundation
 
 // MARK: - Helper global extensions to String with common functionality.
-public extension StringProtocol {
+
+extension StringProtocol {
     /// Returns `true` if `self` starts with an uppercase character.
     var startsUppercased: Bool {
         guard let first = unicodeScalars.first else {
@@ -30,7 +31,7 @@ public extension StringProtocol {
     }
 }
 
-public extension String {
+extension String {
     /// Produces a diff-like string with a marking on the first character
     /// that differs between `self` and a target string.
     func makeDifferenceMarkString(against string: String) -> String {
@@ -148,7 +149,7 @@ public extension String {
     }
 }
 
-public extension String {
+extension String {
     /// Returns a range of sections of this string that represent C-based single
     /// and multi-lined comments.
     func cStyleCommentSectionRanges() -> [Range<Index>] {
@@ -231,7 +232,7 @@ public extension String {
     }
 }
 
-public extension String {
+extension String {
     /// Returns a copy of this string with no leading or trailing whitespace
     /// characters.
     ///
@@ -258,7 +259,8 @@ public extension String {
     }
 }
 
-public func trimWhitespaceLead(_ string: String) -> String {
+@usableFromInline
+func trimWhitespaceLead(_ string: String) -> String {
     if string.isEmpty {
         return string
     }
@@ -282,7 +284,8 @@ public func trimWhitespaceLead(_ string: String) -> String {
     return String(string[leading...])
 }
 
-public func trimWhitespaceTrail(_ string: String) -> String {
+@usableFromInline
+func trimWhitespaceTrail(_ string: String) -> String {
     if string.isEmpty {
         return string
     }
@@ -302,6 +305,7 @@ public func trimWhitespaceTrail(_ string: String) -> String {
     return String(string[..<trailing])
 }
 
-public func trimWhitespace(_ string: String) -> String {
+@usableFromInline
+func trimWhitespace(_ string: String) -> String {
     trimWhitespaceTrail(trimWhitespaceLead(string))
 }

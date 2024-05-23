@@ -1,8 +1,9 @@
 import SwiftPEG
 
-enum PerformanceTest {
-    static func run() throws {
-        var tokens: [Metagrammar.MetagrammarToken] = []
+class PerformanceTest {
+    var useStringBuffer: Bool = false
+
+    func run() throws {
         let tokensToCopy: [Metagrammar.MetagrammarToken] = [
             "ruleA", ":",
                 "|", "'a'",
@@ -12,17 +13,37 @@ enum PerformanceTest {
                 ";",
         ]
 
-        for _ in 0..<10_000 {
-            tokens.append(contentsOf: tokensToCopy)
-        }
-        let tokenizer = arrayRawTokenizer(tokens)
-        let parser = makeParser(tokenizer)
+        let copies = 10_000
+        let tokenCount = tokensToCopy.count * copies
 
+        if useStringBuffer {
+            let tokenString = tokensToCopy.map(\.string).joined(separator: " ")
+            var buffer: String = ""
+            for _ in 0..<copies {
+                buffer.append(tokenString)
+            }
+            let tokenizer = stringRawTokenizer(buffer)
+            let parser = makeParser(tokenizer)
+
+            try runParser(tokenCount: tokenCount, parser)
+        } else {
+            var tokens: [Metagrammar.MetagrammarToken] = []
+            for _ in 0..<copies {
+                tokens.append(contentsOf: tokensToCopy)
+            }
+            let tokenizer = arrayRawTokenizer(tokens)
+            let parser = makeParser(tokenizer)
+
+            try runParser(tokenCount: tokenCount, parser)
+        }
+    }
+
+    func runParser<R: RawTokenizerType>(tokenCount: Int, _ parser: MetagrammarParser<R>) throws {
         let stopwatch = Stopwatch.start()
 
-        print("Parsing sample with \(tokens.count) tokens...")
+        print("Parsing sample with \(tokenCount) tokens...")
 
-        guard let result = try parser.grammar() else {
+        guard let result = try parser.grammar(), parser.tokenizer.isEOF else {
             throw parser.makeSyntaxError()
         }
 
@@ -32,11 +53,15 @@ enum PerformanceTest {
         print("Success! Parsed in \(String(format: "%.2lf", duration))s")
     }
     
-    private static func makeParser<Raw: RawTokenizerType>(_ tokenizer: Raw) -> MetagrammarParser<Raw> {
+    private func makeParser<Raw: RawTokenizerType>(_ tokenizer: Raw) -> MetagrammarParser<Raw> {
         return MetagrammarParser(raw: tokenizer)
     }
 
-    private static func arrayRawTokenizer(_ tokens: [Metagrammar.MetagrammarToken]) -> ArrayRawTokenizer<Metagrammar.MetagrammarToken> {
+    private func stringRawTokenizer(_ source: String) -> MetagrammarRawTokenizer {
+        return MetagrammarRawTokenizer(source: source)
+    }
+
+    private func arrayRawTokenizer(_ tokens: [Metagrammar.MetagrammarToken]) -> ArrayRawTokenizer<Metagrammar.MetagrammarToken> {
         return ArrayRawTokenizer(tokens: tokens)
     }
 }

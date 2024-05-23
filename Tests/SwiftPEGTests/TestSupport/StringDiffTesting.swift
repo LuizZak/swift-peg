@@ -1,5 +1,7 @@
 import XCTest
 
+@testable import SwiftPEG
+
 public protocol DiffTestCaseFailureReporter {
     func _recordFailure(
         withDescription description: String,

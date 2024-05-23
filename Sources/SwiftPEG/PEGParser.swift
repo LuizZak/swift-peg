@@ -41,10 +41,10 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
         let errorMark = tokenizer.mark(before: self.reach)
         let errorLead = "Syntax error @ \(tokenizer.readableLocation(for: errorMark))"
 
-        guard let tokens = cache.fetchTokenKinds(at: errorMark) else {
+        guard let tokens = cache.fetchTokenKinds(at: errorMark)?.removingDuplicates(), !tokens.isEmpty else {
             return SyntaxError.invalidSyntax(errorLead, errorMark)
         }
-        
+
         // Check EOF
         tokenizer.restore(errorMark)
         guard let actual = try? tokenizer.peekToken() else {
@@ -52,7 +52,7 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
         }
 
         return SyntaxError.expectedToken(
-            "\(errorLead): Found \"\(actual.token.string)\" but expected: \(tokens.map({ "\"\($0)\"" }).joined(separator: ", "))",
+            "\(errorLead): Found \"\(actual.token.string)\" but expected: \(tokens.asNaturalLanguageList({ "\"\($0)\"" }))",
             errorMark,
             received: actual.token,
             expected: tokens
