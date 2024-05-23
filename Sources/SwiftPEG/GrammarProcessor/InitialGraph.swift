@@ -29,7 +29,7 @@ class RuleNode: DirectedGraphNode {
     }
 
     convenience init(rule: Metagrammar.Rule) {
-        self.init(ruleName: rule.name.name.identifier)
+        self.init(ruleName: String(rule.name.name.identifier))
     }
 }
 

@@ -704,7 +704,7 @@ extension Metagrammar {
         /// stripped.
         /// 
         /// Convenience for `self.string.valueTrimmingQuotes`.
-        public var valueTrimmingQuotes: String {
+        public var valueTrimmingQuotes: Substring {
             _string.valueTrimmingQuotes
         }
 
@@ -735,7 +735,7 @@ extension Metagrammar {
         public var identity: Identity
 
         /// Convenience for `self.identifier.identifier`.
-        public var name: String {
+        public var name: Substring {
             _identifier.identifier
         }
 
@@ -745,7 +745,7 @@ extension Metagrammar {
         }
 
         override func visitNullable(_ visitor: NullabilityVisitor) -> Bool {
-            if let rule = visitor.rule(named: name) {
+            if let rule = visitor.rule(named: String(name)) {
                 return rule.visitNullable(visitor)
             }
 
@@ -753,7 +753,7 @@ extension Metagrammar {
         }
 
         override func initialNames() -> Set<String> {
-            return [name]
+            return [String(name)]
         }
 
         /// Specifies the identity of an identifier atom.
@@ -794,9 +794,9 @@ extension Metagrammar {
     public final class SwiftType: MetagrammarNode {
         /// The name of the type.
         @NodeRequired
-        public var name: String
+        public var name: Substring
 
-        public override var shortDebugDescription: String { self.name }
+        public override var shortDebugDescription: String { String(self.name) }
 
         /// Accepts a given metagrammar-node visitor into this node.
         public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
@@ -896,22 +896,22 @@ extension Metagrammar {
         /// The string associated with this atom.
         /// 
         /// - note: Includes the quotes.
-        public var value: String {
+        public var value: Substring {
             token.string
         }
 
         /// Returns the value of `self.value` with any surrounding string quotes
         /// stripped.
-        public var valueTrimmingQuotes: String {
+        public var valueTrimmingQuotes: Substring {
             let tripleQuote = "\"\"\""
             if value.hasPrefix(tripleQuote) && value.hasSuffix(tripleQuote) && value.count >= 6 {
-                return String(value.dropFirst(3).dropLast(3))
+                return value.dropFirst(3).dropLast(3)
             }
 
-            return String(value.dropFirst().dropLast())
+            return value.dropFirst().dropLast()
         }
 
-        public override var shortDebugDescription: String { value }
+        public override var shortDebugDescription: String { String(value) }
 
         public func deepCopy() -> StringToken {
             return StringToken(token: token, location: location as! MetagrammarRawTokenizer.Location)
@@ -927,11 +927,11 @@ extension Metagrammar {
     /// IDENT ;
     /// ```
     public final class IdentifierToken: TokenNode<MetagrammarToken, MetagrammarRawTokenizer.Location> {
-        public var identifier: String {
+        public var identifier: Substring {
             token.string
         }
 
-        public override var shortDebugDescription: String { identifier }
+        public override var shortDebugDescription: String { String(identifier) }
 
         public func deepCopy() -> IdentifierToken {
             return IdentifierToken(token: token, location: location as! MetagrammarRawTokenizer.Location)
@@ -941,7 +941,7 @@ extension Metagrammar {
     /// A token in a metagrammar.
     public enum MetagrammarToken: TokenType, ExpressibleByStringLiteral {
         public typealias TokenKind = MetagrammarTokenKind
-        public typealias TokenString = String
+        public typealias TokenString = Substring
 
         /// The regular expression pattern for matching `MetagrammarToken.whitespace()`
         /// values from a string.
@@ -967,13 +967,13 @@ extension Metagrammar {
 
         /// A set of whitespace or newlines, with no other non-whitespace character
         /// in between.
-        case whitespace(String)
+        case whitespace(Substring)
 
         /// A Swift-compatible identifier token.
-        case identifier(String)
+        case identifier(Substring)
 
         /// A digit sequence.
-        case digits(String)
+        case digits(Substring)
 
         /// A string literal token.
         /// Includes the quotes.
@@ -1075,7 +1075,7 @@ extension Metagrammar {
             case .whitespace(let value): return value
             case .identifier(let value): return value
             case .digits(let value): return value
-            case .string(let value): return value.description
+            case .string(let value): return Substring(value.description)
             case .leftParen: return "("
             case .rightParen: return ")"
             case .leftBrace: return "{"
@@ -1120,7 +1120,7 @@ extension Metagrammar {
         /// only be used as a convenience within a parser.
         @inlinable
         public init(stringLiteral value: String) {
-            guard let token = Self.from(string: value) else {
+            guard let token = Self.from(string: value[...]) else {
                 fatalError("\(Self.self): Unknown token literal '\(value)'")
             }
 
@@ -1161,10 +1161,10 @@ extension Metagrammar {
             }
         }
 
-        /// Returns a parsed token from the given string or substring.
+        /// Returns a parsed token from the given substring.
         /// If the token is not recognized, `nil` is returned, instead.
         @inlinable
-        public static func from<S: StringProtocol>(string: S) -> Self? {
+        public static func from(string: Substring) -> Self? {
             var isWhitespace = false
 
             switch string.first {
@@ -1199,40 +1199,21 @@ extension Metagrammar {
                 break
             }
 
-            if let string = string as? Substring {
-                // Whitespace
-                if isWhitespace, let match = try? whitespace_pattern.prefixMatch(in: string) {
-                    return .whitespace(String(match.0))
-                }
-                // Try identifier
-                if let ident = try? identifier_pattern.prefixMatch(in: string) {
-                    return .identifier(String(ident.0))
-                }
-                // Try digits
-                if let ident = try? digits_pattern.prefixMatch(in: string) {
-                    return .digits(String(ident.0))
-                }
-                // Try string
-                if let string = StringLiteral.from(string: string) {
-                    return .string(string)
-                }
-            } else if let string = string as? String {
-                // Whitespace
-                if isWhitespace, let match = try? whitespace_pattern.prefixMatch(in: string) {
-                    return .whitespace(String(match.0))
-                }
-                // Try identifier
-                if let ident = try? identifier_pattern.prefixMatch(in: string) {
-                    return .identifier(String(ident.0))
-                }
-                // Try digits
-                if let ident = try? digits_pattern.prefixMatch(in: string) {
-                    return .digits(String(ident.0))
-                }
-                // Try string
-                if let string = StringLiteral.from(string: string[...]) {
-                    return .string(string)
-                }
+            // Whitespace
+            if isWhitespace, let match = try? whitespace_pattern.prefixMatch(in: string) {
+                return .whitespace(match.0)
+            }
+            // Try identifier
+            if let ident = try? identifier_pattern.prefixMatch(in: string) {
+                return .identifier(ident.0)
+            }
+            // Try digits
+            if let ident = try? digits_pattern.prefixMatch(in: string) {
+                return .digits(ident.0)
+            }
+            // Try string
+            if let string = StringLiteral.from(string: string) {
+                return .string(string)
             }
 
             return nil
@@ -1250,18 +1231,18 @@ extension Metagrammar {
             public static let tripleQuoteRegex = #/(""")((?:\\\1|(?:(?!\1).)|\n)*)\1/#
 
             /// `'<...>'`
-            case singleQuote(String)
+            case singleQuote(Substring)
             
             /// `"<...>"`
-            case doubleQuote(String)
+            case doubleQuote(Substring)
 
             /// `"""<...>"""`
             /// Supports newlines within
-            case tripleQuote(String)
+            case tripleQuote(Substring)
 
             /// Returns contents of the string, without surrounding quotes.
             @inlinable
-            public var contents: String {
+            public var contents: Substring {
                 switch self {
                 case .singleQuote(let string),
                     .doubleQuote(let string),
@@ -1289,7 +1270,7 @@ extension Metagrammar {
             public static func from(string: Substring) -> Self? {
                 // Triple quote
                 if let match = try? tripleQuoteRegex.prefixMatch(in: string) {
-                    return .tripleQuote(String(match.output.2))
+                    return .tripleQuote(match.output.2)
                 }
 
                 // Single quote
@@ -1299,9 +1280,9 @@ extension Metagrammar {
 
                 switch match.output.1 {
                 case "'":
-                    return .singleQuote(String(match.output.2))
+                    return .singleQuote(match.output.2)
                 case "\"":
-                    return .doubleQuote(String(match.output.2))
+                    return .doubleQuote(match.output.2)
                 default:
                     return nil
                 }

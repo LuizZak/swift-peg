@@ -51,7 +51,7 @@ private func makeMeta(name: String, value: String) -> Metagrammar.Meta {
 private func makeRule(name: String, _ alts: [Metagrammar.Alt]) -> Metagrammar.Rule {
     Metagrammar.Rule(
         name: .init(
-            name: .init(token: .identifier(name), location: .init(line: 0, column: 0)),
+            name: .init(token: .identifier(Substring(name)), location: .init(line: 0, column: 0)),
             type: nil
         ),
         alts: alts
@@ -80,5 +80,5 @@ private func makeItem(_ ident: String, identity: Metagrammar.IdentAtom.Identity 
 }
 
 private func makeIdent(_ ident: String) -> Metagrammar.IdentifierToken {
-    .init(token: .identifier(ident), location: .init(line: 0, column: 0))
+    .init(token: .identifier(Substring(ident)), location: .init(line: 0, column: 0))
 }

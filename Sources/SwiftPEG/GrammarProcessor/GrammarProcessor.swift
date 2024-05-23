@@ -64,7 +64,7 @@ public class GrammarProcessor {
     }
 
     func validateRuleName(_ rule: Metagrammar.Rule) throws -> String {
-        let ruleName = rule.name.name.identifier
+        let ruleName = String(rule.name.name.identifier)
         if ruleName.isEmpty {
             throw GrammarProcessorError.invalidRuleName(desc: "Rule name cannot be empty", rule)
         }
@@ -88,7 +88,7 @@ public class GrammarProcessor {
                 continue
             }
 
-            let name = value.identifier.identifier
+            let name = String(value.identifier.identifier)
             guard !issuedWarnings.contains(name) else {
                 continue
             }
@@ -112,7 +112,7 @@ public class GrammarProcessor {
             ($0, .token)
         }
         for rule in grammar.rules {
-            let name = rule.name.name.identifier
+            let name = String(rule.name.name.identifier)
             knownNames.append(
                 (name, .ruleName)
             )
@@ -276,7 +276,7 @@ public class GrammarProcessor {
         ) -> Self {
 
             .init(
-                name: node.name.identifier,
+                name: String(node.name.identifier),
                 value: node.value.map(Value.from)
             )
         }
@@ -295,14 +295,14 @@ public class GrammarProcessor {
 
                 switch node {
                 case let value as Metagrammar.MetaIdentifierValue:
-                    return .identifier(value.identifier.identifier)
+                    return .identifier(String(value.identifier.identifier))
 
                 case let value as Metagrammar.MetaStringValue:
                     switch value.string.token {
                     case .string(.tripleQuote(let contents)) where contents.hasPrefix("\n"):
                         return .string(String(contents.dropFirst()))
                     default:
-                        return .string(value.string.valueTrimmingQuotes)
+                        return .string(String(value.string.valueTrimmingQuotes))
                     }
                 
                 default:
@@ -352,7 +352,7 @@ public class GrammarProcessor {
         ) -> Self {
 
             .init(
-                name: node.name.name.identifier,
+                name: String(node.name.name.identifier),
                 type: node.name.type.map(SwiftType.from),
                 alts: node.alts.map(Alt.from),
                 isRecursive: node.isLeftRecursive,
@@ -451,7 +451,9 @@ public class GrammarProcessor {
             _ node: Metagrammar.NamedItem
         ) -> Self {
             if let item = node.item {
-                return .item(name: node.name?.identifier, .from(item), type: node.type.map(SwiftType.from))
+                let name = (node.name?.identifier).map(String.init)
+
+                return .item(name: name, .from(item), type: node.type.map(SwiftType.from))
             } else {
                 return .lookahead(.from(node.lookahead!))
             }
@@ -642,15 +644,15 @@ public class GrammarProcessor {
 
                 switch ident.identity {
                 case .ruleName:
-                    return .ruleName(value)
+                    return .ruleName(String(value))
                 case .token:
-                    return .token(value)
+                    return .token(String(value))
                 case .unresolved:
-                    return .ruleName(value)
+                    return .ruleName(String(value))
                 }
 
             case let string as Metagrammar.StringAtom:
-                return .string(string.string.value, trimmed: string.string.valueTrimmingQuotes)
+                return .string(String(string.string.value), trimmed: String(string.string.valueTrimmingQuotes))
 
             default:
                 fatalError("Unknown atom type \(type(of: node))")
@@ -666,7 +668,7 @@ public class GrammarProcessor {
         public static func from(
             _ node: Metagrammar.SwiftType
         ) -> Self {
-            .init(name: node.name)
+            .init(name: String(node.name))
         }
     }
 }
