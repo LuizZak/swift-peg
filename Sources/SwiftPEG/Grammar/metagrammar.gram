@@ -151,7 +151,7 @@ balancedTokenAtom["TokenNode<RawTokenizer.Token, RawTokenizer.Location>"]:
     | token='@' { .init(token) }
     | token='$' { .init(token) }
     | token='/' { .init(token) }
-    | token='\' { .init(token) }
+    | token='\\' { .init(token) }
     ;
 
 # Tokens file grammar

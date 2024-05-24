@@ -26,4 +26,4 @@ $PERIOD["kind: .period"]: "." ;
 $AT["kind: .at"]: "@" ;
 $DOLLAR["kind: .dollarSign"]: "$" ;
 $FORWARDSLASH["kind: .forwardSlash"]: "/" ;
-$BACKSLASH["kind: .backslash"]: "\" ;
+$BACKSLASH["kind: .backslash"]: "\\" ;

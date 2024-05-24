@@ -913,18 +913,6 @@ extension Metagrammar {
         public typealias TokenKind = MetagrammarTokenKind
         public typealias TokenString = Substring
 
-        /// The regular expression pattern for matching `MetagrammarToken.whitespace()`
-        /// values from a string.
-        public static let whitespace_pattern = #/\s+/#
-
-        /// The regular expression pattern for matching `MetagrammarToken.identifier()`
-        /// values from a string.
-        public static let identifier_pattern = #/[A-Za-z_][0-9A-Za-z_]*/#
-
-        /// The regular expression pattern for matching `MetagrammarToken.digits()`
-        /// values from a string.
-        public static let digits_pattern = #/[0-9]+/#
-
         /// `*`
         /// 
         /// Alias for `Self.star`
@@ -1048,7 +1036,7 @@ extension Metagrammar {
             case .whitespace(let value): return value
             case .identifier(let value): return value
             case .digits(let value): return value
-            case .string(let value): return Substring(value.description)
+            case .string(let value): return value.quotedContents
             case .leftParen: return "("
             case .rightParen: return ")"
             case .leftBrace: return "{"
@@ -1177,12 +1165,11 @@ extension Metagrammar {
         /// If the token is not recognized, `nil` is returned, instead.
         @inlinable
         public static func from(string: Substring) -> Self? {
-            var isWhitespace = false
+            guard let first = string.first else {
+                return nil
+            }
 
-            switch string.first {
-            case " ", "\t", "\r", "\n":
-                isWhitespace = true
-                break
+            switch first {
             case "(": return .leftParen
             case ")": return .rightParen
             case "{": return .leftBrace
@@ -1208,28 +1195,109 @@ extension Metagrammar {
             case "$": return .dollarSign
             case "/": return .forwardSlash
             case "\\": return .backslash
+            case "'", "\"":
+                if let string = StringLiteral.from(string: string) {
+                    return .string(string)
+                }
+                return nil
+            case let c where c.isWhitespace:
+                if let match = Self._parseWhitespace(string) {
+                    return .whitespace(match)
+                }
+                return nil
+            case let c where c.isWholeNumber:
+                if let digits = Self._parseDigits(string) {
+                    return .digits(digits)
+                }
+                return nil
             default:
+                // Try identifier
+                if let ident = Self._parseIdentifier(string) {
+                    return .identifier(ident)
+                }
+                return nil
+            }
+        }
+
+        @inlinable
+        static func _parseWhitespace<S: StringProtocol>(_ string: S) -> Substring? where S.SubSequence == Substring {
+            var stream = StringStreamer(source: string)
+            guard !stream.isEof else { return nil }
+
+            switch stream.next() {
+            case let c where c.isWhitespace:
                 break
+            default:
+                return nil
             }
 
-            // Whitespace
-            if isWhitespace, let match = try? whitespace_pattern.prefixMatch(in: string) {
-                return .whitespace(match.0)
-            }
-            // Try identifier
-            if let ident = try? identifier_pattern.prefixMatch(in: string) {
-                return .identifier(ident.0)
-            }
-            // Try digits
-            if let ident = try? digits_pattern.prefixMatch(in: string) {
-                return .digits(ident.0)
-            }
-            // Try string
-            if let string = StringLiteral.from(string: string) {
-                return .string(string)
+            loop:
+            while !stream.isEof {
+                switch stream.peek() {
+                case let c where c.isWhitespace:
+                    stream.advance()
+                default:
+                    break loop
+                }
             }
 
-            return nil
+            return stream.substring
+        }
+
+        @inlinable
+        static func _parseIdentifier<S: StringProtocol>(_ string: S) -> Substring? where S.SubSequence == Substring {
+            var stream = StringStreamer(source: string)
+            guard !stream.isEof else { return nil }
+
+            switch stream.next() {
+            case let c where c.isLetter:
+                break
+            case "_":
+                break
+            default:
+                return nil
+            }
+
+            loop:
+            while !stream.isEof {
+                switch stream.peek() {
+                case let c where c.isLetter:
+                    stream.advance()
+                case let c where c.isWholeNumber:
+                    stream.advance()
+                case "_":
+                    stream.advance()
+                default:
+                    break loop
+                }
+            }
+
+            return stream.substring
+        }
+
+        @inlinable
+        static func _parseDigits<S: StringProtocol>(_ string: S) -> Substring? where S.SubSequence == Substring {
+            var stream = StringStreamer(source: string)
+            guard !stream.isEof else { return nil }
+
+            switch stream.next() {
+            case let c where c.isWholeNumber:
+                break
+            default:
+                return nil
+            }
+
+            loop:
+            while !stream.isEof {
+                switch stream.peek() {
+                case let c where c.isWholeNumber:
+                    stream.advance()
+                default:
+                    break loop
+                }
+            }
+
+            return stream.substring
         }
 
         /// Specifies a variant of a string literal.
@@ -1237,12 +1305,6 @@ extension Metagrammar {
         /// Associated values represent the string's contents, not including the
         /// quotes.
         public enum StringLiteral: Hashable, CustomStringConvertible {
-            /// Regex used for fetching single- and double-quoted strings.
-            public static let quoteRegex = #/("|')((?:\\\1|(?:(?!\1).))*)\1/#
-
-            /// Regex used for fetching triple-quoted strings.
-            public static let tripleQuoteRegex = #/(""")((?:\\\1|(?:(?!\1).)|\n)*)\1/#
-
             /// `'<...>'`
             case singleQuote(Substring)
             
@@ -1257,6 +1319,23 @@ extension Metagrammar {
             @inlinable
             public var contents: Substring {
                 switch self {
+                case .singleQuote(let string):
+                    return string.dropFirst().dropLast()
+                case .doubleQuote(let string):
+                    return string.dropFirst().dropLast()
+                case .tripleQuote(let string):
+                    // Ignore first newline past triple quote
+                    if string.hasPrefix("\"\"\"\n") {
+                        return string.dropFirst(4).dropLast(3)
+                    }
+                    return string.dropFirst(3).dropLast(3)
+                }
+            }
+
+            /// Returns the full representation of this literal, including quotes.
+            @inlinable
+            public var quotedContents: Substring {
+                switch self {
                 case .singleQuote(let string),
                     .doubleQuote(let string),
                     .tripleQuote(let string):
@@ -1267,38 +1346,66 @@ extension Metagrammar {
             /// Returns the full representation of this literal, including quotes.
             @inlinable
             public var description: String {
-                switch self {
-                case .singleQuote(let string):
-                    return #"'\#(string)'"#
-                case .doubleQuote(let string):
-                    return #""\#(string)""#
-                case .tripleQuote(let string):
-                    return "\"\"\"\(string)\"\"\""
-                }
+                String(quotedContents)
             }
 
             /// Returns a parsed string literal from the given substring.
             /// If no string literal is recognized, `nil` is returned, instead.
             @inlinable
             public static func from(string: Substring) -> Self? {
-                // Triple quote
-                if let match = try? tripleQuoteRegex.prefixMatch(in: string) {
-                    return .tripleQuote(match.output.2)
-                }
+                var stream = StringStreamer(source: string)
+                guard !stream.isEof else { return nil }
 
-                // Single quote
-                guard let match = try? quoteRegex.prefixMatch(in: string) else {
+                let terminator: String
+                let multiline: Bool
+
+                if stream.advanceIfNext("\"\"\"") {
+                    terminator = "\"\"\""
+                    multiline = true
+                } else if stream.advanceIfNext("\"") {
+                    terminator = "\""
+                    multiline = false
+                } else if stream.advanceIfNext("'") {
+                    terminator = "'"
+                    multiline = false
+                } else {
                     return nil
                 }
 
-                switch match.output.1 {
-                case "'":
-                    return .singleQuote(match.output.2)
-                case "\"":
-                    return .doubleQuote(match.output.2)
-                default:
-                    return nil
+                var expectsEscapeSequence = false
+                while !stream.isEof {
+                    if expectsEscapeSequence {
+                        // TODO: Handle escape sequences appropriately
+                        stream.advance()
+                        expectsEscapeSequence = false
+                    } else {
+                        if stream.advanceIfNext(terminator) {
+                            if terminator == "\"\"\"" {
+                                return .tripleQuote(stream.substring)
+                            } else if terminator == "\"" {
+                                return .doubleQuote(stream.substring)
+                            } else if terminator == "'" {
+                                return .singleQuote(stream.substring)
+                            }
+                        }
+
+                        let next = stream.next()
+
+                        // Newlines are only allowed in triple-quoted strings
+                        if next == "\n" {
+                            if !multiline {
+                                return nil
+                            }
+                        }
+                        // Check escape sequence
+                        else if next == "\\" {
+                            expectsEscapeSequence = true
+                        }
+                    }
                 }
+
+                // Missing terminator?
+                return nil
             }
         }
     }
