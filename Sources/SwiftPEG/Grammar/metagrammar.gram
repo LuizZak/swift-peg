@@ -232,5 +232,6 @@ tokensFile[[Metagrammar.TokenDefinition]]:
     ;
 
 tokenDefinition[Metagrammar.TokenDefinition]:
-    | IDENTIFIER ':' STRING ';' { self.setLocation(.init(identifier: identifier, string: string), at: mark) }
+    | name=IDENTIFIER '[' expectArgs=STRING ']' ':' literal=STRING ';' { self.setLocation(.init(name: name, expectArgs: expectArgs, literal: literal), at: mark) }
+    | name=IDENTIFIER ':' literal=STRING ';' { self.setLocation(.init(name: name, expectArgs: nil, literal: literal), at: mark) }
     ;

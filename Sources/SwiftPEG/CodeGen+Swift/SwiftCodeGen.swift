@@ -19,18 +19,34 @@ public class SwiftCodeGen {
 
     let parserName: String
     let grammar: GrammarProcessor.Grammar
+    let tokenDefinitions: [GrammarProcessor.TokenDefinition]
     let buffer: CodeStringBuffer
     var declContext: DeclarationsContext
 
     var remaining: [GrammarProcessor.Rule] = []
     var ruleAliases: [String: String] = [:]
 
+    /// Initializes a new `SwiftCodeGen`, preparing to generate the grammar and
+    /// token definitions from a given grammar processor.
+    public convenience init(from processor: GrammarProcessor) {
+        self.init(
+            grammar: processor.generatedGrammar(),
+            tokenDefinitions: processor.tokenDefinitions()
+        )
+    }
+
     /// Initializes a new `SwiftCodeGen`, preparing to generate a given grammar.
     /// 
     /// - Parameters:
     ///   - grammar: The grammar to generate.
-    public init(grammar: GrammarProcessor.Grammar) {
+    ///   - tokenDefinitions: A list of token definitions to use when examining string literals.
+    public init(
+        grammar: GrammarProcessor.Grammar,
+        tokenDefinitions: [GrammarProcessor.TokenDefinition] = []
+    ) {
         self.grammar = grammar
+        self.tokenDefinitions = tokenDefinitions
+
         parserName = grammar.parserName() ?? "Parser"
         buffer = CodeStringBuffer()
         declContext = DeclarationsContext()
@@ -292,27 +308,24 @@ public class SwiftCodeGen {
             buffer.emit("try self.\(escapeIdentifier(ident))()")
 
         case .token(let ident):
-            buffer.emit("try self.\(escapeIdentifier(ident))()")
+            buffer.emit("try \(expandTokenName(ident))")
 
         // Token literal
         case .string(let string, let raw):
-            var result = string
+            var literal = string
 
             // Avoid emitting single-quoted string literals
             if string.hasPrefix("'") {
-                result = #""\#(raw)""#
+                literal = #""\#(raw)""#
             } else {
-                result = string
+                literal = string
             }
 
             // Escape backslashes contents
-            result = result.replacing("\\", with: #"\\"#)
+            literal = literal.replacing("\\", with: #"\\"#)
 
-            if grammar.tokenCall() == "expectKind" {
-                buffer.emit("try self.expect(kind: \(result))")
-            } else {
-                buffer.emit("try self.expect(\(result))")
-            }
+            let callArgs = self.expectArguments(forLiteral: literal, raw: raw)
+            buffer.emit("try self.expect(\(callArgs))")
         }
     }
 
@@ -385,6 +398,58 @@ extension SwiftCodeGen {
         }
 
         return rule.name
+    }
+
+    /// Returns the appropriate handling of an identifier that may be a token
+    /// identifier
+    /// 
+    /// If the identifier matches a known token definition with explicit
+    /// 'expectArgs', returns `self.expect(<expectArgs>)`, otherwise returns
+    /// `self.<ident>()`, as a fallback.
+    func expandTokenName(_ ident: String) -> String {
+        if
+            let token = tokenDefinition(named: ident),
+            let expectArgs = token.expectArgs
+        {
+            return "self.expect(\(expectArgs))"
+        }
+
+        return "self.\(escapeIdentifier(ident))()"
+    }
+
+    /// Returns the arguments to invoke a `PEGParser.expect()` call, as a
+    /// non-parenthesized labeled expression list separated by commas, in order
+    /// to probe the parser about a specific token literal.
+    /// 
+    /// If no associated token literal has been defined in a .tokens file, the
+    /// result is a default `kind: "<literal>"` or `"<literal>"`, depending on
+    /// the value of '@tokenCall' meta-property, if present.
+    func expectArguments(forLiteral literal: String, raw: String) -> String {
+        // Check for explicit token aliases
+        if
+            let token = tokenDefinition(ofRawLiteral: raw),
+            let expectArgs = token.expectArgs
+        {
+            return expectArgs
+        }
+
+        if grammar.tokenCall() == "expectKind" {
+            return "kind: \(literal)"
+        } else {
+            return "\(literal)"
+        }
+    }
+
+    /// Returns a token definition from `self.tokenDefinitions` of a matching
+    /// name, or `nil`, if none is found.
+    func tokenDefinition(named name: String) -> GrammarProcessor.TokenDefinition? {
+        self.tokenDefinitions.first(where: { $0.name == name })
+    }
+
+    /// Returns a token definition from `self.tokenDefinitions` that has a literal
+    /// value matching the given (non-quoted) value, or `nil`, if none is found.
+    func tokenDefinition(ofRawLiteral literal: String) -> GrammarProcessor.TokenDefinition? {
+        self.tokenDefinitions.first(where: { $0.string == literal })
     }
 }
 

@@ -70,13 +70,13 @@ class GrammarParsingSample {
                 }
             }
 
-            let codeGen = try GrammarProcessor(grammar, delegate: self, verbose: verbose)
+            let processor = try GrammarProcessor(grammar, delegate: self, verbose: verbose)
 
-            for diagnostic in codeGen.diagnostics {
+            for diagnostic in processor.diagnostics {
                 print(diagnostic.description)
             }
 
-            let swiftCodeGen = SwiftCodeGen(grammar: codeGen.generatedGrammar())
+            let swiftCodeGen = SwiftCodeGen(from: processor)
 
             let parser = try swiftCodeGen.generateParser()
 

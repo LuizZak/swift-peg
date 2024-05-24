@@ -943,18 +943,23 @@ extension Metagrammar {
     /// Represents the construct:
     /// ```
     /// tokenDefinition:
-    ///     | IDENTIFIER ':' STRING ';'
+    ///     | name=IDENTIFIER '[' expectArgs=STRING ']' ':' literal=STRING ';' 
+    ///     | name=IDENTIFIER ':' literal=STRING ';'
     ///     ;
     /// ```
     @GeneratedNodeType<Node>
     public final class TokenDefinition: MetagrammarNode {
         /// The identifier for the token.
         @NodeProperty
-        var _identifier: IdentifierToken
+        var _name: IdentifierToken
+
+        /// An optional 'expect' call that fetches the token from the parser.
+        @NodeProperty
+        var _expectArgs: StringToken?
 
         /// The string literal associated with the token.
         @NodeProperty
-        var _string: StringToken
+        var _literal: StringToken
     }
 
     /// A token in a metagrammar.

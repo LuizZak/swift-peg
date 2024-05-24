@@ -154,7 +154,7 @@ public class GrammarProcessor {
 
         var tokensFromFile: Set<String> = []
         for token in tokensFile {
-            tokensFromFile.insert(String(token.identifier.identifier))
+            tokensFromFile.insert(String(token.name.identifier))
         }
 
         return Set(metaTokens.keys).union(tokensFromFile)
@@ -319,15 +319,23 @@ public class GrammarProcessor {
 extension GrammarProcessor {
     /// ```
     /// tokenDefinition:
-    ///     | IDENTIFIER ':' STRING ';'
+    ///     | name=IDENTIFIER '[' expectArgs=STRING ']' ':' literal=STRING ';'
+    ///     | name=IDENTIFIER ':' literal=STRING ';'
     ///     ;
     /// ```
     public struct TokenDefinition: CustomStringConvertible {
-        public var identifier: String
+        public var name: String
+        public var expectArgs: String?
+        
+        /// String literal. Does not contains the quotes around the literal.
         public var string: String
 
         public var description: String {
-            "\(identifier) : \(string) ;"
+            if let expectArgs {
+                return #"\#(name)["\#(expectArgs)"]: "\#(string)" ;"#
+            } else {
+                return #"\#(name): "\#(string)" ;"#
+            }
         }
         
         public static func from(
@@ -335,8 +343,9 @@ extension GrammarProcessor {
         ) -> Self {
 
             .init(
-                identifier: String(node.identifier.identifier),
-                string: String(node.string.valueTrimmingQuotes)
+                name: String(node.name.identifier),
+                expectArgs: node.expectArgs.map({ String($0.valueTrimmingQuotes) }),
+                string: String(node.literal.valueTrimmingQuotes)
             )
         }
     }

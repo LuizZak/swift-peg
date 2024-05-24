@@ -16,6 +16,171 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
+    func testGenerateParser_respectsTokenCallMeta() throws {
+        let grammar = makeGrammar([
+            .init(name: "a", alts: [
+                .init(items: [
+                    .item("b"),
+                    "'+'",
+                    .item("c"),
+                ]),
+            ]),
+        ], metas: [
+            .init(name: "tokenCall", value: .identifier("expectKind"))
+        ])
+        let sut = makeSut(grammar)
+
+        let result = try sut.generateParser()
+
+        diffTest(expected: """
+            // TestParser
+            extension TestParser {
+                /// ```
+                /// a:
+                ///     | b '+' c
+                ///     ;
+                /// ```
+                @memoized("a")
+                @inlinable
+                public func __a() throws -> Node? {
+                    let mark = self.mark()
+
+                    if
+                        let b = try self.b(),
+                        let _ = try self.expect(kind: "+"),
+                        let c = try self.c()
+                    {
+                        return Node()
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+            }
+            """).diff(result)
+    }
+
+    func testGenerateParser_escapesBackSlashLiterals() throws {
+        let grammar = makeGrammar([
+            .init(name: "a", alts: [
+                .init(items: [
+                    .item("b"),
+                    #"'\'"#,
+                    .item("c"),
+                ]),
+            ]),
+        ])
+        let sut = makeSut(grammar)
+
+        let result = try sut.generateParser()
+
+        diffTest(expected: #"""
+            // TestParser
+            extension TestParser {
+                /// ```
+                /// a:
+                ///     | b '\' c
+                ///     ;
+                /// ```
+                @memoized("a")
+                @inlinable
+                public func __a() throws -> Node? {
+                    let mark = self.mark()
+
+                    if
+                        let b = try self.b(),
+                        let _ = try self.expect("\\"),
+                        let c = try self.c()
+                    {
+                        return Node()
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+            }
+            """#).diff(result)
+    }
+
+    func testGenerateParser_usesTokenExpectArgs() throws {
+        let grammar = makeGrammar([
+            .init(name: "a", alts: [
+                .init(items: [
+                    .item("b"),
+                    "'+'",
+                    .item("c"),
+                    #"'\'"#,
+                ]),
+            ]),
+            .init(name: "b", alts: [
+                .init(items: [
+                    .item("b"),
+                    "ADD",
+                    .item("c"),
+                    "'*'",
+                ]),
+            ]),
+        ])
+        let tokens = makeTokenDefs([
+            makeTokenDef(name: "ADD", expectArgs: "custom: .add", literal: "+"),
+            makeTokenDef(name: "BACKSLASH", expectArgs: "custom: .back", literal: #"\"#),
+        ])
+        let sut = makeSut(grammar, tokens)
+
+        let result = try sut.generateParser()
+
+        diffTest(expected: #"""
+            // TestParser
+            extension TestParser {
+                /// ```
+                /// a:
+                ///     | b '+' c '\'
+                ///     ;
+                /// ```
+                @memoized("a")
+                @inlinable
+                public func __a() throws -> Node? {
+                    let mark = self.mark()
+
+                    if
+                        let b = try self.b(),
+                        let _ = try self.expect(custom: .add),
+                        let c = try self.c(),
+                        let _ = try self.expect(custom: .back)
+                    {
+                        return Node()
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+
+                /// ```
+                /// b:
+                ///     | b ADD c '*'
+                ///     ;
+                /// ```
+                @memoized("b")
+                @inlinable
+                public func __b() throws -> Node? {
+                    let mark = self.mark()
+
+                    if
+                        let b = try self.b(),
+                        let add = try self.expect(custom: .add),
+                        let c = try self.c(),
+                        let _ = try self.expect("*")
+                    {
+                        return Node()
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+            }
+            """#).diff(result)
+    }
+
     func testGenerateParser_deduplicatesIdentifiers() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
@@ -991,23 +1156,39 @@ class SwiftCodeGenTests: XCTestCase {
 
 // MARK: - Test internals
 
-private func makeSut(_ grammar: GrammarProcessor.Grammar) -> SwiftCodeGen {
-    SwiftCodeGen(grammar: grammar)
+private func makeSut(_ grammar: GrammarProcessor.Grammar, _ tokens: [GrammarProcessor.TokenDefinition] = []) -> SwiftCodeGen {
+    SwiftCodeGen(grammar: grammar, tokenDefinitions: tokens)
 }
 
 private func makeGrammar(
     parserName: String = "TestParser",
     parserHeader: String = "// TestParser",
-    _ rules: [GrammarProcessor.Rule]
+    _ rules: [GrammarProcessor.Rule],
+    metas: [GrammarProcessor.MetaProperty] = []
 ) -> GrammarProcessor.Grammar {
 
     .init(
         metas: [
             .init(name: SwiftCodeGen.parserHeader, value: .string(parserHeader)),
             .init(name: SwiftCodeGen.parserName, value: .string(parserName)),
-        ],
+        ] + metas,
         rules: rules
     )
+}
+
+private func makeTokenDefs(
+    _ tokens: [GrammarProcessor.TokenDefinition]
+) -> [GrammarProcessor.TokenDefinition] {
+    return tokens
+}
+
+private func makeTokenDef(
+    name: String,
+    expectArgs: String?,
+    literal: String
+) -> GrammarProcessor.TokenDefinition {
+
+    .init(name: name, expectArgs: expectArgs, string: literal)
 }
 
 private func parseGrammar(
