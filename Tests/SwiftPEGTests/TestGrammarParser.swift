@@ -1,4 +1,4 @@
-import SwiftPEG
+@testable import SwiftPEG
 
 @usableFromInline
 enum TestGrammarAST {
@@ -50,13 +50,13 @@ enum TestGrammarAST {
 
     @usableFromInline
     enum Atom: CustomStringConvertible {
-        case name(String)
+        case name(Substring)
         case number(Double)
 
         @usableFromInline
         var description: String {
             switch self {
-            case .name(let name): return name
+            case .name(let name): return String(name)
             case .number(let number): return number.description
             }
         }
@@ -65,20 +65,13 @@ enum TestGrammarAST {
     @usableFromInline
     enum Token: TokenType, ExpressibleByStringLiteral {
         @usableFromInline
-        static let whitespace_pattern = #/([^\S\n])+/#
-        @usableFromInline
-        static let name_pattern = #/[A-Za-z_][0-9A-Za-z_]*/#
-        @usableFromInline
-        static let number_pattern = #/[0-9]+(\.[0-9]+)?/#
-
-        @usableFromInline
         typealias TokenKind = TestGrammarAST.TokenKind
         @usableFromInline
-        typealias TokenString = String
+        typealias TokenString = Substring
 
-        case whitespace(String)
-        case name(String)
-        case number(Double, String)
+        case whitespace(Substring)
+        case name(Substring)
+        case number(Double, Substring)
         case newline
         case add
         case sub
@@ -109,14 +102,14 @@ enum TestGrammarAST {
         }
 
         @inlinable
-        var string: String {
+        var string: Substring {
             switch self {
             case .whitespace(let value): return value
             case .name(let value): return value
-            case .number(_, let value): return "\(value)"
+            case .number(_, let value): return value
             case .newline: return "\n"
             default:
-                return kind.description
+                return Substring(kind.description)
             }
         }
 
@@ -131,7 +124,11 @@ enum TestGrammarAST {
 
         @inlinable
         static func from(_ string: Substring) -> Self? {
-            switch string.first {
+            guard let first = string.first else {
+                return nil
+            }
+
+            switch first {
             case "+": return .add
             case "-": return .sub
             case "*": return .mul
@@ -139,22 +136,116 @@ enum TestGrammarAST {
             case "(": return .lp
             case ")": return .rp
             case "\n": return .newline
+            case let c where c.isWhitespace:
+                if let match = Self._parseWhitespace(string) {
+                    return .whitespace(match)
+                }
+                return nil
+            case let c where c.isWholeNumber:
+                if let number = Self._parseNumber(string), let double = Double(number) {
+                    return .number(double, number)
+                }
+                return nil
             default:
-                if let match = try? whitespace_pattern.prefixMatch(in: string) {
-                    return .whitespace(String(match.0))
+                // Try name
+                if let ident = Self._parseName(string) {
+                    return .name(ident)
                 }
-                if let match = try? name_pattern.prefixMatch(in: string) {
-                    return .name(String(match.0))
-                }
-                if
-                    let match = try? number_pattern.prefixMatch(in: string),
-                    let double = Double(match.0)
-                {
-                    return .number(double, String(match.0))
+                return nil
+            }
+        }
+
+        @inlinable
+        static func _parseWhitespace<S: StringProtocol>(_ string: S) -> Substring? where S.SubSequence == Substring {
+            var stream = StringStreamer(source: string)
+            guard !stream.isEof else { return nil }
+
+            switch stream.next() {
+            case let c where c.isWhitespace:
+                break
+            default:
+                return nil
+            }
+
+            loop:
+            while !stream.isEof {
+                switch stream.peek() {
+                case let c where c.isWhitespace:
+                    stream.advance()
+                default:
+                    break loop
                 }
             }
 
-            return nil
+            return stream.substring
+        }
+
+        @inlinable
+        static func _parseName<S: StringProtocol>(_ string: S) -> Substring? where S.SubSequence == Substring {
+            var stream = StringStreamer(source: string)
+            guard !stream.isEof else { return nil }
+
+            switch stream.next() {
+            case let c where c.isLetter:
+                break
+            case "_":
+                break
+            default:
+                return nil
+            }
+
+            loop:
+            while !stream.isEof {
+                switch stream.peek() {
+                case let c where c.isLetter:
+                    stream.advance()
+                case let c where c.isWholeNumber:
+                    stream.advance()
+                case "_":
+                    stream.advance()
+                default:
+                    break loop
+                }
+            }
+
+            return stream.substring
+        }
+
+        @inlinable
+        static func _parseNumber<S: StringProtocol>(_ string: S) -> Substring? where S.SubSequence == Substring {
+            var stream = StringStreamer(source: string)
+            guard !stream.isEof else { return nil }
+
+            switch stream.next() {
+            case let c where c.isWholeNumber:
+                break
+            default:
+                return nil
+            }
+
+            loop:
+            while !stream.isEof {
+                switch stream.peek() {
+                case let c where c.isWholeNumber:
+                    stream.advance()
+                default:
+                    break loop
+                }
+            }
+
+            if !stream.isEof && stream.advanceIfNext(".") {
+                loop:
+                while !stream.isEof {
+                    switch stream.peek() {
+                    case let c where c.isWholeNumber:
+                        stream.advance()
+                    default:
+                        break loop
+                    }
+                }
+            }
+
+            return stream.substring
         }
 
         @inlinable
@@ -295,7 +386,7 @@ final class TestGrammarRawTokenizer: RawTokenizerType {
 
 final class TestGrammarParser<Raw: RawTokenizerType>: PEGParser<Raw> where Raw.Token == TestGrammarAST.Token {
     @inlinable
-    func NAME() throws -> String? {
+    func NAME() throws -> Substring? {
         if let token = try self.expect(kind: .name) {
             return token.token.string
         }
@@ -314,7 +405,7 @@ final class TestGrammarParser<Raw: RawTokenizerType>: PEGParser<Raw> where Raw.T
     }
 
     @inlinable
-    func NEWLINE() throws -> String? {
+    func NEWLINE() throws -> Substring? {
         if let token = try self.expect(kind: .newline) {
             return token.token.string
         }
