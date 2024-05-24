@@ -37,7 +37,7 @@ public class MetagrammarRawTokenizer: RawTokenizerType {
             let token = Token.from(string: _source[_index...]),
             token.tokenUTF8Length > 0
         else {
-            throw Error.unknownToken(index: _index)
+            throw Error.unknownToken(index: _index, _source[_index])
         }
 
         defer { advance(by: token.tokenUTF8Length) }
@@ -85,12 +85,12 @@ public class MetagrammarRawTokenizer: RawTokenizerType {
     }
 
     public enum Error: TokenizerError {
-        case unknownToken(index: String.Index)
+        case unknownToken(index: String.Index, Character)
 
         public var description: String {
             switch self {
-            case .unknownToken:
-                return "Unknown token"
+            case .unknownToken(_, let tok):
+                return "Unknown token \(tok)"
             }
         }
     }

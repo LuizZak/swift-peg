@@ -865,6 +865,7 @@ extension Metagrammar {
     ///     | ','
     ///     | '.'
     ///     | '@'
+    ///     | '$'
     ///     | '/'
     ///     | '\'
     ///     ;
@@ -883,74 +884,13 @@ extension Metagrammar {
         }
     }
 
-#if false
-
-    /// Base meta-grammar string token.
-    /// Represents a single- or double-quoted string, as well as triple-double-quoted
-    /// strings that support multiple lines.
-    /// 
-    /// Represents the (pseudo-)construct:
-    /// ```
-    /// STRING:
-    ///     | '\'' ~ <all except newline and '> '\''
-    ///     | '"' ~ <all except newline and "> '"'
-    ///     | '"""' ~ <all except """> '"""'
-    /// ```
-    public final class StringToken: TokenNode<MetagrammarToken, MetagrammarRawTokenizer.Location> {
-        /// The string associated with this atom.
-        /// 
-        /// - note: Includes the quotes.
-        public var value: Substring {
-            token.string
-        }
-
-        /// Returns the value of `self.value` with any surrounding string quotes
-        /// stripped.
-        public var valueTrimmingQuotes: Substring {
-            let tripleQuote = "\"\"\""
-            if value.hasPrefix(tripleQuote) && value.hasSuffix(tripleQuote) && value.count >= 6 {
-                return value.dropFirst(3).dropLast(3)
-            }
-
-            return value.dropFirst().dropLast()
-        }
-
-        public override var shortDebugDescription: String { String(value) }
-
-        public func deepCopy() -> StringToken {
-            return StringToken(token: token, location: location as! MetagrammarRawTokenizer.Location)
-        }
-    }
-
-    /// Base meta-grammar identifier token.
-    /// Represents an ASCII-representable sequence of characters that can be used
-    /// as variable names in Swift.
-    /// 
-    /// Represents the construct:
-    /// ```
-    /// IDENT ;
-    /// ```
-    public final class IdentifierToken: TokenNode<MetagrammarToken, MetagrammarRawTokenizer.Location> {
-        public var identifier: Substring {
-            token.string
-        }
-
-        public override var shortDebugDescription: String { String(identifier) }
-
-        public func deepCopy() -> IdentifierToken {
-            return IdentifierToken(token: token, location: location as! MetagrammarRawTokenizer.Location)
-        }
-    }
-
-#endif
-
     /// Represents a token definition collected from a tokens file.
     ///
     /// Represents the construct:
     /// ```
     /// tokenDefinition:
-    ///     | name=IDENTIFIER '[' expectArgs=STRING ']' ':' literal=STRING ';' 
-    ///     | name=IDENTIFIER ':' literal=STRING ';'
+    ///     | '$' name=IDENTIFIER '[' expectArgs=STRING ']' ':' literal=STRING ';' 
+    ///     | '$' name=IDENTIFIER ':' literal=STRING ';'
     ///     ;
     /// ```
     @GeneratedNodeType<Node>
@@ -1059,6 +999,8 @@ extension Metagrammar {
         case period
         /// `@`
         case at
+        /// `$`
+        case dollarSign
 
         /// `/`
         case forwardSlash
@@ -1094,6 +1036,7 @@ extension Metagrammar {
             case .comma: return .comma
             case .period: return .period
             case .at: return .at
+            case .dollarSign: return .dollarSign
             case .forwardSlash: return .forwardSlash
             case .backslash: return .backslash
             }
@@ -1128,6 +1071,7 @@ extension Metagrammar {
             case .comma: return ","
             case .period: return "."
             case .at: return "@"
+            case .dollarSign: return "$"
             case .forwardSlash: return "/"
             case .backslash: return "\\"
             }
@@ -1164,6 +1108,7 @@ extension Metagrammar {
             case .comma: return ","
             case .period: return "."
             case .at: return "@"
+            case .dollarSign: return "$"
             case .forwardSlash: return "/"
             case .backslash: return "\\"
             }
@@ -1222,6 +1167,7 @@ extension Metagrammar {
             case .comma: return .comma
             case .period: return .period
             case .at: return .at
+            case .dollarSign: return .dollarSign
             case .forwardSlash: return .forwardSlash
             case .backslash: return .backslash
             }
@@ -1259,6 +1205,7 @@ extension Metagrammar {
             case ",": return .comma
             case ".": return .period
             case "@": return .at
+            case "$": return .dollarSign
             case "/": return .forwardSlash
             case "\\": return .backslash
             default:
@@ -1431,6 +1378,8 @@ extension Metagrammar {
         case period = "."
         /// `@`
         case at = "@"
+        /// `$`
+        case dollarSign = "$"
 
         /// `/`
         case forwardSlash = "/"

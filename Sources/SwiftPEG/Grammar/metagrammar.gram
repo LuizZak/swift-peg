@@ -149,6 +149,7 @@ balancedTokenAtom["TokenNode<RawTokenizer.Token, RawTokenizer.Location>"]:
     | token=',' { .init(token) }
     | token='.' { .init(token) }
     | token='@' { .init(token) }
+    | token='$' { .init(token) }
     | token='/' { .init(token) }
     | token='\' { .init(token) }
     ;
@@ -160,6 +161,6 @@ tokensFile[[Metagrammar.TokenDefinition]]:
     ;
 
 tokenDefinition[Metagrammar.TokenDefinition]:
-    | name=IDENTIFIER '[' expectArgs=STRING ']' ':' literal=STRING ';' { self.setLocation(.init(name: name.token, expectArgs: expectArgs.token, literal: literal.token), at: mark) }
-    | name=IDENTIFIER ':' literal=STRING ';' { self.setLocation(.init(name: name.token, expectArgs: nil, literal: literal.token), at: mark) }
+    | '$' name=IDENTIFIER '[' expectArgs=STRING ']' ':' literal=STRING ';' { self.setLocation(.init(name: name.token, expectArgs: expectArgs.token, literal: literal.token), at: mark) }
+    | '$' name=IDENTIFIER ':' literal=STRING ';' { self.setLocation(.init(name: name.token, expectArgs: nil, literal: literal.token), at: mark) }
     ;

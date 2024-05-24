@@ -1001,6 +1001,7 @@ extension MetagrammarParser {
     ///     | token=',' { .init(token) }
     ///     | token='.' { .init(token) }
     ///     | token='@' { .init(token) }
+    ///     | token='$' { .init(token) }
     ///     | token='/' { .init(token) }
     ///     | token='\' { .init(token) }
     ///     ;
@@ -1123,6 +1124,14 @@ extension MetagrammarParser {
         self.restore(mark)
 
         if
+            let token = try self.expect(kind: .dollarSign)
+        {
+            return .init(token)
+        }
+
+        self.restore(mark)
+
+        if
             let token = try self.expect(kind: .forwardSlash)
         {
             return .init(token)
@@ -1164,8 +1173,8 @@ extension MetagrammarParser {
 
     /// ```
     /// tokenDefinition[Metagrammar.TokenDefinition]:
-    ///     | name=IDENTIFIER '[' expectArgs=STRING ']' ':' literal=STRING ';' { self.setLocation(.init(name: name.token, expectArgs: expectArgs.token, literal: literal.token), at: mark) }
-    ///     | name=IDENTIFIER ':' literal=STRING ';' { self.setLocation(.init(name: name.token, expectArgs: nil, literal: literal.token), at: mark) }
+    ///     | '$' name=IDENTIFIER '[' expectArgs=STRING ']' ':' literal=STRING ';' { self.setLocation(.init(name: name.token, expectArgs: expectArgs.token, literal: literal.token), at: mark) }
+    ///     | '$' name=IDENTIFIER ':' literal=STRING ';' { self.setLocation(.init(name: name.token, expectArgs: nil, literal: literal.token), at: mark) }
     ///     ;
     /// ```
     @memoized("tokenDefinition")
@@ -1174,6 +1183,7 @@ extension MetagrammarParser {
         let mark = self.mark()
 
         if
+            let _ = try self.expect(kind: .dollarSign),
             let name = try self.expect(kind: .identifier),
             let _ = try self.expect(kind: .leftSquare),
             let expectArgs = try self.expect(kind: .string),
@@ -1188,6 +1198,7 @@ extension MetagrammarParser {
         self.restore(mark)
 
         if
+            let _ = try self.expect(kind: .dollarSign),
             let name = try self.expect(kind: .identifier),
             let _ = try self.expect(kind: .colon),
             let literal = try self.expect(kind: .string),
