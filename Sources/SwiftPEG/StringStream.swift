@@ -1,36 +1,33 @@
 /// Internal type used to seek string types character-by-character.
 /// Stream advancing is not pre-checked and must be validated with `isEof` or
 /// `isEofPast`.
-@usableFromInline
-struct StringStream<StringType: StringProtocol> {
+public struct StringStream<StringType: StringProtocol> {
     /// The string being streamed.
-    @usableFromInline
-    let source: StringType
+    public let source: StringType
 
     /// The current index. Always > `source.startIndex`, and may point beyond
     /// the string's end.
-    @usableFromInline
-    var index: StringType.Index
+    public var index: StringType.Index
 
     /// Returns the range `source.startIndex..<self.index`.
     @inlinable
-    var range: Range<StringType.Index> {
+    public var range: Range<StringType.Index> {
         source.startIndex..<index
     }
 
     /// Returns a substring with range `source.startIndex..<self.index`.
     @inlinable
-    var substring: StringType.SubSequence {
+    public var substring: StringType.SubSequence {
         source[range]
     }
 
     /// Returns `true` if the current index points past the end of the indexable
     /// space of the string.
     @inlinable
-    var isEof: Bool { index >= source.endIndex }
+    public var isEof: Bool { index >= source.endIndex }
 
     @inlinable
-    init(source: StringType) {
+    public init(source: StringType) {
         self.source = source
         self.index = source.startIndex
     }
@@ -38,20 +35,20 @@ struct StringStream<StringType: StringProtocol> {
     /// Returns `true` if the current index, advanced by `offset`, points past
     /// the end of the indexable space of the string.
     @inlinable
-    func isEofPast(_ offset: Int) -> Bool {
+    public func isEofPast(_ offset: Int) -> Bool {
         source.index(index, offsetBy: offset, limitedBy: source.endIndex) != nil
     }
 
     /// Performs an unchecked peek at the current character in the stream.
     @inlinable
-    func peek() -> StringType.Element {
+    public func peek() -> StringType.Element {
         return source[index]
     }
 
     /// Performs an unchecked peek at the current character offset + `offset` in
     /// the stream.
     @inlinable
-    func peek(_ offset: Int) -> StringType.Element {
+    public func peek(_ offset: Int) -> StringType.Element {
         let idx = source.index(index, offsetBy: offset)
 
         return source[idx]
@@ -62,12 +59,12 @@ struct StringStream<StringType: StringProtocol> {
     /// of the string, the method doesn't raise a runtime error and simply returns
     /// `false`.
     @inlinable
-    func isNext<S: StringProtocol>(_ match: S) -> Bool {
+    public func isNext<S: StringProtocol>(_ match: S) -> Bool {
         return source[index...].hasPrefix(match)
     }
 
     @inlinable
-    func isNext(where predicate: (StringType.Element) -> Bool) -> Bool {
+    public func isNext(where predicate: (StringType.Element) -> Bool) -> Bool {
         if isEof { return false }
 
         return predicate(source[index])
@@ -81,7 +78,7 @@ struct StringStream<StringType: StringProtocol> {
     /// of the string, the method doesn't raise a runtime error and simply returns
     /// `false`.
     @inlinable
-    mutating func advanceIfNext<S: StringProtocol>(_ match: S) -> Bool {
+    public mutating func advanceIfNext<S: StringProtocol>(_ match: S) -> Bool {
         guard isNext(match) else {
             return false
         }
@@ -93,7 +90,7 @@ struct StringStream<StringType: StringProtocol> {
     /// Performs an unchecked advance to the next string index, returning the
     /// character that was skipped over.
     @inlinable
-    mutating func next() -> StringType.Element {
+    public mutating func next() -> StringType.Element {
         defer { source.formIndex(after: &index) }
 
         return peek()
@@ -101,12 +98,11 @@ struct StringStream<StringType: StringProtocol> {
 
     /// Performs an unchecked advance to the next string index.
     @inlinable
-    mutating func advance() {
+    public mutating func advance() {
         source.formIndex(after: &index)
     }
 
-    @usableFromInline
-    enum Error: Swift.Error {
+    public enum Error: Swift.Error {
         case eof
     }
 }
