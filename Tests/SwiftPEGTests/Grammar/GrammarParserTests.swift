@@ -2,8 +2,8 @@ import XCTest
 
 @testable import SwiftPEG
 
-class MetagrammarParserTests: XCTestCase {
-    typealias Sut = MetagrammarParser<TestMetagrammarTokenizer>
+class GrammarParserTests: XCTestCase {
+    typealias Sut = GrammarParser<TestGrammarTokenizer>
 
     func testGrammar_emptyGrammar_returnsNil() throws {
         let stubTokenizer = stubTestTokenizer([
@@ -73,8 +73,8 @@ class MetagrammarParserTests: XCTestCase {
     }
 
     func testGrammar_largeGrammar_returnsGrammar() throws {
-        var tokens: [Metagrammar.MetagrammarToken] = []
-        let tokensToCopy: [Metagrammar.MetagrammarToken] = [
+        var tokens: [SwiftPEGGrammar.GrammarToken] = []
+        let tokensToCopy: [SwiftPEGGrammar.GrammarToken] = [
             "ruleA", ":",
                 "|", "'a'",
                 "|", "'b'",
@@ -161,10 +161,10 @@ class MetagrammarParserTests: XCTestCase {
 
 // MARK: - Test internals
 
-private func makeSut<Raw: RawTokenizerType>(_ tokenizer: Raw) -> MetagrammarParser<Raw> {
-    return MetagrammarParser(raw: tokenizer)
+private func makeSut<Raw: RawTokenizerType>(_ tokenizer: Raw) -> GrammarParser<Raw> {
+    return GrammarParser(raw: tokenizer)
 }
 
-private func stubTestTokenizer(_ tokens: [Metagrammar.MetagrammarToken]) -> TestMetagrammarTokenizer {
-    return TestMetagrammarTokenizer(tokens: tokens)
+private func stubTestTokenizer(_ tokens: [SwiftPEGGrammar.GrammarToken]) -> TestGrammarTokenizer {
+    return TestGrammarTokenizer(tokens: tokens)
 }

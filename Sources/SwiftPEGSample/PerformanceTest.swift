@@ -4,7 +4,7 @@ class PerformanceTest {
     var useStringBuffer: Bool = false
 
     func run() throws {
-        let tokensToCopy: [Metagrammar.MetagrammarToken] = [
+        let tokensToCopy: [SwiftPEGGrammar.GrammarToken] = [
             "ruleA", ":",
                 "|", "'a'",
                 "|", "'b'",
@@ -30,7 +30,7 @@ class PerformanceTest {
 
             print("Parsing sample with \(tokenCount) tokens...")
 
-            var tokens: [Metagrammar.MetagrammarToken] = []
+            var tokens: [SwiftPEGGrammar.GrammarToken] = []
             for _ in 0..<copies {
                 tokens.append(contentsOf: tokensToCopy)
             }
@@ -41,7 +41,7 @@ class PerformanceTest {
         }
     }
 
-    func runParser<R: RawTokenizerType>(_ parser: MetagrammarParser<R>) throws {
+    func runParser<R: RawTokenizerType>(_ parser: GrammarParser<R>) throws {
         let stopwatch = Stopwatch.start()
 
         guard let result = try parser.grammar(), parser.tokenizer.isEOF else {
@@ -54,15 +54,15 @@ class PerformanceTest {
         print("Success! Parsed in \(String(format: "%.2lf", duration))s")
     }
     
-    private func makeParser<Raw: RawTokenizerType>(_ tokenizer: Raw) -> MetagrammarParser<Raw> {
-        return MetagrammarParser(raw: tokenizer)
+    private func makeParser<Raw: RawTokenizerType>(_ tokenizer: Raw) -> GrammarParser<Raw> {
+        return GrammarParser(raw: tokenizer)
     }
 
-    private func stringRawTokenizer(_ source: String) -> MetagrammarRawTokenizer {
-        return MetagrammarRawTokenizer(source: source)
+    private func stringRawTokenizer(_ source: String) -> GrammarRawTokenizer {
+        return GrammarRawTokenizer(source: source)
     }
 
-    private func arrayRawTokenizer(_ tokens: [Metagrammar.MetagrammarToken]) -> ArrayRawTokenizer<Metagrammar.MetagrammarToken> {
+    private func arrayRawTokenizer(_ tokens: [SwiftPEGGrammar.GrammarToken]) -> ArrayRawTokenizer<SwiftPEGGrammar.GrammarToken> {
         return ArrayRawTokenizer(tokens: tokens)
     }
 }

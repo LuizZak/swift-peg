@@ -1,19 +1,19 @@
 // HEADS UP! This is a generated file
 
 /// A parser for SwiftPEG grammar files.
-public final class MetagrammarParser<RawTokenizer: RawTokenizerType>: PEGParser<RawTokenizer>
-    where RawTokenizer.Token == Metagrammar.MetagrammarToken, RawTokenizer.Location == FileSourceLocation
+public final class GrammarParser<RawTokenizer: RawTokenizerType>: PEGParser<RawTokenizer>
+    where RawTokenizer.Token == SwiftPEGGrammar.GrammarToken, RawTokenizer.Location == FileSourceLocation
 { }
 
-extension MetagrammarParser {
+extension GrammarParser {
     /// ```
-    /// start[Metagrammar.Grammar]:
+    /// start[SwiftPEGGrammar.Grammar]:
     ///     | grammar { grammar }
     ///     ;
     /// ```
     @memoized("start")
     @inlinable
-    public func __start() throws -> Metagrammar.Grammar? {
+    public func __start() throws -> SwiftPEGGrammar.Grammar? {
         let mark = self.mark()
 
         if
@@ -27,14 +27,14 @@ extension MetagrammarParser {
     }
 
     /// ```
-    /// grammar[Metagrammar.Grammar]:
+    /// grammar[SwiftPEGGrammar.Grammar]:
     ///     | metas rules { self.setLocation(.init(metas: metas, rules: rules), at: mark) }
     ///     | rules { self.setLocation(.init(metas: [], rules: rules), at: mark) }
     ///     ;
     /// ```
     @memoized("grammar")
     @inlinable
-    public func __grammar() throws -> Metagrammar.Grammar? {
+    public func __grammar() throws -> SwiftPEGGrammar.Grammar? {
         let mark = self.mark()
 
         if
@@ -57,13 +57,13 @@ extension MetagrammarParser {
     }
 
     /// ```
-    /// metas[[Metagrammar.Meta]]:
+    /// metas[[SwiftPEGGrammar.Meta]]:
     ///     | metas=meta+ { metas }
     ///     ;
     /// ```
     @memoized("metas")
     @inlinable
-    public func __metas() throws -> [Metagrammar.Meta]? {
+    public func __metas() throws -> [SwiftPEGGrammar.Meta]? {
         let mark = self.mark()
 
         if
@@ -79,14 +79,14 @@ extension MetagrammarParser {
     }
 
     /// ```
-    /// meta[Metagrammar.Meta]:
+    /// meta[SwiftPEGGrammar.Meta]:
     ///     | "@" name=IDENTIFIER value=metaValue ';' { self.setLocation(.init(name: name.token, value: value), at: mark) }
     ///     | "@" name=IDENTIFIER ';' { self.setLocation(.init(name: name.token, value: nil), at: mark) }
     ///     ;
     /// ```
     @memoized("meta")
     @inlinable
-    public func __meta() throws -> Metagrammar.Meta? {
+    public func __meta() throws -> SwiftPEGGrammar.Meta? {
         let mark = self.mark()
 
         if
@@ -113,20 +113,20 @@ extension MetagrammarParser {
     }
 
     /// ```
-    /// metaValue[Metagrammar.MetaValue]:
-    ///     | ident=IDENTIFIER { self.setLocation(Metagrammar.MetaIdentifierValue(identifier: ident.token), at: mark) }
-    ///     | string=STRING { self.setLocation(Metagrammar.MetaStringValue(string: string.token), at: mark) }
+    /// metaValue[SwiftPEGGrammar.MetaValue]:
+    ///     | ident=IDENTIFIER { self.setLocation(SwiftPEGGrammar.MetaIdentifierValue(identifier: ident.token), at: mark) }
+    ///     | string=STRING { self.setLocation(SwiftPEGGrammar.MetaStringValue(string: string.token), at: mark) }
     ///     ;
     /// ```
     @memoized("metaValue")
     @inlinable
-    public func __metaValue() throws -> Metagrammar.MetaValue? {
+    public func __metaValue() throws -> SwiftPEGGrammar.MetaValue? {
         let mark = self.mark()
 
         if
             let ident = try self.expect(kind: .identifier)
         {
-            return self.setLocation(Metagrammar.MetaIdentifierValue(identifier: ident.token), at: mark)
+            return self.setLocation(SwiftPEGGrammar.MetaIdentifierValue(identifier: ident.token), at: mark)
         }
 
         self.restore(mark)
@@ -134,7 +134,7 @@ extension MetagrammarParser {
         if
             let string = try self.expect(kind: .string)
         {
-            return self.setLocation(Metagrammar.MetaStringValue(string: string.token), at: mark)
+            return self.setLocation(SwiftPEGGrammar.MetaStringValue(string: string.token), at: mark)
         }
 
         self.restore(mark)
@@ -142,13 +142,13 @@ extension MetagrammarParser {
     }
 
     /// ```
-    /// rules[[Metagrammar.Rule]]:
+    /// rules[[SwiftPEGGrammar.Rule]]:
     ///     | rules=rule+ { rules }
     ///     ;
     /// ```
     @memoized("rules")
     @inlinable
-    public func __rules() throws -> [Metagrammar.Rule]? {
+    public func __rules() throws -> [SwiftPEGGrammar.Rule]? {
         let mark = self.mark()
 
         if
@@ -164,14 +164,14 @@ extension MetagrammarParser {
     }
 
     /// ```
-    /// rule[Metagrammar.Rule]:
+    /// rule[SwiftPEGGrammar.Rule]:
     ///     | ruleName ":" '|' alts ';' { self.setLocation(.init(name: ruleName, alts: alts), at: mark) }
     ///     | ruleName ":" alts ';' { self.setLocation(.init(name: ruleName, alts: alts), at: mark) }
     ///     ;
     /// ```
     @memoized("rule")
     @inlinable
-    public func __rule() throws -> Metagrammar.Rule? {
+    public func __rule() throws -> SwiftPEGGrammar.Rule? {
         let mark = self.mark()
 
         if
@@ -200,14 +200,14 @@ extension MetagrammarParser {
     }
 
     /// ```
-    /// ruleName[Metagrammar.RuleName]:
+    /// ruleName[SwiftPEGGrammar.RuleName]:
     ///     | name=IDENTIFIER '[' type=swiftType ']' { self.setLocation(.init(name: name.token, type: type), at: mark) }
     ///     | name=IDENTIFIER { self.setLocation(.init(name: name.token, type: nil), at: mark) }
     ///     ;
     /// ```
     @memoized("ruleName")
     @inlinable
-    public func __ruleName() throws -> Metagrammar.RuleName? {
+    public func __ruleName() throws -> SwiftPEGGrammar.RuleName? {
         let mark = self.mark()
 
         if
@@ -232,14 +232,14 @@ extension MetagrammarParser {
     }
 
     /// ```
-    /// alts[[Metagrammar.Alt]]:
+    /// alts[[SwiftPEGGrammar.Alt]]:
     ///     | alt "|" alts { [alt] + alts }
     ///     | alt { [alt] }
     ///     ;
     /// ```
     @memoized("alts")
     @inlinable
-    public func __alts() throws -> [Metagrammar.Alt]? {
+    public func __alts() throws -> [SwiftPEGGrammar.Alt]? {
         let mark = self.mark()
 
         if
@@ -263,14 +263,14 @@ extension MetagrammarParser {
     }
 
     /// ```
-    /// alt[Metagrammar.Alt]:
+    /// alt[SwiftPEGGrammar.Alt]:
     ///     | namedItems action { self.setLocation(.init(namedItems: namedItems, action: action), at: mark) }
     ///     | namedItems { self.setLocation(.init(namedItems: namedItems, action: nil), at: mark) }
     ///     ;
     /// ```
     @memoized("alt")
     @inlinable
-    public func __alt() throws -> Metagrammar.Alt? {
+    public func __alt() throws -> SwiftPEGGrammar.Alt? {
         let mark = self.mark()
 
         if
@@ -293,14 +293,14 @@ extension MetagrammarParser {
     }
 
     /// ```
-    /// namedItems[[Metagrammar.NamedItem]]:
+    /// namedItems[[SwiftPEGGrammar.NamedItem]]:
     ///     | namedItem namedItems { [namedItem] + namedItems }
     ///     | namedItem { [namedItem] }
     ///     ;
     /// ```
     @memoized("namedItems")
     @inlinable
-    public func __namedItems() throws -> [Metagrammar.NamedItem]? {
+    public func __namedItems() throws -> [SwiftPEGGrammar.NamedItem]? {
         let mark = self.mark()
 
         if
@@ -323,7 +323,7 @@ extension MetagrammarParser {
     }
 
     /// ```
-    /// namedItem[Metagrammar.NamedItem]:
+    /// namedItem[SwiftPEGGrammar.NamedItem]:
     ///     | name=IDENTIFIER '[' type=swiftType ']' '=' ~ item { self.setLocation(.init(name: name.token, item: item, type: type, lookahead: nil), at: mark) }
     ///     | name=IDENTIFIER '=' ~ item { self.setLocation(.init(name: name.token, item: item, type: nil, lookahead: nil), at: mark) }
     ///     | item { self.setLocation(.init(name: nil, item: item, type: nil, lookahead: nil), at: mark) }
@@ -332,7 +332,7 @@ extension MetagrammarParser {
     /// ```
     @memoized("namedItem")
     @inlinable
-    public func __namedItem() throws -> Metagrammar.NamedItem? {
+    public func __namedItem() throws -> SwiftPEGGrammar.NamedItem? {
         let mark = self.mark()
         var cut = CutFlag()
 
@@ -396,15 +396,15 @@ extension MetagrammarParser {
     }
 
     /// ```
-    /// lookahead[Metagrammar.LookaheadOrCut]:
-    ///     | '&' ~ atom { self.setLocation(Metagrammar.PositiveLookahead(atom: atom), at: mark) }
-    ///     | '!' ~ atom { self.setLocation(Metagrammar.NegativeLookahead(atom: atom), at: mark) }
-    ///     | '~' { self.setLocation(Metagrammar.Cut(), at: mark) }
+    /// lookahead[SwiftPEGGrammar.LookaheadOrCut]:
+    ///     | '&' ~ atom { self.setLocation(SwiftPEGGrammar.PositiveLookahead(atom: atom), at: mark) }
+    ///     | '!' ~ atom { self.setLocation(SwiftPEGGrammar.NegativeLookahead(atom: atom), at: mark) }
+    ///     | '~' { self.setLocation(SwiftPEGGrammar.Cut(), at: mark) }
     ///     ;
     /// ```
     @memoized("lookahead")
     @inlinable
-    public func __lookahead() throws -> Metagrammar.LookaheadOrCut? {
+    public func __lookahead() throws -> SwiftPEGGrammar.LookaheadOrCut? {
         let mark = self.mark()
         var cut = CutFlag()
 
@@ -413,7 +413,7 @@ extension MetagrammarParser {
             cut.toggleOn(),
             let atom = try self.atom()
         {
-            return self.setLocation(Metagrammar.PositiveLookahead(atom: atom), at: mark)
+            return self.setLocation(SwiftPEGGrammar.PositiveLookahead(atom: atom), at: mark)
         }
 
         self.restore(mark)
@@ -427,7 +427,7 @@ extension MetagrammarParser {
             cut.toggleOn(),
             let atom = try self.atom()
         {
-            return self.setLocation(Metagrammar.NegativeLookahead(atom: atom), at: mark)
+            return self.setLocation(SwiftPEGGrammar.NegativeLookahead(atom: atom), at: mark)
         }
 
         self.restore(mark)
@@ -439,7 +439,7 @@ extension MetagrammarParser {
         if
             let _ = try self.expect(kind: .tilde)
         {
-            return self.setLocation(Metagrammar.Cut(), at: mark)
+            return self.setLocation(SwiftPEGGrammar.Cut(), at: mark)
         }
 
         self.restore(mark)
@@ -451,18 +451,18 @@ extension MetagrammarParser {
     }
 
     /// ```
-    /// item[Metagrammar.Item]:
-    ///     | '[' ~ alts ']' { self.setLocation(Metagrammar.OptionalItems(alts: alts), at: mark) }
-    ///     | atom '?' { self.setLocation(Metagrammar.OptionalItem(atom: atom), at: mark) }
-    ///     | atom '*' { self.setLocation(Metagrammar.ZeroOrMoreItem(atom: atom), at: mark) }
-    ///     | atom '+' { self.setLocation(Metagrammar.OneOrMoreItem(atom: atom), at: mark) }
-    ///     | sep=atom '.' node=atom '+' { self.setLocation(Metagrammar.GatherItem(sep: sep, item: node), at: mark) }
-    ///     | atom { self.setLocation(Metagrammar.AtomItem(atom: atom), at: mark) }
+    /// item[SwiftPEGGrammar.Item]:
+    ///     | '[' ~ alts ']' { self.setLocation(SwiftPEGGrammar.OptionalItems(alts: alts), at: mark) }
+    ///     | atom '?' { self.setLocation(SwiftPEGGrammar.OptionalItem(atom: atom), at: mark) }
+    ///     | atom '*' { self.setLocation(SwiftPEGGrammar.ZeroOrMoreItem(atom: atom), at: mark) }
+    ///     | atom '+' { self.setLocation(SwiftPEGGrammar.OneOrMoreItem(atom: atom), at: mark) }
+    ///     | sep=atom '.' node=atom '+' { self.setLocation(SwiftPEGGrammar.GatherItem(sep: sep, item: node), at: mark) }
+    ///     | atom { self.setLocation(SwiftPEGGrammar.AtomItem(atom: atom), at: mark) }
     ///     ;
     /// ```
     @memoized("item")
     @inlinable
-    public func __item() throws -> Metagrammar.Item? {
+    public func __item() throws -> SwiftPEGGrammar.Item? {
         let mark = self.mark()
         var cut = CutFlag()
 
@@ -472,7 +472,7 @@ extension MetagrammarParser {
             let alts = try self.alts(),
             let _ = try self.expect(kind: .rightSquare)
         {
-            return self.setLocation(Metagrammar.OptionalItems(alts: alts), at: mark)
+            return self.setLocation(SwiftPEGGrammar.OptionalItems(alts: alts), at: mark)
         }
 
         self.restore(mark)
@@ -485,7 +485,7 @@ extension MetagrammarParser {
             let atom = try self.atom(),
             let _ = try self.expect(kind: .questionMark)
         {
-            return self.setLocation(Metagrammar.OptionalItem(atom: atom), at: mark)
+            return self.setLocation(SwiftPEGGrammar.OptionalItem(atom: atom), at: mark)
         }
 
         self.restore(mark)
@@ -498,7 +498,7 @@ extension MetagrammarParser {
             let atom = try self.atom(),
             let _ = try self.expect(kind: .star)
         {
-            return self.setLocation(Metagrammar.ZeroOrMoreItem(atom: atom), at: mark)
+            return self.setLocation(SwiftPEGGrammar.ZeroOrMoreItem(atom: atom), at: mark)
         }
 
         self.restore(mark)
@@ -511,7 +511,7 @@ extension MetagrammarParser {
             let atom = try self.atom(),
             let _ = try self.expect(kind: .plus)
         {
-            return self.setLocation(Metagrammar.OneOrMoreItem(atom: atom), at: mark)
+            return self.setLocation(SwiftPEGGrammar.OneOrMoreItem(atom: atom), at: mark)
         }
 
         self.restore(mark)
@@ -526,7 +526,7 @@ extension MetagrammarParser {
             let node = try self.atom(),
             let _ = try self.expect(kind: .plus)
         {
-            return self.setLocation(Metagrammar.GatherItem(sep: sep, item: node), at: mark)
+            return self.setLocation(SwiftPEGGrammar.GatherItem(sep: sep, item: node), at: mark)
         }
 
         self.restore(mark)
@@ -538,7 +538,7 @@ extension MetagrammarParser {
         if
             let atom = try self.atom()
         {
-            return self.setLocation(Metagrammar.AtomItem(atom: atom), at: mark)
+            return self.setLocation(SwiftPEGGrammar.AtomItem(atom: atom), at: mark)
         }
 
         self.restore(mark)
@@ -550,15 +550,15 @@ extension MetagrammarParser {
     }
 
     /// ```
-    /// atom[Metagrammar.Atom]:
-    ///     | '(' ~ alts ')' { self.setLocation(Metagrammar.GroupAtom(alts: alts), at: mark) }
-    ///     | IDENTIFIER { self.setLocation(Metagrammar.IdentAtom(identifier: identifier.token, identity: .unresolved), at: mark) }
-    ///     | STRING { self.setLocation(Metagrammar.StringAtom(string: string.token), at: mark) }
+    /// atom[SwiftPEGGrammar.Atom]:
+    ///     | '(' ~ alts ')' { self.setLocation(SwiftPEGGrammar.GroupAtom(alts: alts), at: mark) }
+    ///     | IDENTIFIER { self.setLocation(SwiftPEGGrammar.IdentAtom(identifier: identifier.token, identity: .unresolved), at: mark) }
+    ///     | STRING { self.setLocation(SwiftPEGGrammar.StringAtom(string: string.token), at: mark) }
     ///     ;
     /// ```
     @memoized("atom")
     @inlinable
-    public func __atom() throws -> Metagrammar.Atom? {
+    public func __atom() throws -> SwiftPEGGrammar.Atom? {
         let mark = self.mark()
         var cut = CutFlag()
 
@@ -568,7 +568,7 @@ extension MetagrammarParser {
             let alts = try self.alts(),
             let _ = try self.expect(kind: .rightParen)
         {
-            return self.setLocation(Metagrammar.GroupAtom(alts: alts), at: mark)
+            return self.setLocation(SwiftPEGGrammar.GroupAtom(alts: alts), at: mark)
         }
 
         self.restore(mark)
@@ -580,7 +580,7 @@ extension MetagrammarParser {
         if
             let identifier = try self.expect(kind: .identifier)
         {
-            return self.setLocation(Metagrammar.IdentAtom(identifier: identifier.token, identity: .unresolved), at: mark)
+            return self.setLocation(SwiftPEGGrammar.IdentAtom(identifier: identifier.token, identity: .unresolved), at: mark)
         }
 
         self.restore(mark)
@@ -592,7 +592,7 @@ extension MetagrammarParser {
         if
             let string = try self.expect(kind: .string)
         {
-            return self.setLocation(Metagrammar.StringAtom(string: string.token), at: mark)
+            return self.setLocation(SwiftPEGGrammar.StringAtom(string: string.token), at: mark)
         }
 
         self.restore(mark)
@@ -604,7 +604,7 @@ extension MetagrammarParser {
     }
 
     /// ```
-    /// swiftType[Metagrammar.SwiftType]:
+    /// swiftType[SwiftPEGGrammar.SwiftType]:
     ///     | raw=STRING { self.setLocation(.init(name: raw.token.processedString), at: mark) }
     ///     | '[' ~ type=swiftType ']' { self.setLocation(.init(name: "[" + type.name + "]"), at: mark) }
     ///     | '(' ~ types=swiftTypeList ')' { self.setLocation(.init(name: "(" + types.map(\.name).joined(separator: ", ") + ")"), at: mark) }
@@ -617,7 +617,7 @@ extension MetagrammarParser {
     /// ```
     @memoized("swiftType")
     @inlinable
-    public func __swiftType() throws -> Metagrammar.SwiftType? {
+    public func __swiftType() throws -> SwiftPEGGrammar.SwiftType? {
         let mark = self.mark()
         var cut = CutFlag()
 
@@ -739,14 +739,14 @@ extension MetagrammarParser {
     }
 
     /// ```
-    /// swiftTypeList[[Metagrammar.SwiftType]]:
+    /// swiftTypeList[[SwiftPEGGrammar.SwiftType]]:
     ///     | type=swiftType ',' types=swiftTypeList { [type] + types }
     ///     | type=swiftType { [type] }
     ///     ;
     /// ```
     @memoized("swiftTypeList")
     @inlinable
-    public func __swiftTypeList() throws -> [Metagrammar.SwiftType]? {
+    public func __swiftTypeList() throws -> [SwiftPEGGrammar.SwiftType]? {
         let mark = self.mark()
 
         if
@@ -770,13 +770,13 @@ extension MetagrammarParser {
     }
 
     /// ```
-    /// action[Metagrammar.Action]:
+    /// action[SwiftPEGGrammar.Action]:
     ///     | "{" ~ balancedTokens "}" { self.setLocation(.init(balancedTokens: balancedTokens), at: mark) }
     ///     ;
     /// ```
     @memoized("action")
     @inlinable
-    public func __action() throws -> Metagrammar.Action? {
+    public func __action() throws -> SwiftPEGGrammar.Action? {
         let mark = self.mark()
         var cut = CutFlag()
 
@@ -798,14 +798,14 @@ extension MetagrammarParser {
     }
 
     /// ```
-    /// balancedTokens[Metagrammar.BalancedTokens]:
+    /// balancedTokens[SwiftPEGGrammar.BalancedTokens]:
     ///     | balancedToken balancedTokens { self.setLocation(.init(tokens: balancedToken.tokens + balancedTokens.tokens), at: mark) }
     ///     | balancedToken { balancedToken }
     ///     ;
     /// ```
     @memoized("balancedTokens")
     @inlinable
-    public func __balancedTokens() throws -> Metagrammar.BalancedTokens? {
+    public func __balancedTokens() throws -> SwiftPEGGrammar.BalancedTokens? {
         let mark = self.mark()
 
         if
@@ -828,7 +828,7 @@ extension MetagrammarParser {
     }
 
     /// ```
-    /// balancedToken[Metagrammar.BalancedTokens]:
+    /// balancedToken[SwiftPEGGrammar.BalancedTokens]:
     ///     | token=WHITESPACE { self.setLocation(.init(tokens: [.init(token)]), at: mark) }
     ///     | l='{' balancedTokens r='}' { self.setLocation(.init(tokens: [.init(l)] + balancedTokens.tokens + [.init(r)]), at: mark) }
     ///     | l='[' balancedTokens r=']' { self.setLocation(.init(tokens: [.init(l)] + balancedTokens.tokens + [.init(r)]), at: mark) }
@@ -843,7 +843,7 @@ extension MetagrammarParser {
     /// ```
     @memoized("balancedToken")
     @inlinable
-    public func __balancedToken() throws -> Metagrammar.BalancedTokens? {
+    public func __balancedToken() throws -> SwiftPEGGrammar.BalancedTokens? {
         let mark = self.mark()
         var cut = CutFlag()
 
@@ -1003,7 +1003,7 @@ extension MetagrammarParser {
     ///     | token='@' { .init(token) }
     ///     | token='$' { .init(token) }
     ///     | token='/' { .init(token) }
-    ///     | token='\' { .init(token) }
+    ///     | token='\\' { .init(token) }
     ///     ;
     /// ```
     @memoized("balancedTokenAtom")
@@ -1150,13 +1150,13 @@ extension MetagrammarParser {
     }
 
     /// ```
-    /// tokensFile[[Metagrammar.TokenDefinition]]:
+    /// tokensFile[[SwiftPEGGrammar.TokenDefinition]]:
     ///     | tokens=tokenDefinition* { tokens }
     ///     ;
     /// ```
     @memoized("tokensFile")
     @inlinable
-    public func __tokensFile() throws -> [Metagrammar.TokenDefinition]? {
+    public func __tokensFile() throws -> [SwiftPEGGrammar.TokenDefinition]? {
         let mark = self.mark()
 
         if
@@ -1172,14 +1172,14 @@ extension MetagrammarParser {
     }
 
     /// ```
-    /// tokenDefinition[Metagrammar.TokenDefinition]:
+    /// tokenDefinition[SwiftPEGGrammar.TokenDefinition]:
     ///     | '$' name=IDENTIFIER '[' expectArgs=STRING ']' ':' literal=STRING ';' { self.setLocation(.init(name: name.token, expectArgs: expectArgs.token, literal: literal.token), at: mark) }
     ///     | '$' name=IDENTIFIER ':' literal=STRING ';' { self.setLocation(.init(name: name.token, expectArgs: nil, literal: literal.token), at: mark) }
     ///     ;
     /// ```
     @memoized("tokenDefinition")
     @inlinable
-    public func __tokenDefinition() throws -> Metagrammar.TokenDefinition? {
+    public func __tokenDefinition() throws -> SwiftPEGGrammar.TokenDefinition? {
         let mark = self.mark()
 
         if

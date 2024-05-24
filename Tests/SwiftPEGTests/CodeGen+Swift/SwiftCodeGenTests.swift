@@ -1156,16 +1156,16 @@ class SwiftCodeGenTests: XCTestCase {
 
 // MARK: - Test internals
 
-private func makeSut(_ grammar: GrammarProcessor.Grammar, _ tokens: [GrammarProcessor.TokenDefinition] = []) -> SwiftCodeGen {
+private func makeSut(_ grammar: InternalGrammar.Grammar, _ tokens: [InternalGrammar.TokenDefinition] = []) -> SwiftCodeGen {
     SwiftCodeGen(grammar: grammar, tokenDefinitions: tokens)
 }
 
 private func makeGrammar(
     parserName: String = "TestParser",
     parserHeader: String = "// TestParser",
-    _ rules: [GrammarProcessor.Rule],
-    metas: [GrammarProcessor.MetaProperty] = []
-) -> GrammarProcessor.Grammar {
+    _ rules: [InternalGrammar.Rule],
+    metas: [InternalGrammar.MetaProperty] = []
+) -> InternalGrammar.Grammar {
 
     .init(
         metas: [
@@ -1177,8 +1177,8 @@ private func makeGrammar(
 }
 
 private func makeTokenDefs(
-    _ tokens: [GrammarProcessor.TokenDefinition]
-) -> [GrammarProcessor.TokenDefinition] {
+    _ tokens: [InternalGrammar.TokenDefinition]
+) -> [InternalGrammar.TokenDefinition] {
     return tokens
 }
 
@@ -1186,7 +1186,7 @@ private func makeTokenDef(
     name: String,
     expectArgs: String?,
     literal: String
-) -> GrammarProcessor.TokenDefinition {
+) -> InternalGrammar.TokenDefinition {
 
     .init(name: name, expectArgs: expectArgs, string: literal)
 }
@@ -1195,10 +1195,10 @@ private func parseGrammar(
     _ grammar: String,
     file: StaticString = #file,
     line: UInt = #line
-) throws -> GrammarProcessor.Grammar {
+) throws -> InternalGrammar.Grammar {
 
-    let tokenizer = MetagrammarRawTokenizer(source: grammar)
-    let parser = MetagrammarParser(raw: tokenizer)
+    let tokenizer = GrammarRawTokenizer(source: grammar)
+    let parser = GrammarParser(raw: tokenizer)
 
     guard let grammar = try parser.start() else {
         throw parser.makeSyntaxError()

@@ -1,7 +1,7 @@
 /// A tokenizer for SwiftPEG grammar files.
 /// Reads tokens out of a character stream.
-public class MetagrammarRawTokenizer: RawTokenizerType {
-    public typealias Token = Metagrammar.MetagrammarToken
+public class GrammarRawTokenizer: RawTokenizerType {
+    public typealias Token = SwiftPEGGrammar.GrammarToken
     public typealias Location = FileSourceLocation
 
     @usableFromInline

@@ -2,7 +2,7 @@ extension GrammarProcessor {
     /// Computes nullable rules.
     ///
     /// Rules are nullable if they can be satisfied while matching no input.
-    func computeNullables(_ rules: [String: Metagrammar.Rule]) throws {
+    func computeNullables(_ rules: [String: SwiftPEGGrammar.Rule]) throws {
         let visitor = NullabilityVisitor(rulesMap: rules)
         for rule in grammar.rules {
             _ = rule.visitNullable(visitor)
@@ -73,22 +73,22 @@ extension GrammarProcessor {
 }
 
 class NullabilityVisitor {
-    private var _rules: [Metagrammar.Rule] = []
-    private var _rulesMap: [String: Metagrammar.Rule]
+    private var _rules: [SwiftPEGGrammar.Rule] = []
+    private var _rulesMap: [String: SwiftPEGGrammar.Rule]
 
-    init(rulesMap: [String: Metagrammar.Rule]) {
+    init(rulesMap: [String: SwiftPEGGrammar.Rule]) {
         self._rulesMap = rulesMap
     }
 
-    func rule(named name: String) -> Metagrammar.Rule? {
+    func rule(named name: String) -> SwiftPEGGrammar.Rule? {
         _rulesMap[name]
     }
 
-    func markVisit(_ rule: Metagrammar.Rule) {
+    func markVisit(_ rule: SwiftPEGGrammar.Rule) {
         _rules.append(rule)
     }
 
-    func didVisit(_ rule: Metagrammar.Rule) -> Bool {
+    func didVisit(_ rule: SwiftPEGGrammar.Rule) -> Bool {
         return _rules.contains(where: { $0 === rule })
     }
 }

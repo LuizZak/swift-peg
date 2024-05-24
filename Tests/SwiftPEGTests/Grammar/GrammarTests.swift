@@ -2,7 +2,7 @@ import XCTest
 
 @testable import SwiftPEG
 
-class MetagrammarTests: XCTestCase {
+class GrammarTests: XCTestCase {
     func testOperatorTokens() {
         runTokenTest(literal: "(", kind: .leftParen)
         runTokenTest(literal: ")", kind: .rightParen)
@@ -70,7 +70,7 @@ class MetagrammarTests: XCTestCase {
         runTokenTest(literal: "\(terminator)a\nb\(terminator)", kind: .string)
         runTokenTest(literal: "\(terminator)\na\nb\(terminator)", kind: .string)
         
-        let tok = try assertUnwrap(Metagrammar.MetagrammarToken
+        let tok = try assertUnwrap(SwiftPEGGrammar.GrammarToken
             .from(string: "\(terminator)\na\nb\n\(terminator)")
         )
 
@@ -82,13 +82,13 @@ class MetagrammarTests: XCTestCase {
 
 private func runTokenTest(
     literal: String,
-    kind: Metagrammar.MetagrammarTokenKind,
+    kind: SwiftPEGGrammar.GrammarTokenKind,
     expectedLength: Int? = nil,
     file: StaticString = #file,
     line: UInt = #line
 ) {
-    guard let token = Metagrammar.MetagrammarToken.from(string: literal[...]) else {
-        fail("Token literal '\(literal)' was not recognized by \(Metagrammar.MetagrammarToken.self)", file: file, line: line)
+    guard let token = SwiftPEGGrammar.GrammarToken.from(string: literal[...]) else {
+        fail("Token literal '\(literal)' was not recognized by \(SwiftPEGGrammar.GrammarToken.self)", file: file, line: line)
         return
     }
 

@@ -17,13 +17,22 @@ public class SwiftCodeGen {
     /// instead.
     public static let tokenCall: String = "tokenCall"
 
+    /// Set of identifiers that cannot be used as bare identifiers in Swift, and
+    /// must be escaped with backticks (`)
+    public static let invalidBareIdentifiers: Set<String> = [
+        "_", "var", "let", "nil", "class", "struct", "func", "protocol", "enum",
+        "try", "throws", "deinit", "init", "if", "for", "else", "while", "switch",
+        "repeat", "do", "public", "private", "fileprivate", "internal", "static",
+        "self",
+    ]
+
     let parserName: String
-    let grammar: GrammarProcessor.Grammar
-    let tokenDefinitions: [GrammarProcessor.TokenDefinition]
+    let grammar: InternalGrammar.Grammar
+    let tokenDefinitions: [InternalGrammar.TokenDefinition]
     let buffer: CodeStringBuffer
     var declContext: DeclarationsContext
 
-    var remaining: [GrammarProcessor.Rule] = []
+    var remaining: [InternalGrammar.Rule] = []
     var ruleAliases: [String: String] = [:]
 
     /// Initializes a new `SwiftCodeGen`, preparing to generate the grammar and
@@ -41,8 +50,8 @@ public class SwiftCodeGen {
     ///   - grammar: The grammar to generate.
     ///   - tokenDefinitions: A list of token definitions to use when examining string literals.
     public init(
-        grammar: GrammarProcessor.Grammar,
-        tokenDefinitions: [GrammarProcessor.TokenDefinition] = []
+        grammar: InternalGrammar.Grammar,
+        tokenDefinitions: [InternalGrammar.TokenDefinition] = []
     ) {
         self.grammar = grammar
         self.tokenDefinitions = tokenDefinitions
@@ -80,7 +89,7 @@ public class SwiftCodeGen {
         }
     }
 
-    func generateRule(_ rule: GrammarProcessor.Rule) throws {
+    func generateRule(_ rule: InternalGrammar.Rule) throws {
         let type = rule.type?.name ?? "Node"
         let name = alias(for: rule)
 
@@ -133,7 +142,7 @@ public class SwiftCodeGen {
         buffer.ensureDoubleNewline()
     }
 
-    func generateAlt(_ alt: GrammarProcessor.Alt, in rule: GrammarProcessor.Rule) throws {
+    func generateAlt(_ alt: InternalGrammar.Alt, in rule: InternalGrammar.Rule) throws {
         if alt.items.isEmpty { return }
 
         declContext.push()
@@ -168,8 +177,8 @@ public class SwiftCodeGen {
 
     /// Generates `return <alt result>` for a successful alt match.
     func generateAltReturn(
-        _ alt: GrammarProcessor.Alt,
-        in rule: GrammarProcessor.Rule
+        _ alt: InternalGrammar.Alt,
+        in rule: InternalGrammar.Rule
     ) {
         buffer.emit("return ")
 
@@ -191,8 +200,8 @@ public class SwiftCodeGen {
 
     /// Generates items as a sequence of optional bindings.
     func generateNamedItems(
-        _ namedItems: [GrammarProcessor.NamedItem],
-        in rule: GrammarProcessor.Rule
+        _ namedItems: [InternalGrammar.NamedItem],
+        in rule: InternalGrammar.Rule
     ) throws {
         let commaEmitter = buffer.startConditionalEmitter()
         for namedItem in namedItems {
@@ -201,9 +210,9 @@ public class SwiftCodeGen {
     }
 
     func generateNamedItem(
-        _ namedItem: GrammarProcessor.NamedItem,
+        _ namedItem: InternalGrammar.NamedItem,
         _ commaEmitter: CodeStringBuffer.ConditionalEmitter,
-        in rule: GrammarProcessor.Rule
+        in rule: InternalGrammar.Rule
     ) throws {
 
         commaEmitter.conditional { buffer in
@@ -227,7 +236,7 @@ public class SwiftCodeGen {
         }
     }
 
-    func generateItem(_ item: GrammarProcessor.Item, in rule: GrammarProcessor.Rule) throws {
+    func generateItem(_ item: InternalGrammar.Item, in rule: InternalGrammar.Rule) throws {
         switch item {
         case .optional(let atom):
             buffer.emit("try self.optional(")
@@ -271,8 +280,8 @@ public class SwiftCodeGen {
     }
 
     func generateLookahead(
-        _ lookahead: GrammarProcessor.Lookahead,
-        in rule: GrammarProcessor.Rule
+        _ lookahead: InternalGrammar.Lookahead,
+        in rule: InternalGrammar.Rule
     ) throws {
         switch lookahead {
         case .positive(let atom):
@@ -295,8 +304,8 @@ public class SwiftCodeGen {
     }
 
     func generateAtom(
-        _ atom: GrammarProcessor.Atom,
-        in rule: GrammarProcessor.Rule
+        _ atom: InternalGrammar.Atom,
+        in rule: InternalGrammar.Rule
     ) throws {
         switch atom {
         case .group(let group):
@@ -345,9 +354,9 @@ extension SwiftCodeGen {
     /// Returns the deduplicated, unique method name to use as a reference for
     /// further code generation.
     func enqueueAuxiliaryRule(
-        for rule: GrammarProcessor.Rule,
+        for rule: InternalGrammar.Rule,
         suffix: String,
-        _ alts: [GrammarProcessor.Alt]
+        _ alts: [InternalGrammar.Alt]
     ) -> String {
 
         let name = "_\(rule.name)_\(suffix)"
@@ -356,7 +365,7 @@ extension SwiftCodeGen {
 
     /// Enqueues a given auxiliary rule, returning its deduplicated name for
     /// further referencing.
-    func enqueueAuxiliaryRule(_ rule: GrammarProcessor.Rule) -> String {
+    func enqueueAuxiliaryRule(_ rule: InternalGrammar.Rule) -> String {
         let decl = declContext.defineMethod(suggestedName: rule.name)
         var rule = rule
         rule.name = decl.name
@@ -384,7 +393,7 @@ extension SwiftCodeGen {
             return ident
         }
 
-        if GrammarProcessor.invalidBareIdentifiers.contains(ident) {
+        if Self.invalidBareIdentifiers.contains(ident) {
             return "`\(ident)`"
         }
 
@@ -392,7 +401,7 @@ extension SwiftCodeGen {
     }
 
     /// Returns the alias for referencing the given rule in code with `self.<rule alias>()`.
-    func alias(for rule: GrammarProcessor.Rule) -> String {
+    func alias(for rule: InternalGrammar.Rule) -> String {
         if let alias = self.ruleAliases[rule.name] {
             return alias
         }
@@ -442,13 +451,13 @@ extension SwiftCodeGen {
 
     /// Returns a token definition from `self.tokenDefinitions` of a matching
     /// name, or `nil`, if none is found.
-    func tokenDefinition(named name: String) -> GrammarProcessor.TokenDefinition? {
+    func tokenDefinition(named name: String) -> InternalGrammar.TokenDefinition? {
         self.tokenDefinitions.first(where: { $0.name == name })
     }
 
     /// Returns a token definition from `self.tokenDefinitions` that has a literal
     /// value matching the given (non-quoted) value, or `nil`, if none is found.
-    func tokenDefinition(ofRawLiteral literal: String) -> GrammarProcessor.TokenDefinition? {
+    func tokenDefinition(ofRawLiteral literal: String) -> InternalGrammar.TokenDefinition? {
         self.tokenDefinitions.first(where: { $0.string == literal })
     }
 }
@@ -459,24 +468,24 @@ extension SwiftCodeGen {
 
     /// Returns `true` if the rule makes use of cut (`~`) in one of its primary
     /// alts.
-    func hasCut(_ node: GrammarProcessor.Rule) -> Bool {
+    func hasCut(_ node: InternalGrammar.Rule) -> Bool {
         hasCut(node.alts)
     }
 
     /// Returns `true` if one of the given alts makes use of cut (`~`) in one of
     /// its primary items.
-    func hasCut(_ node: [GrammarProcessor.Alt]) -> Bool {
+    func hasCut(_ node: [InternalGrammar.Alt]) -> Bool {
         node.contains(where: hasCut)
     }
 
     /// Returns `true` if the given alt makes use of cut (`~`) in one of its
     /// primary items.
-    func hasCut(_ node: GrammarProcessor.Alt) -> Bool {
+    func hasCut(_ node: InternalGrammar.Alt) -> Bool {
         node.items.contains(where: hasCut)
     }
 
     /// Returns `true` if the given named item makes use of cut (`~`).
-    func hasCut(_ node: GrammarProcessor.NamedItem) -> Bool {
+    func hasCut(_ node: InternalGrammar.NamedItem) -> Bool {
         switch node {
         case .lookahead(.cut):
             return true
@@ -488,7 +497,7 @@ extension SwiftCodeGen {
 
 // MARK: - Convenience extensions
 
-private extension GrammarProcessor.Grammar {
+private extension InternalGrammar.Grammar {
     func parserHeader() -> String? {
         return _stringOrIdentMeta(named: SwiftCodeGen.parserHeader)
     }

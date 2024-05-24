@@ -2,25 +2,25 @@
 
 // MARK: Literal initialization
 
-extension GrammarProcessor.Alt: ExpressibleByArrayLiteral {
-    public init(arrayLiteral elements: GrammarProcessor.NamedItem...) {
+extension InternalGrammar.Alt: ExpressibleByArrayLiteral {
+    public init(arrayLiteral elements: InternalGrammar.NamedItem...) {
         self.init(items: elements)
     }
 }
 
-extension GrammarProcessor.NamedItem: ExpressibleByStringLiteral {
+extension InternalGrammar.NamedItem: ExpressibleByStringLiteral {
     public init(stringLiteral value: String) {
         self = .item(.init(stringLiteral: value))
     }
 }
 
-extension GrammarProcessor.Item: ExpressibleByStringLiteral {
+extension InternalGrammar.Item: ExpressibleByStringLiteral {
     public init(stringLiteral value: String) {
         self = .atom(.init(stringLiteral: value))
     }
 }
 
-extension GrammarProcessor.Atom: ExpressibleByStringLiteral {
+extension InternalGrammar.Atom: ExpressibleByStringLiteral {
     var asString: Self {
         switch self {
         case .token(let tok): return .string(#""\#(tok)""#, trimmed: tok)
@@ -40,13 +40,13 @@ extension GrammarProcessor.Atom: ExpressibleByStringLiteral {
     }
 }
 
-extension GrammarProcessor.Action: ExpressibleByStringLiteral {
+extension InternalGrammar.Action: ExpressibleByStringLiteral {
     public init(stringLiteral value: String) {
         self.init(string: value)
     }
 }
 
-extension GrammarProcessor.SwiftType: ExpressibleByStringLiteral {
+extension InternalGrammar.SwiftType: ExpressibleByStringLiteral {
     public init(stringLiteral value: String) {
         self.init(name: value)
     }
@@ -54,7 +54,7 @@ extension GrammarProcessor.SwiftType: ExpressibleByStringLiteral {
 
 // MARK: Operator support
 
-extension GrammarProcessor.Alt {
+extension InternalGrammar.Alt {
     /// Constructs `alts: alt | alt`
     static func | (lhs: Self, rhs: Self) -> [Self] {
         return [lhs, rhs]
@@ -66,7 +66,7 @@ extension GrammarProcessor.Alt {
     }
 }
 
-extension GrammarProcessor.NamedItem {
+extension InternalGrammar.NamedItem {
     /// Constructs `namedItems: namedItem+`
     static func .. (lhs: Self, rhs: Self) -> [Self] {
         return [lhs, rhs]
@@ -78,35 +78,35 @@ extension GrammarProcessor.NamedItem {
     }
 }
 
-extension GrammarProcessor.Atom {
+extension InternalGrammar.Atom {
     /// Constructs `self?`
-    var opt: GrammarProcessor.Item {
+    var opt: InternalGrammar.Item {
         return .optional(self)
     }
 
     /// Constructs `value+`
-    static postfix func + (_ value: Self) -> GrammarProcessor.Item {
+    static postfix func + (_ value: Self) -> InternalGrammar.Item {
         .oneOrMore(value)
     }
 
     /// Constructs `value*`
-    static postfix func * (_ value: Self) -> GrammarProcessor.Item {
+    static postfix func * (_ value: Self) -> InternalGrammar.Item {
         .oneOrMore(value)
     }
 }
 
 // MARK: - SupportsWith
 
-extension GrammarProcessor.Grammar: SupportsWith { }
-extension GrammarProcessor.MetaProperty: SupportsWith { }
-extension GrammarProcessor.Rule: SupportsWith { }
-extension GrammarProcessor.Alt: SupportsWith { }
-extension GrammarProcessor.Action: SupportsWith { }
-extension GrammarProcessor.NamedItem: SupportsWith { }
-extension GrammarProcessor.Item: SupportsWith { }
-extension GrammarProcessor.Lookahead: SupportsWith { }
-extension GrammarProcessor.Atom: SupportsWith { }
-extension GrammarProcessor.SwiftType: SupportsWith { }
+extension InternalGrammar.Grammar: SupportsWith { }
+extension InternalGrammar.MetaProperty: SupportsWith { }
+extension InternalGrammar.Rule: SupportsWith { }
+extension InternalGrammar.Alt: SupportsWith { }
+extension InternalGrammar.Action: SupportsWith { }
+extension InternalGrammar.NamedItem: SupportsWith { }
+extension InternalGrammar.Item: SupportsWith { }
+extension InternalGrammar.Lookahead: SupportsWith { }
+extension InternalGrammar.Atom: SupportsWith { }
+extension InternalGrammar.SwiftType: SupportsWith { }
 
 protocol SupportsWith {
     func with<V>(_ keypath: WritableKeyPath<Self, V>, value: V) -> Self

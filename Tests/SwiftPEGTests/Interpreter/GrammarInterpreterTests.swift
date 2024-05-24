@@ -7,7 +7,7 @@ class GrammarInterpreterTests: XCTestCase {
         let source = """
         a , b
         """;
-        let grammar = GrammarProcessor.Grammar(rules: [
+        let grammar = InternalGrammar.Grammar(rules: [
             .init(name: "ruleA", alts: [
                 .init(items: ["A", "','", "B"], action: "ruleA_alt0")
             ])
@@ -31,7 +31,7 @@ class GrammarInterpreterTests: XCTestCase {
         let source = """
         a , b
         """;
-        let grammar = GrammarProcessor.Grammar(rules: [
+        let grammar = InternalGrammar.Grammar(rules: [
             .init(name: "ruleA", alts: [
                 .init(items: ["A", "','", "B", "','", "C"], action: "ruleA_alt0"),
                 .init(items: ["A", "','", "B"], action: "ruleA_alt1"),
@@ -56,7 +56,7 @@ class GrammarInterpreterTests: XCTestCase {
         let source = """
         a , b + c
         """;
-        let grammar = GrammarProcessor.Grammar(rules: [
+        let grammar = InternalGrammar.Grammar(rules: [
             .init(name: "ruleA", alts: [
                 .init(items: ["A", "','", "ruleB"], action: "ruleA_alt0"),
             ]),
@@ -94,7 +94,7 @@ class GrammarInterpreterTests: XCTestCase {
 // MARK: - Test internals
 
 private func makeSut(
-    _ grammar: GrammarProcessor.Grammar,
+    _ grammar: InternalGrammar.Grammar,
     _ delegate: TestInterpreterDelegate,
     source: String
 ) -> GrammarInterpreter {

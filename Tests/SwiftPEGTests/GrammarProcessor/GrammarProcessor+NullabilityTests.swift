@@ -36,25 +36,25 @@ class GrammarProcessor_NullabilityTests: XCTestCase {
 // MARK: - Test internals
 
 private func makeGrammar(
-    metas: [Metagrammar.Meta] = [],
-    _ rules: [Metagrammar.Rule]
-) -> Metagrammar.Grammar {
-    return Metagrammar.Grammar(metas: metas, rules: rules)
+    metas: [SwiftPEGGrammar.Meta] = [],
+    _ rules: [SwiftPEGGrammar.Rule]
+) -> SwiftPEGGrammar.Grammar {
+    return SwiftPEGGrammar.Grammar(metas: metas, rules: rules)
 }
 
 private func stubDelegate() -> TestGrammarProcessorDelegate {
     return TestGrammarProcessorDelegate()
 }
 
-private func makeMeta(name: String, value: String) -> Metagrammar.Meta {
-    Metagrammar.Meta(
+private func makeMeta(name: String, value: String) -> SwiftPEGGrammar.Meta {
+    SwiftPEGGrammar.Meta(
         name: makeIdent(name),
-        value: Metagrammar.MetaIdentifierValue(identifier: makeIdent(value))
+        value: SwiftPEGGrammar.MetaIdentifierValue(identifier: makeIdent(value))
     )
 }
 
-private func makeRule(name: String, _ alts: [Metagrammar.Alt]) -> Metagrammar.Rule {
-    Metagrammar.Rule(
+private func makeRule(name: String, _ alts: [SwiftPEGGrammar.Alt]) -> SwiftPEGGrammar.Rule {
+    SwiftPEGGrammar.Rule(
         name: .init(
             name: makeIdent(name),
             type: nil
@@ -63,18 +63,18 @@ private func makeRule(name: String, _ alts: [Metagrammar.Alt]) -> Metagrammar.Ru
     )
 }
 
-private func makeAlt(_ items: [Metagrammar.NamedItem]) -> Metagrammar.Alt {
-    Metagrammar.Alt(
+private func makeAlt(_ items: [SwiftPEGGrammar.NamedItem]) -> SwiftPEGGrammar.Alt {
+    SwiftPEGGrammar.Alt(
         namedItems: items,
         action: nil
     )
 }
 
-private func makeItem(_ ident: String, identity: Metagrammar.IdentAtom.Identity = .ruleName) -> Metagrammar.NamedItem {
+private func makeItem(_ ident: String, identity: SwiftPEGGrammar.IdentAtom.Identity = .ruleName) -> SwiftPEGGrammar.NamedItem {
     .init(
         name: nil,
-        item: Metagrammar.AtomItem(
-            atom: Metagrammar.IdentAtom(
+        item: SwiftPEGGrammar.AtomItem(
+            atom: SwiftPEGGrammar.IdentAtom(
                 identifier: makeIdent(ident),
                 identity: identity
             )
@@ -84,6 +84,6 @@ private func makeItem(_ ident: String, identity: Metagrammar.IdentAtom.Identity 
     )
 }
 
-private func makeIdent(_ ident: String) -> Metagrammar.Token {
+private func makeIdent(_ ident: String) -> SwiftPEGGrammar.Token {
     .identifier(Substring(ident))
 }

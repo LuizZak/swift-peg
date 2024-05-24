@@ -4,25 +4,16 @@ public class GrammarProcessor {
     /// Regex for validating rule names.
     public static let ruleNameGrammar = #"[A-Za-z][0-9A-Za-z_]*"#
 
-    /// Set of identifiers that cannot be used as bare identifiers in Swift, and
-    /// must be escaped with backticks (`)
-    public static let invalidBareIdentifiers: Set<String> = [
-        "_", "var", "let", "nil", "class", "struct", "func", "protocol", "enum",
-        "try", "throws", "deinit", "init", "if", "for", "else", "while", "switch",
-        "repeat", "do", "public", "private", "fileprivate", "internal", "static",
-        "self",
-    ]
-
     /// Name of optional @meta-property that is queried for loading a .tokens
     /// file with extra token definition information.
     public static let tokensFile = "tokensFile"
 
-    let grammar: Metagrammar.Grammar
+    let grammar: SwiftPEGGrammar.Grammar
     var tokensFileName: String? = nil
-    var tokensFile: [Metagrammar.TokenDefinition] = []
+    var tokensFile: [SwiftPEGGrammar.TokenDefinition] = []
 
     /// Rules remaining to be generated.
-    var remaining: [String: Metagrammar.Rule] = [:]
+    var remaining: [String: SwiftPEGGrammar.Rule] = [:]
 
     /// Stores information about locally-created variables when processing alts
     /// of rules.
@@ -39,7 +30,7 @@ public class GrammarProcessor {
 
     /// Prepares a `GrammarProcessor` instance based on a given parsed grammar.
     public init(
-        _ grammar: Metagrammar.Grammar,
+        _ grammar: SwiftPEGGrammar.Grammar,
         delegate: Delegate?,
         verbose: Bool = false
     ) throws {
@@ -58,18 +49,18 @@ public class GrammarProcessor {
     }
 
     /// Returns the reduced and tagged grammar for grammar analysis.
-    public func generatedGrammar() -> Grammar {
+    public func generatedGrammar() -> InternalGrammar.Grammar {
         .from(grammar)
     }
 
     /// Returns the token definitions that where loaded from an associated tokens
     /// file.
-    public func tokenDefinitions() -> [TokenDefinition] {
-        tokensFile.map(TokenDefinition.from)
+    public func tokenDefinitions() -> [InternalGrammar.TokenDefinition] {
+        tokensFile.map(InternalGrammar.TokenDefinition.from)
     }
 
-    func validateRuleNames() throws -> [String: Metagrammar.Rule] {
-        var knownRules: [String: Metagrammar.Rule] = [:]
+    func validateRuleNames() throws -> [String: SwiftPEGGrammar.Rule] {
+        var knownRules: [String: SwiftPEGGrammar.Rule] = [:]
 
         for rule in grammar.rules {
             let ruleName = try validateRuleName(rule)
@@ -84,7 +75,7 @@ public class GrammarProcessor {
         return knownRules
     }
 
-    func validateRuleName(_ rule: Metagrammar.Rule) throws -> String {
+    func validateRuleName(_ rule: SwiftPEGGrammar.Rule) throws -> String {
         let ruleName = String(rule.name.name.string)
         if ruleName.isEmpty {
             throw GrammarProcessorError.invalidRuleName(desc: "Rule name cannot be empty", rule)
@@ -92,18 +83,15 @@ public class GrammarProcessor {
         if try Regex(Self.ruleNameGrammar).wholeMatch(in: ruleName) == nil {
             throw GrammarProcessorError.invalidRuleName(desc: "Expected rule names to match regex '\(Self.ruleNameGrammar)'", rule)
         }
-        if Self.invalidBareIdentifiers.contains(ruleName) {
-            return "`\(ruleName)`"
-        }
 
         return ruleName
     }
 
-    func loadTokensFile() throws -> [Metagrammar.TokenDefinition] {
+    func loadTokensFile() throws -> [SwiftPEGGrammar.TokenDefinition] {
         guard let tokensMeta = grammar.metas.first(where: { $0.name.string == Self.tokensFile }) else {
             return []
         }
-        guard let fileName = tokensMeta.value as? Metagrammar.MetaStringValue else {
+        guard let fileName = tokensMeta.value as? SwiftPEGGrammar.MetaStringValue else {
             throw GrammarProcessorError.failedToLoadTokensFile(tokensMeta)
         }
         self.tokensFileName = String(fileName.string.processedString)
@@ -112,7 +100,7 @@ public class GrammarProcessor {
             throw GrammarProcessorError.failedToLoadTokensFile(tokensMeta)
         }
 
-        let parser = MetagrammarParser(raw: MetagrammarRawTokenizer(source: fileContents))
+        let parser = GrammarParser(raw: GrammarRawTokenizer(source: fileContents))
         
         do {
             guard let tokens = try parser.tokensFile(), parser.tokenizer.isEOF else {
@@ -128,11 +116,11 @@ public class GrammarProcessor {
     }
 
     func validateTokenReferences() throws -> Set<String> {
-        var metaTokens: [String: Metagrammar.Meta] = [:]
+        var metaTokens: [String: SwiftPEGGrammar.Meta] = [:]
         var issuedWarnings: Set<String> = []
 
         for token in tokenMetaProperties() {
-            guard let value = token.value as? Metagrammar.MetaIdentifierValue else {
+            guard let value = token.value as? SwiftPEGGrammar.MetaIdentifierValue else {
                 diagnostics.append(.tokenMissingName(token))
                 continue
             }
@@ -161,7 +149,7 @@ public class GrammarProcessor {
     }
 
     func validateReferences(tokens: Set<String>) throws {
-        var knownNames: [(String, Metagrammar.IdentAtom.Identity)]
+        var knownNames: [(String, SwiftPEGGrammar.IdentAtom.Identity)]
         knownNames = tokens.map {
             ($0, .token)
         }
@@ -183,7 +171,7 @@ public class GrammarProcessor {
         }
 
         for ref in visitor.unknownReferences {
-            guard let rule: Metagrammar.Rule = ref.firstAncestor() else {
+            guard let rule: SwiftPEGGrammar.Rule = ref.firstAncestor() else {
                 fatalError("Found atom \(ref.name) @ \(ref.location) that has no Rule parent?")
             }
 
@@ -217,7 +205,7 @@ public class GrammarProcessor {
     }
 
     /// Gets all @token meta-properties in the grammar.
-    func tokenMetaProperties() -> [Metagrammar.Meta] {
+    func tokenMetaProperties() -> [SwiftPEGGrammar.Meta] {
         return grammar.metas.filter { $0.name.string == "token" }
     }
 
@@ -227,22 +215,22 @@ public class GrammarProcessor {
         print(item)
     }
 
-    func toInternalRepresentation() -> [Rule] {
-        grammar.rules.map(Rule.from)
+    func toInternalRepresentation() -> [InternalGrammar.Rule] {
+        grammar.rules.map(InternalGrammar.Rule.from)
     }
 
     /// An error that can be raised by `GrammarProcessor` during grammar analysis and parser
     /// generation.
     public enum GrammarProcessorError: Error, CustomStringConvertible {
         /// Rules found sharing the same name.
-        case repeatedRuleName(String, Metagrammar.Rule, prior: Metagrammar.Rule)
+        case repeatedRuleName(String, SwiftPEGGrammar.Rule, prior: SwiftPEGGrammar.Rule)
         /// Rule found that has an invalid name.
-        case invalidRuleName(desc: String, Metagrammar.Rule)
+        case invalidRuleName(desc: String, SwiftPEGGrammar.Rule)
         /// Named item found that has an invalid name.
-        case invalidNamedItem(desc: String, Metagrammar.NamedItem)
+        case invalidNamedItem(desc: String, SwiftPEGGrammar.NamedItem)
         /// An identifier was found in a rule that could not be resolved to a
         /// rule or token name.
-        case unknownReference(Metagrammar.IdentAtom, Metagrammar.Rule, tokensFileName: String? = nil)
+        case unknownReference(SwiftPEGGrammar.IdentAtom, SwiftPEGGrammar.Rule, tokensFileName: String? = nil)
 
         /// An attempt at resolving a left recursion and find a leader rule from
         /// a set of rules has failed.
@@ -250,11 +238,11 @@ public class GrammarProcessor {
 
         /// A '@tokensFile' meta-property references a file that could not be
         /// loaded.
-        case failedToLoadTokensFile(Metagrammar.Meta)
+        case failedToLoadTokensFile(SwiftPEGGrammar.Meta)
 
         /// A '@tokensFile' meta-property references a tokens file that contains
         /// syntax errors.
-        case tokensFileSyntaxError(Metagrammar.Meta, ParserError)
+        case tokensFileSyntaxError(SwiftPEGGrammar.Meta, ParserError)
 
         /// A generic error with an attached message.
         case message(String)
@@ -289,10 +277,10 @@ public class GrammarProcessor {
         /// A token has been declared multiple times with '@token'.
         /// Only reported the first time a duplicated token with a matching name
         /// is declared.
-        case repeatedTokenDeclaration(name: String, Metagrammar.MetagrammarNode, prior: Metagrammar.MetagrammarNode)
+        case repeatedTokenDeclaration(name: String, SwiftPEGGrammar.GrammarNode, prior: SwiftPEGGrammar.GrammarNode)
 
         /// A '@token' meta-property is missing an identifier as its value.
-        case tokenMissingName(Metagrammar.Meta)
+        case tokenMissingName(SwiftPEGGrammar.Meta)
 
         public var description: String {
             switch self {
@@ -317,485 +305,22 @@ public class GrammarProcessor {
 
 // MARK: - Internal representation
 extension GrammarProcessor {
-    /// ```
-    /// tokenDefinition:
-    ///     | name=IDENTIFIER '[' expectArgs=STRING ']' ':' literal=STRING ';'
-    ///     | name=IDENTIFIER ':' literal=STRING ';'
-    ///     ;
-    /// ```
-    public struct TokenDefinition: CustomStringConvertible {
-        public var name: String
-        public var expectArgs: String?
-        
-        /// String literal. Does not contains the quotes around the literal.
-        public var string: String
-
-        public var description: String {
-            if let expectArgs {
-                return #"\#(name)["\#(expectArgs)"]: "\#(string)" ;"#
-            } else {
-                return #"\#(name): "\#(string)" ;"#
-            }
-        }
-        
-        public static func from(
-            _ node: Metagrammar.TokenDefinition
-        ) -> Self {
-
-            .init(
-                name: String(node.name.string),
-                expectArgs: node.expectArgs.map({ String($0.processedString) }),
-                string: String(node.literal.processedString)
-            )
-        }
-    }
-
-    /// ```
-    /// grammar:
-    ///     | metas rules
-    ///     | rules
-    ///     ;
-    /// ```
-    public struct Grammar {
-        public var metas: [MetaProperty] = []
-        public var rules: [Rule]
-
-        public static func from(
-            _ node: Metagrammar.Grammar
-        ) -> Self {
-
-            .init(
-                metas: node.metas.map(MetaProperty.from),
-                rules: node.rules.map(Rule.from)
-            )
-        }
-    }
-
-    /// ```
-    /// meta:
-    ///     | "@" name=IDENT value=metaValue ';'
-    ///     | "@" name=IDENT ';'
-    ///     ;
-    /// ```
-    public struct MetaProperty: Hashable {
-        public var name: String
-        public var value: Value? = nil
-
-        public static func from(
-            _ node: Metagrammar.Meta
-        ) -> Self {
-
-            .init(
-                name: String(node.name.string),
-                value: node.value.map(Value.from)
-            )
-        }
-
-        public enum Value: Hashable {
-            /// `IDENT`
-            case identifier(String)
-
-            /// `STRING`
-            /// Note: Does not include quotes.
-            case string(String)
-
-            public static func from(
-                _ node: Metagrammar.MetaValue
-            ) -> Self {
-
-                switch node {
-                case let value as Metagrammar.MetaIdentifierValue:
-                    return .identifier(String(value.identifier.string))
-
-                case let value as Metagrammar.MetaStringValue:
-                    switch value.string {
-                    case .string(.tripleQuote(let contents)) where contents.hasPrefix("\n"):
-                        return .string(String(contents.dropFirst()))
-                    default:
-                        return .string(String(value.string.processedString))
-                    }
-                
-                default:
-                    fatalError("Unknown meta-property value type \(type(of: node))")
-                }
-            }
-        }
-    }
-
-    /// ```
-    /// rule:
-    ///     | ruleName ":" '|' alts ';'
-    ///     | ruleName ":" alts ';'
-    ///     ;
-    /// ```
-    public struct Rule: Hashable {
-        public var name: String
-        public var type: SwiftType?
-        public var alts: [Alt]
-        public var isRecursive: Bool = false
-        public var isRecursiveLeader: Bool = false
-
-        public var isLoop: Bool { false }
-        public var isGather: Bool { false }
-
-        /// Flattens rules that have a single alt in parenthesis.
-        public func flattened() -> Self {
-            guard !isLoop else { return self }
-            guard alts.count == 1 && alts[0].items.count == 1 else {
-                return self
-            }
-
-            var copy = self
-
-            switch alts[0].items[0] {
-            case .item(_, .atom(.group(let alts)), _):
-                copy.alts = alts
-            default:
-                break
-            }
-
-            return copy
-        }
-
-        public static func from(
-            _ node: Metagrammar.Rule
-        ) -> Self {
-
-            .init(
-                name: String(node.name.name.string),
-                type: node.name.type.map(SwiftType.from),
-                alts: node.alts.map(Alt.from),
-                isRecursive: node.isLeftRecursive,
-                isRecursiveLeader: node.isLeftRecursiveLead
-            )
-        }
-    }
-
-    /// `namedItems action?`
-    public struct Alt: Hashable, CustomStringConvertible {
-        public var items: [NamedItem]
-        public var action: Action? = nil
-
-        public var description: String {
-            let items = self.items.map(\.description).joined(separator: " ")
-            if let action = action {
-                return "\(items) \(action)"
-            }
-            return items
-        }
-
-        public static func from(
-            _ node: Metagrammar.Alt
-        ) -> Self {
-            .init(
-                items: node.namedItems.map(NamedItem.from),
-                action: node.action.map(Action.from)
-            )
-        }
-    }
-
-    /// `'{' balancedTokens '}'`
-    public struct Action: Hashable, CustomStringConvertible {
-        public var string: String
-
-        public var description: String {
-            return "{ \(string) }"
-        }
-
-        public static func from(
-            _ node: Metagrammar.Action
-        ) -> Self {
-            guard let tokens = node.balancedTokens?.tokens else {
-                return .init(string: "")
-            }
-
-            return .init(
-                string: tokens.map(\.token.string).joined().trimmingWhitespace()
-            )
-        }
-    }
-
-    public enum NamedItem: Hashable, CustomStringConvertible {
-        /// `name=IDENT? item ('[' swiftType ']')?`
-        case item(name: String? = nil, Item, type: SwiftType? = nil)
-        /// ```
-        /// lookahead:
-        ///     | '&' ~ atom
-        ///     | '!' ~ atom
-        ///     | '~'
-        ///     ;
-        /// ```
-        case lookahead(Lookahead)
-
-        public var description: String {
-            switch self {
-            case .item(let name?, let item, let type?):
-                return "\(name)=\(item)[\(type)]"
-            case .item(let name?, let item, nil):
-                return "\(name)=\(item)"
-            case .item(nil, let item, let type?):
-                return "\(item)[\(type)]"
-            case .item(nil, let item, nil):
-                return item.description
-            case .lookahead(let lookahead):
-                return lookahead.description
-            }
-        }
-
-        /// Returns the alias for referencing the this named item in code generated
-        /// by code generators.
-        /// 
-        /// Returns `nil` if no suitable alias was found.
-        var alias: String? {
-            switch self {
-            case .item(let name?, _, _):
-                return name
-            case .item(_, let item, _):
-                return item.alias
-            case .lookahead:
-                return nil
-            }
-        }
-
-        public static func from(
-            _ node: Metagrammar.NamedItem
-        ) -> Self {
-            if let item = node.item {
-                let name = (node.name?.string).map(String.init)
-
-                return .item(name: name, .from(item), type: node.type.map(SwiftType.from))
-            } else {
-                return .lookahead(.from(node.lookahead!))
-            }
-        }
-    }
-
-    public enum Item: Hashable, CustomStringConvertible {
-        /// `'[' alts ']'`
-        case optionalItems([Alt])
-        /// `atom '?'`
-        case optional(Atom)
-        /// `atom '*'`
-        case zeroOrMore(Atom)
-        /// `atom '+'`
-        case oneOrMore(Atom)
-        /// `sep=atom '.' node=atom '+'`
-        case gather(sep: Atom, node: Atom)
-        /// `atom`
-        case atom(Atom)
-
-        public var description: String {
-            switch self {
-            case .atom(let atom):
-                return atom.description
-            case .gather(let sep, let node):
-                return "\(sep).\(node)+"
-            case .zeroOrMore(let atom):
-                return "\(atom)*"
-            case .oneOrMore(let atom):
-                return "\(atom)+"
-            case .optional(let atom):
-                return "\(atom)?"
-            case .optionalItems(let alts):
-                return "[\(alts.map(\.description).joined(separator: " | "))]"
-            }
-        }
-
-        /// Returns the alias for referencing the this item in code generated by
-        /// code generators.
-        /// 
-        /// Returns `nil` if no suitable alias was found.
-        var alias: String? {
-            switch self {
-            case .atom(let atom),
-                .zeroOrMore(let atom),
-                .oneOrMore(let atom),
-                .optional(let atom):
-                return atom.alias
-            
-            case .gather(_, let node):
-                return node.alias
-
-            case .optionalItems:
-                return nil
-            }
-        }
-
-        public static func from(
-            _ node: Metagrammar.Item
-        ) -> Self {
-
-            switch node {
-            case let item as Metagrammar.OptionalItems:
-                return .optionalItems(item.alts.map(Alt.from(_:)))
-
-            case let item as Metagrammar.OptionalItem:
-                return .optional(Atom.from(item.atom))
-
-            case let item as Metagrammar.ZeroOrMoreItem:
-                return .zeroOrMore(Atom.from(item.atom))
-
-            case let item as Metagrammar.OneOrMoreItem:
-                return .oneOrMore(Atom.from(item.atom))
-
-            case let item as Metagrammar.GatherItem:
-                return .gather(sep: Atom.from(item.sep), node: Atom.from(item.item))
-
-            case let item as Metagrammar.OptionalItem:
-                return .optional(Atom.from(item.atom))
-
-            case let item as Metagrammar.AtomItem:
-                return .atom(Atom.from(item.atom))
-
-            default:
-                fatalError("Unknown item type \(type(of: node))")
-            }
-        }
-    }
-
-    public indirect enum Lookahead: Hashable, CustomStringConvertible {
-        /// `'!' atom`
-        case negative(Atom)
-        /// `'&' atom`
-        case positive(Atom)
-        /// `~`
-        case cut
-
-        public var description: String {
-            switch self {
-            case .negative(let atom):
-                return "!\(atom)"
-            case .positive(let atom):
-                return "&\(atom)"
-            case .cut:
-                return "~"
-            }
-        }
-
-        public static func from(
-            _ node: Metagrammar.LookaheadOrCut
-        ) -> Self {
-
-            switch node {
-            case let positive as Metagrammar.PositiveLookahead:
-                return .positive(Atom.from(positive.atom))
-            case let negative as Metagrammar.NegativeLookahead:
-                return .negative(Atom.from(negative.atom))
-            case is Metagrammar.Cut:
-                return .cut
-            default:
-                fatalError("Unknown lookahead type \(type(of: node))")
-            }
-        }
-    }
-
-    public indirect enum Atom: Hashable, CustomStringConvertible {
-        /// `'(' alts ')'`
-        case group([Alt])
-
-        /// `ident`
-        case ruleName(String)
-
-        /// `IDENT`
-        case token(String)
-
-        /// `STRING`
-        case string(String, trimmed: String)
-
-        public var description: String {
-            switch self {
-            case .group(let alts):
-                return "(\(alts.map(\.description).joined(separator: " | ")))"
-            case .ruleName(let ident):
-                return ident
-            case .token(let ident):
-                return ident
-            case .string(let str, _):
-                return str
-            }
-        }
-
-        public var isGroup: Bool {
-            switch self {
-            case .group: return true
-            default: return false
-            }
-        }
-
-        /// Returns the alias for referencing the this atom in code generated by
-        /// code generators.
-        /// 
-        /// If this atom is a token, returns the token's identifier lowercased.
-        /// If it's a rule name, return the rule name itself, otherwise returns
-        /// `nil`.
-        var alias: String? {
-            switch self {
-            case .token(let ident):
-                return ident.lowercased()
-                
-            case .ruleName(let ident):
-                return ident
-
-            case .group, .string:
-                return nil
-            }
-        }
-
-        public static func from(
-            _ node: Metagrammar.Atom
-        ) -> Self {
-
-            switch node {
-            case let group as Metagrammar.GroupAtom:
-                return .group(group.alts.map(Alt.from(_:)))
-
-            case let ident as Metagrammar.IdentAtom:
-                let value = ident.identifier.string
-
-                switch ident.identity {
-                case .ruleName:
-                    return .ruleName(String(value))
-                case .token:
-                    return .token(String(value))
-                case .unresolved:
-                    return .ruleName(String(value))
-                }
-
-            case let string as Metagrammar.StringAtom:
-                return .string(String(string.string.string), trimmed: String(string.string.processedString))
-
-            default:
-                fatalError("Unknown atom type \(type(of: node))")
-            }
-        }
-    }
-
-    public struct SwiftType: Hashable, CustomStringConvertible {
-        public var name: String
-
-        public var description: String { name }
-
-        public static func from(
-            _ node: Metagrammar.SwiftType
-        ) -> Self {
-            .init(name: String(node.name))
-        }
-    }
+    
 }
 
 // MARK: - Visitors
 
 private extension GrammarProcessor {
     /// Visitor used to validate named references in rules.
-    final class ReferenceVisitor: Metagrammar.MetagrammarNodeVisitorType {
-        private let knownIdentifiers: [(name: String, type: Metagrammar.IdentAtom.Identity)]
-        var unknownReferences: [Metagrammar.IdentAtom] = []
+    final class ReferenceVisitor: SwiftPEGGrammar.GrammarNodeVisitorType {
+        private let knownIdentifiers: [(name: String, type: SwiftPEGGrammar.IdentAtom.Identity)]
+        var unknownReferences: [SwiftPEGGrammar.IdentAtom] = []
 
-        init(knownIdentifiers: some Sequence<(String, Metagrammar.IdentAtom.Identity)>) {
+        init(knownIdentifiers: some Sequence<(String, SwiftPEGGrammar.IdentAtom.Identity)>) {
             self.knownIdentifiers = Array(knownIdentifiers)
         }
 
-        func visit(_ node: Metagrammar.IdentAtom) throws -> NodeVisitChildrenResult {
+        func visit(_ node: SwiftPEGGrammar.IdentAtom) throws -> NodeVisitChildrenResult {
             let ref = node.identifier.string
 
             if let identifier = knownIdentifiers.first(where: { $0.name == ref }) {
@@ -809,14 +334,14 @@ private extension GrammarProcessor {
     }
 
     /// Visitor used to validate named items in rules.
-    final class NamedItemVisitor: Metagrammar.MetagrammarNodeVisitorType {
-        var callback: (Metagrammar.NamedItem) throws -> Void
+    final class NamedItemVisitor: SwiftPEGGrammar.GrammarNodeVisitorType {
+        var callback: (SwiftPEGGrammar.NamedItem) throws -> Void
 
-        init(_ callback: @escaping (Metagrammar.NamedItem) throws -> Void) {
+        init(_ callback: @escaping (SwiftPEGGrammar.NamedItem) throws -> Void) {
             self.callback = callback
         }
 
-        func visit(_ node: Metagrammar.NamedItem) throws -> NodeVisitChildrenResult {
+        func visit(_ node: SwiftPEGGrammar.NamedItem) throws -> NodeVisitChildrenResult {
             try callback(node)
 
             return .visitChildren

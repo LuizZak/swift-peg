@@ -1,13 +1,13 @@
 import SwiftPEG
 
-class TestMetagrammarTokenizer {
-    let tokens: [Metagrammar.MetagrammarToken]
+class TestGrammarTokenizer {
+    let tokens: [SwiftPEGGrammar.GrammarToken]
     var index: Int = 0
 
     /// Lists errors to serve at specific indices instead of tokens.
     var errorIndices: [Int: Error] = [:]
 
-    init(tokens: [Metagrammar.MetagrammarToken]) {
+    init(tokens: [SwiftPEGGrammar.GrammarToken]) {
         self.tokens = tokens
     }
 
@@ -15,10 +15,10 @@ class TestMetagrammarTokenizer {
         errorIndices[index] = error
     }
 
-    var next_calls: [Result<Metagrammar.MetagrammarToken?, Error>] = []
+    var next_calls: [Result<SwiftPEGGrammar.GrammarToken?, Error>] = []
     var next_callCount: Int = 0
 
-    func next() throws -> (token: Metagrammar.MetagrammarToken, location: FileSourceLocation)? {
+    func next() throws -> (token: SwiftPEGGrammar.GrammarToken, location: FileSourceLocation)? {
         next_callCount += 1
 
         guard !isEOF else {
@@ -40,8 +40,8 @@ class TestMetagrammarTokenizer {
     struct GenericError: Error { }
 }
 
-extension TestMetagrammarTokenizer: RawTokenizerType {
-    typealias Token = Metagrammar.MetagrammarToken
+extension TestGrammarTokenizer: RawTokenizerType {
+    typealias Token = SwiftPEGGrammar.GrammarToken
     typealias Location = FileSourceLocation
 
     var isEOF: Bool { index >= tokens.count }

@@ -35,8 +35,8 @@ class GrammarParsingSample {
 
         let fileString = try String(contentsOf: file, encoding: .utf8)
 
-        let tokenizer = MetagrammarRawTokenizer(source: fileString)
-        let parser = MetagrammarParser(raw: tokenizer)
+        let tokenizer = GrammarRawTokenizer(source: fileString)
+        let parser = GrammarParser(raw: tokenizer)
 
         let stopwatch = Stopwatch.start()
 
@@ -64,7 +64,7 @@ class GrammarParsingSample {
 
             print("Remaining tokens:")
 
-            var tokens: [Metagrammar.MetagrammarToken.TokenString] = []
+            var tokens: [SwiftPEGGrammar.GrammarToken.TokenString] = []
             while let next = try tokenizer.next() {
                 tokens.append(next.token.string)
             }

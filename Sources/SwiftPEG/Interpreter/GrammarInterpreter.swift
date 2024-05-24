@@ -1,4 +1,4 @@
-/// Provides interpreting capabilities to `GrammarProcessor.Grammar` objects.
+/// Provides interpreting capabilities to `InternalGrammar.Grammar` objects.
 public class GrammarInterpreter {
     /// Type of tokens produced by delegates and consumed by the interpreter.
     /// The length of the token is measured in grapheme clusters (ie. Swift's
@@ -20,7 +20,7 @@ public class GrammarInterpreter {
     }
 
     let tokenizer: InterpreterTokenizer
-    let grammar: GrammarProcessor.Grammar
+    let grammar: InternalGrammar.Grammar
     let source: String
 
     /// Whether to automatically skip all whitespace and newlines during parsing
@@ -33,7 +33,7 @@ public class GrammarInterpreter {
     /// Initializes a new `GrammarInterpreter` with a given grammar, source string
     /// and delegate.
     public init(
-        grammar: GrammarProcessor.Grammar,
+        grammar: InternalGrammar.Grammar,
         source: String,
         delegate: Delegate?
     ) {
@@ -71,7 +71,7 @@ public class GrammarInterpreter {
         return try tryAlts(rule.alts)
     }
 
-    func tryAlts(_ alts: [GrammarProcessor.Alt]) throws -> Any? {
+    func tryAlts(_ alts: [InternalGrammar.Alt]) throws -> Any? {
         context.push()
         defer { context.pop() }
 
@@ -90,7 +90,7 @@ public class GrammarInterpreter {
         return nil
     }
 
-    func tryAlt(_ alt: GrammarProcessor.Alt) throws -> AltContext? {
+    func tryAlt(_ alt: InternalGrammar.Alt) throws -> AltContext? {
         var ctx = AltContext(valueNames: [], values: [])
 
         for item in alt.items {
@@ -123,7 +123,7 @@ public class GrammarInterpreter {
         return ctx
     }
 
-    func tryItem(_ item: GrammarProcessor.Item) throws -> Any? {
+    func tryItem(_ item: InternalGrammar.Item) throws -> Any? {
         switch item {
         case .optional(let atom):
             return Any??.some(try tryAtom(atom)) as Any?
@@ -184,7 +184,7 @@ public class GrammarInterpreter {
         }
     }
 
-    func tryAtom(_ atom: GrammarProcessor.Atom) throws -> Any? {
+    func tryAtom(_ atom: InternalGrammar.Atom) throws -> Any? {
         switch atom {
         case .group(let alts):
             return try tryAlts(alts)
@@ -252,7 +252,7 @@ public class GrammarInterpreter {
         /// Errors thrown during result production abort further parsing of the
         /// syntax.
         func produceResult(
-            for alt: GrammarProcessor.Alt,
+            for alt: InternalGrammar.Alt,
             context: AltContext
         ) throws -> Any
 
@@ -307,12 +307,12 @@ public class GrammarInterpreter {
     }
 }
 
-internal extension GrammarProcessor.Grammar {
-    func metaProperty(named name: String) -> GrammarProcessor.MetaProperty? {
+internal extension InternalGrammar.Grammar {
+    func metaProperty(named name: String) -> InternalGrammar.MetaProperty? {
         metas.first(where: { $0.name == name })
     }
 
-    func rule(named name: String) -> GrammarProcessor.Rule? {
+    func rule(named name: String) -> InternalGrammar.Rule? {
         rules.first(where: { $0.name == name })
     }
 }

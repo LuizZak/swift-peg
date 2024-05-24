@@ -28,7 +28,7 @@ class RuleNode: DirectedGraphNode {
         self.ruleName = ruleName
     }
 
-    convenience init(rule: Metagrammar.Rule) {
+    convenience init(rule: SwiftPEGGrammar.Rule) {
         self.init(ruleName: String(rule.name.name.string))
     }
 }

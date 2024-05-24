@@ -66,7 +66,7 @@ class TestInterpreterDelegate {
 
 extension TestInterpreterDelegate: GrammarInterpreter.Delegate {
     func produceResult(
-        for alt: GrammarProcessor.Alt,
+        for alt: InternalGrammar.Alt,
         context: GrammarInterpreter.AltContext
     ) throws -> Any {
 
