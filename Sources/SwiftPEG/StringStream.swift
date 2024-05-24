@@ -36,7 +36,11 @@ public struct StringStream<StringType: StringProtocol> {
     /// the end of the indexable space of the string.
     @inlinable
     public func isEofPast(_ offset: Int) -> Bool {
-        source.index(index, offsetBy: offset, limitedBy: source.endIndex) != nil
+        guard let index = source.index(index, offsetBy: offset, limitedBy: source.endIndex) else {
+            return false
+        }
+
+        return index >= source.endIndex
     }
 
     /// Performs an unchecked peek at the current character in the stream.
@@ -100,9 +104,5 @@ public struct StringStream<StringType: StringProtocol> {
     @inlinable
     public mutating func advance() {
         source.formIndex(after: &index)
-    }
-
-    public enum Error: Swift.Error {
-        case eof
     }
 }
