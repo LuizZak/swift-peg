@@ -6,6 +6,8 @@ public enum Metagrammar {}
 #if true
 
 extension Metagrammar {
+    public typealias Token = Metagrammar.MetagrammarToken
+
     /// Base class for metagrammar nodes.
     public class MetagrammarNode: Node {
         /// Accepts a given metagrammar-node visitor into this node.
@@ -62,8 +64,8 @@ extension Metagrammar {
     @GeneratedNodeType<Node>
     public final class Meta: MetagrammarNode {
         /// The name of this meta-property.
-        @NodeProperty
-        var _name: IdentifierToken
+        @NodeRequired
+        public var name: Token
 
         /// The value associated with this meta-property.
         @NodeProperty
@@ -100,10 +102,10 @@ extension Metagrammar {
     @GeneratedNodeType<Node>(overrideDeepCopyType: "MetaValue")
     public final class MetaIdentifierValue: MetaValue {
         /// The associated identifier value.
-        @NodeProperty
-        var _identifier: IdentifierToken
+        @NodeRequired
+        public var identifier: Token
 
-        public override var shortDebugDescription: String { _identifier.shortDebugDescription }
+        public override var shortDebugDescription: String { String(identifier.string) }
 
         /// Accepts a given metagrammar-node visitor into this node.
         public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
@@ -120,10 +122,10 @@ extension Metagrammar {
     @GeneratedNodeType<Node>(overrideDeepCopyType: "MetaValue")
     public final class MetaStringValue: MetaValue {
         /// The associated string value.
-        @NodeProperty
-        var _string: StringToken
+        @NodeRequired
+        public var string: Token
 
-        public override var shortDebugDescription: String { _string.shortDebugDescription }
+        public override var shortDebugDescription: String { String(string.string) }
 
         /// Accepts a given metagrammar-node visitor into this node.
         public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
@@ -197,14 +199,14 @@ extension Metagrammar {
     @GeneratedNodeType<Node>
     public final class RuleName: MetagrammarNode {
         /// The rule's name.
-        @NodeProperty
-        var _name: IdentifierToken
+        @NodeRequired
+        public var name: Token
 
         /// A type name directly associated with this rule.
         @NodeProperty
         var _type: SwiftType?
 
-        public override var shortDebugDescription: String { name.shortDebugDescription }
+        public override var shortDebugDescription: String { String(name.string) }
 
         /// Accepts a given metagrammar-node visitor into this node.
         public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: MetagrammarNodeVisitorType {
@@ -273,8 +275,8 @@ extension Metagrammar {
     @GeneratedNodeType<Node>
     public final class NamedItem: MetagrammarNode {
         /// An optional name associated with this item.
-        @NodeProperty
-        var _name: IdentifierToken?
+        @NodeRequired
+        public var name: Token?
 
         /// Item associated with this named item.
         @NodeProperty
@@ -697,15 +699,15 @@ extension Metagrammar {
         /// The string associated with this atom.
         /// 
         /// - note: Includes the quotes.
-        @NodeProperty
-        public var _string: StringToken
+        @NodeRequired
+        public var string: Token
 
         /// Returns the value of `self.value` with any surrounding string quotes
         /// stripped.
         /// 
         /// Convenience for `self.string.valueTrimmingQuotes`.
         public var valueTrimmingQuotes: Substring {
-            _string.valueTrimmingQuotes
+            string.processedString
         }
 
         /// Accepts a given metagrammar-node visitor into this node.
@@ -727,8 +729,8 @@ extension Metagrammar {
     @GeneratedNodeType<Node>(overrideDeepCopyType: "Atom")
     public final class IdentAtom: Atom {
         /// The identifier associated with this atom.
-        @NodeProperty
-        var _identifier: IdentifierToken
+        @NodeRequired
+        public var identifier: Token
 
         /// The identity of this atom.
         @NodeRequired
@@ -736,7 +738,7 @@ extension Metagrammar {
 
         /// Convenience for `self.identifier.identifier`.
         public var name: Substring {
-            _identifier.identifier
+            identifier.string
         }
 
         /// Accepts a given metagrammar-node visitor into this node.
@@ -881,6 +883,8 @@ extension Metagrammar {
         }
     }
 
+#if false
+
     /// Base meta-grammar string token.
     /// Represents a single- or double-quoted string, as well as triple-double-quoted
     /// strings that support multiple lines.
@@ -938,6 +942,8 @@ extension Metagrammar {
         }
     }
 
+#endif
+
     /// Represents a token definition collected from a tokens file.
     ///
     /// Represents the construct:
@@ -950,16 +956,16 @@ extension Metagrammar {
     @GeneratedNodeType<Node>
     public final class TokenDefinition: MetagrammarNode {
         /// The identifier for the token.
-        @NodeProperty
-        var _name: IdentifierToken
+        @NodeRequired
+        public var name: Token
 
         /// An optional 'expect' call that fetches the token from the parser.
-        @NodeProperty
-        var _expectArgs: StringToken?
+        @NodeRequired
+        public var expectArgs: Token?
 
         /// The string literal associated with the token.
-        @NodeProperty
-        var _literal: StringToken
+        @NodeRequired
+        public var literal: Token
     }
 
     /// A token in a metagrammar.
@@ -1100,6 +1106,42 @@ extension Metagrammar {
             case .identifier(let value): return value
             case .digits(let value): return value
             case .string(let value): return Substring(value.description)
+            case .leftParen: return "("
+            case .rightParen: return ")"
+            case .leftBrace: return "{"
+            case .rightBrace: return "}"
+            case .leftSquare: return "["
+            case .rightSquare: return "]"
+            case .leftAngle: return "<"
+            case .rightAngle: return ">"
+            case .colon: return ":"
+            case .semicolon: return ";"
+            case .bar: return "|"
+            case .equals: return "="
+            case .tilde: return "~"
+            case .star: return "*"
+            case .plus: return "+"
+            case .minus: return "-"
+            case .questionMark: return "?"
+            case .exclamationMark: return "!"
+            case .ampersand: return "&"
+            case .comma: return ","
+            case .period: return "."
+            case .at: return "@"
+            case .forwardSlash: return "/"
+            case .backslash: return "\\"
+            }
+        }
+
+        /// Returns a version of `self.string` that is suitable to be used as
+        /// a bare literal value. Removes quotes from string literals.
+        @inlinable
+        public var processedString: TokenString {
+            switch self {
+            case .whitespace(let value): return value
+            case .identifier(let value): return value
+            case .digits(let value): return value
+            case .string(let value): return value.contents
             case .leftParen: return "("
             case .rightParen: return ")"
             case .leftBrace: return "{"

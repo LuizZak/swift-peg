@@ -53,9 +53,9 @@ class GrammarParsingSample {
 
                 for property in grammar.metas {
                     if let value = property.value {
-                        print("@\(property.name.identifier) = \(value.shortDebugDescription)")
+                        print("@\(property.name.string) = \(value.shortDebugDescription)")
                     } else {
-                        print("@\(property.name.identifier)")
+                        print("@\(property.name.string)")
                     }
                 }
 
@@ -63,9 +63,9 @@ class GrammarParsingSample {
 
                 for rule in grammar.rules {
                     if let type = rule.name.type {
-                        print("\(rule.name.name.identifier) (of type \(type.name))")
+                        print("\(rule.name.name.string) (of type \(type.name))")
                     } else {
-                        print("\(rule.name.name.identifier)")
+                        print("\(rule.name.name.string)")
                     }
                 }
             }

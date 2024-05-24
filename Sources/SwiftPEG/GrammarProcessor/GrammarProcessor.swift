@@ -85,7 +85,7 @@ public class GrammarProcessor {
     }
 
     func validateRuleName(_ rule: Metagrammar.Rule) throws -> String {
-        let ruleName = String(rule.name.name.identifier)
+        let ruleName = String(rule.name.name.string)
         if ruleName.isEmpty {
             throw GrammarProcessorError.invalidRuleName(desc: "Rule name cannot be empty", rule)
         }
@@ -100,15 +100,15 @@ public class GrammarProcessor {
     }
 
     func loadTokensFile() throws -> [Metagrammar.TokenDefinition] {
-        guard let tokensMeta = grammar.metas.first(where: { $0.name.token.string == Self.tokensFile }) else {
+        guard let tokensMeta = grammar.metas.first(where: { $0.name.string == Self.tokensFile }) else {
             return []
         }
         guard let fileName = tokensMeta.value as? Metagrammar.MetaStringValue else {
             throw GrammarProcessorError.failedToLoadTokensFile(tokensMeta)
         }
-        self.tokensFileName = String(fileName.string.valueTrimmingQuotes)
+        self.tokensFileName = String(fileName.string.processedString)
 
-        guard let fileContents = try delegate?.grammarProcessor(self, loadTokensFileNamed: String(fileName.string.valueTrimmingQuotes)) else {
+        guard let fileContents = try delegate?.grammarProcessor(self, loadTokensFileNamed: String(fileName.string.processedString)) else {
             throw GrammarProcessorError.failedToLoadTokensFile(tokensMeta)
         }
 
@@ -137,7 +137,7 @@ public class GrammarProcessor {
                 continue
             }
 
-            let name = String(value.identifier.identifier)
+            let name = String(value.identifier.string)
             guard !issuedWarnings.contains(name) else {
                 continue
             }
@@ -154,7 +154,7 @@ public class GrammarProcessor {
 
         var tokensFromFile: Set<String> = []
         for token in tokensFile {
-            tokensFromFile.insert(String(token.name.identifier))
+            tokensFromFile.insert(String(token.name.string))
         }
 
         return Set(metaTokens.keys).union(tokensFromFile)
@@ -166,7 +166,7 @@ public class GrammarProcessor {
             ($0, .token)
         }
         for rule in grammar.rules {
-            let name = String(rule.name.name.identifier)
+            let name = String(rule.name.name.string)
             knownNames.append(
                 (name, .ruleName)
             )
@@ -193,7 +193,7 @@ public class GrammarProcessor {
 
     func validateNamedItems() throws {
         let visitor = NamedItemVisitor { node in
-            guard let name = node.name?.identifier, name != "_" else {
+            guard let name = node.name?.string, name != "_" else {
                 return
             }
 
@@ -218,7 +218,7 @@ public class GrammarProcessor {
 
     /// Gets all @token meta-properties in the grammar.
     func tokenMetaProperties() -> [Metagrammar.Meta] {
-        return grammar.metas.filter { $0.name.identifier == "token" }
+        return grammar.metas.filter { $0.name.string == "token" }
     }
 
     func printIfVerbose(_ item: Any) {
@@ -264,9 +264,9 @@ public class GrammarProcessor {
             case .repeatedRuleName(let name, let rule, let prior):
                 return "Rule '\(name)' re-declared @ \(rule.location). Original declaration @ \(prior.location)."
             case .invalidRuleName(let desc, let rule):
-                return "Rule name '\(rule.name.name.identifier)' @ \(rule.location) is not valid: \(desc)"
+                return "Rule name '\(rule.name.name.string)' @ \(rule.location) is not valid: \(desc)"
             case .invalidNamedItem(let desc, let item):
-                return "Named item '\(item.name?.identifier ?? "<nil>")' @ \(item.location) is not valid: \(desc)"
+                return "Named item '\(item.name?.string ?? "<nil>")' @ \(item.location) is not valid: \(desc)"
             case .unknownReference(let atom, let rule, let tokensFileName):
                 return """
                 Reference to unknown identifier '\(atom.name)' @ \(atom.location) in rule '\(rule.name.shortDebugDescription)'. \
@@ -343,9 +343,9 @@ extension GrammarProcessor {
         ) -> Self {
 
             .init(
-                name: String(node.name.identifier),
-                expectArgs: node.expectArgs.map({ String($0.valueTrimmingQuotes) }),
-                string: String(node.literal.valueTrimmingQuotes)
+                name: String(node.name.string),
+                expectArgs: node.expectArgs.map({ String($0.processedString) }),
+                string: String(node.literal.processedString)
             )
         }
     }
@@ -386,7 +386,7 @@ extension GrammarProcessor {
         ) -> Self {
 
             .init(
-                name: String(node.name.identifier),
+                name: String(node.name.string),
                 value: node.value.map(Value.from)
             )
         }
@@ -405,14 +405,14 @@ extension GrammarProcessor {
 
                 switch node {
                 case let value as Metagrammar.MetaIdentifierValue:
-                    return .identifier(String(value.identifier.identifier))
+                    return .identifier(String(value.identifier.string))
 
                 case let value as Metagrammar.MetaStringValue:
-                    switch value.string.token {
+                    switch value.string {
                     case .string(.tripleQuote(let contents)) where contents.hasPrefix("\n"):
                         return .string(String(contents.dropFirst()))
                     default:
-                        return .string(String(value.string.valueTrimmingQuotes))
+                        return .string(String(value.string.processedString))
                     }
                 
                 default:
@@ -462,7 +462,7 @@ extension GrammarProcessor {
         ) -> Self {
 
             .init(
-                name: String(node.name.name.identifier),
+                name: String(node.name.name.string),
                 type: node.name.type.map(SwiftType.from),
                 alts: node.alts.map(Alt.from),
                 isRecursive: node.isLeftRecursive,
@@ -561,7 +561,7 @@ extension GrammarProcessor {
             _ node: Metagrammar.NamedItem
         ) -> Self {
             if let item = node.item {
-                let name = (node.name?.identifier).map(String.init)
+                let name = (node.name?.string).map(String.init)
 
                 return .item(name: name, .from(item), type: node.type.map(SwiftType.from))
             } else {
@@ -750,7 +750,7 @@ extension GrammarProcessor {
                 return .group(group.alts.map(Alt.from(_:)))
 
             case let ident as Metagrammar.IdentAtom:
-                let value = ident.identifier.identifier
+                let value = ident.identifier.string
 
                 switch ident.identity {
                 case .ruleName:
@@ -762,7 +762,7 @@ extension GrammarProcessor {
                 }
 
             case let string as Metagrammar.StringAtom:
-                return .string(String(string.string.value), trimmed: String(string.string.valueTrimmingQuotes))
+                return .string(String(string.string.string), trimmed: String(string.string.processedString))
 
             default:
                 fatalError("Unknown atom type \(type(of: node))")
@@ -796,7 +796,7 @@ private extension GrammarProcessor {
         }
 
         func visit(_ node: Metagrammar.IdentAtom) throws -> NodeVisitChildrenResult {
-            let ref = node.identifier.identifier
+            let ref = node.identifier.string
 
             if let identifier = knownIdentifiers.first(where: { $0.name == ref }) {
                 node.identity = identifier.type

@@ -63,9 +63,9 @@ extension GrammarProcessor {
                 guard rule.isLeftRecursive else { continue }
 
                 if rule.isLeftRecursiveLead {
-                    printIfVerbose("Left recursive rule (leader): \(rule.name.name.identifier)")
+                    printIfVerbose("Left recursive rule (leader): \(rule.name.name.string)")
                 } else {
-                    printIfVerbose("Left recursive rule: \(rule.name.name.identifier)")
+                    printIfVerbose("Left recursive rule: \(rule.name.name.string)")
                 }
             }
         }

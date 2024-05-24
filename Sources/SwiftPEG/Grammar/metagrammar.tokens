@@ -1,7 +1,7 @@
-WHITESPACE: "WHITESPACE" ;
-IDENTIFIER: "IDENTIFIER" ;
-DIGITS: "DIGITS" ;
-STRING: "STRING" ;
+WHITESPACE["kind: .whitespace"]: "WHITESPACE" ;
+IDENTIFIER["kind: .identifier"]: "IDENTIFIER" ;
+DIGITS["kind: .digits"]: "DIGITS" ;
+STRING["kind: .string"]: "STRING" ;
 LEFTPAREN["kind: .leftParen"]: "(" ;
 RIGHTPAREN["kind: .rightParen"]: ")" ;
 LEFTBRACE["kind: .leftBrace"]: "{" ;

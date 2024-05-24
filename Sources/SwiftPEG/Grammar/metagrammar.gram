@@ -8,79 +8,7 @@
 /// A parser for SwiftPEG grammar files.
 public final class MetagrammarParser<RawTokenizer: RawTokenizerType>: PEGParser<RawTokenizer>
     where RawTokenizer.Token == Metagrammar.MetagrammarToken, RawTokenizer.Location == FileSourceLocation
-{
-    /// ```
-    /// WHITESPACE ;
-    /// ```
-    @memoized("WHITESPACE")
-    @inlinable
-    public func _WHITESPACE() throws -> TokenNode<Metagrammar.MetagrammarToken, RawTokenizer.Location>? {
-        let mark = self.mark()
-
-        if
-            let token = try self.expect(kind: .whitespace)
-        {
-            return self.setLocation(.init(token), at: mark)
-        }
-
-        self.restore(mark)
-        return nil
-    }
-
-    /// ```
-    /// IDENTIFIER ;
-    /// ```
-    @memoized("IDENTIFIER")
-    @inlinable
-    public func _IDENT() throws -> Metagrammar.IdentifierToken? {
-        let mark = self.mark()
-
-        if
-            let token = try self.expect(kind: .identifier)
-        {
-            return self.setLocation(.init(token), at: mark)
-        }
-
-        self.restore(mark)
-        return nil
-    }
-
-    /// ```
-    /// IDENTIFIER ;
-    /// ```
-    @memoized("DIGITS")
-    @inlinable
-    public func _DIGITS() throws -> Metagrammar.IdentifierToken? {
-        let mark = self.mark()
-
-        if
-            let token = try self.expect(kind: .digits)
-        {
-            return self.setLocation(.init(token), at: mark)
-        }
-
-        self.restore(mark)
-        return nil
-    }
-
-    /// ```
-    /// STRING ;
-    /// ```
-    @memoized("STRING")
-    @inlinable
-    public func _STRING() throws -> Metagrammar.StringToken? {
-        let mark = self.mark()
-
-        if
-            let token = try self.expect(kind: .string)
-        {
-            return self.setLocation(.init(token), at: mark)
-        }
-
-        self.restore(mark)
-        return nil
-    }
-}
+{ }
 """ ;
 
 @tokensFile "metagrammar.tokens" ;
@@ -100,13 +28,13 @@ metas[[Metagrammar.Meta]]:
     ;
 
 meta[Metagrammar.Meta]:
-    | "@" name=IDENTIFIER value=metaValue ';' { self.setLocation(.init(name: name, value: value), at: mark) }
-    | "@" name=IDENTIFIER ';' { self.setLocation(.init(name: name, value: nil), at: mark) }
+    | "@" name=IDENTIFIER value=metaValue ';' { self.setLocation(.init(name: name.token, value: value), at: mark) }
+    | "@" name=IDENTIFIER ';' { self.setLocation(.init(name: name.token, value: nil), at: mark) }
     ;
 
 metaValue[Metagrammar.MetaValue]:
-    | ident=IDENTIFIER { self.setLocation(Metagrammar.MetaIdentifierValue(identifier: ident), at: mark) }
-    | string=STRING { self.setLocation(Metagrammar.MetaStringValue(string: string), at: mark) }
+    | ident=IDENTIFIER { self.setLocation(Metagrammar.MetaIdentifierValue(identifier: ident.token), at: mark) }
+    | string=STRING { self.setLocation(Metagrammar.MetaStringValue(string: string.token), at: mark) }
     ;
 
 rules[[Metagrammar.Rule]]:
@@ -119,8 +47,8 @@ rule[Metagrammar.Rule]:
     ;
 
 ruleName[Metagrammar.RuleName]:
-    | name=IDENTIFIER '[' type=swiftType ']' { self.setLocation(.init(name: name, type: type), at: mark) }
-    | name=IDENTIFIER { self.setLocation(.init(name: name, type: nil), at: mark) }
+    | name=IDENTIFIER '[' type=swiftType ']' { self.setLocation(.init(name: name.token, type: type), at: mark) }
+    | name=IDENTIFIER { self.setLocation(.init(name: name.token, type: nil), at: mark) }
     ;
 
 alts[[Metagrammar.Alt]]:
@@ -139,8 +67,8 @@ namedItems[[Metagrammar.NamedItem]]:
     ;
 
 namedItem[Metagrammar.NamedItem]:
-    | name=IDENTIFIER '[' type=swiftType ']' '=' ~ item { self.setLocation(.init(name: name, item: item, type: type, lookahead: nil), at: mark) }
-    | name=IDENTIFIER '=' ~ item { self.setLocation(.init(name: name, item: item, type: nil, lookahead: nil), at: mark) }
+    | name=IDENTIFIER '[' type=swiftType ']' '=' ~ item { self.setLocation(.init(name: name.token, item: item, type: type, lookahead: nil), at: mark) }
+    | name=IDENTIFIER '=' ~ item { self.setLocation(.init(name: name.token, item: item, type: nil, lookahead: nil), at: mark) }
     | item { self.setLocation(.init(name: nil, item: item, type: nil, lookahead: nil), at: mark) }
     | lookahead { self.setLocation(.init(name: nil, item: nil, type: nil, lookahead: lookahead), at: mark) }
     ;
@@ -162,19 +90,19 @@ item[Metagrammar.Item]:
 
 atom[Metagrammar.Atom]:
     | '(' ~ alts ')' { self.setLocation(Metagrammar.GroupAtom(alts: alts), at: mark) }
-    | IDENTIFIER { self.setLocation(Metagrammar.IdentAtom(identifier: identifier, identity: .unresolved), at: mark) }
-    | STRING { self.setLocation(Metagrammar.StringAtom(string: string), at: mark) }
+    | IDENTIFIER { self.setLocation(Metagrammar.IdentAtom(identifier: identifier.token, identity: .unresolved), at: mark) }
+    | STRING { self.setLocation(Metagrammar.StringAtom(string: string.token), at: mark) }
     ;
 
 swiftType[Metagrammar.SwiftType]:
-    | raw=STRING { self.setLocation(.init(name: raw.valueTrimmingQuotes), at: mark) }
+    | raw=STRING { self.setLocation(.init(name: raw.token.processedString), at: mark) }
     | '[' ~ type=swiftType ']' { self.setLocation(.init(name: "[" + type.name + "]"), at: mark) }
     | '(' ~ types=swiftTypeList ')' { self.setLocation(.init(name: "(" + types.map(\.name).joined(separator: ", ") + ")"), at: mark) }
-    | name=IDENTIFIER '<' ~ types=swiftTypeList '>' '?' { self.setLocation(.init(name: name.identifier + "<" + types.map(\.name).joined(separator: ", ") + ">?"), at: mark) }
-    | name=IDENTIFIER '<' ~ types=swiftTypeList '>' { self.setLocation(.init(name: name.identifier + "<" + types.map(\.name).joined(separator: ", ") + ">"), at: mark) }
-    | name=IDENTIFIER '.' ~ inner=swiftType { self.setLocation(.init(name: name.identifier + "." + inner.name), at: mark) }
-    | name=IDENTIFIER '?' { self.setLocation(.init(name: name.identifier + "?"), at: mark) }
-    | name=IDENTIFIER { self.setLocation(.init(name: name.identifier), at: mark) }
+    | name=IDENTIFIER '<' ~ types=swiftTypeList '>' '?' { self.setLocation(.init(name: name.token.string + "<" + types.map(\.name).joined(separator: ", ") + ">?"), at: mark) }
+    | name=IDENTIFIER '<' ~ types=swiftTypeList '>' { self.setLocation(.init(name: name.token.string + "<" + types.map(\.name).joined(separator: ", ") + ">"), at: mark) }
+    | name=IDENTIFIER '.' ~ inner=swiftType { self.setLocation(.init(name: name.token.string + "." + inner.name), at: mark) }
+    | name=IDENTIFIER '?' { self.setLocation(.init(name: name.token.string + "?"), at: mark) }
+    | name=IDENTIFIER { self.setLocation(.init(name: name.token.string), at: mark) }
     ;
 
 swiftTypeList[[Metagrammar.SwiftType]]:
@@ -194,7 +122,7 @@ balancedTokens[Metagrammar.BalancedTokens]:
     ;
 
 balancedToken[Metagrammar.BalancedTokens]:
-    | token=WHITESPACE { self.setLocation(.init(tokens: [token]), at: mark) }
+    | token=WHITESPACE { self.setLocation(.init(tokens: [.init(token)]), at: mark) }
     | l='{' balancedTokens r='}' { self.setLocation(.init(tokens: [.init(l)] + balancedTokens.tokens + [.init(r)]), at: mark) }
     | l='[' balancedTokens r=']' { self.setLocation(.init(tokens: [.init(l)] + balancedTokens.tokens + [.init(r)]), at: mark) }
     | l='<' balancedTokens r='>' { self.setLocation(.init(tokens: [.init(l)] + balancedTokens.tokens + [.init(r)]), at: mark) }
@@ -207,9 +135,9 @@ balancedToken[Metagrammar.BalancedTokens]:
     ;
 
 balancedTokenAtom["TokenNode<RawTokenizer.Token, RawTokenizer.Location>"]:
-    | token=IDENTIFIER { token }
-    | token=DIGITS { token }
-    | token=STRING { token }
+    | token=IDENTIFIER { .init(token) }
+    | token=DIGITS { .init(token) }
+    | token=STRING { .init(token) }
     | token=':' { .init(token) }
     | token=';' { .init(token) }
     | token='|' { .init(token) }
@@ -232,6 +160,6 @@ tokensFile[[Metagrammar.TokenDefinition]]:
     ;
 
 tokenDefinition[Metagrammar.TokenDefinition]:
-    | name=IDENTIFIER '[' expectArgs=STRING ']' ':' literal=STRING ';' { self.setLocation(.init(name: name, expectArgs: expectArgs, literal: literal), at: mark) }
-    | name=IDENTIFIER ':' literal=STRING ';' { self.setLocation(.init(name: name, expectArgs: nil, literal: literal), at: mark) }
+    | name=IDENTIFIER '[' expectArgs=STRING ']' ':' literal=STRING ';' { self.setLocation(.init(name: name.token, expectArgs: expectArgs.token, literal: literal.token), at: mark) }
+    | name=IDENTIFIER ':' literal=STRING ';' { self.setLocation(.init(name: name.token, expectArgs: nil, literal: literal.token), at: mark) }
     ;
