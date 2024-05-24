@@ -3,7 +3,7 @@ public class GrammarInterpreter {
     /// Type of tokens produced by delegates and consumed by the interpreter.
     /// The length of the token is measured in grapheme clusters (ie. Swift's
     /// `String.count` value).
-    public typealias TokenResult = (Any, length: Int)
+    public typealias TokenResult = (token: Any, length: Int)
     typealias Mark = InterpreterTokenizer.Mark
 
     let context = InterpretedRuleContextManager()
@@ -19,9 +19,21 @@ public class GrammarInterpreter {
         }
     }
 
+    var cache: InterpreterCache
+
     let tokenizer: InterpreterTokenizer
     let grammar: InternalGrammar.Grammar
     let source: String
+
+    /// The number of re-entrant recursions that where made during parsing.
+    public internal(set) var recursionCount: Int = 0
+
+    /// Number of re-entrant recursions to attempt before giving up with a thrown
+    /// error.
+    ///
+    /// This limit is shared across any recursive rule, and is reset when `produce()`
+    /// is invoked again.
+    public var recursionLimit: UInt = 1_000
 
     /// Whether to automatically skip all whitespace and newlines during parsing
     /// before feeding the delegate string sections to tokenize.
@@ -41,11 +53,14 @@ public class GrammarInterpreter {
         self.grammar = grammar
         self.source = source
         self.tokenizer = InterpreterTokenizer(source: source)
+        self.cache = InterpreterCache()
     }
 
     /// Produces the `start` rule in the grammar that was provided to this interpreter.
     public func produce() throws -> Any? {
-        try produce(ruleName: "start")
+        recursionCount = 0
+
+        return try produce(ruleName: "start")
     }
 
     func mark() -> Mark {
@@ -60,7 +75,12 @@ public class GrammarInterpreter {
         try self.tokenizer.next(self.delegate)
     }
 
+    func makeKey(ruleName: String) -> InterpreterCache.Key {
+        .init(mark: self.mark(), ruleName: ruleName)
+    }
+
     func produce(ruleName: String) throws -> Any? {
+        // Validation
         guard let rule = grammar.rule(named: ruleName) else {
             throw Error.ruleNotFound(ruleName)
         }
@@ -68,7 +88,86 @@ public class GrammarInterpreter {
             throw Error.invalidGrammar("Rule \(ruleName) has no alternatives to match!")
         }
 
+        return try produce(rule)
+    }
+
+    func produce(_ rule: InternalGrammar.Rule) throws -> Any? {
+        if rule.isRecursiveLeader {
+            return try produceRecursive(rule)
+        }
+
+        let mark = self.mark()
+        let key = makeKey(ruleName: rule.name)
+        if let cached = self.cache[key] {
+            self.restore(cached.mark)
+            return cached.result
+        }
+
+        let result = try produceUncached(rule)
+        self.cache[key] = .init(mark: mark, reach: mark, result: result)
+        return result
+    }
+
+    /// Attempts to produce a given rule without reading or storing the result
+    /// in the cache.
+    func produceUncached(_ rule: InternalGrammar.Rule) throws -> Any? {
         return try tryAlts(rule.alts)
+    }
+
+    /// Executes a recursively-reentrant rule with cache priming in an attempt to
+    /// produce the longest result, in terms of tokens consume from the tokenizer.
+    func produceRecursive(_ rule: InternalGrammar.Rule) throws -> Any? {
+        let key = makeKey(ruleName: rule.name)
+        if let cached = self.cache[key] {
+            self.restore(cached.mark)
+            return cached.result
+        }
+
+        // Prime cache with failed result to start with
+        let mark = self.mark()
+
+        self.cache[key] = .init(mark: mark, reach: mark, result: nil)
+        var lastResult: Any?
+        var lastMark = mark
+
+        while true {
+            self.restore(mark)
+
+            recursionCount += 1
+            if recursionCount >= self.recursionLimit {
+                throw Error.reachedRecursionLimit
+            }
+
+            let result = try produceUncached(rule)
+
+            let endMark = self.mark()
+
+            if result == nil {
+                break
+            }
+            if endMark <= lastMark {
+                break
+            }
+            
+            lastResult = result
+            lastMark = endMark
+            self.cache[key] = .init(mark: lastMark, reach: lastMark, result: result)
+        }
+
+        self.restore(lastMark)
+
+        let result = lastResult
+        let endMark: Mark
+        if result != nil {
+            endMark = self.mark()
+        } else {
+            endMark = mark
+            self.restore(endMark)
+        }
+
+        self.cache[key] = .init(mark: endMark, reach: endMark, result: result)
+
+        return result
     }
 
     func tryAlts(_ alts: [InternalGrammar.Alt]) throws -> Any? {
@@ -193,10 +292,10 @@ public class GrammarInterpreter {
             return try produce(ruleName: ruleName)
 
         case .token(let tokenName):
-            return try expect(tokenName: tokenName)
+            return try expect(tokenName: tokenName)?.token
 
         case .string(_, let string):
-            return try expect(tokenLiteral: string)
+            return try expect(tokenLiteral: string)?.token
         }
     }
 
@@ -243,6 +342,47 @@ public class GrammarInterpreter {
         ///
         /// Matches the named items that where matched on the alt.
         public var values: [Any]
+
+        /// Type of value in an alt context.
+        private enum _Value: CustomStringConvertible {
+            /// The value references a token construct.
+            case token(TokenResult)
+
+            /// The value is the result of an alt result value being delegated
+            /// to a delegate.
+            case rule(Any)
+
+            /// Returns the associated value of `rule(Any)`, if this value is one,
+            /// otherwise returns `nil`.
+            public var asRule: Any? {
+                switch self {
+                case .rule(let value):
+                    return value
+                case .token:
+                    return nil
+                }
+            }
+
+            /// Returns the associated value of `token(TokenResult)`, if this
+            /// value is one, otherwise returns `nil`.
+            public var asToken: TokenResult? {
+                switch self {
+                case .token(let token):
+                    return token
+                case .rule:
+                    return nil
+                }
+            }
+
+            public var description: String {
+                switch self {
+                case .rule(let value):
+                    return "\(value)"
+                case .token(let tok):
+                    return "\(tok.token)"
+                }
+            }
+        }
     }
 
     public protocol Delegate: AnyObject {
@@ -294,14 +434,14 @@ public class GrammarInterpreter {
         case ruleNotFound(String)
         case invalidGrammar(String)
         case delegateReleased
-        case recursiveRulesNotSupported
+        case reachedRecursionLimit
 
         public var description: String {
             switch self {
-            case .ruleNotFound(let message): return message
+            case .ruleNotFound(let message): return "Could not find rule named '\(message)'"
             case .invalidGrammar(let message): return message
             case .delegateReleased: return "Delegate is nil: Class reference was released unexpectedly!"
-            case .recursiveRulesNotSupported: return "GrammarInterpreter does not have support for recursive rules yet."
+            case .reachedRecursionLimit: return "Reached recursion limit while parsing."
             }
         }
     }
