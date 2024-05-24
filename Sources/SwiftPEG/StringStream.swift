@@ -2,7 +2,7 @@
 /// Stream advancing is not pre-checked and must be validated with `isEof` or
 /// `isEofPast`.
 @usableFromInline
-struct StringStreamer<StringType: StringProtocol> {
+struct StringStream<StringType: StringProtocol> {
     /// The string being streamed.
     @usableFromInline
     let source: StringType

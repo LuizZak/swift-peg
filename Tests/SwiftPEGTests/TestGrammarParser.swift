@@ -157,7 +157,7 @@ enum TestGrammarAST {
 
         @inlinable
         static func _parseWhitespace<S: StringProtocol>(_ string: S) -> Substring? where S.SubSequence == Substring {
-            var stream = StringStreamer(source: string)
+            var stream = StringStream(source: string)
             guard !stream.isEof else { return nil }
 
             switch stream.next() {
@@ -182,7 +182,7 @@ enum TestGrammarAST {
 
         @inlinable
         static func _parseName<S: StringProtocol>(_ string: S) -> Substring? where S.SubSequence == Substring {
-            var stream = StringStreamer(source: string)
+            var stream = StringStream(source: string)
             guard !stream.isEof else { return nil }
 
             switch stream.next() {
@@ -213,7 +213,7 @@ enum TestGrammarAST {
 
         @inlinable
         static func _parseNumber<S: StringProtocol>(_ string: S) -> Substring? where S.SubSequence == Substring {
-            var stream = StringStreamer(source: string)
+            var stream = StringStream(source: string)
             guard !stream.isEof else { return nil }
 
             switch stream.next() {

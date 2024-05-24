@@ -1221,7 +1221,7 @@ extension SwiftPEGGrammar {
 
         @inlinable
         static func _parseWhitespace<S: StringProtocol>(_ string: S) -> Substring? where S.SubSequence == Substring {
-            var stream = StringStreamer(source: string)
+            var stream = StringStream(source: string)
             guard !stream.isEof else { return nil }
 
             switch stream.next() {
@@ -1246,7 +1246,7 @@ extension SwiftPEGGrammar {
 
         @inlinable
         static func _parseIdentifier<S: StringProtocol>(_ string: S) -> Substring? where S.SubSequence == Substring {
-            var stream = StringStreamer(source: string)
+            var stream = StringStream(source: string)
             guard !stream.isEof else { return nil }
 
             switch stream.next() {
@@ -1277,7 +1277,7 @@ extension SwiftPEGGrammar {
 
         @inlinable
         static func _parseDigits<S: StringProtocol>(_ string: S) -> Substring? where S.SubSequence == Substring {
-            var stream = StringStreamer(source: string)
+            var stream = StringStream(source: string)
             guard !stream.isEof else { return nil }
 
             switch stream.next() {
@@ -1353,7 +1353,7 @@ extension SwiftPEGGrammar {
             /// If no string literal is recognized, `nil` is returned, instead.
             @inlinable
             public static func from(string: Substring) -> Self? {
-                var stream = StringStreamer(source: string)
+                var stream = StringStream(source: string)
                 guard !stream.isEof else { return nil }
 
                 let terminator: String
