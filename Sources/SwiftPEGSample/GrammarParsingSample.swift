@@ -1,14 +1,37 @@
+import Foundation
 import SwiftPEG
+
+private let _hardcodedPath = #file
 
 class GrammarParsingSample {
     var verbose: Bool = false
+    var useBuiltInFiles: Bool = false
 
     func run() throws {
         try parse()
     }
 
+    func resolveFileName(_ name: String) -> URL {
+        if useBuiltInFiles {
+            guard let url = SwiftPEG.Resources.resources.url(forResource: name, withExtension: nil) else {
+                fatalError("Could not find file \(name)!")
+            }
+
+            return url
+        } else {
+            let current = URL(fileURLWithPath: _hardcodedPath)
+
+            return current
+                .deletingLastPathComponent()
+                .deletingLastPathComponent()
+                .appendingPathComponent("SwiftPEG")
+                .appendingPathComponent("Grammar")
+                .appendingPathComponent(name)
+        }
+    }
+
     func parse() throws {
-        let file = SwiftPEG.Resources.metagrammarFile
+        let file = resolveFileName("metagrammar.gram")
 
         let fileString = try String(contentsOf: file, encoding: .utf8)
 
@@ -96,9 +119,7 @@ extension GrammarParsingSample: GrammarProcessor.Delegate {
         loadTokensFileNamed name: String
     ) throws -> String {
 
-        guard let url = SwiftPEG.Resources.resources.url(forResource: name, withExtension: nil) else {
-            throw Error.tokensFileNotFound(name)
-        }
+        let url = resolveFileName(name)
 
         return try String(contentsOf: url)
     }
