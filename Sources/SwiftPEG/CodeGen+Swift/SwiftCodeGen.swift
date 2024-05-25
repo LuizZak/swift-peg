@@ -36,11 +36,11 @@ public class SwiftCodeGen {
     var ruleAliases: [String: String] = [:]
 
     /// Initializes a new `SwiftCodeGen`, preparing to generate the grammar and
-    /// token definitions from a given grammar processor.
-    public convenience init(from processor: GrammarProcessor) {
+    /// token definitions from a given grammar processor result.
+    public convenience init(from processed: ProcessedGrammar) {
         self.init(
-            grammar: processor.generatedGrammar(),
-            tokenDefinitions: processor.tokenDefinitions()
+            grammar: processed.grammar,
+            tokenDefinitions: processed.tokens
         )
     }
 

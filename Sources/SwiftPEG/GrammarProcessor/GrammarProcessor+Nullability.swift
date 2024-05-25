@@ -2,7 +2,7 @@ extension GrammarProcessor {
     /// Computes nullable rules.
     ///
     /// Rules are nullable if they can be satisfied while matching no input.
-    func computeNullables(_ rules: [String: SwiftPEGGrammar.Rule]) throws {
+    func computeNullables(in grammar: SwiftPEGGrammar.Grammar, _ rules: [String: SwiftPEGGrammar.Rule]) throws {
         let visitor = NullabilityVisitor(rulesMap: rules)
         for rule in grammar.rules {
             _ = rule.visitNullable(visitor)

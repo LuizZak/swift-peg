@@ -93,13 +93,14 @@ class GrammarParsingSample {
                 }
             }
 
-            let processor = try GrammarProcessor(grammar, delegate: self, verbose: verbose)
+            let processor = GrammarProcessor(delegate: self, verbose: verbose)
+            let result = try processor.process(grammar)
 
             for diagnostic in processor.diagnostics {
                 print(diagnostic.description)
             }
 
-            let swiftCodeGen = SwiftCodeGen(from: processor)
+            let swiftCodeGen = SwiftCodeGen(from: result)
 
             let parser = try swiftCodeGen.generateParser()
 
@@ -116,7 +117,8 @@ extension GrammarParsingSample: GrammarProcessor.Delegate {
 
     func grammarProcessor(
         _ processor: GrammarProcessor,
-        loadTokensFileNamed name: String
+        loadTokensFileNamed name: String,
+        ofGrammar grammar: SwiftPEGGrammar.Grammar
     ) throws -> String {
 
         let url = resolveFileName(name)

@@ -1295,7 +1295,6 @@ private func parseGrammar(
         throw parser.makeSyntaxError()
     }
 
-    let processor = try GrammarProcessor(grammar, delegate: nil)
-    
-    return processor.generatedGrammar()
+    let processor = GrammarProcessor(delegate: nil)
+    return try processor.process(grammar).grammar
 }

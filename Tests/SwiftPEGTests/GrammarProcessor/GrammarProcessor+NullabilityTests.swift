@@ -26,8 +26,9 @@ class GrammarProcessor_NullabilityTests: XCTestCase {
             [start, rule1, rule2]
         )
         let delegate = stubDelegate()
+        let sut = GrammarProcessor(delegate: delegate)
 
-        let sut = try GrammarProcessor(grammar, delegate: delegate)
+        _ = try sut.process(grammar)
 
         assertEmpty(sut.diagnostics)
     }
