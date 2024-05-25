@@ -297,6 +297,8 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
 
     /// Performs a 'gather' construction (`<sep>.<item>+`), which serves as an
     /// alias for `<item> (<sep> <item>)*`.
+    /// 
+    /// The return is the collected array of `item` productions.
     @inlinable
     public func gather<S, T>(
         separator separatorProducer: () throws -> S?,

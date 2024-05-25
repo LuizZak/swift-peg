@@ -458,7 +458,7 @@ extension SwiftCodeGen {
     /// Returns a token definition from `self.tokenDefinitions` that has a literal
     /// value matching the given (non-quoted) value, or `nil`, if none is found.
     func tokenDefinition(ofRawLiteral literal: String) -> InternalGrammar.TokenDefinition? {
-        self.tokenDefinitions.first(where: { $0.string == literal })
+        self.tokenDefinitions.first(where: { $0.computedLiteral == literal })
     }
 }
 

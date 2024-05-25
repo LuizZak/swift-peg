@@ -1,7 +1,7 @@
-$WHITESPACE["kind: .whitespace"]: "WHITESPACE" ;
-$IDENTIFIER["kind: .identifier"]: "IDENTIFIER" ;
-$DIGITS["kind: .digits"]: "DIGITS" ;
-$STRING["kind: .string"]: "STRING" ;
+$WHITESPACE["kind: .whitespace"] ;
+$IDENTIFIER["kind: .identifier"] ;
+$DIGITS["kind: .digits"] ;
+$STRING["kind: .string"] ;
 $LEFTPAREN["kind: .leftParen"]: "(" ;
 $RIGHTPAREN["kind: .rightParen"]: ")" ;
 $LEFTBRACE["kind: .leftBrace"]: "{" ;

@@ -1,8 +1,10 @@
 public enum InternalGrammar {
     /// ```
     /// tokenDefinition:
-    ///     | name=IDENTIFIER '[' expectArgs=STRING ']' ':' literal=STRING ';'
-    ///     | name=IDENTIFIER ':' literal=STRING ';'
+    ///     | '$' name=IDENTIFIER '[' expectArgs=STRING ']' ':' ~ literal=STRING ';' 
+    ///     | '$' name=IDENTIFIER '[' expectArgs=STRING ']' ';'
+    ///     | '$' name=IDENTIFIER ':' ~ literal=STRING ';'
+    ///     | '$' name=IDENTIFIER ';'
     ///     ;
     /// ```
     public struct TokenDefinition: CustomStringConvertible {
@@ -10,13 +12,34 @@ public enum InternalGrammar {
         public var expectArgs: String?
         
         /// String literal. Does not contains the quotes around the literal.
-        public var string: String
+        /// May not be provided; in which case the literal is assumed to be the
+        /// same value as `name` wrapped in any type of quotes.
+        public var string: String?
+
+        /// Returns the computed literal for this token.
+        ///
+        /// If `self.string` is non-nil, returns its value, otherwise returns
+        /// `name`.
+        ///
+        /// Does not contains the quotes around the literal.
+        public var computedLiteral: String {
+            if let string {
+                return string
+            } else {
+                return name
+            }
+        }
 
         public var description: String {
-            if let expectArgs {
+            switch (expectArgs, string) {
+            case (let expectArgs?, let string?):
                 return #"\#(name)["\#(expectArgs)"]: "\#(string)" ;"#
-            } else {
-                return #"\#(name): "\#(string)" ;"#
+            case (let expectArgs?, nil):
+                return #"\#(name)["\#(expectArgs)"] ;"#
+            case (nil, let string?):
+                return #"\#(name) : "\#(string)" ;"#
+            case (nil, nil):
+                return #"\#(name) ;"#
             }
         }
         
@@ -27,7 +50,7 @@ public enum InternalGrammar {
             .init(
                 name: String(node.name.string),
                 expectArgs: node.expectArgs.map({ String($0.processedString) }),
-                string: String(node.literal.processedString)
+                string: node.literal.map { String($0.processedString) }
             )
         }
     }

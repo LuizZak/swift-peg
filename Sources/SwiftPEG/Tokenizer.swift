@@ -7,9 +7,15 @@ open class Tokenizer<Raw: RawTokenizerType> {
     /// Alias for results of parsing methods that query single tokens.
     public typealias TokenResult = (token: Token, location: Location)
 
-    /// Used for uniquely identifying tokenizers
+#if DEBUG
+    /// Used for uniquely identifying tokenizers in debug builds for asserting
+    /// that marks haven't been used across different tokenizer instances, which
+    /// may be fault-prone.
+    ///
+    /// Is omitted in release builds.
     @usableFromInline
     internal let _uuid = UUID().uuidString
+#endif
 
     @usableFromInline
     internal var _raw: Raw
@@ -182,6 +188,10 @@ open class Tokenizer<Raw: RawTokenizerType> {
     /// token stream to a previous location.
     public struct Mark: Hashable, Comparable {
 #if DEBUG
+        /// UUID used in debug builds to assert that a mark was used exclusively
+        /// on the tokenizer instance that produced it.
+        ///
+        /// Is omitted in release builds.
         @usableFromInline
         var ownerUUID: String
 #endif

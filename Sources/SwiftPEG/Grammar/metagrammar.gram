@@ -162,6 +162,8 @@ tokensFile[[SwiftPEGGrammar.TokenDefinition]]:
     ;
 
 tokenDefinition[SwiftPEGGrammar.TokenDefinition]:
-    | '$' name=IDENTIFIER '[' expectArgs=STRING ']' ':' literal=STRING ';' { self.setLocation(.init(name: name.token, expectArgs: expectArgs.token, literal: literal.token), at: mark) }
-    | '$' name=IDENTIFIER ':' literal=STRING ';' { self.setLocation(.init(name: name.token, expectArgs: nil, literal: literal.token), at: mark) }
+    | '$' name=IDENTIFIER '[' expectArgs=STRING ']' ':' ~ literal=STRING ';' { self.setLocation(.init(name: name.token, expectArgs: expectArgs.token, literal: literal.token), at: mark) }
+    | '$' name=IDENTIFIER '[' expectArgs=STRING ']' ';' { self.setLocation(.init(name: name.token, expectArgs: expectArgs.token, literal: nil), at: mark) }
+    | '$' name=IDENTIFIER ':' ~ literal=STRING ';' { self.setLocation(.init(name: name.token, expectArgs: nil, literal: literal.token), at: mark) }
+    | '$' name=IDENTIFIER ';' { self.setLocation(.init(name: name.token, expectArgs: nil, literal: nil), at: mark) }
     ;
