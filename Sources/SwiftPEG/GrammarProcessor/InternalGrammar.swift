@@ -33,13 +33,13 @@ public enum InternalGrammar {
         public var description: String {
             switch (expectArgs, string) {
             case (let expectArgs?, let string?):
-                return #"\#(name)["\#(expectArgs)"]: "\#(string)" ;"#
+                return #"$\#(name)["\#(expectArgs)"]: "\#(string)" ;"#
             case (let expectArgs?, nil):
-                return #"\#(name)["\#(expectArgs)"] ;"#
+                return #"$\#(name)["\#(expectArgs)"] ;"#
             case (nil, let string?):
-                return #"\#(name) : "\#(string)" ;"#
+                return #"$\#(name) : "\#(string)" ;"#
             case (nil, nil):
-                return #"\#(name) ;"#
+                return #"$\#(name) ;"#
             }
         }
         
