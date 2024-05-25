@@ -2,35 +2,35 @@ import XCTest
 
 @testable import SwiftPEG
 
-class GrammarProcessor_NullabilityTests: XCTestCase {
-    func testDetectLeftRecursiveRules_indirect() throws {
+class GrammarProcessorTests: XCTestCase {
+    func testAltOrderDiagnostics() throws {
         let start = makeRule(name: "start", [
             makeAlt([ makeItem("rule1") ]),
         ])
         let rule1 = makeRule(name: "rule1", [
-            makeAlt([ makeItem("a"), makeItem("b") ]),
-            makeAlt([ makeItem("rule2"), makeItem("d") ]),
-        ])
-        let rule2 = makeRule(name: "rule2", [
-            makeAlt([ makeItem("rule1"), makeItem("b") ]),
-            makeAlt([ makeItem("c"), makeItem("d") ]),
+            makeAlt([ makeItem("a") ]),
+            makeAlt([ makeItem("a"),  makeItem("b") ]),
         ])
         let grammar = makeGrammar(
             metas: [
                 // Non-rule identifiers must be declared as tokens
                 makeMeta(name: "token", value: "a"),
                 makeMeta(name: "token", value: "b"),
-                makeMeta(name: "token", value: "c"),
-                makeMeta(name: "token", value: "d"),
             ],
-            [start, rule1, rule2]
+            [start, rule1]
         )
         let delegate = stubDelegate()
         let sut = makeSut(delegate)
 
         _ = try sut.process(grammar)
 
-        assertEmpty(sut.diagnostics)
+        let diags = sut.diagnosticsCount(where: { diag in
+            switch diag {
+            case .altOrderIssue: return true
+            default: return false
+            }
+        })
+        assertEqual(diags, 1)
     }
 }
 
@@ -91,4 +91,21 @@ private func makeItem(_ ident: String, identity: SwiftPEGGrammar.IdentAtom.Ident
 
 private func makeIdent(_ ident: String) -> SwiftPEGGrammar.Token {
     .identifier(Substring(ident))
+}
+
+private func parseGrammar(
+    _ grammar: String,
+    file: StaticString = #file,
+    line: UInt = #line
+) throws -> InternalGrammar.Grammar {
+
+    let tokenizer = GrammarRawTokenizer(source: grammar)
+    let parser = GrammarParser(raw: tokenizer)
+
+    guard let grammar = try parser.start() else {
+        throw parser.makeSyntaxError()
+    }
+
+    let processor = GrammarProcessor(delegate: nil)
+    return try processor.process(grammar).grammar
 }

@@ -189,6 +189,54 @@ public enum InternalGrammar {
             return items
         }
 
+        /// Returns a copy of `self` with Cuts (`~`) removed.
+        /// If this results in this production being empty, returns `nil`.
+        var removingCuts: Self? {
+            let items = items.compactMap(\.removingCuts)
+            if items.isEmpty { return nil }
+
+            return .init(items: items, action: action)
+        }
+
+        /// Returns `true` if both `self` and `other` execute equivalent productions,
+        /// ignoring associated actions.
+        func isEquivalent(to other: Self) -> Bool {
+            let selfCut = self.removingCuts
+            let otherCut = other.removingCuts
+            if selfCut == nil && otherCut == nil {
+                return true
+            }
+
+            guard let selfCut, let otherCut else {
+                return false
+            }
+
+            if selfCut.items == otherCut.items { return true }
+            if selfCut.items.count != otherCut.items.count { return false }
+
+            return selfCut.items.elementsEqual(otherCut.items, by: { $0.isEquivalent(to: $1) })
+        }
+
+        /// Returns `true` if `self` executes a subset of the production of
+        /// `other`, such that `self == other + [extra productions in other]...`.
+        /// If `self` and `other` are equivalent, `true` is also returned.
+        func isSubset(of other: Self) -> Bool {
+            let selfCut = self.removingCuts
+            let otherCut = other.removingCuts
+            if selfCut == nil && otherCut == nil {
+                return true
+            }
+            guard let selfCut, let otherCut else {
+                return false
+            }
+
+            if selfCut.items == otherCut.items { return true }
+            // Subsets require `self` to be at most the same size as `other`
+            if selfCut.items.count > otherCut.items.count { return false }
+
+            return selfCut.items.elementsEqual(otherCut.items[..<selfCut.items.count], by: { $0.isEquivalent(to: $1) })
+        }
+
         public static func from(
             _ node: SwiftPEGGrammar.Alt
         ) -> Self {
@@ -232,6 +280,26 @@ public enum InternalGrammar {
         /// ```
         case lookahead(Lookahead)
 
+        /// Returns `true` if `self` is a lookahead of Cut (`~`) type.
+        var isCut: Bool {
+            switch self {
+            case .lookahead(.cut): return true
+            default: return false
+            }
+        }
+
+        /// Returns a copy of `self` with Cuts (`~`) removed.
+        /// If this results in this production being empty, returns `nil`.
+        var removingCuts: Self? {
+            switch self {
+            case .item(let name, let item, let type):
+                return item.removingCuts.map { Self.item(name: name, $0, type: type) }
+
+            case .lookahead(let lookahead):
+                return lookahead.removingCuts.map(Self.lookahead)
+            }
+        }
+
         public var description: String {
             switch self {
             case .item(let name?, let item, let type?):
@@ -259,6 +327,23 @@ public enum InternalGrammar {
                 return item.alias
             case .lookahead:
                 return nil
+            }
+        }
+
+        /// Returns `true` if both `self` and `other` execute equivalent productions,
+        /// ignoring name and type.
+        func isEquivalent(to other: Self) -> Bool {
+            if self == other { return true }
+
+            switch (self, other) {
+            case (.item(_, let lhs, _), .item(_, let rhs, _)):
+                return lhs.isEquivalent(to: rhs)
+
+            case (.lookahead(let lhs), .lookahead(let rhs)):
+                return lhs == rhs
+
+            default:
+                return false
             }
         }
 
@@ -306,6 +391,38 @@ public enum InternalGrammar {
             }
         }
 
+        /// Returns a copy of `self` with Cuts (`~`) removed.
+        /// If this results in this production being empty, returns `nil`.
+        var removingCuts: Self? {
+            switch self {
+            case .atom(let atom):
+                return atom.removingCuts.map(Self.atom)
+
+            case .gather(let sep, let node):
+                if let sep = sep.removingCuts, let node = node.removingCuts {
+                    return Self.gather(sep: sep, node: node)
+                }
+                return nil
+
+            case .zeroOrMore(let atom):
+                return atom.removingCuts.map(Self.zeroOrMore)
+
+            case .oneOrMore(let atom):
+                return atom.removingCuts.map(Self.oneOrMore)
+
+            case .optional(let atom):
+                return atom.removingCuts.map(Self.optional)
+                
+            case .optionalItems(let alts):
+                let alts = alts.compactMap(\.removingCuts)
+                if alts.isEmpty {
+                    return nil
+                }
+
+                return .optionalItems(alts)
+            }
+        }
+
         /// Returns the alias for referencing the this item in code generated by
         /// code generators.
         /// 
@@ -323,6 +440,26 @@ public enum InternalGrammar {
 
             case .optionalItems:
                 return nil
+            }
+        }
+
+        /// Returns `true` if both `self` and `other` execute equivalent productions.
+        func isEquivalent(to other: Self) -> Bool {
+            if self == other { return true }
+
+            switch (self, other) {
+            // Check `[ atom ]` and `atom ?`
+            case (.optionalItems(let alts), .atom(let rhs)) where alts.count == 1 && alts[0].items.count == 1:
+                return alts[0].items[0].isEquivalent(
+                    to: .item(name: nil, .atom(rhs), type: nil)
+                )
+            // Check `atom ?` and `[ atom ]`
+            case (.atom(let lhs), .optionalItems(let alts)) where alts.count == 1 && alts[0].items.count == 1:
+                return alts[0].items[0].isEquivalent(
+                    to: .item(name: nil, .atom(lhs), type: nil)
+                )
+            default:
+                return false
             }
         }
 
@@ -377,6 +514,19 @@ public enum InternalGrammar {
             }
         }
 
+        /// Returns a copy of `self` with Cuts (`~`) removed.
+        /// If this results in this production being empty, returns `nil`.
+        var removingCuts: Self? {
+            switch self {
+            case .negative(let atom):
+                return atom.removingCuts.map(Self.negative)
+            case .positive(let atom):
+                return atom.removingCuts.map(Self.positive)
+            case .cut:
+                return nil
+            }
+        }
+
         public static func from(
             _ node: SwiftPEGGrammar.LookaheadOrCut
         ) -> Self {
@@ -406,6 +556,17 @@ public enum InternalGrammar {
 
         /// `STRING`
         case string(String, trimmed: String)
+
+        /// Returns a copy of `self` with Cuts (`~`) removed.
+        /// If this results in this production being empty, returns `nil`.
+        var removingCuts: Self? {
+            switch self {
+            case .group(let alts):
+                return .group(alts.compactMap(\.removingCuts))
+            default:
+                return self
+            }
+        }
 
         public var description: String {
             switch self {

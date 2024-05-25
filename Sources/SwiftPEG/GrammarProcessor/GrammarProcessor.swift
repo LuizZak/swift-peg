@@ -36,6 +36,7 @@ public class GrammarProcessor {
         let tokensFile = try loadTokensFile(from: grammar)
         let tokens = try validateTokenReferences(in: grammar, tokensFile: tokensFile)
         try validateReferences(in: grammar, tokens: tokens)
+        validateAltOrder(in: grammar)
         try computeNullables(in: grammar, knownRules)
 
         return ProcessedGrammar(
@@ -218,6 +219,38 @@ public class GrammarProcessor {
         }
     }
 
+    /// Validates sequential alts across all rules in `grammar`, checking that
+    /// each subsequent alt is either disjointed from the first alt, or a smaller
+    /// subset, warning about alt orders that prevent an alt from ever being tried.
+    func validateAltOrder(in grammar: SwiftPEGGrammar.Grammar) {
+        for rule in grammar.rules {
+            let alts = rule.alts
+
+            validateAltOrder(alts, in: rule)
+        }
+    }
+
+    /// Validates sequential alts, checking that each subsequent alt is either
+    /// disjointed from the first alt, or a smaller subset, warning about alt
+    /// orders that prevent an alt from ever being tried.
+    func validateAltOrder(_ alts: [SwiftPEGGrammar.Alt], in rule: SwiftPEGGrammar.Rule) {
+        for index in 0..<alts.count {
+            for nextIndex in index..<alts.count where index != nextIndex {
+                let alt = alts[index]
+                let nextAlt = alts[nextIndex]
+
+                let altInt = InternalGrammar.Alt.from(alt)
+                let nextAltInt = InternalGrammar.Alt.from(nextAlt)
+
+                if altInt.isSubset(of: nextAltInt) {
+                    diagnostics.append(
+                        .altOrderIssue(rule: rule, alt, alwaysSucceedsBefore: nextAlt)
+                    )
+                }
+            }
+        }
+    }
+
     /// Gets all @token meta-properties in the grammar.
     func tokenMetaProperties(in grammar: SwiftPEGGrammar.Grammar) -> [SwiftPEGGrammar.Meta] {
         return grammar.metas.filter { $0.name.string == "token" }
@@ -299,12 +332,23 @@ public class GrammarProcessor {
         /// A '@token' meta-property is missing an identifier as its value.
         case tokenMissingName(SwiftPEGGrammar.Meta)
 
+        /// An alt that executes before another, if it succeeds, will always
+        /// prevent the other alt from being attempted.
+        case altOrderIssue(rule: SwiftPEGGrammar.Rule, SwiftPEGGrammar.Alt, alwaysSucceedsBefore: SwiftPEGGrammar.Alt)
+
         public var description: String {
             switch self {
             case .repeatedTokenDeclaration(let name, let meta, let prior):
                 return "Token '\(name)' @ \(meta.location) has been declared at least once @ \(prior.location)."
+
             case .tokenMissingName(let meta):
                 return "Expected token @ \(meta.location) to have an identifier name."
+
+            case .altOrderIssue(let rule, let prior, let former):
+                let priorInt = InternalGrammar.Alt.from(prior)
+                let formerInt = InternalGrammar.Alt.from(former)
+
+                return "Alt '\(priorInt)' @ \(prior.location) always succeeds before '\(formerInt)' @ \(former.location) can be tried in rule \(rule.name) @ \(rule.location)."
             }
         }
     }
