@@ -30,14 +30,22 @@ public class GrammarProcessor {
         self.verbose = verbose
     }
 
-    /// Processes the given grammar object.
-    public func process(_ grammar: SwiftPEGGrammar.Grammar) throws -> ProcessedGrammar {
+    /// Processes the given grammar object, optionally providing a custom entry
+    /// rule.
+    /// 
+    /// If no custom entry rule name is provided, defaults to `"start"`.
+    public func process(
+        _ grammar: SwiftPEGGrammar.Grammar,
+        entryRuleName: String = "start"
+    ) throws -> ProcessedGrammar {
+
         let knownRules = try validateRuleNames(in: grammar)
         let tokensFile = try loadTokensFile(from: grammar)
         let tokens = try validateTokenReferences(in: grammar, tokensFile: tokensFile)
         try validateReferences(in: grammar, tokens: tokens)
-        validateAltOrder(in: grammar)
+        diagnoseAltOrder(in: grammar)
         try computeNullables(in: grammar, knownRules)
+        try diagnoseUnreachableRules(in: grammar, knownRules, entryRuleName: entryRuleName)
 
         return ProcessedGrammar(
             grammar: .from(grammar),
@@ -222,9 +230,9 @@ public class GrammarProcessor {
     /// Validates sequential alts across all rules in `grammar`, checking that
     /// each subsequent alt is either disjointed from the first alt, or a smaller
     /// subset, warning about alt orders that prevent an alt from ever being tried.
-    func validateAltOrder(in grammar: SwiftPEGGrammar.Grammar) {
+    func diagnoseAltOrder(in grammar: SwiftPEGGrammar.Grammar) {
         let visitor = AltOrderVisitor { [self] (alts, rule) in
-            self.validateAltOrder(alts, in: rule)
+            self.diagnoseAltOrder(alts, in: rule)
         }
         let walker = NodeWalker(visitor: visitor)
 
@@ -238,7 +246,7 @@ public class GrammarProcessor {
     /// Validates sequential alts, checking that each subsequent alt is either
     /// disjointed from the first alt, or a smaller subset, warning about alt
     /// orders that prevent an alt from ever being tried.
-    func validateAltOrder(_ alts: [SwiftPEGGrammar.Alt], in rule: SwiftPEGGrammar.Rule) {
+    func diagnoseAltOrder(_ alts: [SwiftPEGGrammar.Alt], in rule: SwiftPEGGrammar.Rule) {
         for index in 0..<alts.count {
             for nextIndex in index..<alts.count where index != nextIndex {
                 let alt = alts[index]
@@ -253,6 +261,28 @@ public class GrammarProcessor {
                     )
                 }
             }
+        }
+    }
+
+    /// Diagnoses unreachable rules, when starting from a given entry rule name.
+    func diagnoseUnreachableRules(
+        in grammar: SwiftPEGGrammar.Grammar,
+        _ knownRules: [String: SwiftPEGGrammar.Rule],
+        entryRuleName: String
+    ) throws {
+
+        let unreachableRules = try computeUnreachableRules(in: grammar, startRuleName: entryRuleName, rules: knownRules)
+
+        for unreachable in unreachableRules {
+            guard let rule = knownRules[unreachable] else {
+                continue
+            }
+
+            rule.isReachable = false
+
+            diagnostics.append(
+                .unreachableRule(rule, startRuleName: entryRuleName)
+            )
         }
     }
 
@@ -341,6 +371,9 @@ public class GrammarProcessor {
         /// prevent the other alt from being attempted.
         case altOrderIssue(rule: SwiftPEGGrammar.Rule, SwiftPEGGrammar.Alt, alwaysSucceedsBefore: SwiftPEGGrammar.Alt)
 
+        /// A rule is not reachable from the set start rule.
+        case unreachableRule(SwiftPEGGrammar.Rule, startRuleName: String)
+
         public var description: String {
             switch self {
             case .repeatedTokenDeclaration(let name, let meta, let prior):
@@ -354,6 +387,9 @@ public class GrammarProcessor {
                 let formerInt = InternalGrammar.Alt.from(former)
 
                 return "Alt '\(priorInt)' @ \(prior.location) always succeeds before '\(formerInt)' @ \(former.location) can be tried in rule \(rule.name) @ \(rule.location)."
+            
+            case .unreachableRule(let rule, let startRuleName):
+                return "Rule '\(rule.name)' @ \(rule.location) is not reachable from the set start rule '\(startRuleName)'."
             }
         }
     }

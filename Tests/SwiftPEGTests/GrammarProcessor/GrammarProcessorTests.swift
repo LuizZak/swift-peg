@@ -73,6 +73,57 @@ class GrammarProcessorTests: XCTestCase {
         })
         assertEqual(diags, 1)
     }
+
+    func testUnreachableRuleDiagnostics() throws {
+        let start = makeRule(name: "start", [
+            makeAlt([ makeItem("rule1") ]),
+        ])
+        let rule1 = makeRule(name: "rule1", [
+            makeAlt([ makeItem("rule2"), makeItem("a") ]),
+        ])
+        let rule2 = makeRule(name: "rule2", [
+            makeAlt([ makeItem("a") ]),
+        ])
+        let rule3 = makeRule(name: "rule3", [
+            makeAlt([ makeItem("a") ]),
+        ])
+        let grammar = makeGrammar(
+            metas: [
+                // Non-rule identifiers must be declared as tokens
+                makeMeta(name: "token", value: "a"),
+                makeMeta(name: "token", value: "b"),
+            ],
+            [start, rule1, rule2, rule3]
+        )
+        let delegate = stubDelegate()
+        let sut = makeSut(delegate)
+
+        _ = try sut.process(grammar)
+
+        var diags = sut.diagnosticsCount(where: { diag in
+            switch diag {
+            case .unreachableRule(let rule, "start")
+                where rule === rule3:
+                return true
+            default:
+                return false
+            }
+        })
+        assertEqual(diags, 1)
+
+        _ = try sut.process(grammar, entryRuleName: "rule3")
+
+        diags = sut.diagnosticsCount(where: { diag in
+            switch diag {
+            case .unreachableRule(let rule, "rule3")
+                where rule === start || rule === rule1 || rule === rule2:
+                return true
+            default:
+                return false
+            }
+        })
+        assertEqual(diags, 3)
+    }
 }
 
 // MARK: - Test internals

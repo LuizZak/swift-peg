@@ -29,6 +29,7 @@ public class SwiftCodeGen {
     let buffer: CodeStringBuffer
     var declContext: DeclarationsContext
 
+    var latestSettings: Settings = .default
     var remaining: [InternalGrammar.Rule] = []
     var ruleAliases: [String: String] = [:]
 
@@ -59,7 +60,12 @@ public class SwiftCodeGen {
     }
 
     /// Generates Swift parser code.
-    public func generateParser() throws -> String {
+    public func generateParser(
+        settings: Settings = .default
+    ) throws -> String {
+
+        self.latestSettings = settings
+
         buffer.resetState()
 
         if let header = grammar.parserHeader() {
@@ -82,7 +88,10 @@ public class SwiftCodeGen {
     func generateRemainingRules() throws {
         while !remaining.isEmpty {
             let next = remaining.removeFirst()
-            try generateRule(next)
+
+            if !latestSettings.omitUnreachable || next.isReachable {
+                try generateRule(next)
+            }
         }
     }
 
@@ -340,6 +349,29 @@ public class SwiftCodeGen {
         public var description: String {
             switch self {
             }
+        }
+    }
+
+    /// Settings that can be specified during code generation.
+    public struct Settings {
+        /// Gets the static default settings configuration.
+        public static let `default`: Self = Self(
+            omitUnreachable: false
+        )
+
+        /// Whether to omit unreachable rules, as detected by a `GrammarProcessor`
+        /// and flagged within each `InternalGrammar.Rule` node.
+        public var omitUnreachable: Bool
+
+        public init(omitUnreachable: Bool) {
+            self.omitUnreachable = omitUnreachable
+        }
+
+        /// Returns a copy of `self` with a given keypath modified to be `value`.
+        public func with<T>(_ keyPath: WritableKeyPath<Self, T>, value: T) -> Self {
+            var copy = self
+            copy[keyPath: keyPath] = value
+            return copy
         }
     }
 }

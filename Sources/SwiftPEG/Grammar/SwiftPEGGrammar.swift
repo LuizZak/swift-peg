@@ -159,6 +159,10 @@ extension SwiftPEGGrammar {
         /// leader of the left recursion.
         var isLeftRecursiveLead: Bool = false
 
+        /// Flag used by `GrammarProcessor` to indicate that this rule is reachable
+        /// from a chosen starting rule.
+        var isReachable: Bool = true
+
         /// Accepts a given grammar-node visitor into this node.
         public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: GrammarNodeVisitorType {
             try visitor.visit(self)
@@ -185,6 +189,11 @@ extension SwiftPEGGrammar {
         /// rule detection.
         func initialNames() -> Set<String> {
             return alts.reduce([]) { $0.union($1.initialNames()) }
+        }
+
+        /// Returns a set of all named identifiers referenced within this rule.
+        func allNames() -> Set<String> {
+            alts.reduce([]) { $0.union($1.allNames()) }
         }
     }
 
@@ -259,6 +268,11 @@ extension SwiftPEGGrammar {
             }
             return names
         }
+
+        /// Returns a set of all named identifiers referenced within this node.
+        func allNames() -> Set<String> {
+            namedItems.reduce([]) { $0.union($1.allNames()) }
+        }
     }
 
     /// An item, or segment of an alt, for which a name can be attributed.
@@ -319,6 +333,11 @@ extension SwiftPEGGrammar {
 
             return []
         }
+
+        /// Returns a set of all named identifiers referenced within this node.
+        func allNames() -> Set<String> {
+            return item?.allNames() ?? lookahead?.allNames() ?? []
+        }
     }
 
     /// Base class for a node that represents either a positive/negative lookahead,
@@ -341,6 +360,11 @@ extension SwiftPEGGrammar {
         /// Performs a deep-copy of this node.
         public func deepCopy() -> LookaheadOrCut {
             fatalError("Must be overridden by subclasses.")
+        }
+
+        /// Returns a set of all named identifiers referenced within this node.
+        func allNames() -> Set<String> {
+            []
         }
     }
 
@@ -365,6 +389,11 @@ extension SwiftPEGGrammar {
         public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: GrammarNodeVisitorType {
             try visitor.visit(self)
         }
+
+        /// Returns a set of all named identifiers referenced within this node.
+        override func allNames() -> Set<String> {
+            atom.allNames()
+        }
     }
 
     /// A negative lookahead.
@@ -386,6 +415,11 @@ extension SwiftPEGGrammar {
         /// Accepts a given grammar-node visitor into this node.
         public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: GrammarNodeVisitorType {
             try visitor.visit(self)
+        }
+
+        /// Returns a set of all named identifiers referenced within this node.
+        override func allNames() -> Set<String> {
+            atom.allNames()
         }
     }
 
@@ -432,6 +466,11 @@ extension SwiftPEGGrammar {
             return []
         }
 
+        /// Returns a set of all named identifiers referenced within this node.
+        func allNames() -> Set<String> {
+            return []
+        }
+
         /// Performs a deep copy of this node.
         public func deepCopy() -> Item {
             fatalError("Must be overridden by subclasses.")
@@ -466,6 +505,11 @@ extension SwiftPEGGrammar {
 
         override func initialNames() -> Set<String> {
             return alts.reduce([]) { $0.union($1.initialNames()) }
+        }
+
+        /// Returns a set of all named identifiers referenced within this node.
+        override func allNames() -> Set<String> {
+            alts.reduce([]) { $0.union($1.allNames()) }
         }
     }
 
@@ -503,6 +547,11 @@ extension SwiftPEGGrammar {
         override func initialNames() -> Set<String> {
             return atom.initialNames()
         }
+
+        /// Returns a set of all named identifiers referenced within this node.
+        override func allNames() -> Set<String> {
+            atom.allNames()
+        }
     }
 
     /// An item that must match its associated atom zero or more times to succeed.
@@ -534,6 +583,11 @@ extension SwiftPEGGrammar {
         override func initialNames() -> Set<String> {
             return atom.initialNames()
         }
+
+        /// Returns a set of all named identifiers referenced within this node.
+        override func allNames() -> Set<String> {
+            atom.allNames()
+        }
     }
 
     /// An item that must match its associated atom one or more times to succeed.
@@ -564,6 +618,11 @@ extension SwiftPEGGrammar {
 
         override func initialNames() -> Set<String> {
             return atom.initialNames()
+        }
+
+        /// Returns a set of all named identifiers referenced within this node.
+        override func allNames() -> Set<String> {
+            atom.allNames()
         }
     }
 
@@ -604,6 +663,11 @@ extension SwiftPEGGrammar {
         override func initialNames() -> Set<String> {
             return item.initialNames()
         }
+
+        /// Returns a set of all named identifiers referenced within this node.
+        override func allNames() -> Set<String> {
+            sep.allNames().union(item.allNames())
+        }
     }
 
     /// An item consisting of an atom.
@@ -629,6 +693,11 @@ extension SwiftPEGGrammar {
         override func initialNames() -> Set<String> {
             return atom.initialNames()
         }
+
+        /// Returns a set of all named identifiers referenced within this node.
+        override func allNames() -> Set<String> {
+            atom.allNames()
+        }
     }
 
     /// Base class for atoms of an alternative. Atoms are the smallest unit of
@@ -649,6 +718,11 @@ extension SwiftPEGGrammar {
         }
 
         func initialNames() -> Set<String> {
+            return []
+        }
+
+        /// Returns a set of all named identifiers referenced within this atom.
+        func allNames() -> Set<String> {
             return []
         }
 
@@ -755,6 +829,11 @@ extension SwiftPEGGrammar {
         }
 
         override func initialNames() -> Set<String> {
+            return [String(name)]
+        }
+
+        /// Returns a set of all named identifiers referenced within this node.
+        override func allNames() -> Set<String> {
             return [String(name)]
         }
 

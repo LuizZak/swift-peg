@@ -16,6 +16,71 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
+    func testGenerateParser_omitUnreachableRules_true() throws {
+        let grammar = makeGrammar([
+            .init(name: "a", alts: [
+                .init(items: [
+                    .item("b"),
+                ]),
+            ]).with(\.isReachable, value: false),
+        ], metas: [
+            .init(name: "tokenCall", value: .identifier("expectKind"))
+        ])
+        let sut = makeSut(grammar)
+
+        let result = try sut.generateParser(
+            settings: .default.with(\.omitUnreachable, value: true)
+        )
+
+        diffTest(expected: """
+            // TestParser
+            extension TestParser {
+            }
+            """).diff(result)
+    }
+
+    func testGenerateParser_omitUnreachableRules_false() throws {
+        let grammar = makeGrammar([
+            .init(name: "a", alts: [
+                .init(items: [
+                    .item("b"),
+                ]),
+            ]).with(\.isReachable, value: false),
+        ], metas: [
+            .init(name: "tokenCall", value: .identifier("expectKind"))
+        ])
+        let sut = makeSut(grammar)
+
+        let result = try sut.generateParser(
+            settings: .default.with(\.omitUnreachable, value: false)
+        )
+
+        diffTest(expected: """
+            // TestParser
+            extension TestParser {
+                /// ```
+                /// a:
+                ///     | b
+                ///     ;
+                /// ```
+                @memoized("a")
+                @inlinable
+                public func __a() throws -> Node? {
+                    let mark = self.mark()
+
+                    if
+                        let b = try self.b()
+                    {
+                        return b
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+            }
+            """).diff(result)
+    }
+
     func testGenerateParser_respectsTokenCallMeta() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [

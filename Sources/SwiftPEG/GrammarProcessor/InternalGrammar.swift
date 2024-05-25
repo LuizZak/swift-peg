@@ -137,15 +137,20 @@ public enum InternalGrammar {
         public var name: String
         public var type: SwiftType?
         public var alts: [Alt]
-        public var isRecursive: Bool = false
-        public var isRecursiveLeader: Bool = false
 
-        public var isLoop: Bool { false }
-        public var isGather: Bool { false }
+        /// Whether this rule has been marked as reachable from a starting rule
+        /// during grammar processing.
+        public var isReachable: Bool = true
+
+        /// Whether this rule is contained within a left-recursive chain.
+        public var isRecursive: Bool = false
+
+        /// Whether this rule has been selected among its left-recursive chain
+        /// to be memoized as a left-recursive lead.
+        public var isRecursiveLeader: Bool = false
 
         /// Flattens rules that have a single alt in parenthesis.
         public func flattened() -> Self {
-            guard !isLoop else { return self }
             guard alts.count == 1 && alts[0].items.count == 1 else {
                 return self
             }
@@ -170,6 +175,7 @@ public enum InternalGrammar {
                 name: String(node.name.name.string),
                 type: node.name.type.map(SwiftType.from),
                 alts: node.alts.map(Alt.from),
+                isReachable: node.isReachable,
                 isRecursive: node.isLeftRecursive,
                 isRecursiveLeader: node.isLeftRecursiveLead
             )
