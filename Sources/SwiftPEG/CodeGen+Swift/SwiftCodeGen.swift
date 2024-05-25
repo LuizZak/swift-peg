@@ -252,8 +252,12 @@ public class SwiftCodeGen {
             buffer.emit(")")
 
         case .optionalItems(let alts):
-            let aux = enqueueAuxiliaryRule(for: rule, suffix: "_opt", alts)
-            buffer.emit("try self.\(aux)()")
+            buffer.emit("try self.optional(")
+            buffer.emitInlinedBlock {
+                let aux = enqueueAuxiliaryRule(for: rule, suffix: "_opt", alts)
+                buffer.emit("try self.\(aux)()")
+            }
+            buffer.emit(")")
 
         case .gather(let sep, let item):
             buffer.emit("try self.gather(separator: ")

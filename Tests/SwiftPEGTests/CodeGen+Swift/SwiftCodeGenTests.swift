@@ -720,6 +720,74 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
+    func testGenerateParser_optionalGroup() throws {
+        let grammar = makeGrammar([
+            .init(name: "a", alts: [
+                .init(items: [
+                    .item(.optionalItems([
+                        .init(items: [
+                            .item("b"),
+                            #"'\'"#,
+                            .item("c"),
+                        ]),
+                    ])),
+                ]),
+            ]),
+        ])
+        let sut = makeSut(grammar)
+
+        let result = try sut.generateParser()
+
+        diffTest(expected: #"""
+            // TestParser
+            extension TestParser {
+                /// ```
+                /// a:
+                ///     | [b '\' c]
+                ///     ;
+                /// ```
+                @memoized("a")
+                @inlinable
+                public func __a() throws -> Node? {
+                    let mark = self.mark()
+
+                    if
+                        let _ = try self.optional({
+                            try self._a__opt()
+                        })
+                    {
+                        return Node()
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+
+                /// ```
+                /// _a__opt:
+                ///     | b '\' c
+                ///     ;
+                /// ```
+                @memoized("_a__opt")
+                @inlinable
+                public func ___a__opt() throws -> Node? {
+                    let mark = self.mark()
+
+                    if
+                        let b = try self.b(),
+                        let _ = try self.expect("\\"),
+                        let c = try self.c()
+                    {
+                        return Node()
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+            }
+            """#).diff(result)
+    }
+
     func testGenerateParser_fullGrammar() throws {
         let parserHeader = #"""
                 @testable import SwiftPEG
