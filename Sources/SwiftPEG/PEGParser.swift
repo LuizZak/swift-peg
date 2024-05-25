@@ -136,6 +136,16 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
         return try tokenizer.next()
     }
 
+    /// Fetches the next token in the stream and returns it unconditionally.
+    /// Can be used in conjunction with a token definition that specifies a blank
+    /// 'expectArgs' case to indicate any token.
+    /// 
+    /// - note: Call is not memoized.
+    @inlinable
+    public func expect() throws -> TokenResult? {
+        return try nextToken()
+    }
+
     /// Fetches the next token in the stream and compares it to `token`, returning
     /// the token if it is equal. If the method fails, `nil` is returned and the
     /// tokenizer position is reset.
