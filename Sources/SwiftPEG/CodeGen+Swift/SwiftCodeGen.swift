@@ -200,8 +200,14 @@ public class SwiftCodeGen {
             return
         }
 
-        // Fallback: Return an initialization of the associated node type.
-        buffer.emitLine("\(rule.type?.name ?? "Node")()")
+        // Fallback: Return an initialization of the associated node type, assuming
+        // it is not `nil` and is not a known existential type, otherwise return
+        // `Node()`.
+        if let type = rule.type?.name, type != "Any" {
+            buffer.emitLine("\(type)()")
+        } else {
+            buffer.emitLine("Node()")
+        }
     }
 
     /// Generates items as a sequence of optional bindings.
@@ -258,7 +264,12 @@ public class SwiftCodeGen {
         case .optionalItems(let alts):
             buffer.emit("try self.optional(")
             buffer.emitInlinedBlock {
-                let aux = enqueueAuxiliaryRule(for: rule, suffix: "_opt", alts)
+                let aux = enqueueAuxiliaryRule(
+                    for: rule,
+                    suffix: "_opt",
+                    type: "Any",
+                    alts
+                )
                 buffer.emit("try self.\(aux)()")
             }
             buffer.emit(")")
@@ -323,7 +334,12 @@ public class SwiftCodeGen {
     ) throws {
         switch atom {
         case .group(let group):
-            let aux = enqueueAuxiliaryRule(for: rule, suffix: "_group_", group)
+            let aux = enqueueAuxiliaryRule(
+                for: rule,
+                suffix: "_group_",
+                type: "Any",
+                group
+            )
 
             buffer.emit("try self.\(aux)()")
 
@@ -393,11 +409,14 @@ extension SwiftCodeGen {
     func enqueueAuxiliaryRule(
         for rule: InternalGrammar.Rule,
         suffix: String,
+        type: String? = nil,
         _ alts: [InternalGrammar.Alt]
     ) -> String {
 
         let name = "_\(rule.name)_\(suffix)"
-        return enqueueAuxiliaryRule(.init(name: name, alts: alts))
+        let type = type.map(InternalGrammar.SwiftType.init(name:))
+
+        return enqueueAuxiliaryRule(.init(name: name, type: type, alts: alts))
     }
 
     /// Enqueues a given auxiliary rule, returning its deduplicated name for

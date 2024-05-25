@@ -16,6 +16,44 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
+    func testGenerateParser_anyReturn_returnsNode() throws {
+        let grammar = makeGrammar([
+            .init(name: "a", type: "Any", alts: [
+                .init(items: [
+                    .item("'+'"),
+                ]),
+            ]),
+        ])
+        let sut = makeSut(grammar)
+
+        let result = try sut.generateParser()
+
+        diffTest(expected: """
+            // TestParser
+            extension TestParser {
+                /// ```
+                /// a[Any]:
+                ///     | '+'
+                ///     ;
+                /// ```
+                @memoized("a")
+                @inlinable
+                public func __a() throws -> Any? {
+                    let mark = self.mark()
+
+                    if
+                        let _ = try self.expect("+")
+                    {
+                        return Node()
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+            }
+            """).diff(result)
+    }
+
     func testGenerateParser_omitUnreachableRules_true() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
@@ -23,8 +61,6 @@ class SwiftCodeGenTests: XCTestCase {
                     .item("b"),
                 ]),
             ]).with(\.isReachable, value: false),
-        ], metas: [
-            .init(name: "tokenCall", value: .identifier("expectKind"))
         ])
         let sut = makeSut(grammar)
 
@@ -46,8 +82,6 @@ class SwiftCodeGenTests: XCTestCase {
                     .item("b"),
                 ]),
             ]).with(\.isReachable, value: false),
-        ], metas: [
-            .init(name: "tokenCall", value: .identifier("expectKind"))
         ])
         let sut = makeSut(grammar)
 
@@ -659,13 +693,13 @@ class SwiftCodeGenTests: XCTestCase {
                 }
 
                 /// ```
-                /// _a__group_:
+                /// _a__group_[Any]:
                 ///     | d e
                 ///     ;
                 /// ```
                 @memoized("_a__group_")
                 @inlinable
-                public func ___a__group_() throws -> Node? {
+                public func ___a__group_() throws -> Any? {
                     let mark = self.mark()
 
                     if
@@ -805,13 +839,13 @@ class SwiftCodeGenTests: XCTestCase {
                 }
 
                 /// ```
-                /// _a__opt:
+                /// _a__opt[Any]:
                 ///     | b '\' c
                 ///     ;
                 /// ```
                 @memoized("_a__opt")
                 @inlinable
-                public func ___a__opt() throws -> Node? {
+                public func ___a__opt() throws -> Any? {
                     let mark = self.mark()
 
                     if
@@ -873,13 +907,13 @@ class SwiftCodeGenTests: XCTestCase {
                 }
 
                 /// ```
-                /// _a__opt:
+                /// _a__opt[Any]:
                 ///     | '+' nameInner='\' '-' { nameInner }
                 ///     ;
                 /// ```
                 @memoized("_a__opt")
                 @inlinable
-                public func ___a__opt() throws -> Node? {
+                public func ___a__opt() throws -> Any? {
                     let mark = self.mark()
 
                     if
