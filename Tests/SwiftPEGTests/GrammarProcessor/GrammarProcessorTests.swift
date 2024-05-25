@@ -124,6 +124,41 @@ class GrammarProcessorTests: XCTestCase {
         })
         assertEqual(diags, 3)
     }
+
+    func testUnreachableRuleDiagnostics_searchesNestedIdentifiers() throws {
+        var makeRef = _RuleGen()
+        let grammarString = """
+        start:
+            | \(makeRef[0])
+            | (\(makeRef[1]) | \(makeRef[2]))
+            | \(makeRef[3]) ?
+            | \(makeRef[4]) *
+            | \(makeRef[5]) +
+            | \(makeRef[6]).\(makeRef[7])+
+            | ! \(makeRef[8])
+            | & \(makeRef[9])
+            | ~ \(makeRef[10])
+            | named=\(makeRef[11])
+            ;
+        
+        \(makeRef.dumpRules())
+        """
+        let grammar = try parseGrammar(grammarString)
+        let delegate = stubDelegate()
+        let sut = makeSut(delegate)
+
+        _ = try sut.process(grammar)
+
+        let diagnostics = sut.diagnostics(where: { diag in
+            switch diag {
+            case .unreachableRule:
+                return true
+            default:
+                return false
+            }
+        })
+        assertEmpty(diagnostics, message: "in grammar \(grammarString)")
+    }
 }
 
 // MARK: - Test internals
@@ -148,6 +183,12 @@ private func makeMeta(name: String, value: String) -> SwiftPEGGrammar.Meta {
         name: makeIdent(name),
         value: SwiftPEGGrammar.MetaIdentifierValue(identifier: makeIdent(value))
     )
+}
+
+private func makeRule(name: String) -> SwiftPEGGrammar.Rule {
+    makeRule(name: name, [
+        makeAlt([makeItem("-")])
+    ])
 }
 
 private func makeRule(name: String, _ alts: [SwiftPEGGrammar.Alt]) -> SwiftPEGGrammar.Rule {
@@ -199,7 +240,7 @@ private func parseGrammar(
     _ grammar: String,
     file: StaticString = #file,
     line: UInt = #line
-) throws -> InternalGrammar.Grammar {
+) throws -> SwiftPEGGrammar.Grammar {
 
     let tokenizer = GrammarRawTokenizer(source: grammar)
     let parser = GrammarParser(raw: tokenizer)
@@ -208,6 +249,21 @@ private func parseGrammar(
         throw parser.makeSyntaxError()
     }
 
-    let processor = GrammarProcessor(delegate: nil)
-    return try processor.process(grammar).grammar
+    return grammar
+}
+
+private struct _RuleGen {
+    var rules: [String] = []
+
+    subscript(index: Int) -> String {
+        mutating get {
+            let name = "rule\(index)"
+            rules.append(name)
+            return name
+        }
+    }
+
+    func dumpRules() -> String {
+        rules.map({ "\($0): '-' ;" }).joined(separator: " ")
+    }
 }

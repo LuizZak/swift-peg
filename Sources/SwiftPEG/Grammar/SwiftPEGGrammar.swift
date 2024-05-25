@@ -143,7 +143,7 @@ extension SwiftPEGGrammar {
     ///     ;
     /// ```
     @GeneratedNodeType<Node>
-    public final class Rule: GrammarNode {
+    public final class Rule: GrammarNode, CustomStringConvertible {
         /// The name of this rule.
         @NodeProperty
         var _name: RuleName
@@ -162,6 +162,10 @@ extension SwiftPEGGrammar {
         /// Flag used by `GrammarProcessor` to indicate that this rule is reachable
         /// from a chosen starting rule.
         var isReachable: Bool = true
+
+        public var description: String {
+            "\(type(of: self))(ruleName: \(name.name.string))"
+        }
 
         /// Accepts a given grammar-node visitor into this node.
         public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: GrammarNodeVisitorType {
@@ -759,6 +763,10 @@ extension SwiftPEGGrammar {
 
         override func initialNames() -> Set<String> {
             return alts.reduce([]) { $0.union($1.initialNames()) }
+        }
+
+        override func allNames() -> Set<String> {
+            return alts.reduce([]) { $0.union($1.allNames()) }
         }
     }
 

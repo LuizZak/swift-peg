@@ -324,13 +324,14 @@ func assertFailures<T>(
 /// Asserts a collection of items is empty.
 func assertEmpty(
     _ value: some Collection,
+    message: @autoclosure () -> String = "",
     file: StaticString = #file,
     line: UInt = #line
 ) {
 
     if !value.isEmpty {
         fail(
-            "Collection is not empty: \(value)",
+            "Collection is not empty: \(value) \(message())",
             file: file,
             line: line
         )
