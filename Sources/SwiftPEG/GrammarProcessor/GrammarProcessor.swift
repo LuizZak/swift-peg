@@ -223,10 +223,15 @@ public class GrammarProcessor {
     /// each subsequent alt is either disjointed from the first alt, or a smaller
     /// subset, warning about alt orders that prevent an alt from ever being tried.
     func validateAltOrder(in grammar: SwiftPEGGrammar.Grammar) {
-        for rule in grammar.rules {
-            let alts = rule.alts
+        let visitor = AltOrderVisitor { [self] (alts, rule) in
+            self.validateAltOrder(alts, in: rule)
+        }
+        let walker = NodeWalker(visitor: visitor)
 
-            validateAltOrder(alts, in: rule)
+        do {
+            try walker.walk(grammar)
+        } catch {
+
         }
     }
 
@@ -406,6 +411,40 @@ private extension GrammarProcessor {
                 errors.append(error)
             }
 
+            return .visitChildren
+        }
+    }
+
+    final class AltOrderVisitor: SwiftPEGGrammar.GrammarNodeVisitorType {
+        var currentRule: SwiftPEGGrammar.Rule?
+        var callback: ([SwiftPEGGrammar.Alt], SwiftPEGGrammar.Rule) -> Void
+
+        init(_ callback: @escaping ([SwiftPEGGrammar.Alt], SwiftPEGGrammar.Rule) -> Void) {
+            self.callback = callback
+        }
+
+        func willVisit(_ node: Node) {
+            if let rule = node as? SwiftPEGGrammar.Rule {
+                currentRule = rule
+            }
+        }
+
+        func visit(_ node: SwiftPEGGrammar.Rule) throws -> NodeVisitChildrenResult {
+            callback(node.alts, node)
+            return .visitChildren
+        }
+
+        func visit(_ node: SwiftPEGGrammar.GroupAtom) throws -> NodeVisitChildrenResult {
+            if let currentRule {
+                callback(node.alts, currentRule)
+            }
+            return .visitChildren
+        }
+
+        func visit(_ node: SwiftPEGGrammar.OptionalItems) throws -> NodeVisitChildrenResult {
+            if let currentRule {
+                callback(node.alts, currentRule)
+            }
             return .visitChildren
         }
     }

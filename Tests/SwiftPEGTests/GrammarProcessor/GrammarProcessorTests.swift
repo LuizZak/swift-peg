@@ -7,9 +7,11 @@ class GrammarProcessorTests: XCTestCase {
         let start = makeRule(name: "start", [
             makeAlt([ makeItem("rule1") ]),
         ])
+        let alt1 = makeAlt([ makeItem("a") ])
+        let alt2 = makeAlt([ makeItem("a"), makeItem("b") ])
         let rule1 = makeRule(name: "rule1", [
-            makeAlt([ makeItem("a") ]),
-            makeAlt([ makeItem("a"),  makeItem("b") ]),
+            alt1,
+            alt2,
         ])
         let grammar = makeGrammar(
             metas: [
@@ -26,8 +28,47 @@ class GrammarProcessorTests: XCTestCase {
 
         let diags = sut.diagnosticsCount(where: { diag in
             switch diag {
-            case .altOrderIssue: return true
-            default: return false
+            case .altOrderIssue(let rule, let prior, let alt)
+                where rule === rule1 && prior === alt1 && alt === alt2:
+                return true
+            default:
+                return false
+            }
+        })
+        assertEqual(diags, 1)
+    }
+
+    func testAltOrderDiagnostics_inspectsNestedAlts() throws {
+        let start = makeRule(name: "start", [
+            makeAlt([ makeItem("rule1") ]),
+        ])
+        let alt1 = makeAlt([ makeItem("a") ])
+        let alt2 = makeAlt([ makeItem("a"), makeItem("b") ])
+        let rule1 = makeRule(name: "rule1", [
+            makeAlt([
+                makeItem(atom: makeAtom(group: [alt1, alt2]))
+            ])
+        ])
+        let grammar = makeGrammar(
+            metas: [
+                // Non-rule identifiers must be declared as tokens
+                makeMeta(name: "token", value: "a"),
+                makeMeta(name: "token", value: "b"),
+            ],
+            [start, rule1]
+        )
+        let delegate = stubDelegate()
+        let sut = makeSut(delegate)
+
+        _ = try sut.process(grammar)
+
+        let diags = sut.diagnosticsCount(where: { diag in
+            switch diag {
+            case .altOrderIssue(let rule, let prior, let alt)
+                where rule === rule1 && prior === alt1 && alt === alt2:
+                return true
+            default:
+                return false
             }
         })
         assertEqual(diags, 1)
@@ -76,17 +117,27 @@ private func makeAlt(_ items: [SwiftPEGGrammar.NamedItem]) -> SwiftPEGGrammar.Al
 }
 
 private func makeItem(_ ident: String, identity: SwiftPEGGrammar.IdentAtom.Identity = .ruleName) -> SwiftPEGGrammar.NamedItem {
+    makeItem(
+        atom: SwiftPEGGrammar.IdentAtom(
+            identifier: makeIdent(ident),
+            identity: identity
+        )
+    )
+}
+
+private func makeItem(atom: SwiftPEGGrammar.Atom) -> SwiftPEGGrammar.NamedItem {
     .init(
         name: nil,
         item: SwiftPEGGrammar.AtomItem(
-            atom: SwiftPEGGrammar.IdentAtom(
-                identifier: makeIdent(ident),
-                identity: identity
-            )
+            atom: atom
         ),
         type: nil,
         lookahead: nil
     )
+}
+
+private func makeAtom(group: [SwiftPEGGrammar.Alt]) -> SwiftPEGGrammar.Atom {
+    SwiftPEGGrammar.GroupAtom(alts: group)
 }
 
 private func makeIdent(_ ident: String) -> SwiftPEGGrammar.Token {

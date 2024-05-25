@@ -52,8 +52,7 @@ ruleName[SwiftPEGGrammar.RuleName]:
     ;
 
 alts[[SwiftPEGGrammar.Alt]]:
-    | alt "|" alts { [alt] + alts }
-    | alt { [alt] }
+    | alts="|".alt+ { alts }
     ;
 
 alt[SwiftPEGGrammar.Alt]:
