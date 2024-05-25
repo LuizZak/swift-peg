@@ -386,10 +386,10 @@ public class GrammarProcessor {
                 let priorInt = InternalGrammar.Alt.from(prior)
                 let formerInt = InternalGrammar.Alt.from(former)
 
-                return "Alt '\(priorInt)' @ \(prior.location) always succeeds before '\(formerInt)' @ \(former.location) can be tried in rule \(rule.name) @ \(rule.location)."
+                return "Alt '\(priorInt)' @ \(prior.location) always succeeds before '\(formerInt)' @ \(former.location) can be tried in rule \(rule.name.name.processedString) @ \(rule.location)."
             
             case .unreachableRule(let rule, let startRuleName):
-                return "Rule '\(rule.name)' @ \(rule.location) is not reachable from the set start rule '\(startRuleName)'."
+                return "Rule '\(rule.name.name.processedString)' @ \(rule.location) is not reachable from the set start rule '\(startRuleName)'."
             }
         }
     }
