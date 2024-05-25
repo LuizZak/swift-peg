@@ -195,7 +195,7 @@ public class SwiftCodeGen {
 
         // If no action is specified, attempt to return instead the named
         // item within the alt, if it's the only named item in the alt.
-        if alt.items.count == 1, let alias = alt.items[0].alias {
+        if alt.items.count == 1, let alias = alt.items[0].alias() {
             buffer.emitLine(escapeIdentifier(alias))
             return
         }
@@ -225,7 +225,7 @@ public class SwiftCodeGen {
             buffer.emitLine(",")
         }
 
-        let alias = namedItem.alias ?? "_"
+        let alias = namedItem.alias() ?? "_"
 
         switch namedItem {
         case .item(_, let item, _):
@@ -234,6 +234,10 @@ public class SwiftCodeGen {
                 resolvedName = declContext.defineLocal(suggestedName: alias, type: nil).name
             }
 
+            // TODO: Allow hoisting named items of productions such as optional
+            // TODO: groups and gathers so their auxiliary methods can return tuples
+            // TODO: with the defined labels to be used by actions at the enclosed
+            // TODO: alt
             buffer.emit("let \(escapeIdentifier(resolvedName)) = ")
             try generateItem(item, in: rule)
 
@@ -411,7 +415,7 @@ extension SwiftCodeGen {
 
 // MARK: Alias management
 
-extension SwiftCodeGen {
+extension SwiftCodeGen: TokenLiteralResolver {
 
     /// Escapes the given identifier to something that can be declared as a local
     /// or method name in Swift.
@@ -492,6 +496,12 @@ extension SwiftCodeGen {
     /// value matching the given (non-quoted) value, or `nil`, if none is found.
     func tokenDefinition(ofRawLiteral literal: String) -> InternalGrammar.TokenDefinition? {
         self.tokenDefinitions.first(where: { $0.computedLiteral == literal })
+    }
+
+    /// Returns the name of a token that has a literal value matching the given
+    /// (non-quoted) value, or `nil`, if none is known.
+    func tokenName(ofRawLiteral literal: String) -> String? {
+        tokenDefinition(ofRawLiteral: literal)?.name
     }
 }
 

@@ -259,10 +259,12 @@ public class DiffingTest {
 
 // MARK: - XCTestCase: TestCaseFailureReporter
 extension XCTestCase: DiffTestCaseFailureReporter {
-    public func _recordFailure(withDescription description: String,
-                               inFile filePath: StaticString,
-                               atLine lineNumber: UInt,
-                               expected: Bool) {
+    public func _recordFailure(
+        withDescription description: String,
+        inFile filePath: StaticString,
+        atLine lineNumber: UInt,
+        expected: Bool
+    ) {
         
         #if os(macOS)
 

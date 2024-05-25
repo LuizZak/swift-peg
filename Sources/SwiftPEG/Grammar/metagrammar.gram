@@ -19,8 +19,7 @@ public final class GrammarParser<RawTokenizer: RawTokenizerType>: PEGParser<RawT
 start[SwiftPEGGrammar.Grammar]: grammar { grammar } ;
 
 grammar[SwiftPEGGrammar.Grammar]:
-    | metas rules { self.setLocation(.init(metas: metas, rules: rules), at: mark) }
-    | rules { self.setLocation(.init(metas: [], rules: rules), at: mark) }
+    | metas? rules { self.setLocation(.init(metas: metas ?? [], rules: rules), at: mark) }
     ;
 
 metas[[SwiftPEGGrammar.Meta]]:
@@ -28,8 +27,7 @@ metas[[SwiftPEGGrammar.Meta]]:
     ;
 
 meta[SwiftPEGGrammar.Meta]:
-    | "@" name=IDENTIFIER value=metaValue ';' { self.setLocation(.init(name: name.token, value: value), at: mark) }
-    | "@" name=IDENTIFIER ';' { self.setLocation(.init(name: name.token, value: nil), at: mark) }
+    | "@" name=IDENTIFIER value=metaValue? ';' { self.setLocation(.init(name: name.token, value: value), at: mark) }
     ;
 
 metaValue[SwiftPEGGrammar.MetaValue]:
@@ -42,8 +40,7 @@ rules[[SwiftPEGGrammar.Rule]]:
     ;
 
 rule[SwiftPEGGrammar.Rule]:
-    | ruleName ":" '|' alts ';' { self.setLocation(.init(name: ruleName, alts: alts), at: mark) }
-    | ruleName ":" alts ';' { self.setLocation(.init(name: ruleName, alts: alts), at: mark) }
+    | ruleName ":" '|'? alts ';' { self.setLocation(.init(name: ruleName, alts: alts), at: mark) }
     ;
 
 ruleName[SwiftPEGGrammar.RuleName]:
@@ -56,13 +53,11 @@ alts[[SwiftPEGGrammar.Alt]]:
     ;
 
 alt[SwiftPEGGrammar.Alt]:
-    | namedItems action { self.setLocation(.init(namedItems: namedItems, action: action), at: mark) }
-    | namedItems { self.setLocation(.init(namedItems: namedItems, action: nil), at: mark) }
+    | namedItems action? { self.setLocation(.init(namedItems: namedItems, action: action), at: mark) }
     ;
 
 namedItems[[SwiftPEGGrammar.NamedItem]]:
-    | namedItem namedItems { [namedItem] + namedItems }
-    | namedItem { [namedItem] }
+    | namedItems=namedItem+ { namedItems }
     ;
 
 namedItem[SwiftPEGGrammar.NamedItem]:
@@ -135,23 +130,7 @@ balancedToken[SwiftPEGGrammar.BalancedTokens]:
     ;
 
 balancedTokenAtom["TokenNode<RawTokenizer.Token, RawTokenizer.Location>"]:
-    | token=IDENTIFIER { .init(token) }
-    | token=DIGITS { .init(token) }
-    | token=STRING { .init(token) }
-    | token=':' { .init(token) }
-    | token=';' { .init(token) }
-    | token='|' { .init(token) }
-    | token='=' { .init(token) }
-    | token='~' { .init(token) }
-    | token='*' { .init(token) }
-    | token='+' { .init(token) }
-    | token='?' { .init(token) }
-    | token=',' { .init(token) }
-    | token='.' { .init(token) }
-    | token='@' { .init(token) }
-    | token='$' { .init(token) }
-    | token='/' { .init(token) }
-    | token='\\' { .init(token) }
+    | !"[" !"]" !"{" !"}" !"(" !")" token=ANY { .init(token) }
     ;
 
 # Tokens file grammar

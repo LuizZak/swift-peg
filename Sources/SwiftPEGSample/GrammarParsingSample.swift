@@ -58,18 +58,18 @@ class GrammarParsingSample {
             let walker = NodeWalker(visitor: visitor)
             try walker.walk(grammar)
 
-            print("Warning: Tokenizer did not consume entire file!")
+            print("Warning: Tokenizer did not consume entire file!", to: &standardError)
 
-            print(parser.makeSyntaxError().description)
+            print(parser.makeSyntaxError().description, to: &standardError)
 
-            print("Remaining tokens:")
+            print("Remaining tokens:", to: &standardError)
 
             var tokens: [SwiftPEGGrammar.GrammarToken.TokenString] = []
             while let next = try tokenizer.next() {
                 tokens.append(next.token.string)
             }
 
-            print(tokens)
+            print(tokens, to: &standardError)
         } else {
             if verbose {
                 print("Number of meta-properties: \(grammar.metas.count)")
@@ -97,7 +97,7 @@ class GrammarParsingSample {
             let result = try processor.process(grammar)
 
             for diagnostic in processor.diagnostics {
-                print(diagnostic.description)
+                print(diagnostic.description, to: &standardError)
             }
 
             let swiftCodeGen = SwiftCodeGen(from: result)

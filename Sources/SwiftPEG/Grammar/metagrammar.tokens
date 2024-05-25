@@ -1,3 +1,4 @@
+$ANY[""] ; # Empty "" generates calls to `self.expect()`, with no arguments, which always returns the next token regardless of its kind.
 $WHITESPACE["kind: .whitespace"] ;
 $IDENTIFIER["kind: .identifier"] ;
 $DIGITS["kind: .digits"] ;
@@ -23,6 +24,7 @@ $EXCLAMATIONMARK["kind: .exclamationMark"]: "!" ;
 $AMPERSAND["kind: .ampersand"]: "&" ;
 $COMMA["kind: .comma"]: "," ;
 $PERIOD["kind: .period"]: "." ;
+$BACKTICK["kind: .backtick"]: "`" ;
 $AT["kind: .at"]: "@" ;
 $DOLLAR["kind: .dollarSign"]: "$" ;
 $FORWARDSLASH["kind: .forwardSlash"]: "/" ;

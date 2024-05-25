@@ -28,8 +28,7 @@ extension GrammarParser {
 
     /// ```
     /// grammar[SwiftPEGGrammar.Grammar]:
-    ///     | metas rules { self.setLocation(.init(metas: metas, rules: rules), at: mark) }
-    ///     | rules { self.setLocation(.init(metas: [], rules: rules), at: mark) }
+    ///     | metas? rules { self.setLocation(.init(metas: metas ?? [], rules: rules), at: mark) }
     ///     ;
     /// ```
     @memoized("grammar")
@@ -38,18 +37,12 @@ extension GrammarParser {
         let mark = self.mark()
 
         if
-            let metas = try self.metas(),
+            let metas = try self.optional({
+                try self.metas()
+            }),
             let rules = try self.rules()
         {
-            return self.setLocation(.init(metas: metas, rules: rules), at: mark)
-        }
-
-        self.restore(mark)
-
-        if
-            let rules = try self.rules()
-        {
-            return self.setLocation(.init(metas: [], rules: rules), at: mark)
+            return self.setLocation(.init(metas: metas ?? [], rules: rules), at: mark)
         }
 
         self.restore(mark)
@@ -80,8 +73,7 @@ extension GrammarParser {
 
     /// ```
     /// meta[SwiftPEGGrammar.Meta]:
-    ///     | "@" name=IDENTIFIER value=metaValue ';' { self.setLocation(.init(name: name.token, value: value), at: mark) }
-    ///     | "@" name=IDENTIFIER ';' { self.setLocation(.init(name: name.token, value: nil), at: mark) }
+    ///     | "@" name=IDENTIFIER value=metaValue? ';' { self.setLocation(.init(name: name.token, value: value), at: mark) }
     ///     ;
     /// ```
     @memoized("meta")
@@ -92,20 +84,12 @@ extension GrammarParser {
         if
             let _ = try self.expect(kind: .at),
             let name = try self.expect(kind: .identifier),
-            let value = try self.metaValue(),
+            let value = try self.optional({
+                try self.metaValue()
+            }),
             let _ = try self.expect(kind: .semicolon)
         {
             return self.setLocation(.init(name: name.token, value: value), at: mark)
-        }
-
-        self.restore(mark)
-
-        if
-            let _ = try self.expect(kind: .at),
-            let name = try self.expect(kind: .identifier),
-            let _ = try self.expect(kind: .semicolon)
-        {
-            return self.setLocation(.init(name: name.token, value: nil), at: mark)
         }
 
         self.restore(mark)
@@ -165,8 +149,7 @@ extension GrammarParser {
 
     /// ```
     /// rule[SwiftPEGGrammar.Rule]:
-    ///     | ruleName ":" '|' alts ';' { self.setLocation(.init(name: ruleName, alts: alts), at: mark) }
-    ///     | ruleName ":" alts ';' { self.setLocation(.init(name: ruleName, alts: alts), at: mark) }
+    ///     | ruleName ":" '|'? alts ';' { self.setLocation(.init(name: ruleName, alts: alts), at: mark) }
     ///     ;
     /// ```
     @memoized("rule")
@@ -177,18 +160,9 @@ extension GrammarParser {
         if
             let ruleName = try self.ruleName(),
             let _ = try self.expect(kind: .colon),
-            let _ = try self.expect(kind: .bar),
-            let alts = try self.alts(),
-            let _ = try self.expect(kind: .semicolon)
-        {
-            return self.setLocation(.init(name: ruleName, alts: alts), at: mark)
-        }
-
-        self.restore(mark)
-
-        if
-            let ruleName = try self.ruleName(),
-            let _ = try self.expect(kind: .colon),
+            let _ = try self.optional({
+                try self.expect(kind: .bar)
+            }),
             let alts = try self.alts(),
             let _ = try self.expect(kind: .semicolon)
         {
@@ -233,8 +207,7 @@ extension GrammarParser {
 
     /// ```
     /// alts[[SwiftPEGGrammar.Alt]]:
-    ///     | alt "|" alts { [alt] + alts }
-    ///     | alt { [alt] }
+    ///     | alts="|".alt+ { alts }
     ///     ;
     /// ```
     @memoized("alts")
@@ -243,19 +216,13 @@ extension GrammarParser {
         let mark = self.mark()
 
         if
-            let alt = try self.alt(),
-            let _ = try self.expect(kind: .bar),
-            let alts = try self.alts()
+            let alts = try self.gather(separator: {
+                try self.expect(kind: .bar)
+            }, item: {
+                try self.alt()
+            })
         {
-            return [alt] + alts
-        }
-
-        self.restore(mark)
-
-        if
-            let alt = try self.alt()
-        {
-            return [alt]
+            return alts
         }
 
         self.restore(mark)
@@ -264,8 +231,7 @@ extension GrammarParser {
 
     /// ```
     /// alt[SwiftPEGGrammar.Alt]:
-    ///     | namedItems action { self.setLocation(.init(namedItems: namedItems, action: action), at: mark) }
-    ///     | namedItems { self.setLocation(.init(namedItems: namedItems, action: nil), at: mark) }
+    ///     | namedItems action? { self.setLocation(.init(namedItems: namedItems, action: action), at: mark) }
     ///     ;
     /// ```
     @memoized("alt")
@@ -275,17 +241,11 @@ extension GrammarParser {
 
         if
             let namedItems = try self.namedItems(),
-            let action = try self.action()
+            let action = try self.optional({
+                try self.action()
+            })
         {
             return self.setLocation(.init(namedItems: namedItems, action: action), at: mark)
-        }
-
-        self.restore(mark)
-
-        if
-            let namedItems = try self.namedItems()
-        {
-            return self.setLocation(.init(namedItems: namedItems, action: nil), at: mark)
         }
 
         self.restore(mark)
@@ -294,8 +254,7 @@ extension GrammarParser {
 
     /// ```
     /// namedItems[[SwiftPEGGrammar.NamedItem]]:
-    ///     | namedItem namedItems { [namedItem] + namedItems }
-    ///     | namedItem { [namedItem] }
+    ///     | namedItems=namedItem+ { namedItems }
     ///     ;
     /// ```
     @memoized("namedItems")
@@ -304,18 +263,11 @@ extension GrammarParser {
         let mark = self.mark()
 
         if
-            let namedItem = try self.namedItem(),
-            let namedItems = try self.namedItems()
+            let namedItems = try self.repeatOneOrMore({
+                try self.namedItem()
+            })
         {
-            return [namedItem] + namedItems
-        }
-
-        self.restore(mark)
-
-        if
-            let namedItem = try self.namedItem()
-        {
-            return [namedItem]
+            return namedItems
         }
 
         self.restore(mark)
@@ -987,23 +939,7 @@ extension GrammarParser {
 
     /// ```
     /// balancedTokenAtom[TokenNode<RawTokenizer.Token, RawTokenizer.Location>]:
-    ///     | token=IDENTIFIER { .init(token) }
-    ///     | token=DIGITS { .init(token) }
-    ///     | token=STRING { .init(token) }
-    ///     | token=':' { .init(token) }
-    ///     | token=';' { .init(token) }
-    ///     | token='|' { .init(token) }
-    ///     | token='=' { .init(token) }
-    ///     | token='~' { .init(token) }
-    ///     | token='*' { .init(token) }
-    ///     | token='+' { .init(token) }
-    ///     | token='?' { .init(token) }
-    ///     | token=',' { .init(token) }
-    ///     | token='.' { .init(token) }
-    ///     | token='@' { .init(token) }
-    ///     | token='$' { .init(token) }
-    ///     | token='/' { .init(token) }
-    ///     | token='\\' { .init(token) }
+    ///     | !"[" !"]" !"{" !"}" !"(" !")" token=ANY { .init(token) }
     ///     ;
     /// ```
     @memoized("balancedTokenAtom")
@@ -1012,135 +948,25 @@ extension GrammarParser {
         let mark = self.mark()
 
         if
-            let token = try self.expect(kind: .identifier)
-        {
-            return .init(token)
-        }
-
-        self.restore(mark)
-
-        if
-            let token = try self.expect(kind: .digits)
-        {
-            return .init(token)
-        }
-
-        self.restore(mark)
-
-        if
-            let token = try self.expect(kind: .string)
-        {
-            return .init(token)
-        }
-
-        self.restore(mark)
-
-        if
-            let token = try self.expect(kind: .colon)
-        {
-            return .init(token)
-        }
-
-        self.restore(mark)
-
-        if
-            let token = try self.expect(kind: .semicolon)
-        {
-            return .init(token)
-        }
-
-        self.restore(mark)
-
-        if
-            let token = try self.expect(kind: .bar)
-        {
-            return .init(token)
-        }
-
-        self.restore(mark)
-
-        if
-            let token = try self.expect(kind: .equals)
-        {
-            return .init(token)
-        }
-
-        self.restore(mark)
-
-        if
-            let token = try self.expect(kind: .tilde)
-        {
-            return .init(token)
-        }
-
-        self.restore(mark)
-
-        if
-            let token = try self.expect(kind: .star)
-        {
-            return .init(token)
-        }
-
-        self.restore(mark)
-
-        if
-            let token = try self.expect(kind: .plus)
-        {
-            return .init(token)
-        }
-
-        self.restore(mark)
-
-        if
-            let token = try self.expect(kind: .questionMark)
-        {
-            return .init(token)
-        }
-
-        self.restore(mark)
-
-        if
-            let token = try self.expect(kind: .comma)
-        {
-            return .init(token)
-        }
-
-        self.restore(mark)
-
-        if
-            let token = try self.expect(kind: .period)
-        {
-            return .init(token)
-        }
-
-        self.restore(mark)
-
-        if
-            let token = try self.expect(kind: .at)
-        {
-            return .init(token)
-        }
-
-        self.restore(mark)
-
-        if
-            let token = try self.expect(kind: .dollarSign)
-        {
-            return .init(token)
-        }
-
-        self.restore(mark)
-
-        if
-            let token = try self.expect(kind: .forwardSlash)
-        {
-            return .init(token)
-        }
-
-        self.restore(mark)
-
-        if
-            let token = try self.expect(kind: .backslash)
+            try self.negativeLookahead({
+                try self.expect(kind: .leftSquare)
+            }),
+            try self.negativeLookahead({
+                try self.expect(kind: .rightSquare)
+            }),
+            try self.negativeLookahead({
+                try self.expect(kind: .leftBrace)
+            }),
+            try self.negativeLookahead({
+                try self.expect(kind: .rightBrace)
+            }),
+            try self.negativeLookahead({
+                try self.expect(kind: .leftParen)
+            }),
+            try self.negativeLookahead({
+                try self.expect(kind: .rightParen)
+            }),
+            let token = try self.expect()
         {
             return .init(token)
         }

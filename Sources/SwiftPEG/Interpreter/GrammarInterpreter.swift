@@ -193,7 +193,7 @@ public class GrammarInterpreter {
         var ctx = AltContext(valueNames: [], values: [])
 
         for item in alt.items {
-            let alias = item.alias
+            let alias = item.alias()
 
             switch item {
             case .item(_, let item, _):

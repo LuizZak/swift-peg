@@ -325,12 +325,12 @@ public enum InternalGrammar {
         /// by code generators.
         /// 
         /// Returns `nil` if no suitable alias was found.
-        var alias: String? {
+        func alias(_ literalResolver: TokenLiteralResolver? = nil) -> String? {
             switch self {
             case .item(let name?, _, _):
                 return name
             case .item(_, let item, _):
-                return item.alias
+                return item.alias(literalResolver)
             case .lookahead:
                 return nil
             }
@@ -433,16 +433,16 @@ public enum InternalGrammar {
         /// code generators.
         /// 
         /// Returns `nil` if no suitable alias was found.
-        var alias: String? {
+        func alias(_ literalResolver: TokenLiteralResolver? = nil) -> String? {
             switch self {
             case .atom(let atom),
                 .zeroOrMore(let atom),
                 .oneOrMore(let atom),
                 .optional(let atom):
-                return atom.alias
+                return atom.alias(literalResolver)
             
             case .gather(_, let node):
-                return node.alias
+                return node.alias(literalResolver)
 
             case .optionalItems:
                 return nil
@@ -600,7 +600,7 @@ public enum InternalGrammar {
         /// If this atom is a token, returns the token's identifier lowercased.
         /// If it's a rule name, return the rule name itself, otherwise returns
         /// `nil`.
-        var alias: String? {
+        func alias(_ literalResolver: TokenLiteralResolver? = nil) -> String? {
             switch self {
             case .token(let ident):
                 return ident.lowercased()
@@ -608,8 +608,11 @@ public enum InternalGrammar {
             case .ruleName(let ident):
                 return ident
 
-            case .group, .string:
+            case .group:
                 return nil
+            
+            case .string(_, let literal):
+                return literalResolver?.tokenName(ofRawLiteral: literal)
             }
         }
 
@@ -653,4 +656,14 @@ public enum InternalGrammar {
             .init(name: String(node.name))
         }
     }
+}
+
+/// Protocol for types capable of resolving a token string literal into a token
+/// definition with an appropriate name.
+/// 
+/// Used by some of internal grammar classes' `alias()` methods.
+protocol TokenLiteralResolver {
+    /// Returns the name of a token that has a literal value matching the given
+    /// (non-quoted) value, or `nil`, if none is known.
+    func tokenName(ofRawLiteral literal: String) -> String?
 }

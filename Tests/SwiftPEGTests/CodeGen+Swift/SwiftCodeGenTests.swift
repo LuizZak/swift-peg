@@ -430,6 +430,47 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
+    func testGenerateParser_soleTokenRule_doesNotEmitTokenNameAsReturnAction() throws {
+        let grammar = makeGrammar([
+            .init(name: "a", alts: [
+                .init(items: [
+                    .item("'+'"),
+                ]),
+            ]),
+        ])
+        let tokens = [
+            makeTokenDef(name: "ADD", literal: "+"),
+        ]
+        let sut = makeSut(grammar, tokens)
+
+        let result = try sut.generateParser()
+
+        diffTest(expected: """
+            // TestParser
+            extension TestParser {
+                /// ```
+                /// a:
+                ///     | '+'
+                ///     ;
+                /// ```
+                @memoized("a")
+                @inlinable
+                public func __a() throws -> Node? {
+                    let mark = self.mark()
+
+                    if
+                        let _ = try self.expect("+")
+                    {
+                        return Node()
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+            }
+            """).diff(result)
+    }
+
     func testGenerateParser_altReturnsSingleNamedItemIfNoActionSpecified() throws {
         let grammar = makeGrammar([
             .init(name: "a", type: "SomeType", alts: [
@@ -779,6 +820,74 @@ class SwiftCodeGenTests: XCTestCase {
                         let c = try self.c()
                     {
                         return Node()
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+            }
+            """#).diff(result)
+    }
+
+    func testGenerateParser_optionalGroup_named() throws {
+        let grammar = makeGrammar([
+            .init(name: "a", alts: [
+                .init(items: [
+                    .item(name: "name", .optionalItems([
+                        .init(items: [
+                            "'+'",
+                            .item(name: "nameInner", #"'\'"#),
+                            "'-'",
+                        ], action: "nameInner"),
+                    ])),
+                ]),
+            ]),
+        ])
+        let sut = makeSut(grammar)
+
+        let result = try sut.generateParser()
+
+        diffTest(expected: #"""
+            // TestParser
+            extension TestParser {
+                /// ```
+                /// a:
+                ///     | name=['+' nameInner='\' '-' { nameInner }]
+                ///     ;
+                /// ```
+                @memoized("a")
+                @inlinable
+                public func __a() throws -> Node? {
+                    let mark = self.mark()
+
+                    if
+                        let name = try self.optional({
+                            try self._a__opt()
+                        })
+                    {
+                        return name
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+
+                /// ```
+                /// _a__opt:
+                ///     | '+' nameInner='\' '-' { nameInner }
+                ///     ;
+                /// ```
+                @memoized("_a__opt")
+                @inlinable
+                public func ___a__opt() throws -> Node? {
+                    let mark = self.mark()
+
+                    if
+                        let _ = try self.expect("+"),
+                        let nameInner = try self.expect("\\"),
+                        let _ = try self.expect("-")
+                    {
+                        return nameInner
                     }
 
                     self.restore(mark)
@@ -1450,7 +1559,7 @@ private func makeTokenDefs(
 
 private func makeTokenDef(
     name: String,
-    expectArgs: String?,
+    expectArgs: String? = nil,
     literal: String
 ) -> InternalGrammar.TokenDefinition {
 
