@@ -18,13 +18,10 @@ public class SwiftCodeGen {
     public static let tokenCall: String = "tokenCall"
 
     /// Set of identifiers that cannot be used as bare identifiers in Swift, and
-    /// must be escaped with backticks (`)
-    public static let invalidBareIdentifiers: Set<String> = [
-        "_", "var", "let", "nil", "class", "struct", "func", "protocol", "enum",
-        "try", "throws", "deinit", "init", "if", "for", "else", "while", "switch",
-        "repeat", "do", "public", "private", "fileprivate", "internal", "static",
-        "self",
-    ]
+    /// must be escaped with backticks (`) to allow usage in declarations.
+    public static var invalidBareIdentifiers: Set<String> {
+        SwiftKeywords.keywords
+    }
 
     let parserName: String
     let grammar: InternalGrammar.Grammar

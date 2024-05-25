@@ -102,6 +102,48 @@ class SwiftCodeGenTests: XCTestCase {
             """#).diff(result)
     }
 
+    func testGenerateParser_escapesInvalidSwiftIdentifiers() throws {
+        let grammar = makeGrammar([
+            .init(name: "a", alts: [
+                .init(items: [
+                    .item("default"),
+                    #"'\'"#,
+                    .item("switch"),
+                ]),
+            ]),
+        ])
+        let sut = makeSut(grammar)
+
+        let result = try sut.generateParser()
+
+        diffTest(expected: #"""
+            // TestParser
+            extension TestParser {
+                /// ```
+                /// a:
+                ///     | default '\' switch
+                ///     ;
+                /// ```
+                @memoized("a")
+                @inlinable
+                public func __a() throws -> Node? {
+                    let mark = self.mark()
+
+                    if
+                        let `default` = try self.`default`(),
+                        let _ = try self.expect("\\"),
+                        let `switch` = try self.`switch`()
+                    {
+                        return Node()
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+            }
+            """#).diff(result)
+    }
+
     func testGenerateParser_usesTokenExpectArgs() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
