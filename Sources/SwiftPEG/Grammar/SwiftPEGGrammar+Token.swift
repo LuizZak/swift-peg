@@ -206,7 +206,30 @@ extension SwiftPEGGrammar {
 
         @inlinable
         public var length: Int {
-            string.count
+            switch self {
+            case .whitespace(let value):
+                return value.count
+
+            case .identifier(let value):
+                return value.count
+
+            case .digits(let value):
+                return value.count
+
+            case .string(let value):
+                return value.length
+
+            case
+                .leftParen, .rightParen, .leftBrace, .rightBrace, .leftSquare,
+                .rightSquare, .leftAngle, .rightAngle,.colon, .semicolon, .bar,
+                .equals, .tilde, .star, .plus, .minus, .questionMark, .exclamationMark,
+                .ampersand, .comma, .period, .at, .dollarSign, .forwardSlash,
+                .backslash:
+                return 1
+
+            case .doubleExclamationMark:
+                return 2
+            }
         }
 
         /// Attempts to construct a token from a given string literal value.
@@ -215,7 +238,8 @@ extension SwiftPEGGrammar {
         /// only be used as a convenience within a parser.
         @inlinable
         public init(stringLiteral value: String) {
-            guard let token = Self.from(string: value[...]) else {
+            var stream = StringStream(source: value)
+            guard let token = Self.from(stream: &stream) else {
                 fatalError("\(Self.self): Unknown token literal '\(value)'")
             }
 
@@ -258,15 +282,13 @@ extension SwiftPEGGrammar {
             }
         }
 
-        /// Returns a parsed token from the given substring.
+        /// Returns a parsed token from the given string stream.
         /// If the token is not recognized, `nil` is returned, instead.
         @inlinable
-        public static func from(string: Substring) -> Self? {
-            guard let first = string.first else {
-                return nil
-            }
+        public static func from<S>(stream: inout StringStream<S>) -> Self? where S.SubSequence == Substring {
+            if stream.isEof { return nil }
 
-            switch first {
+            switch stream.peek() {
             case "(": return .leftParen
             case ")": return .rightParen
             case "{": return .leftBrace
@@ -285,7 +307,7 @@ extension SwiftPEGGrammar {
             case "-": return .minus
             case "?": return .questionMark
             case "!":
-                if string.dropFirst().first == "!" {
+                if stream.isNext("!!") {
                     return .doubleExclamationMark
                 }
 
@@ -297,24 +319,27 @@ extension SwiftPEGGrammar {
             case "$": return .dollarSign
             case "/": return .forwardSlash
             case "\\": return .backslash
+            // String
             case "'", "\"":
-                if let string = StringLiteral.from(string: string) {
+                if let string = StringLiteral.from(stream: &stream) {
                     return .string(string)
                 }
                 return nil
+            // Whitespace
             case let c where c.isWhitespace:
-                if let match = Self._parseWhitespace(string) {
+                if let match = Self._parseWhitespace(&stream) {
                     return .whitespace(match)
                 }
                 return nil
+            // Digits
             case let c where c.isWholeNumber:
-                if let digits = Self._parseDigits(string) {
+                if let digits = Self._parseDigits(&stream) {
                     return .digits(digits)
                 }
                 return nil
+            // Identifier
             default:
-                // Try identifier
-                if let ident = Self._parseIdentifier(string) {
+                if let ident = Self._parseIdentifier(&stream) {
                     return .identifier(ident)
                 }
                 return nil
@@ -322,8 +347,7 @@ extension SwiftPEGGrammar {
         }
 
         @inlinable
-        static func _parseWhitespace<S: StringProtocol>(_ string: S) -> Substring? where S.SubSequence == Substring {
-            var stream = StringStream(source: string)
+        static func _parseWhitespace<S: StringProtocol>(_ stream: inout StringStream<S>) -> Substring? where S.SubSequence == Substring {
             guard !stream.isEof else { return nil }
 
             switch stream.next() {
@@ -347,8 +371,7 @@ extension SwiftPEGGrammar {
         }
 
         @inlinable
-        static func _parseIdentifier<S: StringProtocol>(_ string: S) -> Substring? where S.SubSequence == Substring {
-            var stream = StringStream(source: string)
+        static func _parseIdentifier<S: StringProtocol>(_ stream: inout StringStream<S>) -> Substring? where S.SubSequence == Substring {
             guard !stream.isEof else { return nil }
 
             switch stream.next() {
@@ -378,8 +401,7 @@ extension SwiftPEGGrammar {
         }
 
         @inlinable
-        static func _parseDigits<S: StringProtocol>(_ string: S) -> Substring? where S.SubSequence == Substring {
-            var stream = StringStream(source: string)
+        static func _parseDigits<S: StringProtocol>(_ stream: inout StringStream<S>) -> Substring? where S.SubSequence == Substring {
             guard !stream.isEof else { return nil }
 
             switch stream.next() {
@@ -404,17 +426,23 @@ extension SwiftPEGGrammar {
 
         /// Specifies a variant of a string literal.
         /// 
-        /// Associated values represent the string's contents, not including the
+        /// Associated values represent the string's contents, including the
         /// quotes.
         public enum StringLiteral: Hashable, CustomStringConvertible {
             /// `'<...>'`
+            /// 
+            /// Includes quotes.
             case singleQuote(Substring)
             
             /// `"<...>"`
+            /// 
+            /// Includes quotes.
             case doubleQuote(Substring)
 
             /// `"""<...>"""`
-            /// Supports newlines within
+            /// 
+            /// Supports newlines within.
+            /// Includes quotes.
             case tripleQuote(Substring)
 
             /// Returns contents of the string, without surrounding quotes.
@@ -426,11 +454,9 @@ extension SwiftPEGGrammar {
                 case .doubleQuote(let string):
                     return string.dropFirst().dropLast()
                 case .tripleQuote(let string):
-                    // Ignore first newline past triple quote
-                    if string.hasPrefix("\"\"\"\n") {
-                        return string.dropFirst(4).dropLast(3)
-                    }
-                    return string.dropFirst(3).dropLast(3)
+                    return string.dropFirst(
+                        string.hasPrefix("\"\"\"\n") ? 4 : 3 // Ignore first newline past triple quote
+                    ).dropLast(3)
                 }
             }
 
@@ -445,6 +471,18 @@ extension SwiftPEGGrammar {
                 }
             }
 
+            /// Returns the length of this string in grapheme clusters, i.e.
+            /// Swift's `String.count`.
+            @inlinable
+            public var length: Int {
+                switch self {
+                case .singleQuote(let string),
+                    .doubleQuote(let string),
+                    .tripleQuote(let string):
+                    return string.count
+                }
+            }
+
             /// Returns the full representation of this literal, including quotes.
             @inlinable
             public var description: String {
@@ -454,8 +492,7 @@ extension SwiftPEGGrammar {
             /// Returns a parsed string literal from the given substring.
             /// If no string literal is recognized, `nil` is returned, instead.
             @inlinable
-            public static func from(string: Substring) -> Self? {
-                var stream = StringStream(source: string)
+            public static func from<S>(stream: inout StringStream<S>) -> Self? where S.SubSequence == Substring {
                 guard !stream.isEof else { return nil }
 
                 let terminator: String

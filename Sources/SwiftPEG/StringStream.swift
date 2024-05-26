@@ -5,17 +5,22 @@ public struct StringStream<StringType: StringProtocol> {
     /// The string being streamed.
     public let source: StringType
 
+    /// The current index from which substrings will be sliced from.
+    /// Starts from `source.startIndex` and is incremented by `markSubstringStart()`.
+    /// Always `<= self.index` and `>= source.startIndex`.
+    public var substringStartIndex: StringType.Index
+
     /// The current index. Always > `source.startIndex`, and may point beyond
     /// the string's end.
     public var index: StringType.Index
 
-    /// Returns the range `source.startIndex..<self.index`.
+    /// Returns the range `self.substringStartIndex..<self.index`.
     @inlinable
     public var range: Range<StringType.Index> {
-        source.startIndex..<index
+        substringStartIndex..<index
     }
 
-    /// Returns a substring with range `source.startIndex..<self.index`.
+    /// Returns a substring with range `self.substringStartIndex..<self.index`.
     @inlinable
     public var substring: StringType.SubSequence {
         source[range]
@@ -30,6 +35,28 @@ public struct StringStream<StringType: StringProtocol> {
     public init(source: StringType) {
         self.source = source
         self.index = source.startIndex
+        self.substringStartIndex = source.startIndex
+    }
+
+    /// Returns a copy of the internal state of this string stream for future
+    /// backtracking operations.
+    @inlinable
+    public func save() -> State {
+        State(index: index, substringStartIndex: substringStartIndex)
+    }
+
+    /// Restores the state of this string stream to a provided state.
+    @inlinable
+    public mutating func restore(_ state: State) {
+        self.index = state.index
+        self.substringStartIndex = state.substringStartIndex
+    }
+
+    /// Records the current stream position as the start of future `self.substring`
+    /// slices.
+    @inlinable
+    public mutating func markSubstringStart() {
+        self.substringStartIndex = self.index
     }
 
     /// Returns `true` if the current index, advanced by `offset`, points past
@@ -104,5 +131,45 @@ public struct StringStream<StringType: StringProtocol> {
     @inlinable
     public mutating func advance() {
         source.formIndex(after: &index)
+    }
+
+    /// Contains information about the state of a string stream, allowing for
+    /// recording and reversing of the stream.
+    public struct State {
+        public var index: StringType.Index
+        public var substringStartIndex: StringType.Index
+
+        @usableFromInline
+        internal init(index: String.Index, substringStartIndex: String.Index) {
+            self.index = index
+            self.substringStartIndex = substringStartIndex
+        }
+    }
+}
+
+extension StringStream {
+    @usableFromInline
+    func debugDisplay() -> String {
+        var buffer = ""
+        var bufferLower = ""
+
+        var idx = source.startIndex
+        for char in source {
+            defer { source.formIndex(after: &idx) }
+            let computed = char.isNewline ? "\\n" : String(char)
+            buffer += computed
+
+            if idx == self.substringStartIndex && idx == self.index {
+                bufferLower += "I" + String(repeating: " ", count: computed.count - 1)
+            } else if idx == self.substringStartIndex {
+                bufferLower += "]" + String(repeating: " ", count: computed.count - 1)
+            } else if idx == self.index {
+                bufferLower += "[" + String(repeating: " ", count: computed.count - 1)
+            } else {
+                bufferLower += String(repeating: " ", count: computed.count)
+            }
+        }
+
+        return "\(buffer)\n\(bufferLower)"
     }
 }
