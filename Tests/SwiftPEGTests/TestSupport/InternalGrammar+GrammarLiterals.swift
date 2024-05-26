@@ -54,18 +54,6 @@ extension InternalGrammar.SwiftType: ExpressibleByStringLiteral {
 
 // MARK: Operator support
 
-extension InternalGrammar.Alt {
-    /// Constructs `alts: alt | alt`
-    static func | (lhs: Self, rhs: Self) -> [Self] {
-        return [lhs, rhs]
-    }
-
-    /// Constructs `alts: alts | alt`
-    static func | (lhs: [Self], rhs: Self) -> [Self] {
-        return lhs + [rhs]
-    }
-}
-
 extension InternalGrammar.NamedItem {
     /// Constructs `namedItems: namedItem+`
     static func .. (lhs: Self, rhs: Self) -> [Self] {
@@ -92,6 +80,41 @@ extension InternalGrammar.Atom {
     /// Constructs `value*`
     static postfix func * (_ value: Self) -> InternalGrammar.Item {
         .oneOrMore(value)
+    }
+}
+
+// MARK: - AltConvertible
+
+protocol AltConvertible {
+    var asAlt: InternalGrammar.Alt { get }
+}
+
+extension AltConvertible {
+    /// Constructs `alts: self.asAlt | self.asAlt`
+    static func | (lhs: Self, rhs: Self) -> [InternalGrammar.Alt] {
+        return [lhs.asAlt, rhs.asAlt]
+    }
+
+    /// Constructs `alts: alts | self.asAlt`
+    static func | (lhs: [InternalGrammar.Alt], rhs: Self) -> [InternalGrammar.Alt] {
+        return lhs + [rhs.asAlt]
+    }
+}
+
+extension InternalGrammar.Alt: AltConvertible {
+    var asAlt: Self { self }
+}
+extension InternalGrammar.NamedItem: AltConvertible {
+    var asAlt: InternalGrammar.Alt { .init(items: [self]) }
+}
+extension InternalGrammar.Item: AltConvertible {
+    var asAlt: InternalGrammar.Alt { .init(items: [.item(self)]) }
+}
+extension InternalGrammar.Atom: AltConvertible {
+    var asAlt: InternalGrammar.Alt {
+        .init(items: [
+            .item(.atom(self))
+        ])
     }
 }
 

@@ -2,19 +2,16 @@ import XCTest
 
 @testable import SwiftPEG
 
-class GrammarProcessorTests: XCTestCase {
-    func testUnreachableRuleDiagnostics() throws {
+class GrammarProcessor_AltOrderingTests: XCTestCase {
+    func testAltOrderDiagnostics() throws {
         let start = makeRule(name: "start", [
             makeAlt([ makeItem("rule1") ]),
         ])
+        let alt1 = makeAlt([ makeItem("a") ])
+        let alt2 = makeAlt([ makeItem("a"), makeItem("b") ])
         let rule1 = makeRule(name: "rule1", [
-            makeAlt([ makeItem("rule2"), makeItem("a") ]),
-        ])
-        let rule2 = makeRule(name: "rule2", [
-            makeAlt([ makeItem("a") ]),
-        ])
-        let rule3 = makeRule(name: "rule3", [
-            makeAlt([ makeItem("a") ]),
+            alt1,
+            alt2,
         ])
         let grammar = makeGrammar(
             metas: [
@@ -22,71 +19,112 @@ class GrammarProcessorTests: XCTestCase {
                 makeMeta(name: "token", value: "a"),
                 makeMeta(name: "token", value: "b"),
             ],
-            [start, rule1, rule2, rule3]
+            [start, rule1]
         )
         let delegate = stubDelegate()
         let sut = makeSut(delegate)
 
         _ = try sut.process(grammar)
 
-        var diags = sut.diagnosticsCount(where: { diag in
+        let diags = sut.diagnosticsCount(where: { diag in
             switch diag {
-            case .unreachableRule(let rule, "start")
-                where rule === rule3:
+            case .altOrderIssue(let rule, let prior, let alt)
+                where rule === rule1 && prior === alt1 && alt === alt2:
                 return true
             default:
                 return false
             }
         })
         assertEqual(diags, 1)
-
-        _ = try sut.process(grammar, entryRuleName: "rule3")
-
-        diags = sut.diagnosticsCount(where: { diag in
-            switch diag {
-            case .unreachableRule(let rule, "rule3")
-                where rule === start || rule === rule1 || rule === rule2:
-                return true
-            default:
-                return false
-            }
-        })
-        assertEqual(diags, 3)
     }
 
-    func testUnreachableRuleDiagnostics_searchesNestedIdentifiers() throws {
-        var makeRef = _RuleGen()
-        let grammarString = """
-        start:
-            | \(makeRef[0])
-            | (\(makeRef[1]) | \(makeRef[2]))
-            | \(makeRef[3]) ?
-            | \(makeRef[4]) *
-            | \(makeRef[5]) +
-            | \(makeRef[6]).\(makeRef[7])+
-            | ! \(makeRef[8])
-            | & \(makeRef[9])
-            | ~ \(makeRef[10])
-            | named=\(makeRef[11])
-            ;
-        
-        \(makeRef.dumpRules())
-        """
-        let grammar = try parseGrammar(grammarString)
+    func testAltOrderDiagnostics_inspectsNestedAlts() throws {
+        let start = makeRule(name: "start", [
+            makeAlt([ makeItem("rule1") ]),
+        ])
+        let alt1 = makeAlt([ makeItem("a") ])
+        let alt2 = makeAlt([ makeItem("a"), makeItem("b") ])
+        let rule1 = makeRule(name: "rule1", [
+            makeAlt([
+                makeItem(atom: makeAtom(group: [alt1, alt2]))
+            ])
+        ])
+        let grammar = makeGrammar(
+            metas: [
+                // Non-rule identifiers must be declared as tokens
+                makeMeta(name: "token", value: "a"),
+                makeMeta(name: "token", value: "b"),
+            ],
+            [start, rule1]
+        )
         let delegate = stubDelegate()
         let sut = makeSut(delegate)
 
         _ = try sut.process(grammar)
 
-        let diagnostics = sut.diagnostics(where: { diag in
+        let diags = sut.diagnosticsCount(where: { diag in
             switch diag {
-            case .unreachableRule:
+            case .altOrderIssue(let rule, let prior, let alt)
+                where rule === rule1 && prior === alt1 && alt === alt2:
                 return true
             default:
                 return false
             }
         })
-        assertEmpty(diagnostics, message: "in grammar \(grammarString)")
+        assertEqual(diags, 1)
+    }
+
+    func testAltOrderDiagnostics_inspectsAltsByReduction() throws {
+        // Ensure that alts are checked against each other based on their reduced
+        // form, i.e. removing any optional production
+        let grammar = try parseGrammar("""
+        @token a; @token b; @token c; @token d;
+
+        start:
+            | a b? c
+            | a c d
+            ;
+        """)
+        let delegate = stubDelegate()
+        let sut = makeSut(delegate)
+
+        _ = try sut.process(grammar)
+
+        let diags = sut.diagnosticsCount(where: { diag in
+            switch diag {
+            case .altOrderIssue:
+                return true
+            default:
+                return false
+            }
+        })
+        assertEqual(diags, 1)
+    }
+
+    func testAltOrderDiagnostics_detectsNullableEarlyAlt() throws {
+        let grammar = try parseGrammar("""
+        @token a; @token b; @token c;
+
+        start:
+            | a? b*
+            | a b b c
+            | a b c
+            ;
+        """)
+        let delegate = stubDelegate()
+        let sut = makeSut(delegate)
+
+        _ = try sut.process(grammar)
+
+        let diags = sut.diagnosticsCount(where: { diag in
+            switch diag {
+            case .altOrderIssue:
+                return true
+            default:
+                return false
+            }
+        })
+        assertEqual(diags, 2)
     }
 }
 
@@ -112,12 +150,6 @@ private func makeMeta(name: String, value: String) -> SwiftPEGGrammar.Meta {
         name: makeIdent(name),
         value: SwiftPEGGrammar.MetaIdentifierValue(identifier: makeIdent(value))
     )
-}
-
-private func makeRule(name: String) -> SwiftPEGGrammar.Rule {
-    makeRule(name: name, [
-        makeAlt([makeItem("-")])
-    ])
 }
 
 private func makeRule(name: String, _ alts: [SwiftPEGGrammar.Alt]) -> SwiftPEGGrammar.Rule {
@@ -180,20 +212,4 @@ private func parseGrammar(
     }
 
     return grammar
-}
-
-private struct _RuleGen {
-    var rules: [String] = []
-
-    subscript(index: Int) -> String {
-        mutating get {
-            let name = "rule\(index)"
-            rules.append(name)
-            return name
-        }
-    }
-
-    func dumpRules() -> String {
-        rules.map({ "\($0): '-' ;" }).joined(separator: " ")
-    }
 }

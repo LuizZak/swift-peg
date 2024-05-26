@@ -1,5 +1,3 @@
-import SwiftPEGMacros
-
 /// Synthesizes a memoized version of the attached function.
 /// 
 /// Expects that the function's return type is not `Void`, and all parameters, if
