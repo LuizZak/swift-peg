@@ -126,6 +126,58 @@ class GrammarProcessor_AltOrderingTests: XCTestCase {
         })
         assertEqual(diags, 2)
     }
+
+    func testAltOrderDiagnostics_computesPermutations() throws {
+        let grammar = try parseGrammar("""
+        @token a; @token b; @token c; @token d; @token e;
+
+        start:
+            | a? b? c
+            | a c d
+            | b c e
+            | e? c b
+            ;
+        """)
+        let delegate = stubDelegate()
+        let sut = makeSut(delegate)
+
+        _ = try sut.process(grammar)
+
+        let diags = sut.diagnosticsCount(where: { diag in
+            switch diag {
+            case .altOrderIssue:
+                return true
+            default:
+                return false
+            }
+        })
+        assertEqual(diags, 3)
+    }
+
+    func testAltOrderDiagnostics_stressMaxPermutations() throws {
+        let grammar = try parseGrammar("""
+        @token a; @token b; @token c; @token d; @token e;
+
+        start:
+            | a? a? a? a? a? a? a? a? a? a? a? c
+            | b? b? b? b? b? b? b? b? b? b? b? d
+            ;
+        """)
+        let delegate = stubDelegate()
+        let sut = makeSut(delegate)
+
+        _ = try sut.process(grammar)
+
+        let diags = sut.diagnosticsCount(where: { diag in
+            switch diag {
+            case .altOrderIssue:
+                return true
+            default:
+                return false
+            }
+        })
+        assertEqual(diags, 0)
+    }
 }
 
 // MARK: - Test internals

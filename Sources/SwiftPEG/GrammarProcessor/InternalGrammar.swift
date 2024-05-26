@@ -253,6 +253,19 @@ public enum InternalGrammar {
             return .init(items: items, action: action, failAction: failAction)
         }
 
+        /// Flattens this alt. Returns a copy of `self` with nested productions
+        /// collapsed to the top-level whenever possible.
+        ///
+        /// If this results in this production being empty, returns `nil`.
+        func flattened() -> Self? {
+            let items = items.compactMap({ $0.flattened() })
+            if items.isEmpty && action == nil {
+                return nil
+            }
+
+            return .init(items: items, action: action, failAction: failAction)
+        }
+
         /// Accepts a given visitor, and recursively passes the visitor to nested
         /// property types within this object that can be visited, if present.
         public func accept(_ visitor: some Visitor) throws {
@@ -288,7 +301,7 @@ public enum InternalGrammar {
         /// Returns `true` if `self` executes a subset of the production of
         /// `other`, such that `self == other + [extra productions in other]...`.
         /// `true` is also returned if `self` and `other` are equivalent.
-        func isSubset(of other: Self) -> Bool {
+        func isPrefix(of other: Self) -> Bool {
             let selfCut = self.removingCuts
             let otherCut = other.removingCuts
             if selfCut == nil && otherCut == nil {
@@ -299,7 +312,7 @@ public enum InternalGrammar {
             }
 
             if selfCut.items == otherCut.items { return true }
-            // Subsets require `self` to be at most the same size as `other`
+            // Prefixes require `self` to be at most the same size as `other`
             if selfCut.items.count > otherCut.items.count { return false }
 
             return selfCut.items.elementsEqual(otherCut.items[..<selfCut.items.count], by: { $0.isEquivalent(to: $1) })
@@ -343,6 +356,7 @@ public enum InternalGrammar {
         }
     }
 
+    @GeneratedCaseChecks
     public enum NamedItem: Hashable, CustomStringConvertible {
         /// `name=IDENT? item ('[' swiftType ']')?`
         case item(name: String? = nil, Item, type: SwiftType? = nil)
@@ -399,6 +413,20 @@ public enum InternalGrammar {
                 return item.description
             case .lookahead(let lookahead):
                 return lookahead.description
+            }
+        }
+
+        /// Flattens this alt. Returns a copy of `self` with nested productions
+        /// collapsed to the top-level whenever possible.
+        ///
+        /// If this results in this production being empty, returns `nil`.
+        func flattened() -> Self? {
+            switch self {
+            case .item(let name, let item, let type):
+                item.flattened().map { Self.item(name: name, $0, type: type) }
+
+            case .lookahead(let lookahead):
+                lookahead.flattened().map(Self.lookahead)
             }
         }
 
@@ -562,6 +590,52 @@ public enum InternalGrammar {
             }
         }
 
+        /// Flattens this alt. Returns a copy of `self` with nested productions
+        /// collapsed to the top-level whenever possible.
+        ///
+        /// If this results in this production being empty, returns `nil`.
+        func flattened() -> Self? {
+            switch self {
+            case .optional(let atom):
+                return atom.flattened().map(Self.optional)
+
+            case .optionalItems(let alts):
+                let alts = alts.compactMap({ $0.flattened() })
+                if alts.isEmpty { return nil }
+                if alts.count == 1 { return .optional(.group(alts)) }
+
+                return .optionalItems(alts)
+
+            case .zeroOrMore(let atom):
+                return atom.flattened().map(Self.zeroOrMore)
+
+            case .oneOrMore(let atom):
+                return atom.flattened().map(Self.oneOrMore)
+
+            case .gather(let sep, let node):
+                switch (sep.flattened(), node.flattened()) {
+                case (let sep?, let node?):
+                    return Self.gather(sep: sep, node: node)
+                
+                case (nil, let node?):
+                    // A gather with just nodes is equivalent to a 'node+'
+                    // production
+                    return Self.oneOrMore(node)
+
+                case (let sep?, nil):
+                    // A gather with just separators is equivalent to a 'sep*'
+                    // production
+                    return Self.zeroOrMore(sep)
+
+                case (nil, nil):
+                    return nil
+                }
+
+            case .atom(let atom):
+                return atom.flattened().map(Self.atom)
+            }
+        }
+
         /// Accepts a given visitor, and recursively passes the visitor to nested
         /// property types within this object that can be visited, if present.
         public func accept(_ visitor: some Visitor) throws {
@@ -711,6 +785,21 @@ public enum InternalGrammar {
             }
         }
 
+        /// Flattens this alt. Returns a copy of `self` with nested productions
+        /// collapsed to the top-level whenever possible.
+        ///
+        /// If this results in this production being empty, returns `nil`.
+        func flattened() -> Self? {
+            switch self {
+            case .negative(let atom):
+                return atom.flattened().map(Self.negative)
+            case .positive(let atom):
+                return atom.flattened().map(Self.positive)
+            case .cut:
+                return self
+            }
+        }
+
         /// Accepts a given visitor, and recursively passes the visitor to nested
         /// property types within this object that can be visited, if present.
         public func accept(_ visitor: some Visitor) throws {
@@ -748,6 +837,7 @@ public enum InternalGrammar {
 
     public indirect enum Atom: Hashable, CustomStringConvertible {
         /// `'(' alts ')'`
+        @GeneratedIsCase(accessLevel: "public")
         case group([Alt])
 
         /// `ident`
@@ -796,10 +886,19 @@ public enum InternalGrammar {
             }
         }
 
-        public var isGroup: Bool {
+        /// Flattens this alt. Returns a copy of `self` with nested productions
+        /// collapsed to the top-level whenever possible.
+        ///
+        /// If this results in this production being empty, returns `nil`.
+        func flattened() -> Self? {
             switch self {
-            case .group: return true
-            default: return false
+            case .group(let alts):
+                let flattened = alts.compactMap({ $0.flattened() })
+                if flattened.isEmpty { return nil }
+                return .group(flattened)
+
+            default:
+                return self
             }
         }
 
