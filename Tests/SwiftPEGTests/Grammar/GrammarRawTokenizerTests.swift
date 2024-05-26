@@ -4,27 +4,56 @@ import XCTest
 
 class GrammarRawTokenizerTests: XCTestCase {
     func testParseTokens() throws {
-        let sut = makeSut("""
+        let sut = makeSut(#"""
         "a"  'b' ; 
-        $ [ ] abc 123
-        """)
+        $ [ ] abc 123 """
+        abc
+        """ a
+        """#)
 
         try assertTokensAndLocations(sut, [
-            (.string(.doubleQuote(#""a""#)),    makeLocation(line: 1, column: 1)),
-            (.whitespace("  "),                 makeLocation(line: 1, column: 4)),
-            (.string(.singleQuote(#"'b'"#)),    makeLocation(line: 1, column: 6)),
-            (.whitespace(" "),                  makeLocation(line: 1, column: 9)),
-            (.semicolon,                        makeLocation(line: 1, column: 10)),
-            (.whitespace(" \n"),                makeLocation(line: 1, column: 11)),
-            (.dollarSign,                       makeLocation(line: 2, column: 1)),
-            (.whitespace(" "),                  makeLocation(line: 2, column: 2)),
-            (.leftSquare,                       makeLocation(line: 2, column: 3)),
-            (.whitespace(" "),                  makeLocation(line: 2, column: 4)),
-            (.rightSquare,                      makeLocation(line: 2, column: 5)),
-            (.whitespace(" "),                  makeLocation(line: 2, column: 6)),
-            (.identifier("abc"),                makeLocation(line: 2, column: 7)),
-            (.whitespace(" "),                  makeLocation(line: 2, column: 10)),
-            (.digits("123"),                    makeLocation(line: 2, column: 11)),
+            (.string(.doubleQuote(#""a""#)),             makeLocation(line: 1, column: 1)),
+            (.whitespace("  "),                          makeLocation(line: 1, column: 4)),
+            (.string(.singleQuote(#"'b'"#)),             makeLocation(line: 1, column: 6)),
+            (.whitespace(" "),                           makeLocation(line: 1, column: 9)),
+            (.semicolon,                                 makeLocation(line: 1, column: 10)),
+            (.whitespace(" \n"),                         makeLocation(line: 1, column: 11)),
+            (.dollarSign,                                makeLocation(line: 2, column: 1)),
+            (.whitespace(" "),                           makeLocation(line: 2, column: 2)),
+            (.leftSquare,                                makeLocation(line: 2, column: 3)),
+            (.whitespace(" "),                           makeLocation(line: 2, column: 4)),
+            (.rightSquare,                               makeLocation(line: 2, column: 5)),
+            (.whitespace(" "),                           makeLocation(line: 2, column: 6)),
+            (.identifier("abc"),                         makeLocation(line: 2, column: 7)),
+            (.whitespace(" "),                           makeLocation(line: 2, column: 10)),
+            (.digits("123"),                             makeLocation(line: 2, column: 11)),
+            (.whitespace(" "),                           makeLocation(line: 2, column: 14)),
+            (.string(.tripleQuote(#""""\#nabc\#n""""#)), makeLocation(line: 2, column: 15)),
+            (.whitespace(" "),                           makeLocation(line: 4, column: 4)),
+            (.identifier("a"),                           makeLocation(line: 4, column: 5)),
+        ])
+    }
+
+    func testSkipsComments() throws {
+        let sut = makeSut(#"""
+        # A line comment
+        a b c
+        d # Another line comment
+        e
+        """#)
+
+        try assertTokensAndLocations(sut, [
+            (.whitespace("\n"),   makeLocation(line: 1, column: 17)),
+            (.identifier("a"),    makeLocation(line: 2, column: 1)),
+            (.whitespace(" "),    makeLocation(line: 2, column: 2)),
+            (.identifier("b"),    makeLocation(line: 2, column: 3)),
+            (.whitespace(" "),    makeLocation(line: 2, column: 4)),
+            (.identifier("c"),    makeLocation(line: 2, column: 5)),
+            (.whitespace("\n"),   makeLocation(line: 2, column: 6)),
+            (.identifier("d"),    makeLocation(line: 3, column: 1)),
+            (.whitespace(" "),    makeLocation(line: 3, column: 2)),
+            (.whitespace("\n"),   makeLocation(line: 3, column: 25)),
+            (.identifier("e"),    makeLocation(line: 4, column: 1)),
         ])
     }
 }

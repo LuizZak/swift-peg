@@ -65,15 +65,13 @@ public class GrammarRawTokenizer: RawTokenizerType {
         while !_stream.isEof && _stream.peek() != "\n" {
             advance(by: 1)
         }
-        if !_stream.isEof {
-            advance(by: 1) // Skip linefeed character
-        }
     }
 
     @inlinable
     internal func skipComments() {
         while !_stream.isEof && _stream.isNext("#") {
             skipLine()
+            _stream.markSubstringStart()
         }
     }
 
