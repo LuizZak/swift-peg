@@ -157,6 +157,41 @@ class GrammarParserTests: XCTestCase {
             " ", ".", "\t", "[", "\n", ",", "]", "   ",
         ])
     }
+
+    func testAlt_withFailAction_filledAction_returnsAlt() throws {
+        let stubTokenizer = stubTestTokenizer([
+            "'a'", "'b'", "!!", "{", ".", ",", "}",
+        ])
+        let sut = makeSut(stubTokenizer)
+
+        let result = try assertUnwrap(sut.alt())
+
+        assertNotNil(result.failAction)
+        assertNotNil(result.failAction?.balancedTokens)
+        assertEqual(result.failAction?.balancedTokens?.tokens.map(\.token.string), [
+            ".", ",",
+        ])
+    }
+
+    func testAlt_withActionAndFailAction_filledAction_returnsAlt() throws {
+        let stubTokenizer = stubTestTokenizer([
+            "'a'", "'b'", "{", "+", "-", "}", "!!", "{", ".", ",", "}",
+        ])
+        let sut = makeSut(stubTokenizer)
+
+        let result = try assertUnwrap(sut.alt())
+
+        assertNotNil(result.action)
+        assertNotNil(result.action?.balancedTokens)
+        assertEqual(result.action?.balancedTokens?.tokens.map(\.token.string), [
+            "+", "-",
+        ])
+        assertNotNil(result.failAction)
+        assertNotNil(result.failAction?.balancedTokens)
+        assertEqual(result.failAction?.balancedTokens?.tokens.map(\.token.string), [
+            ".", ",",
+        ])
+    }
 }
 
 // MARK: - Test internals

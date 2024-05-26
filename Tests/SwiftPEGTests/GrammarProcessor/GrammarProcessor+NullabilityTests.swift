@@ -71,7 +71,8 @@ private func makeRule(name: String, _ alts: [SwiftPEGGrammar.Alt]) -> SwiftPEGGr
 private func makeAlt(_ items: [SwiftPEGGrammar.NamedItem]) -> SwiftPEGGrammar.Alt {
     SwiftPEGGrammar.Alt(
         namedItems: items,
-        action: nil
+        action: nil,
+        failAction: nil
     )
 }
 

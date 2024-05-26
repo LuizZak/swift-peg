@@ -21,6 +21,7 @@ $PLUS["kind: .plus"]: "+" ;
 $MINUS["kind: .minus"]: "-" ;
 $QUESTIONMARK["kind: .questionMark"]: "?" ;
 $EXCLAMATIONMARK["kind: .exclamationMark"]: "!" ;
+$DOUBLEEXCLAMATIONMARK["kind: .doubleExclamationMark"]: "!!" ;
 $AMPERSAND["kind: .ampersand"]: "&" ;
 $COMMA["kind: .comma"]: "," ;
 $PERIOD["kind: .period"]: "." ;

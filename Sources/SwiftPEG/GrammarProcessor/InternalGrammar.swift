@@ -186,13 +186,17 @@ public enum InternalGrammar {
     public struct Alt: Hashable, CustomStringConvertible {
         public var items: [NamedItem]
         public var action: Action? = nil
+        public var failAction: Action? = nil
 
         public var description: String {
-            let items = self.items.map(\.description).joined(separator: " ")
-            if let action = action {
-                return "\(items) \(action)"
+            var string = self.items.map(\.description).joined(separator: " ")
+            if let action {
+                string += " \(action)"
             }
-            return items
+            if let failAction {
+                string += " !!\(failAction)"
+            }
+            return string
         }
 
         /// Returns a copy of `self` with Cuts (`~`) removed.
@@ -201,7 +205,7 @@ public enum InternalGrammar {
             let items = items.compactMap(\.removingCuts)
             if items.isEmpty { return nil }
 
-            return .init(items: items, action: action)
+            return .init(items: items, action: action, failAction: failAction)
         }
 
         /// Returns `true` if both `self` and `other` execute equivalent productions,
@@ -248,7 +252,8 @@ public enum InternalGrammar {
         ) -> Self {
             .init(
                 items: node.namedItems.map(NamedItem.from),
-                action: node.action.map(Action.from)
+                action: node.action.map(Action.from),
+                failAction: node.failAction.map(Action.from)
             )
         }
     }

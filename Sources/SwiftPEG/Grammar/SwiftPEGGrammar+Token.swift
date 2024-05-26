@@ -70,6 +70,8 @@ extension SwiftPEGGrammar {
         case questionMark
         /// `!`
         case exclamationMark
+        /// `!!`
+        case doubleExclamationMark
         /// `&`
         case ampersand
         /// `,`
@@ -111,6 +113,7 @@ extension SwiftPEGGrammar {
             case .minus: return .minus
             case .questionMark: return .questionMark
             case .exclamationMark: return .exclamationMark
+            case .doubleExclamationMark: return .doubleExclamationMark
             case .ampersand: return .ampersand
             case .comma: return .comma
             case .period: return .period
@@ -146,6 +149,7 @@ extension SwiftPEGGrammar {
             case .minus: return "-"
             case .questionMark: return "?"
             case .exclamationMark: return "!"
+            case .doubleExclamationMark: return "!!"
             case .ampersand: return "&"
             case .comma: return ","
             case .period: return "."
@@ -183,6 +187,7 @@ extension SwiftPEGGrammar {
             case .minus: return "-"
             case .questionMark: return "?"
             case .exclamationMark: return "!"
+            case .doubleExclamationMark: return "!!"
             case .ampersand: return "&"
             case .comma: return ","
             case .period: return "."
@@ -242,6 +247,7 @@ extension SwiftPEGGrammar {
             case .minus: return .minus
             case .questionMark: return .questionMark
             case .exclamationMark: return .exclamationMark
+            case .doubleExclamationMark: return .doubleExclamationMark
             case .ampersand: return .ampersand
             case .comma: return .comma
             case .period: return .period
@@ -278,7 +284,12 @@ extension SwiftPEGGrammar {
             case "+": return .plus
             case "-": return .minus
             case "?": return .questionMark
-            case "!": return .exclamationMark
+            case "!":
+                if string.dropFirst().first == "!" {
+                    return .doubleExclamationMark
+                }
+
+                return .exclamationMark
             case "&": return .ampersand
             case ",": return .comma
             case ".": return .period
@@ -568,6 +579,8 @@ extension SwiftPEGGrammar {
         case questionMark = "?"
         /// `!`
         case exclamationMark = "!"
+        /// `!!`
+        case doubleExclamationMark = "!!"
         /// `&`
         case ampersand = "&"
         /// `,`

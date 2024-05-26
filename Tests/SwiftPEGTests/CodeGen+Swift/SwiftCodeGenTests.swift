@@ -322,6 +322,86 @@ class SwiftCodeGenTests: XCTestCase {
             """#).diff(result)
     }
 
+    func testGenerateParser_respectsImplicitReturns_false() throws {
+        let grammar = makeGrammar([
+            .init(name: "a", type: "Any", alts: [
+                .init(items: [
+                    .item("'+'"),
+                ], action: "anAction"),
+            ]),
+        ], metas: [
+            .init(name: "implicitReturns", value: .string("false")),
+        ])
+        let sut = makeSut(grammar)
+
+        let result = try sut.generateParser()
+
+        diffTest(expected: """
+            // TestParser
+            extension TestParser {
+                /// ```
+                /// a[Any]:
+                ///     | '+' { anAction }
+                ///     ;
+                /// ```
+                @memoized("a")
+                @inlinable
+                public func __a() throws -> Any? {
+                    let mark = self.mark()
+
+                    if
+                        let _ = try self.expect("+")
+                    {
+                        anAction
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+            }
+            """).diff(result)
+    }
+
+    func testGenerateParser_respectsImplicitReturns_true() throws {
+        let grammar = makeGrammar([
+            .init(name: "a", type: "Any", alts: [
+                .init(items: [
+                    .item("'+'"),
+                ], action: "anAction"),
+            ]),
+        ], metas: [
+            .init(name: "implicitReturns", value: .string("true")),
+        ])
+        let sut = makeSut(grammar)
+
+        let result = try sut.generateParser()
+
+        diffTest(expected: """
+            // TestParser
+            extension TestParser {
+                /// ```
+                /// a[Any]:
+                ///     | '+' { anAction }
+                ///     ;
+                /// ```
+                @memoized("a")
+                @inlinable
+                public func __a() throws -> Any? {
+                    let mark = self.mark()
+
+                    if
+                        let _ = try self.expect("+")
+                    {
+                        return anAction
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+            }
+            """).diff(result)
+    }
+
     func testGenerateParser_deduplicatesIdentifiers() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
@@ -611,6 +691,54 @@ class SwiftCodeGenTests: XCTestCase {
                     }
 
                     self.restore(mark)
+                    return nil
+                }
+            }
+            """).diff(result)
+    }
+
+    func testGenerateParser_altFailAction() throws {
+        let grammar = makeGrammar([
+            .init(name: "a", alts: [
+                .init(items: ["b"], failAction: "CustomAction()"),
+                .init(items: ["c"], failAction: "OtherCustomAction()"),
+            ])
+        ])
+        let sut = makeSut(grammar)
+
+        let result = try sut.generateParser()
+
+        diffTest(expected: """
+            // TestParser
+            extension TestParser {
+                /// ```
+                /// a:
+                ///     | b !!{ CustomAction() }
+                ///     | c !!{ OtherCustomAction() }
+                ///     ;
+                /// ```
+                @memoized("a")
+                @inlinable
+                public func __a() throws -> Node? {
+                    let mark = self.mark()
+
+                    if
+                        let b = try self.b()
+                    {
+                        return b
+                    }
+
+                    self.restore(mark)
+                    CustomAction()
+
+                    if
+                        let c = try self.c()
+                    {
+                        return c
+                    }
+
+                    self.restore(mark)
+                    OtherCustomAction()
                     return nil
                 }
             }
