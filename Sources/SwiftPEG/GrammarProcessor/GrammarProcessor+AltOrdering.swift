@@ -48,18 +48,20 @@ extension GrammarProcessor {
         guard let earlierRed = earlier.reduced else {
             return true
         }
-        if let latterRed = latter.reduced, earlierRed.isPrefix(of: latterRed) {
+        guard let latterRed = latter.reduced else {
+            return false
+        }
+        if earlierRed.isPrefix(of: latterRed) {
             return true
         }
 
-        // Check a shallow permutation set from each alt
+        // Check a shallow permutation set for the earlier alt
         let earlierPerm = permuteCache.permute(earlier, depthLimit: 3)
-        let latterPerm = permuteCache.permute(latter, depthLimit: 3)
 
-        // If any permutation of 'earlier' is a prefix of any permutation of
+        // If any permutation of 'earlier' is a prefix of the reduction of
         // 'latter', then 'earlier' shadows 'latter'.
         for earlier in earlierPerm {
-            if latterPerm.contains(where: earlier.isPrefix(of:)) {
+            if earlier.isPrefix(of: latterRed) {
                 return true
             }
         }
