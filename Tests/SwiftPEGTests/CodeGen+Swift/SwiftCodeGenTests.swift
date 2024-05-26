@@ -847,7 +847,8 @@ class SwiftCodeGenTests: XCTestCase {
     func testGenerateParser_generateCut() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
-                .init(items: ["b", .lookahead(.cut), "c"], action: "CustomAction()")
+                .init(items: ["b", .lookahead(.cut), "c"]),
+                .init(items: ["b", "d"]),
             ])
         ])
         let sut = makeSut(grammar)
@@ -859,7 +860,8 @@ class SwiftCodeGenTests: XCTestCase {
             extension TestParser {
                 /// ```
                 /// a:
-                ///     | b ~ c { CustomAction() }
+                ///     | b ~ c
+                ///     | b d
                 ///     ;
                 /// ```
                 @memoized("a")
@@ -873,7 +875,7 @@ class SwiftCodeGenTests: XCTestCase {
                         cut.toggleOn(),
                         let c = try self.c()
                     {
-                        return CustomAction()
+                        return Node()
                     }
 
                     self.restore(mark)
@@ -881,6 +883,15 @@ class SwiftCodeGenTests: XCTestCase {
                     if cut.isOn {
                         return nil
                     }
+
+                    if
+                        let b = try self.b(),
+                        let d = try self.d()
+                    {
+                        return Node()
+                    }
+
+                    self.restore(mark)
                     return nil
                 }
             }

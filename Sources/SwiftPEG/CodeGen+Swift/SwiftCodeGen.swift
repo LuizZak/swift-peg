@@ -197,7 +197,7 @@ public class SwiftCodeGen {
             buffer.emitLine(failAction.string)
         }
 
-        if hasCut(rule) {
+        if hasCut(alt) {
             buffer.emitNewline()
             buffer.emit("if cut.isOn ")
             buffer.emitBlock {

@@ -332,10 +332,6 @@ extension GrammarParser {
 
         self.restore(mark)
 
-        if cut.isOn {
-            return nil
-        }
-
         if
             let lookahead = try self.lookahead()
         {
@@ -343,10 +339,6 @@ extension GrammarParser {
         }
 
         self.restore(mark)
-
-        if cut.isOn {
-            return nil
-        }
         return nil
     }
 
@@ -398,10 +390,6 @@ extension GrammarParser {
         }
 
         self.restore(mark)
-
-        if cut.isOn {
-            return nil
-        }
         return nil
     }
 
@@ -445,10 +433,6 @@ extension GrammarParser {
 
         self.restore(mark)
 
-        if cut.isOn {
-            return nil
-        }
-
         if
             let atom = try self.atom(),
             let _ = try self.expect(kind: .star)
@@ -458,10 +442,6 @@ extension GrammarParser {
 
         self.restore(mark)
 
-        if cut.isOn {
-            return nil
-        }
-
         if
             let atom = try self.atom(),
             let _ = try self.expect(kind: .plus)
@@ -470,10 +450,6 @@ extension GrammarParser {
         }
 
         self.restore(mark)
-
-        if cut.isOn {
-            return nil
-        }
 
         if
             let sep = try self.atom(),
@@ -486,10 +462,6 @@ extension GrammarParser {
 
         self.restore(mark)
 
-        if cut.isOn {
-            return nil
-        }
-
         if
             let atom = try self.atom()
         {
@@ -497,10 +469,6 @@ extension GrammarParser {
         }
 
         self.restore(mark)
-
-        if cut.isOn {
-            return nil
-        }
         return nil
     }
 
@@ -540,10 +508,6 @@ extension GrammarParser {
 
         self.restore(mark)
 
-        if cut.isOn {
-            return nil
-        }
-
         if
             let string = try self.expect(kind: .string)
         {
@@ -551,10 +515,6 @@ extension GrammarParser {
         }
 
         self.restore(mark)
-
-        if cut.isOn {
-            return nil
-        }
         return nil
     }
 
@@ -583,10 +543,6 @@ extension GrammarParser {
         }
 
         self.restore(mark)
-
-        if cut.isOn {
-            return nil
-        }
 
         if
             let _ = try self.expect(kind: .leftSquare),
@@ -675,10 +631,6 @@ extension GrammarParser {
 
         self.restore(mark)
 
-        if cut.isOn {
-            return nil
-        }
-
         if
             let name = try self.expect(kind: .identifier)
         {
@@ -686,10 +638,6 @@ extension GrammarParser {
         }
 
         self.restore(mark)
-
-        if cut.isOn {
-            return nil
-        }
         return nil
     }
 
@@ -839,10 +787,6 @@ extension GrammarParser {
 
         self.restore(mark)
 
-        if cut.isOn {
-            return nil
-        }
-
         if
             let l = try self.expect(kind: .leftBrace),
             let balancedTokens = try self.balancedTokens(),
@@ -852,10 +796,6 @@ extension GrammarParser {
         }
 
         self.restore(mark)
-
-        if cut.isOn {
-            return nil
-        }
 
         if
             let l = try self.expect(kind: .leftSquare),
@@ -867,10 +807,6 @@ extension GrammarParser {
 
         self.restore(mark)
 
-        if cut.isOn {
-            return nil
-        }
-
         if
             let l = try self.expect(kind: .leftAngle),
             let balancedTokens = try self.balancedTokens(),
@@ -881,10 +817,6 @@ extension GrammarParser {
 
         self.restore(mark)
 
-        if cut.isOn {
-            return nil
-        }
-
         if
             let l = try self.expect(kind: .leftParen),
             let balancedTokens = try self.balancedTokens(),
@@ -894,10 +826,6 @@ extension GrammarParser {
         }
 
         self.restore(mark)
-
-        if cut.isOn {
-            return nil
-        }
 
         if
             let l = try self.expect(kind: .leftSquare),
@@ -962,10 +890,6 @@ extension GrammarParser {
         }
 
         self.restore(mark)
-
-        if cut.isOn {
-            return nil
-        }
         return nil
     }
 
@@ -1076,10 +1000,6 @@ extension GrammarParser {
 
         self.restore(mark)
 
-        if cut.isOn {
-            return nil
-        }
-
         if
             let _ = try self.expect(kind: .dollarSign),
             let name = try self.expect(kind: .identifier),
@@ -1106,10 +1026,6 @@ extension GrammarParser {
         }
 
         self.restore(mark)
-
-        if cut.isOn {
-            return nil
-        }
         return nil
     }
 }
