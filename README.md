@@ -6,7 +6,7 @@ Contains a [self-describing grammar implementation](Sources/SwiftPEG/Grammar/met
 
 This library assumes that an appropriate [raw tokenizer](Sources/SwiftPEG/RawTokenizerType.swift) for the matched grammar has been implemented beforehand, defining the result of `parser.expect("<some token literal>")` and `parser.expect(kind: .someTokenKind)`, and that an appropriate set of types describing the desired AST representation also exists, to be used in `{ actions }` for generating the desired AST structured during parsing.
 
-Inspired by a reading of Guido van Rossum's (of Python fame) [PEG Parsing](https://medium.com/@gvanrossum_83706/peg-parsing-series-de5d41b2ed60) series of blog posts.
+Inspired after a reading of Guido van Rossum's (of Python fame) [PEG Parsing](https://medium.com/@gvanrossum_83706/peg-parsing-series-de5d41b2ed60) series of blog posts.
 
 ## Example
 
