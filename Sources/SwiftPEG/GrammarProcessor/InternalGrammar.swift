@@ -846,6 +846,9 @@ public enum InternalGrammar {
         /// `IDENT`
         case token(String)
 
+        /// `IDENT`, token has been defined before as the 'any token' construct.
+        case anyToken(String)
+
         /// `STRING`
         case string(String, trimmed: String)
 
@@ -880,6 +883,8 @@ public enum InternalGrammar {
             case .ruleName(let ident):
                 return ident
             case .token(let ident):
+                return ident
+            case .anyToken(let ident):
                 return ident
             case .string(let str, _):
                 return str
@@ -925,6 +930,9 @@ public enum InternalGrammar {
             switch self {
             case .token(let ident):
                 return ident.lowercased()
+
+            case .anyToken(let ident):
+                return ident.lowercased()
                 
             case .ruleName(let ident):
                 return ident
@@ -953,6 +961,8 @@ public enum InternalGrammar {
                     return .ruleName(String(value))
                 case .token:
                     return .token(String(value))
+                case .anyToken:
+                    return .anyToken(String(value))
                 case .unresolved:
                     return .ruleName(String(value))
                 }

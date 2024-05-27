@@ -338,6 +338,24 @@ func assertEmpty(
     }
 }
 
+/// Asserts a collection of items has a specified count.
+func assertCount(
+    _ value: some Collection,
+    _ count: Int,
+    message: @autoclosure () -> String = "",
+    file: StaticString = #file,
+    line: UInt = #line
+) {
+
+    if value.count != count {
+        fail(
+            "Expected collection to have \(count) item(s) but found \(value.count): \(value) \(message())",
+            file: file,
+            line: line
+        )
+    }
+}
+
 /// Asserts that two collection of items contains the same set of `T` values the
 /// same number of times.
 func assertEqualUnordered<T>(

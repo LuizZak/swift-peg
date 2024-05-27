@@ -16,6 +16,44 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
+    func testGenerateParser_anyTokenAtom_returnsNextToken() throws {
+        let grammar = makeGrammar([
+            .init(name: "a", alts: [
+                .init(items: [
+                    .item(.atom(.anyToken("ANY"))),
+                ]),
+            ]),
+        ])
+        let sut = makeSut(grammar)
+
+        let result = try sut.generateParser()
+
+        diffTest(expected: """
+            // TestParser
+            extension TestParser {
+                /// ```
+                /// a:
+                ///     | ANY
+                ///     ;
+                /// ```
+                @memoized("a")
+                @inlinable
+                public func __a() throws -> Node? {
+                    let mark = self.mark()
+
+                    if
+                        let any = try self.nextToken()
+                    {
+                        return any
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+            }
+            """).diff(result)
+    }
+
     func testGenerateParser_anyReturn_returnsNode() throws {
         let grammar = makeGrammar([
             .init(name: "a", type: "Any", alts: [

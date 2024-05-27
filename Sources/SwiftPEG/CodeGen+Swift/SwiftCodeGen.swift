@@ -380,6 +380,9 @@ public class SwiftCodeGen {
         case .token(let ident):
             buffer.emit("try \(expandTokenName(ident))")
 
+        case .anyToken:
+            buffer.emit("try self.nextToken()")
+
         // Token literal
         case .string(let string, let raw):
             var literal = string

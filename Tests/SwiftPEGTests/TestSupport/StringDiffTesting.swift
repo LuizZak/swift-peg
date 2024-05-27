@@ -81,25 +81,18 @@ public class DiffingTest {
         if expectedDiff.string == actual {
             return
         }
+
+        let diffStringSection = makeDiffStringSection(expected: expectedDiff.string, actual: actual)
+        let message: String
         
         if diffOnly {
-            testCase._recordFailure(
-                withDescription: """
-                Strings don't match:
-                
+            message = """
                 Diff (between ---):
                 
-                \(makeDiffStringSection(expected: expectedDiff.string, actual: actual))
-                """,
-                inFile: expectedDiff.location.file,
-                atLine: expectedDiff.location.line,
-                expected: true
-            )
+                \(diffStringSection)
+                """
         } else {
-            testCase._recordFailure(
-                withDescription: """
-                Strings don't match:
-                
+            message = """
                 Expected (between ---):
                 
                 ---
@@ -114,23 +107,28 @@ public class DiffingTest {
                 
                 Diff (between ---):
                 
-                \(makeDiffStringSection(expected: expectedDiff.string, actual: actual))
+                \(diffStringSection)
+                """
+        }
+
+        guard
+            highlightLineInEditor,
+            let (diffStartLine, diffStartColumn) = actual.firstDifferingLineColumn(against: expectedDiff.string) else
+        {
+            testCase._recordFailure(
+                withDescription: """
+                Strings don't match:
+                
+                \(message)
                 """,
                 inFile: expectedDiff.location.file,
                 atLine: expectedDiff.location.line,
                 expected: true
             )
-        }
-        
-        if !highlightLineInEditor {
             return
         }
-        
-        // Report inline in Xcode now
-        guard let (diffStartLine, diffStartColumn) = actual.firstDifferingLineColumn(against: expectedDiff.string) else {
-            return
-        }
-        
+
+        // Report inline in Xcode or other editor now
         let expectedLineRanges = expectedDiff.string.lineRanges()
         let actualLineRanges = actual.lineRanges()
         
@@ -139,7 +137,9 @@ public class DiffingTest {
             
             testCase._recordFailure(
                 withDescription: """
-                Difference starts here: Actual line reads '\(actualLineContent)'
+                Strings don't match: difference starts here: Actual line reads '\(actualLineContent)'
+
+                \(message)
                 """,
                 inFile: file,
                 atLine: expectedDiff.location.line + UInt(diffStartLine),
@@ -161,7 +161,9 @@ public class DiffingTest {
                 
                 testCase._recordFailure(
                     withDescription: """
-                    Difference starts here: Expected matching line '\(resultLineContent)'
+                    Strings don't match: difference starts here: Expected matching line '\(resultLineContent)'
+
+                    \(message)
                     """,
                     inFile: file,
                     atLine: expectedDiff.location.line + UInt(diffStartLine + 1),
@@ -172,7 +174,9 @@ public class DiffingTest {
                 
                 testCase._recordFailure(
                     withDescription: """
-                    Difference starts here: Actual line reads '\(actualLineContent)'
+                    Strings don't match: difference starts here: Actual line reads '\(actualLineContent)'
+
+                    \(message)
                     """,
                     inFile: file,
                     atLine: expectedDiff.location.line + UInt(diffStartLine),
@@ -182,7 +186,9 @@ public class DiffingTest {
         } else {
             testCase._recordFailure(
                 withDescription: """
-                Difference starts here: Extraneous content after this line
+                Strings don't match: difference starts here: Extraneous content after this line
+                
+                \(message)
                 """,
                 inFile: file,
                 atLine: expectedDiff.location.line + UInt(expectedLineRanges.count),

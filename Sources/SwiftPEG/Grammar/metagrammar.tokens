@@ -1,4 +1,3 @@
-$ANY[""] ; # Empty "" generates calls to `self.expect()`, with no arguments, which always returns the next token regardless of its kind.
 $WHITESPACE["kind: .whitespace"] ;
 $IDENTIFIER["kind: .identifier"] ;
 $DIGITS["kind: .digits"] ;

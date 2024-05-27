@@ -9,6 +9,7 @@ public class GrammarProcessor {
     let metaPropertyManager: MetaPropertyManager
     let tokensFileProp: KnownProperty
     let tokenProp: KnownProperty
+    let anyTokenProp: KnownProperty
 
     /// A list of non-Error diagnostics issued during grammar analysis.
     ///
@@ -44,10 +45,18 @@ public class GrammarProcessor {
             acceptedValues: [.identifier(description: "A unique identifier for the token reference.")],
             repeatMode: .distinctValues
         )
+        // @anyToken
+        let anyTokenProp = propManager.register(
+            name: "anyToken",
+            description: "Declares the identifier of the 'any token' construct; a token reference that accepts any valid token from the grammar, including white spaces.",
+            acceptedValues: [.identifier(description: "A unique identifier for the any token reference.")],
+            repeatMode: .never
+        )
 
         self.metaPropertyManager = propManager
         self.tokensFileProp = tokensFileProp
         self.tokenProp = tokenProp
+        self.anyTokenProp = anyTokenProp
         self.delegate = delegate
         self.verbose = verbose
     }
@@ -176,6 +185,7 @@ public class GrammarProcessor {
         in grammar: SwiftPEGGrammar.Grammar,
         tokens: Set<String>
     ) throws {
+        // Populate references
         var knownNames: [(String, SwiftPEGGrammar.IdentAtom.Identity)]
         knownNames = tokens.map {
             ($0, .token)
@@ -186,7 +196,14 @@ public class GrammarProcessor {
                 (name, .ruleName)
             )
         }
+        // anyToken
+        if let anyToken = metaPropertyManager.firstValue(of: anyTokenProp)?.stringValue {
+            knownNames.append(
+                (anyToken, .anyToken)
+            )
+        }
 
+        // Associate identities to all identifiers
         let visitor = ReferenceVisitor(knownIdentifiers: knownNames)
 
         let walker = NodeWalker(visitor: visitor)

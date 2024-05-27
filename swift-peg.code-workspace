@@ -57,10 +57,6 @@
             "name": "Swift Package Dependencies",
             "path": ".build/checkouts"
         },
-        {
-            "name": "Build",
-            "path": ".build/debug/.."
-        }
     ],
     "settings": {
         "commentAnchors.workspace.excludeFiles": "**/{node_modules,.git,.idea,target,out,build,vendor,.build,.swiftpm}/**/*",

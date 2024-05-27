@@ -922,7 +922,7 @@ extension GrammarParser {
             try self.negativeLookahead({
                 try self.expect(kind: .rightParen)
             }),
-            let token = try self.expect()
+            let token = try self.nextToken()
         {
             return .init(token)
         }

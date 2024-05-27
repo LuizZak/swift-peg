@@ -293,6 +293,9 @@ public class GrammarInterpreter {
 
         case .token(let tokenName):
             return try expect(tokenName: tokenName)?.token
+        
+        case .anyToken:
+            return try next()?.token
 
         case .string(_, let string):
             return try expect(tokenLiteral: string)?.token

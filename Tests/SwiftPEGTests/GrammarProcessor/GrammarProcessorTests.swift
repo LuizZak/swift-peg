@@ -3,24 +3,96 @@ import XCTest
 @testable import SwiftPEG
 
 class GrammarProcessorTests: XCTestCase {
+    func testAnyToken() throws {
+        let atom = makeAtom(ident: "ANY", identity: .unresolved)
+        let start = makeRule(name: "start", [
+            makeAlt([ makeNamedItem(atom: atom) ]),
+        ])
+        let grammar = makeGrammar(
+            metas: [
+                makeMeta(name: "anyToken", identifier: "ANY"),
+            ],
+            [start]
+        )
+        let delegate = stubDelegate()
+        let sut = makeSut(delegate)
+
+        let result = try sut.process(grammar)
+
+        assertEmpty(sut.diagnostics)
+        assertEqual(atom.identity, .anyToken)
+        switch result.grammar.rules[0].alts[0].items[0] {
+        case .item(_, .atom(.anyToken), _):
+            success()
+        default:
+            fail("Expected atom to be identified as InternalGrammar.Atom.anyToken, found \(result.grammar.rules[0].alts[0].items[0])")
+        }
+    }
+
+    func testAnyToken_noValue_diagnostics() throws {
+        let start = makeRule(name: "start", [
+            makeAlt([ makeNamedItem("a") ]),
+        ])
+        let grammar = makeGrammar(
+            metas: [
+                makeMeta(name: "anyToken"),
+                // Non-rule identifiers must be declared as tokens
+                makeMeta(name: "token", identifier: "a"),
+            ],
+            [start]
+        )
+        let delegate = stubDelegate()
+        let sut = makeSut(delegate)
+
+        _=try sut.process(grammar)
+
+        assertCount(sut.diagnostics, 1)
+        assertEqual(sut.test_diagnosticMessages(), """
+            Unexpected value '<empty>' for @anyToken: expected: An identifier: A unique identifier for the any token reference.
+            """)
+    }
+
+    func testAnyToken_stringValue_diagnostics() throws {
+        let start = makeRule(name: "start", [
+            makeAlt([ makeNamedItem("a") ]),
+        ])
+        let grammar = makeGrammar(
+            metas: [
+                makeMeta(name: "anyToken", string: "a"),
+                // Non-rule identifiers must be declared as tokens
+                makeMeta(name: "token", identifier: "a"),
+            ],
+            [start]
+        )
+        let delegate = stubDelegate()
+        let sut = makeSut(delegate)
+
+        _=try sut.process(grammar)
+
+        assertCount(sut.diagnostics, 1)
+        assertEqual(sut.test_diagnosticMessages(), """
+            Unexpected value '"a"' for @anyToken: expected: An identifier: A unique identifier for the any token reference.
+            """)
+    }
+
     func testUnreachableRuleDiagnostics() throws {
         let start = makeRule(name: "start", [
-            makeAlt([ makeItem("rule1") ]),
+            makeAlt([ makeNamedItem("rule1") ]),
         ])
         let rule1 = makeRule(name: "rule1", [
-            makeAlt([ makeItem("rule2"), makeItem("a") ]),
+            makeAlt([ makeNamedItem("rule2"), makeNamedItem("a") ]),
         ])
         let rule2 = makeRule(name: "rule2", [
-            makeAlt([ makeItem("a") ]),
+            makeAlt([ makeNamedItem("a") ]),
         ])
         let rule3 = makeRule(name: "rule3", [
-            makeAlt([ makeItem("a") ]),
+            makeAlt([ makeNamedItem("a") ]),
         ])
         let grammar = makeGrammar(
             metas: [
                 // Non-rule identifiers must be declared as tokens
-                makeMeta(name: "token", value: "a"),
-                makeMeta(name: "token", value: "b"),
+                makeMeta(name: "token", identifier: "a"),
+                makeMeta(name: "token", identifier: "b"),
             ],
             [start, rule1, rule2, rule3]
         )
@@ -153,16 +225,27 @@ private func stubDelegate() -> TestGrammarProcessorDelegate {
     return TestGrammarProcessorDelegate()
 }
 
-private func makeMeta(name: String, value: String) -> SwiftPEGGrammar.Meta {
+private func makeMeta(name: String, identifier: String) -> SwiftPEGGrammar.Meta {
     SwiftPEGGrammar.Meta(
         name: makeIdent(name),
-        value: SwiftPEGGrammar.MetaIdentifierValue(identifier: makeIdent(value))
+        value: SwiftPEGGrammar.MetaIdentifierValue(identifier: makeIdent(identifier))
     )
+}
+
+private func makeMeta(name: String, string: String) -> SwiftPEGGrammar.Meta {
+    SwiftPEGGrammar.Meta(
+        name: makeIdent(name),
+        value: SwiftPEGGrammar.MetaStringValue(string: makeString(string))
+    )
+}
+
+private func makeMeta(name: String) -> SwiftPEGGrammar.Meta {
+    SwiftPEGGrammar.Meta(name: makeIdent(name), value: nil)
 }
 
 private func makeRule(name: String) -> SwiftPEGGrammar.Rule {
     makeRule(name: name, [
-        makeAlt([makeItem("-")])
+        makeAlt([makeNamedItem("-")])
     ])
 }
 
@@ -184,8 +267,8 @@ private func makeAlt(_ items: [SwiftPEGGrammar.NamedItem]) -> SwiftPEGGrammar.Al
     )
 }
 
-private func makeItem(_ ident: String, identity: SwiftPEGGrammar.IdentAtom.Identity = .ruleName) -> SwiftPEGGrammar.NamedItem {
-    makeItem(
+private func makeNamedItem(_ ident: String, identity: SwiftPEGGrammar.IdentAtom.Identity = .ruleName) -> SwiftPEGGrammar.NamedItem {
+    makeNamedItem(
         atom: SwiftPEGGrammar.IdentAtom(
             identifier: makeIdent(ident),
             identity: identity
@@ -193,7 +276,7 @@ private func makeItem(_ ident: String, identity: SwiftPEGGrammar.IdentAtom.Ident
     )
 }
 
-private func makeItem(atom: SwiftPEGGrammar.Atom) -> SwiftPEGGrammar.NamedItem {
+private func makeNamedItem(atom: SwiftPEGGrammar.Atom) -> SwiftPEGGrammar.NamedItem {
     .init(
         name: nil,
         item: SwiftPEGGrammar.AtomItem(
@@ -208,8 +291,16 @@ private func makeAtom(group: [SwiftPEGGrammar.Alt]) -> SwiftPEGGrammar.Atom {
     SwiftPEGGrammar.GroupAtom(alts: group)
 }
 
+private func makeAtom(ident: String, identity: SwiftPEGGrammar.IdentAtom.Identity = .unresolved) -> SwiftPEGGrammar.IdentAtom {
+    SwiftPEGGrammar.IdentAtom(identifier: makeIdent(ident), identity: identity)
+}
+
 private func makeIdent(_ ident: String) -> SwiftPEGGrammar.Token {
     .identifier(Substring(ident))
+}
+
+private func makeString(_ string: String) -> SwiftPEGGrammar.Token {
+    .string(.doubleQuote(Substring(#""\#(string)""#)))
 }
 
 private func parseGrammar(

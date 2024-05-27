@@ -25,10 +25,10 @@ class StringDiffTestingTests: XCTestCase {
             )
         #sourceLocation()
 
-        XCTAssertEqual(
-            testReporter.messages[0],
+        assertLinesMatch(
+            testReporter.messages[safe: 0],
             """
-            test.swift:2: Strings don't match:
+            test.swift:4: Strings don't match: difference starts here: Actual line reads 'df'
 
             Expected (between ---):
 
@@ -51,13 +51,6 @@ class StringDiffTestingTests: XCTestCase {
             df
             ~^ Difference starts here
             ---
-            """
-        )
-
-        XCTAssertEqual(
-            testReporter.messages[1],
-            """
-            test.swift:4: Difference starts here: Actual line reads 'df'
             """
         )
     }
@@ -99,10 +92,10 @@ class StringDiffTestingTests: XCTestCase {
             ).diff("test")
         #sourceLocation()
 
-        XCTAssertEqual(
-            testReporter.messages[0],
+        assertLinesMatch(
+            testReporter.messages[safe: 0],
             """
-            test.swift:2: Strings don't match:
+            test.swift:3: Strings don't match: difference starts here: Actual line reads 'test'
 
             Expected (between ---):
 
@@ -122,13 +115,6 @@ class StringDiffTestingTests: XCTestCase {
             test
             ^ Difference starts here
             ---
-            """
-        )
-
-        XCTAssertEqual(
-            testReporter.messages[1],
-            """
-            test.swift:3: Difference starts here: Actual line reads 'test'
             """
         )
     }
@@ -150,10 +136,10 @@ class StringDiffTestingTests: XCTestCase {
             )
         #sourceLocation()
 
-        XCTAssertEqual(
-            testReporter.messages[0],
+        assertLinesMatch(
+            testReporter.messages[safe: 0],
             """
-            test.swift:2: Strings don't match:
+            test.swift:5: Strings don't match: difference starts here: Expected matching line 'ghi'
 
             Expected (between ---):
 
@@ -179,13 +165,6 @@ class StringDiffTestingTests: XCTestCase {
             ---
             """
         )
-
-        XCTAssertEqual(
-            testReporter.messages[1],
-            """
-            test.swift:5: Difference starts here: Expected matching line 'ghi'
-            """
-        )
     }
 
     func testDiffLargerExpectedStringWithMismatchInMiddle() {
@@ -205,10 +184,10 @@ class StringDiffTestingTests: XCTestCase {
             )
         #sourceLocation()
 
-        XCTAssertEqual(
-            testReporter.messages[0],
+        assertLinesMatch(
+            testReporter.messages[safe: 0],
             """
-            test.swift:2: Strings don't match:
+            test.swift:4: Strings don't match: difference starts here: Actual line reads 'xyz'
 
             Expected (between ---):
 
@@ -234,13 +213,6 @@ class StringDiffTestingTests: XCTestCase {
             ---
             """
         )
-
-        XCTAssertEqual(
-            testReporter.messages[1],
-            """
-            test.swift:4: Difference starts here: Actual line reads 'xyz'
-            """
-        )
     }
 
     func testDiffLargerResultString() {
@@ -260,10 +232,10 @@ class StringDiffTestingTests: XCTestCase {
             )
         #sourceLocation()
 
-        XCTAssertEqual(
-            testReporter.messages[0],
+        assertLinesMatch(
+            testReporter.messages[safe: 0],
             """
-            test.swift:2: Strings don't match:
+            test.swift:4: Strings don't match: difference starts here: Extraneous content after this line
 
             Expected (between ---):
 
@@ -290,13 +262,6 @@ class StringDiffTestingTests: XCTestCase {
             ---
             """
         )
-
-        XCTAssertEqual(
-            testReporter.messages[1],
-            """
-            test.swift:4: Difference starts here: Extraneous content after this line
-            """
-        )
     }
 
     func testDiffLargerExpectedStringWithChangeAtFirstLine() {
@@ -316,10 +281,10 @@ class StringDiffTestingTests: XCTestCase {
             )
         #sourceLocation()
 
-        XCTAssertEqual(
-            testReporter.messages[0],
+        assertLinesMatch(
+            testReporter.messages[safe: 0],
             """
-            test.swift:2: Strings don't match:
+            test.swift:3: Strings don't match: difference starts here: Actual line reads 'if true {'
 
             Expected (between ---):
 
@@ -343,13 +308,6 @@ class StringDiffTestingTests: XCTestCase {
             ^ Difference starts here
                 }
             ---
-            """
-        )
-
-        XCTAssertEqual(
-            testReporter.messages[1],
-            """
-            test.swift:3: Difference starts here: Actual line reads 'if true {'
             """
         )
     }
@@ -386,10 +344,10 @@ class StringDiffTestingTests: XCTestCase {
             )
         #sourceLocation()
 
-        XCTAssertEqual(
-            testReporter.messages[0],
+        assertLinesMatch(
+            testReporter.messages[safe: 0],
             """
-            test.swift:2: Strings don't match:
+            test.swift:7: Strings don't match: difference starts here: Actual line reads 'DIFFERENCE'
 
             Expected (between ---):
 
@@ -433,13 +391,6 @@ class StringDiffTestingTests: XCTestCase {
             --- [3 lines omitted]
             """
         )
-
-        XCTAssertEqual(
-            testReporter.messages[1],
-            """
-            test.swift:7: Difference starts here: Actual line reads 'DIFFERENCE'
-            """
-        )
     }
 
     func testDiffLargeMultiLineStringsNoLinesOmittedBefore() {
@@ -464,10 +415,10 @@ class StringDiffTestingTests: XCTestCase {
             )
         #sourceLocation()
 
-        XCTAssertEqual(
-            testReporter.messages[0],
+        assertLinesMatch(
+            testReporter.messages[safe: 0],
             """
-            test.swift:2: Strings don't match:
+            test.swift:3: Strings don't match: difference starts here: Actual line reads 'DIFFERENCE'
 
             Expected (between ---):
 
@@ -497,13 +448,6 @@ class StringDiffTestingTests: XCTestCase {
             line 2
             line 3
             --- [2 lines omitted]
-            """
-        )
-
-        XCTAssertEqual(
-            testReporter.messages[1],
-            """
-            test.swift:3: Difference starts here: Actual line reads 'DIFFERENCE'
             """
         )
     }
@@ -530,10 +474,10 @@ class StringDiffTestingTests: XCTestCase {
             )
         #sourceLocation()
 
-        XCTAssertEqual(
-            testReporter.messages[0],
+        assertLinesMatch(
+            testReporter.messages[safe: 0],
             """
-            test.swift:2: Strings don't match:
+            test.swift:7: Strings don't match: difference starts here: Actual line reads 'DIFFERENCE'
 
             Expected (between ---):
 
@@ -565,13 +509,6 @@ class StringDiffTestingTests: XCTestCase {
             ---
             """
         )
-
-        XCTAssertEqual(
-            testReporter.messages[1],
-            """
-            test.swift:7: Difference starts here: Actual line reads 'DIFFERENCE'
-            """
-        )
     }
 
     func testDiffOnly() {
@@ -591,10 +528,10 @@ class StringDiffTestingTests: XCTestCase {
             )
         #sourceLocation()
 
-        XCTAssertEqual(
-            testReporter.messages[0],
+        assertLinesMatch(
+            testReporter.messages[safe: 0],
             """
-            test.swift:2: Strings don't match:
+            test.swift:4: Strings don't match: difference starts here: Actual line reads 'df'
 
             Diff (between ---):
 
@@ -603,13 +540,6 @@ class StringDiffTestingTests: XCTestCase {
             df
             ~^ Difference starts here
             ---
-            """
-        )
-
-        XCTAssertEqual(
-            testReporter.messages[1],
-            """
-            test.swift:4: Difference starts here: Actual line reads 'df'
             """
         )
     }
@@ -646,5 +576,32 @@ class TestDiffReporter: DiffTestCaseFailureReporter {
     ) {
 
         messages.append("\(filePath):\(lineNumber): " + description)
+    }
+}
+
+private func assertLinesMatch(
+    _ actual: String?,
+    _ expected: String?,
+    file: StaticString = #file,
+    line: UInt = #line
+) {
+    guard actual != expected else {
+        return
+    }
+
+    XCTFail(
+        "Strings don't match:\n\(actual ?? "<nil>")\n\nvs\n\n\(expected ?? "<nil>")",
+        file: file,
+        line: line
+    )
+}
+
+private extension Collection {
+    subscript(safe index: Index) -> Element? {
+        if indices.contains(index) {
+            return self[index]
+        }
+
+        return nil
     }
 }

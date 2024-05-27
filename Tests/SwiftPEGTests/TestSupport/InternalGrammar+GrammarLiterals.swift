@@ -25,6 +25,7 @@ extension InternalGrammar.Atom: ExpressibleByStringLiteral {
         switch self {
         case .token(let tok): return .string(#""\#(tok)""#, trimmed: tok)
         case .ruleName(let name): return .string(#""\#(name)""#, trimmed: name)
+        case .anyToken(let name): return .string(#""\#(name)""#, trimmed: name)
         case .group, .string: return self
         }
     }

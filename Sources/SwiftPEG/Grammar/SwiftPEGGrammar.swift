@@ -859,6 +859,9 @@ extension SwiftPEGGrammar {
             /// The identifier refers to a token in the grammar.
             case token
 
+            /// The identifier refers to the special 'any token' in the grammar.
+            case anyToken
+
             /// The identifier is unresolved.
             case unresolved
         }
