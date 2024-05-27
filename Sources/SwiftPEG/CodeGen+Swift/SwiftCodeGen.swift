@@ -17,6 +17,14 @@ public class SwiftCodeGen {
     /// instead.
     public static let tokenCall: String = "tokenCall"
 
+    /// Name of optional meta-property (`@<name> <value>`) from grammar file that
+    /// indicates whether to generate `return` statements for generated actions
+    /// implicitly or not.
+    ///
+    /// Defaults to `true`, can be specified `true` or `false`, as either strings
+    /// or identifiers.
+    public static let implicitReturns: String = "implicitReturns"
+
     /// Set of identifiers that cannot be used as bare identifiers in Swift, and
     /// must be escaped with backticks (`) to allow usage in declarations.
     public static var invalidBareIdentifiers: Set<String> {
@@ -32,6 +40,7 @@ public class SwiftCodeGen {
     var latestSettings: Settings = .default
     var remaining: [InternalGrammar.Rule] = []
     var ruleAliases: [String: String] = [:]
+    var implicitReturns: Bool = true
 
     /// Initializes a new `SwiftCodeGen`, preparing to generate the grammar and
     /// token definitions from a given grammar processor result.
@@ -70,6 +79,17 @@ public class SwiftCodeGen {
 
         if let header = grammar.parserHeader() {
             buffer.emitLine(header)
+        }
+        if let value = grammar.implicitReturns() {
+            switch value {
+            case "true":
+                implicitReturns = true
+            case "false":
+                implicitReturns = false
+            default:
+                // TODO: Issue diagnostic
+                break
+            }
         }
 
         declContext = DeclarationsContext()
@@ -163,16 +183,21 @@ public class SwiftCodeGen {
         }
         buffer.ensureNewline()
 
-        // return <result>
+        // Successful alt match
         buffer.emitBlock {
-            generateAltReturn(alt, in: rule)
+            generateOnAltMatchBlock(alt, in: rule)
         }
         
         // Alt failure results in a restore to a previous mark
         buffer.emitNewline()
         buffer.emitLine("self.restore(mark)")
 
-        if hasCut(rule) {
+        // Generate fail action, if present
+        if let failAction = alt.failAction {
+            buffer.emitLine(failAction.string)
+        }
+
+        if hasCut(alt) {
             buffer.emitNewline()
             buffer.emit("if cut.isOn ")
             buffer.emitBlock {
@@ -181,12 +206,18 @@ public class SwiftCodeGen {
         }
     }
 
-    /// Generates `return <alt result>` for a successful alt match.
-    func generateAltReturn(
+    /// Generates the block of code that is run when a given alt is matched
+    /// successfully.
+    /// 
+    /// If `self.implicitReturns` is `true`, always appends `return` to the start
+    /// of the action's resolved string.
+    func generateOnAltMatchBlock(
         _ alt: InternalGrammar.Alt,
         in rule: InternalGrammar.Rule
     ) {
-        buffer.emit("return ")
+        if implicitReturns {
+            buffer.emit("return ")
+        }
 
         if let action = alt.action {
             buffer.emitLine(action.string)
@@ -570,6 +601,10 @@ private extension InternalGrammar.Grammar {
 
     func tokenCall() -> String? {
         return _stringOrIdentMeta(named: SwiftCodeGen.tokenCall)
+    }
+
+    func implicitReturns() -> String? {
+        return _stringOrIdentMeta(named: SwiftCodeGen.implicitReturns)
     }
 
     private func _stringOrIdentMeta(named name: String) -> String? {

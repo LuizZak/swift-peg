@@ -11,12 +11,12 @@ public class GrammarProcessor {
     /// A list of non-Error diagnostics issued during grammar analysis.
     ///
     /// This is reset after each `process(_:)` call.
-    private(set) public var diagnostics: [GrammarProcessorDiagnostic] = []
+    internal(set) public var diagnostics: [GrammarProcessorDiagnostic] = []
 
     /// A list of Error diagnostics issued during grammar analysis.
     ///
     /// This is reset after each `process(_:)` call.
-    private(set) public var errors: [GrammarProcessorError] = []
+    internal(set) public var errors: [GrammarProcessorError] = []
 
     /// If `true`, prints diagnostics into stdout.
     public var verbose: Bool
@@ -227,43 +227,6 @@ public class GrammarProcessor {
         }
     }
 
-    /// Validates sequential alts across all rules in `grammar`, checking that
-    /// each subsequent alt is either disjointed from the first alt, or a smaller
-    /// subset, warning about alt orders that prevent an alt from ever being tried.
-    func diagnoseAltOrder(in grammar: SwiftPEGGrammar.Grammar) {
-        let visitor = AltOrderVisitor { [self] (alts, rule) in
-            self.diagnoseAltOrder(alts, in: rule)
-        }
-        let walker = NodeWalker(visitor: visitor)
-
-        do {
-            try walker.walk(grammar)
-        } catch {
-
-        }
-    }
-
-    /// Validates sequential alts, checking that each subsequent alt is either
-    /// disjointed from the first alt, or a smaller subset, warning about alt
-    /// orders that prevent an alt from ever being tried.
-    func diagnoseAltOrder(_ alts: [SwiftPEGGrammar.Alt], in rule: SwiftPEGGrammar.Rule) {
-        for index in 0..<alts.count {
-            for nextIndex in index..<alts.count where index != nextIndex {
-                let alt = alts[index]
-                let nextAlt = alts[nextIndex]
-
-                let altInt = InternalGrammar.Alt.from(alt)
-                let nextAltInt = InternalGrammar.Alt.from(nextAlt)
-
-                if altInt.isSubset(of: nextAltInt) {
-                    diagnostics.append(
-                        .altOrderIssue(rule: rule, alt, alwaysSucceedsBefore: nextAlt)
-                    )
-                }
-            }
-        }
-    }
-
     /// Diagnoses unreachable rules, when starting from a given entry rule name.
     func diagnoseUnreachableRules(
         in grammar: SwiftPEGGrammar.Grammar,
@@ -383,10 +346,19 @@ public class GrammarProcessor {
                 return "Expected token @ \(meta.location) to have an identifier name."
 
             case .altOrderIssue(let rule, let prior, let former):
+                func describe(_ alt: InternalGrammar.Alt) -> String {
+                    if alt == alt.reduced { return "'\(alt)'" }
+                    return "'\(alt)' (when reduced as '\(alt.reduced?.description ?? "<empty>")')"
+                }
+
                 let priorInt = InternalGrammar.Alt.from(prior)
                 let formerInt = InternalGrammar.Alt.from(former)
 
-                return "Alt '\(priorInt)' @ \(prior.location) always succeeds before '\(formerInt)' @ \(former.location) can be tried in rule \(rule.name.name.processedString) @ \(rule.location)."
+                return """
+                    Alt \(describe(priorInt)) @ \(prior.location) always succeeds \
+                    before \(describe(formerInt)) @ \(former.location) can be tried \
+                    in rule \(rule.name.name.processedString) @ \(rule.location).
+                    """
             
             case .unreachableRule(let rule, let startRuleName):
                 return "Rule '\(rule.name.name.processedString)' @ \(rule.location) is not reachable from the set start rule '\(startRuleName)'."
@@ -447,40 +419,6 @@ private extension GrammarProcessor {
                 errors.append(error)
             }
 
-            return .visitChildren
-        }
-    }
-
-    final class AltOrderVisitor: SwiftPEGGrammar.GrammarNodeVisitorType {
-        var currentRule: SwiftPEGGrammar.Rule?
-        var callback: ([SwiftPEGGrammar.Alt], SwiftPEGGrammar.Rule) -> Void
-
-        init(_ callback: @escaping ([SwiftPEGGrammar.Alt], SwiftPEGGrammar.Rule) -> Void) {
-            self.callback = callback
-        }
-
-        func willVisit(_ node: Node) {
-            if let rule = node as? SwiftPEGGrammar.Rule {
-                currentRule = rule
-            }
-        }
-
-        func visit(_ node: SwiftPEGGrammar.Rule) throws -> NodeVisitChildrenResult {
-            callback(node.alts, node)
-            return .visitChildren
-        }
-
-        func visit(_ node: SwiftPEGGrammar.GroupAtom) throws -> NodeVisitChildrenResult {
-            if let currentRule {
-                callback(node.alts, currentRule)
-            }
-            return .visitChildren
-        }
-
-        func visit(_ node: SwiftPEGGrammar.OptionalItems) throws -> NodeVisitChildrenResult {
-            if let currentRule {
-                callback(node.alts, currentRule)
-            }
             return .visitChildren
         }
     }

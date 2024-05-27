@@ -3,77 +3,6 @@ import XCTest
 @testable import SwiftPEG
 
 class GrammarProcessorTests: XCTestCase {
-    func testAltOrderDiagnostics() throws {
-        let start = makeRule(name: "start", [
-            makeAlt([ makeItem("rule1") ]),
-        ])
-        let alt1 = makeAlt([ makeItem("a") ])
-        let alt2 = makeAlt([ makeItem("a"), makeItem("b") ])
-        let rule1 = makeRule(name: "rule1", [
-            alt1,
-            alt2,
-        ])
-        let grammar = makeGrammar(
-            metas: [
-                // Non-rule identifiers must be declared as tokens
-                makeMeta(name: "token", value: "a"),
-                makeMeta(name: "token", value: "b"),
-            ],
-            [start, rule1]
-        )
-        let delegate = stubDelegate()
-        let sut = makeSut(delegate)
-
-        _ = try sut.process(grammar)
-
-        let diags = sut.diagnosticsCount(where: { diag in
-            switch diag {
-            case .altOrderIssue(let rule, let prior, let alt)
-                where rule === rule1 && prior === alt1 && alt === alt2:
-                return true
-            default:
-                return false
-            }
-        })
-        assertEqual(diags, 1)
-    }
-
-    func testAltOrderDiagnostics_inspectsNestedAlts() throws {
-        let start = makeRule(name: "start", [
-            makeAlt([ makeItem("rule1") ]),
-        ])
-        let alt1 = makeAlt([ makeItem("a") ])
-        let alt2 = makeAlt([ makeItem("a"), makeItem("b") ])
-        let rule1 = makeRule(name: "rule1", [
-            makeAlt([
-                makeItem(atom: makeAtom(group: [alt1, alt2]))
-            ])
-        ])
-        let grammar = makeGrammar(
-            metas: [
-                // Non-rule identifiers must be declared as tokens
-                makeMeta(name: "token", value: "a"),
-                makeMeta(name: "token", value: "b"),
-            ],
-            [start, rule1]
-        )
-        let delegate = stubDelegate()
-        let sut = makeSut(delegate)
-
-        _ = try sut.process(grammar)
-
-        let diags = sut.diagnosticsCount(where: { diag in
-            switch diag {
-            case .altOrderIssue(let rule, let prior, let alt)
-                where rule === rule1 && prior === alt1 && alt === alt2:
-                return true
-            default:
-                return false
-            }
-        })
-        assertEqual(diags, 1)
-    }
-
     func testUnreachableRuleDiagnostics() throws {
         let start = makeRule(name: "start", [
             makeAlt([ makeItem("rule1") ]),
@@ -204,7 +133,8 @@ private func makeRule(name: String, _ alts: [SwiftPEGGrammar.Alt]) -> SwiftPEGGr
 private func makeAlt(_ items: [SwiftPEGGrammar.NamedItem]) -> SwiftPEGGrammar.Alt {
     SwiftPEGGrammar.Alt(
         namedItems: items,
-        action: nil
+        action: nil,
+        failAction: nil
     )
 }
 

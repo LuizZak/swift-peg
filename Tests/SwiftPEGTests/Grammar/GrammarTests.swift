@@ -70,8 +70,9 @@ class GrammarTests: XCTestCase {
         runTokenTest(literal: "\(terminator)a\nb\(terminator)", kind: .string)
         runTokenTest(literal: "\(terminator)\na\nb\(terminator)", kind: .string)
         
+        var stream = StringStream(source: "\(terminator)\na\nb\n\(terminator)")
         let tok = try assertUnwrap(SwiftPEGGrammar.GrammarToken
-            .from(string: "\(terminator)\na\nb\n\(terminator)")
+            .from(stream: &stream)
         )
 
         assertEqual(tok.processedString, "a\nb\n")
@@ -87,7 +88,8 @@ private func runTokenTest(
     file: StaticString = #file,
     line: UInt = #line
 ) {
-    guard let token = SwiftPEGGrammar.GrammarToken.from(string: literal[...]) else {
+    var stream = StringStream(source: literal)
+    guard let token = SwiftPEGGrammar.GrammarToken.from(stream: &stream) else {
         fail("Token literal '\(literal)' was not recognized by \(SwiftPEGGrammar.GrammarToken.self)", file: file, line: line)
         return
     }

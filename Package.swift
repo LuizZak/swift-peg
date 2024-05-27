@@ -3,7 +3,7 @@ import PackageDescription
 import CompilerPluginSupport
 
 let package = Package(
-    name: "SwiftPEG",
+    name: "swift-peg",
     products: [
         .library(
             name: "SwiftPEG",

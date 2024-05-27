@@ -233,7 +233,7 @@ extension SwiftPEGGrammar {
     /// Represents the construct:
     /// ```
     /// alt:
-    ///     | namedItems action?
+    ///     | namedItems action? failAction?
     ///     ;
     /// ```
     @GeneratedNodeType<Node>
@@ -242,9 +242,15 @@ extension SwiftPEGGrammar {
         @NodeProperty
         var _namedItems: [NamedItem]
 
-        /// An optional action associated with this alt.
+        /// An optional action associated with this alt, executed when the alt
+        /// succeeds.
         @NodeProperty
         var _action: Action?
+
+        /// An optional action associated with this alt, executed when the alt
+        /// fails, before proceeding with any alternative alt.
+        @NodeProperty
+        var _failAction: Action?
 
         /// Accepts a given grammar-node visitor into this node.
         public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: GrammarNodeVisitorType {
@@ -894,11 +900,16 @@ extension SwiftPEGGrammar {
     }
 
     /// An action of an alt. Represents a segment of code that is inserted on
-    /// the generated code for when the alt associated with an action is matched.
+    /// the generated code for when the alt associated with an action is matched
+    /// or not.
     /// 
-    /// Represents the construct:
+    /// Represents the constructs:
     /// ```
     /// action: '{' ~ balancedTokens? '}' ;
+    /// ```
+    /// and:
+    /// ```
+    /// failAction: '!!' '{' ~ balancedTokens? '}' ;
     /// ```
     @GeneratedNodeType<Node>
     public final class Action: GrammarNode {

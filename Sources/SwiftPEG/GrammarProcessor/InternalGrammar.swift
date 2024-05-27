@@ -42,7 +42,13 @@ public enum InternalGrammar {
                 return #"$\#(name) ;"#
             }
         }
-        
+
+        /// Accepts a given visitor, and recursively passes the visitor to nested
+        /// property types within this object that can be visited, if present.
+        public func accept(_ visitor: some Visitor) throws {
+            try visitor.visit(self)
+        }
+
         public static func from(
             _ node: SwiftPEGGrammar.TokenDefinition
         ) -> Self {
@@ -65,6 +71,18 @@ public enum InternalGrammar {
         public var metas: [MetaProperty] = []
         public var rules: [Rule]
 
+        /// Accepts a given visitor, and recursively passes the visitor to nested
+        /// property types within this object that can be visited, if present.
+        public func accept(_ visitor: some Visitor) throws {
+            try visitor.willVisit(self)
+            try visitor.visit(self)
+
+            try metas.forEach { try $0.accept(visitor) }
+            try rules.forEach { try $0.accept(visitor) }
+
+            try visitor.didVisit(self)
+        }
+
         public static func from(
             _ node: SwiftPEGGrammar.Grammar
         ) -> Self {
@@ -85,6 +103,12 @@ public enum InternalGrammar {
     public struct MetaProperty: Hashable {
         public var name: String
         public var value: Value? = nil
+
+        /// Accepts a given visitor, and recursively passes the visitor to nested
+        /// property types within this object that can be visited, if present.
+        public func accept(_ visitor: some Visitor) throws {
+            try visitor.visit(self)
+        }
 
         public static func from(
             _ node: SwiftPEGGrammar.Meta
@@ -149,6 +173,18 @@ public enum InternalGrammar {
         /// to be memoized as a left-recursive lead.
         public var isRecursiveLeader: Bool = false
 
+        /// Accepts a given visitor, and recursively passes the visitor to nested
+        /// property types within this object that can be visited, if present.
+        public func accept(_ visitor: some Visitor) throws {
+            try visitor.willVisit(self)
+            try visitor.visit(self)
+
+            try type?.accept(visitor)
+            try alts.forEach { try $0.accept(visitor) }
+
+            try visitor.didVisit(self)
+        }
+
         /// Flattens rules that have a single alt in parenthesis.
         public func flattened() -> Self {
             guard alts.count == 1 && alts[0].items.count == 1 else {
@@ -186,13 +222,17 @@ public enum InternalGrammar {
     public struct Alt: Hashable, CustomStringConvertible {
         public var items: [NamedItem]
         public var action: Action? = nil
+        public var failAction: Action? = nil
 
         public var description: String {
-            let items = self.items.map(\.description).joined(separator: " ")
-            if let action = action {
-                return "\(items) \(action)"
+            var string = self.items.map(\.description).joined(separator: " ")
+            if let action {
+                string += " \(action)"
             }
-            return items
+            if let failAction {
+                string += " !!\(failAction)"
+            }
+            return string
         }
 
         /// Returns a copy of `self` with Cuts (`~`) removed.
@@ -201,7 +241,42 @@ public enum InternalGrammar {
             let items = items.compactMap(\.removingCuts)
             if items.isEmpty { return nil }
 
-            return .init(items: items, action: action)
+            return .init(items: items, action: action, failAction: failAction)
+        }
+
+        /// Returns a copy of `self` with any optional productions elided.
+        /// If this results in this production being empty, returns `nil`.
+        var reduced: Self? {
+            let items = items.compactMap(\.reduced)
+            if items.isEmpty { return nil }
+
+            return .init(items: items, action: action, failAction: failAction)
+        }
+
+        /// Flattens this alt. Returns a copy of `self` with nested productions
+        /// collapsed to the top-level whenever possible.
+        ///
+        /// If this results in this production being empty, returns `nil`.
+        func flattened() -> Self? {
+            let items = items.compactMap({ $0.flattened() })
+            if items.isEmpty && action == nil {
+                return nil
+            }
+
+            return .init(items: items, action: action, failAction: failAction)
+        }
+
+        /// Accepts a given visitor, and recursively passes the visitor to nested
+        /// property types within this object that can be visited, if present.
+        public func accept(_ visitor: some Visitor) throws {
+            try visitor.willVisit(self)
+            try visitor.visit(self)
+
+            try items.forEach { try $0.accept(visitor) }
+            try action?.accept(visitor)
+            try failAction?.accept(visitor)
+
+            try visitor.didVisit(self)
         }
 
         /// Returns `true` if both `self` and `other` execute equivalent productions,
@@ -225,8 +300,8 @@ public enum InternalGrammar {
 
         /// Returns `true` if `self` executes a subset of the production of
         /// `other`, such that `self == other + [extra productions in other]...`.
-        /// If `self` and `other` are equivalent, `true` is also returned.
-        func isSubset(of other: Self) -> Bool {
+        /// `true` is also returned if `self` and `other` are equivalent.
+        func isPrefix(of other: Self) -> Bool {
             let selfCut = self.removingCuts
             let otherCut = other.removingCuts
             if selfCut == nil && otherCut == nil {
@@ -237,7 +312,7 @@ public enum InternalGrammar {
             }
 
             if selfCut.items == otherCut.items { return true }
-            // Subsets require `self` to be at most the same size as `other`
+            // Prefixes require `self` to be at most the same size as `other`
             if selfCut.items.count > otherCut.items.count { return false }
 
             return selfCut.items.elementsEqual(otherCut.items[..<selfCut.items.count], by: { $0.isEquivalent(to: $1) })
@@ -248,7 +323,8 @@ public enum InternalGrammar {
         ) -> Self {
             .init(
                 items: node.namedItems.map(NamedItem.from),
-                action: node.action.map(Action.from)
+                action: node.action.map(Action.from),
+                failAction: node.failAction.map(Action.from)
             )
         }
     }
@@ -259,6 +335,12 @@ public enum InternalGrammar {
 
         public var description: String {
             return "{ \(string) }"
+        }
+
+        /// Accepts a given visitor, and recursively passes the visitor to nested
+        /// property types within this object that can be visited, if present.
+        public func accept(_ visitor: some Visitor) throws {
+            try visitor.visit(self)
         }
 
         public static func from(
@@ -274,6 +356,7 @@ public enum InternalGrammar {
         }
     }
 
+    @GeneratedCaseChecks
     public enum NamedItem: Hashable, CustomStringConvertible {
         /// `name=IDENT? item ('[' swiftType ']')?`
         case item(name: String? = nil, Item, type: SwiftType? = nil)
@@ -306,6 +389,18 @@ public enum InternalGrammar {
             }
         }
 
+        /// Returns a copy of `self` with any optional productions elided.
+        /// If this results in this production being empty, returns `nil`.
+        var reduced: Self? {
+            switch self {
+            case .item(let name, let item, let type):
+                return item.reduced.map { Self.item(name: name, $0, type: type) }
+
+            case .lookahead(let lookahead):
+                return lookahead.reduced.map(Self.lookahead)
+            }
+        }
+
         public var description: String {
             switch self {
             case .item(let name?, let item, let type?):
@@ -319,6 +414,37 @@ public enum InternalGrammar {
             case .lookahead(let lookahead):
                 return lookahead.description
             }
+        }
+
+        /// Flattens this alt. Returns a copy of `self` with nested productions
+        /// collapsed to the top-level whenever possible.
+        ///
+        /// If this results in this production being empty, returns `nil`.
+        func flattened() -> Self? {
+            switch self {
+            case .item(let name, let item, let type):
+                item.flattened().map { Self.item(name: name, $0, type: type) }
+
+            case .lookahead(let lookahead):
+                lookahead.flattened().map(Self.lookahead)
+            }
+        }
+
+        /// Accepts a given visitor, and recursively passes the visitor to nested
+        /// property types within this object that can be visited, if present.
+        public func accept(_ visitor: some Visitor) throws {
+            try visitor.willVisit(self)
+            try visitor.visit(self)
+
+            switch self {
+            case .item(_, let item, let type):
+                try item.accept(visitor)
+                try type?.accept(visitor)
+            case .lookahead(let lookahead):
+                try lookahead.accept(visitor)
+            }
+
+            try visitor.didVisit(self)
         }
 
         /// Returns the alias for referencing the this named item in code generated
@@ -366,6 +492,7 @@ public enum InternalGrammar {
         }
     }
 
+    @GeneratedCaseChecks
     public enum Item: Hashable, CustomStringConvertible {
         /// `'[' alts ']'`
         case optionalItems([Alt])
@@ -427,6 +554,118 @@ public enum InternalGrammar {
 
                 return .optionalItems(alts)
             }
+        }
+
+        /// Returns a copy of `self` with any optional productions elided.
+        /// If this results in this production being empty, returns `nil`.
+        var reduced: Self? {
+            switch self {
+            case .zeroOrMore, .optional, .optionalItems:
+                return nil
+
+            case .oneOrMore(let atom):
+                return atom.reduced.map(Self.oneOrMore)
+
+            case .gather(let sep, let node):
+                switch (sep.reduced, node.reduced) {
+                case (let sep?, let node?):
+                    return Self.gather(sep: sep, node: node)
+                
+                case (nil, let node?):
+                    // A gather with nil separators is equivalent to a 'node+'
+                    // production
+                    return Self.oneOrMore(node)
+
+                case (_?, nil):
+                    // A gather with nil nodes is equivalent to a 'sep*'
+                    // production, which is nullable
+                    return nil
+
+                case (nil, nil):
+                    return nil
+                }
+
+            case .atom(let atom):
+                return atom.reduced.map(Self.atom)
+            }
+        }
+
+        /// Flattens this alt. Returns a copy of `self` with nested productions
+        /// collapsed to the top-level whenever possible.
+        ///
+        /// If this results in this production being empty, returns `nil`.
+        func flattened() -> Self? {
+            switch self {
+            case .optional(let atom):
+                return atom.flattened().map(Self.optional)
+
+            case .optionalItems(let alts):
+                let alts = alts.compactMap({ $0.flattened() })
+                if alts.isEmpty { return nil }
+                if alts.count == 1 { return .optional(.group(alts)) }
+
+                return .optionalItems(alts)
+
+            case .zeroOrMore(let atom):
+                return atom.flattened().map(Self.zeroOrMore)
+
+            case .oneOrMore(let atom):
+                return atom.flattened().map(Self.oneOrMore)
+
+            case .gather(let sep, let node):
+                switch (sep.flattened(), node.flattened()) {
+                case (let sep?, let node?):
+                    return Self.gather(sep: sep, node: node)
+                
+                case (nil, let node?):
+                    // A gather with just nodes is equivalent to a 'node+'
+                    // production
+                    return Self.oneOrMore(node)
+
+                case (let sep?, nil):
+                    // A gather with just separators is equivalent to a 'sep*'
+                    // production
+                    return Self.zeroOrMore(sep)
+
+                case (nil, nil):
+                    return nil
+                }
+
+            case .atom(let atom):
+                return atom.flattened().map(Self.atom)
+            }
+        }
+
+        /// Accepts a given visitor, and recursively passes the visitor to nested
+        /// property types within this object that can be visited, if present.
+        public func accept(_ visitor: some Visitor) throws {
+            try visitor.willVisit(self)
+            try visitor.visit(self)
+
+            switch self {
+            case .atom(let atom):
+                try atom.accept(visitor)
+
+            case .gather(let sep, let node):
+                try sep.accept(visitor)
+                try node.accept(visitor)
+
+            case .zeroOrMore(let atom):
+                try atom.accept(visitor)
+
+            case .oneOrMore(let atom):
+                try atom.accept(visitor)
+
+            case .optional(let atom):
+                try atom.accept(visitor)
+
+            case .optionalItems(let alts):
+                try alts.forEach {
+                    try $0.accept(visitor)
+                }
+            }
+
+            try visitor.didVisit(self)
         }
 
         /// Returns the alias for referencing the this item in code generated by
@@ -533,6 +772,52 @@ public enum InternalGrammar {
             }
         }
 
+        /// Returns a copy of `self` with any optional productions elided.
+        /// If this results in this production being empty, returns `nil`.
+        var reduced: Self? {
+            switch self {
+            case .negative(let atom):
+                return atom.reduced.map(Self.negative)
+            case .positive(let atom):
+                return atom.reduced.map(Self.positive)
+            case .cut:
+                return nil
+            }
+        }
+
+        /// Flattens this alt. Returns a copy of `self` with nested productions
+        /// collapsed to the top-level whenever possible.
+        ///
+        /// If this results in this production being empty, returns `nil`.
+        func flattened() -> Self? {
+            switch self {
+            case .negative(let atom):
+                return atom.flattened().map(Self.negative)
+            case .positive(let atom):
+                return atom.flattened().map(Self.positive)
+            case .cut:
+                return self
+            }
+        }
+
+        /// Accepts a given visitor, and recursively passes the visitor to nested
+        /// property types within this object that can be visited, if present.
+        public func accept(_ visitor: some Visitor) throws {
+            try visitor.willVisit(self)
+            try visitor.visit(self)
+
+            switch self {
+            case .positive(let atom):
+                try atom.accept(visitor)
+            case .negative(let atom):
+                try atom.accept(visitor)
+            default:
+                break
+            }
+
+            try visitor.didVisit(self)
+        }
+
         public static func from(
             _ node: SwiftPEGGrammar.LookaheadOrCut
         ) -> Self {
@@ -552,6 +837,7 @@ public enum InternalGrammar {
 
     public indirect enum Atom: Hashable, CustomStringConvertible {
         /// `'(' alts ')'`
+        @GeneratedIsCase(accessLevel: "public")
         case group([Alt])
 
         /// `ident`
@@ -574,6 +860,19 @@ public enum InternalGrammar {
             }
         }
 
+        /// Returns a copy of `self` with any optional productions elided.
+        /// If this results in this production being empty, returns `nil`.
+        var reduced: Self? {
+            switch self {
+            case .group(let alts):
+                let result = alts.compactMap(\.reduced)
+                if result.isEmpty { return nil }
+                return .group(result)
+            default:
+                return self
+            }
+        }
+
         public var description: String {
             switch self {
             case .group(let alts):
@@ -587,11 +886,33 @@ public enum InternalGrammar {
             }
         }
 
-        public var isGroup: Bool {
+        /// Flattens this alt. Returns a copy of `self` with nested productions
+        /// collapsed to the top-level whenever possible.
+        ///
+        /// If this results in this production being empty, returns `nil`.
+        func flattened() -> Self? {
             switch self {
-            case .group: return true
-            default: return false
+            case .group(let alts):
+                let flattened = alts.compactMap({ $0.flattened() })
+                if flattened.isEmpty { return nil }
+                return .group(flattened)
+
+            default:
+                return self
             }
+        }
+
+        /// Accepts a given visitor, and recursively passes the visitor to nested
+        /// property types within this object that can be visited, if present.
+        public func accept(_ visitor: some Visitor) throws {
+            try visitor.willVisit(self)
+            try visitor.visit(self)
+
+            if case .group(let alts) = self {
+                try alts.forEach { try $0.accept(visitor) }
+            }
+
+            try visitor.didVisit(self)
         }
 
         /// Returns the alias for referencing the this atom in code generated by
@@ -655,6 +976,51 @@ public enum InternalGrammar {
         ) -> Self {
             .init(name: String(node.name))
         }
+
+        /// Accepts a given visitor, and recursively passes the visitor to nested
+        /// property types within this object that can be visited, if present.
+        public func accept(_ visitor: some Visitor) throws {
+            try visitor.visit(self)
+        }
+    }
+
+    /// Simplified visitor protocol for internal grammar trees.
+    public protocol Visitor {
+        func visit(_ node: TokenDefinition) throws
+
+        func willVisit(_ node: Grammar) throws
+        func visit(_ node: Grammar) throws
+        func didVisit(_ node: Grammar) throws
+
+        func visit(_ node: MetaProperty) throws
+
+        func willVisit(_ node: Rule) throws
+        func visit(_ node: Rule) throws
+        func didVisit(_ node: Rule) throws
+
+        func willVisit(_ node: Alt) throws
+        func visit(_ node: Alt) throws
+        func didVisit(_ node: Alt) throws
+
+        func visit(_ node: Action) throws
+
+        func willVisit(_ node: NamedItem) throws
+        func visit(_ node: NamedItem) throws
+        func didVisit(_ node: NamedItem) throws
+
+        func willVisit(_ node: Item) throws
+        func visit(_ node: Item) throws
+        func didVisit(_ node: Item) throws
+
+        func willVisit(_ node: Lookahead) throws
+        func visit(_ node: Lookahead) throws
+        func didVisit(_ node: Lookahead) throws
+
+        func willVisit(_ node: Atom) throws
+        func visit(_ node: Atom) throws
+        func didVisit(_ node: Atom) throws
+
+        func visit(_ node: SwiftType) throws
     }
 }
 
@@ -666,4 +1032,42 @@ protocol TokenLiteralResolver {
     /// Returns the name of a token that has a literal value matching the given
     /// (non-quoted) value, or `nil`, if none is known.
     func tokenName(ofRawLiteral literal: String) -> String?
+}
+
+public extension InternalGrammar.Visitor {
+    func visit(_ node: InternalGrammar.TokenDefinition) throws { }
+
+    func willVisit(_ node: InternalGrammar.Grammar) throws { }
+    func visit(_ node: InternalGrammar.Grammar) throws { }
+    func didVisit(_ node: InternalGrammar.Grammar) throws { }
+
+    func visit(_ node: InternalGrammar.MetaProperty) throws { }
+
+    func willVisit(_ node: InternalGrammar.Rule) throws { }
+    func visit(_ node: InternalGrammar.Rule) throws { }
+    func didVisit(_ node: InternalGrammar.Rule) throws { }
+
+    func willVisit(_ node: InternalGrammar.Alt) throws { }
+    func visit(_ node: InternalGrammar.Alt) throws { }
+    func didVisit(_ node: InternalGrammar.Alt) throws { }
+
+    func visit(_ node: InternalGrammar.Action) throws { }
+
+    func willVisit(_ node: InternalGrammar.NamedItem) throws { }
+    func visit(_ node: InternalGrammar.NamedItem) throws { }
+    func didVisit(_ node: InternalGrammar.NamedItem) throws { }
+
+    func willVisit(_ node: InternalGrammar.Item) throws { }
+    func visit(_ node: InternalGrammar.Item) throws { }
+    func didVisit(_ node: InternalGrammar.Item) throws { }
+
+    func willVisit(_ node: InternalGrammar.Lookahead) throws { }
+    func visit(_ node: InternalGrammar.Lookahead) throws { }
+    func didVisit(_ node: InternalGrammar.Lookahead) throws { }
+
+    func willVisit(_ node: InternalGrammar.Atom) throws { }
+    func visit(_ node: InternalGrammar.Atom) throws { }
+    func didVisit(_ node: InternalGrammar.Atom) throws { }
+
+    func visit(_ node: InternalGrammar.SwiftType) throws { }
 }

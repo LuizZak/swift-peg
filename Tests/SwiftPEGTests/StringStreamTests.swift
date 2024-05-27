@@ -29,6 +29,15 @@ class StringStreamTests: XCTestCase {
         assertEqual(sut.substring, "a")
     }
 
+    func testSubstring_nonStart_nonStartSubstringStartIndex_returnsNonEmptySubstring() {
+        var sut = makeSut("abc")
+        sut.advance()
+        sut.markSubstringStart()
+        sut.advance()
+
+        assertEqual(sut.substring, "b")
+    }
+
     func testIsEof_emptyString_returnsTrue() {
         let sut = makeSut("")
 
@@ -53,7 +62,24 @@ class StringStreamTests: XCTestCase {
         assertFalse(sut.isEof)
     }
 
-    func testIsEof_zero_returnsIsEofValue() {
+    func testRecordRestore() {
+        var sut = makeSut("abcd")
+        sut.advance()
+        sut.markSubstringStart()
+        sut.advance()
+
+        let state = sut.save()
+
+        sut.advance()
+        sut.markSubstringStart()
+
+        sut.restore(state)
+
+        assertEqual(sut.substringStartIndex, makeIndex(sut, 1))
+        assertEqual(sut.index, makeIndex(sut, 2))
+    }
+
+    func testIsEofPast_zero_returnsIsEofValue() {
         var sut = makeSut("a")
 
         assertFalse(sut.isEofPast(0))
@@ -63,7 +89,7 @@ class StringStreamTests: XCTestCase {
         assertTrue(sut.isEofPast(0))
     }
 
-    func testIsEof_noZero() {
+    func testIsEofPast_noZero() {
         var sut = makeSut("ab")
 
         assertFalse(sut.isEofPast(1))

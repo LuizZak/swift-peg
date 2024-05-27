@@ -231,7 +231,7 @@ extension GrammarParser {
 
     /// ```
     /// alt[SwiftPEGGrammar.Alt]:
-    ///     | namedItems action? { self.setLocation(.init(namedItems: namedItems, action: action), at: mark) }
+    ///     | namedItems action? failAction? { self.setLocation(.init(namedItems: namedItems, action: action, failAction: failAction), at: mark) }
     ///     ;
     /// ```
     @memoized("alt")
@@ -243,9 +243,12 @@ extension GrammarParser {
             let namedItems = try self.namedItems(),
             let action = try self.optional({
                 try self.action()
+            }),
+            let failAction = try self.optional({
+                try self.failAction()
             })
         {
-            return self.setLocation(.init(namedItems: namedItems, action: action), at: mark)
+            return self.setLocation(.init(namedItems: namedItems, action: action, failAction: failAction), at: mark)
         }
 
         self.restore(mark)
@@ -329,10 +332,6 @@ extension GrammarParser {
 
         self.restore(mark)
 
-        if cut.isOn {
-            return nil
-        }
-
         if
             let lookahead = try self.lookahead()
         {
@@ -340,10 +339,6 @@ extension GrammarParser {
         }
 
         self.restore(mark)
-
-        if cut.isOn {
-            return nil
-        }
         return nil
     }
 
@@ -395,10 +390,6 @@ extension GrammarParser {
         }
 
         self.restore(mark)
-
-        if cut.isOn {
-            return nil
-        }
         return nil
     }
 
@@ -442,10 +433,6 @@ extension GrammarParser {
 
         self.restore(mark)
 
-        if cut.isOn {
-            return nil
-        }
-
         if
             let atom = try self.atom(),
             let _ = try self.expect(kind: .star)
@@ -455,10 +442,6 @@ extension GrammarParser {
 
         self.restore(mark)
 
-        if cut.isOn {
-            return nil
-        }
-
         if
             let atom = try self.atom(),
             let _ = try self.expect(kind: .plus)
@@ -467,10 +450,6 @@ extension GrammarParser {
         }
 
         self.restore(mark)
-
-        if cut.isOn {
-            return nil
-        }
 
         if
             let sep = try self.atom(),
@@ -483,10 +462,6 @@ extension GrammarParser {
 
         self.restore(mark)
 
-        if cut.isOn {
-            return nil
-        }
-
         if
             let atom = try self.atom()
         {
@@ -494,10 +469,6 @@ extension GrammarParser {
         }
 
         self.restore(mark)
-
-        if cut.isOn {
-            return nil
-        }
         return nil
     }
 
@@ -537,10 +508,6 @@ extension GrammarParser {
 
         self.restore(mark)
 
-        if cut.isOn {
-            return nil
-        }
-
         if
             let string = try self.expect(kind: .string)
         {
@@ -548,10 +515,6 @@ extension GrammarParser {
         }
 
         self.restore(mark)
-
-        if cut.isOn {
-            return nil
-        }
         return nil
     }
 
@@ -580,10 +543,6 @@ extension GrammarParser {
         }
 
         self.restore(mark)
-
-        if cut.isOn {
-            return nil
-        }
 
         if
             let _ = try self.expect(kind: .leftSquare),
@@ -672,10 +631,6 @@ extension GrammarParser {
 
         self.restore(mark)
 
-        if cut.isOn {
-            return nil
-        }
-
         if
             let name = try self.expect(kind: .identifier)
         {
@@ -683,10 +638,6 @@ extension GrammarParser {
         }
 
         self.restore(mark)
-
-        if cut.isOn {
-            return nil
-        }
         return nil
     }
 
@@ -733,6 +684,35 @@ extension GrammarParser {
         var cut = CutFlag()
 
         if
+            let _ = try self.expect(kind: .leftBrace),
+            cut.toggleOn(),
+            let balancedTokens = try self.balancedTokens(),
+            let _ = try self.expect(kind: .rightBrace)
+        {
+            return self.setLocation(.init(balancedTokens: balancedTokens), at: mark)
+        }
+
+        self.restore(mark)
+
+        if cut.isOn {
+            return nil
+        }
+        return nil
+    }
+
+    /// ```
+    /// failAction[SwiftPEGGrammar.Action]:
+    ///     | "!!" "{" ~ balancedTokens "}" { self.setLocation(.init(balancedTokens: balancedTokens), at: mark) }
+    ///     ;
+    /// ```
+    @memoized("failAction")
+    @inlinable
+    public func __failAction() throws -> SwiftPEGGrammar.Action? {
+        let mark = self.mark()
+        var cut = CutFlag()
+
+        if
+            let _ = try self.expect(kind: .doubleExclamationMark),
             let _ = try self.expect(kind: .leftBrace),
             cut.toggleOn(),
             let balancedTokens = try self.balancedTokens(),
@@ -807,10 +787,6 @@ extension GrammarParser {
 
         self.restore(mark)
 
-        if cut.isOn {
-            return nil
-        }
-
         if
             let l = try self.expect(kind: .leftBrace),
             let balancedTokens = try self.balancedTokens(),
@@ -820,10 +796,6 @@ extension GrammarParser {
         }
 
         self.restore(mark)
-
-        if cut.isOn {
-            return nil
-        }
 
         if
             let l = try self.expect(kind: .leftSquare),
@@ -835,10 +807,6 @@ extension GrammarParser {
 
         self.restore(mark)
 
-        if cut.isOn {
-            return nil
-        }
-
         if
             let l = try self.expect(kind: .leftAngle),
             let balancedTokens = try self.balancedTokens(),
@@ -849,10 +817,6 @@ extension GrammarParser {
 
         self.restore(mark)
 
-        if cut.isOn {
-            return nil
-        }
-
         if
             let l = try self.expect(kind: .leftParen),
             let balancedTokens = try self.balancedTokens(),
@@ -862,10 +826,6 @@ extension GrammarParser {
         }
 
         self.restore(mark)
-
-        if cut.isOn {
-            return nil
-        }
 
         if
             let l = try self.expect(kind: .leftSquare),
@@ -930,10 +890,6 @@ extension GrammarParser {
         }
 
         self.restore(mark)
-
-        if cut.isOn {
-            return nil
-        }
         return nil
     }
 
@@ -1044,10 +1000,6 @@ extension GrammarParser {
 
         self.restore(mark)
 
-        if cut.isOn {
-            return nil
-        }
-
         if
             let _ = try self.expect(kind: .dollarSign),
             let name = try self.expect(kind: .identifier),
@@ -1074,10 +1026,6 @@ extension GrammarParser {
         }
 
         self.restore(mark)
-
-        if cut.isOn {
-            return nil
-        }
         return nil
     }
 }
