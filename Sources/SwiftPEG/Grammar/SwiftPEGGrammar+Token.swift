@@ -1,6 +1,6 @@
 extension SwiftPEGGrammar {
     /// A token in a grammar.
-    public enum GrammarToken: TokenType, ExpressibleByStringLiteral {
+    public enum GrammarToken: TokenType, ExpressibleByStringLiteral, CustomStringConvertible {
         public typealias TokenKind = GrammarTokenKind
         public typealias TokenString = Substring
 
@@ -230,6 +230,11 @@ extension SwiftPEGGrammar {
             case .doubleExclamationMark:
                 return 2
             }
+        }
+
+        /// Returns `self.processedString` for string interpolation usage.
+        public var description: String {
+            return String(processedString)
         }
 
         /// Attempts to construct a token from a given string literal value.

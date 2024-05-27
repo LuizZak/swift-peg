@@ -889,12 +889,14 @@ extension SwiftPEGGrammar {
     ///     ;
     /// ```
     @GeneratedNodeType<Node>
-    public final class SwiftType: GrammarNode {
+    public final class SwiftType: GrammarNode, CustomStringConvertible {
         /// The name of the type.
         @NodeRequired
         public var name: Substring
 
         public override var shortDebugDescription: String { String(self.name) }
+
+        public var description: String { String(self.name) }
 
         /// Accepts a given grammar-node visitor into this node.
         public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: GrammarNodeVisitorType {

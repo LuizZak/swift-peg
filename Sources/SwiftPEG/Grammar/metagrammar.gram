@@ -45,7 +45,7 @@ rule[SwiftPEGGrammar.Rule]:
     ;
 
 ruleName[SwiftPEGGrammar.RuleName]:
-    | name=IDENTIFIER '[' type=swiftType ']' { self.setLocation(.init(name: name.token, type: type), at: mark) }
+    | name=IDENTIFIER '[' ~ type=swiftType ']' { self.setLocation(.init(name: name.token, type: type), at: mark) }
     | name=IDENTIFIER { self.setLocation(.init(name: name.token, type: nil), at: mark) }
     ;
 
@@ -90,14 +90,11 @@ atom[SwiftPEGGrammar.Atom]:
     ;
 
 swiftType[SwiftPEGGrammar.SwiftType]:
-    | raw=STRING { self.setLocation(.init(name: raw.token.processedString), at: mark) }
-    | '[' ~ type=swiftType ']' { self.setLocation(.init(name: "[" + type.name + "]"), at: mark) }
-    | '(' ~ types=swiftTypeList ')' { self.setLocation(.init(name: "(" + types.map(\.name).joined(separator: ", ") + ")"), at: mark) }
-    | name=IDENTIFIER '<' ~ types=swiftTypeList '>' '?' { self.setLocation(.init(name: name.token.string + "<" + types.map(\.name).joined(separator: ", ") + ">?"), at: mark) }
-    | name=IDENTIFIER '<' ~ types=swiftTypeList '>' { self.setLocation(.init(name: name.token.string + "<" + types.map(\.name).joined(separator: ", ") + ">"), at: mark) }
-    | name=IDENTIFIER '.' ~ inner=swiftType { self.setLocation(.init(name: name.token.string + "." + inner.name), at: mark) }
-    | name=IDENTIFIER '?' { self.setLocation(.init(name: name.token.string + "?"), at: mark) }
-    | name=IDENTIFIER { self.setLocation(.init(name: name.token.string), at: mark) }
+    | '[' ~ swiftType ']'                 { self.setLocation(.init(name: "[\(swiftType)]"), at: mark) }
+    | swiftType '<' swiftTypeList '>'     { self.setLocation(.init(name: "\(swiftType)<\(swiftTypeList.map(\.name).joined(separator: ", "))>"), at: mark) }
+    | swiftType '.' ident=IDENTIFIER      { self.setLocation(.init(name: "\(swiftType).\(ident.token)"), at: mark) }
+    | swiftType '?'                       { self.setLocation(.init(name: "\(swiftType)?"), at: mark) }
+    | ident=IDENTIFIER                    { self.setLocation(.init(name: "\(ident.token)"), at: mark) }
     ;
 
 swiftTypeList[[SwiftPEGGrammar.SwiftType]]:
@@ -134,7 +131,7 @@ balancedToken[SwiftPEGGrammar.BalancedTokens]:
     | token=balancedTokenAtom { .init(tokens: [token]) }
     ;
 
-balancedTokenAtom["TokenNode<RawTokenizer.Token, RawTokenizer.Location>"]:
+balancedTokenAtom[TokenNode<RawTokenizer.Token, RawTokenizer.Location>]:
     | !"[" !"]" !"{" !"}" !"(" !")" token=ANY { .init(token) }
     ;
 

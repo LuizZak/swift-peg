@@ -175,7 +175,7 @@ extension GrammarParser {
 
     /// ```
     /// ruleName[SwiftPEGGrammar.RuleName]:
-    ///     | name=IDENTIFIER '[' type=swiftType ']' { self.setLocation(.init(name: name.token, type: type), at: mark) }
+    ///     | name=IDENTIFIER '[' ~ type=swiftType ']' { self.setLocation(.init(name: name.token, type: type), at: mark) }
     ///     | name=IDENTIFIER { self.setLocation(.init(name: name.token, type: nil), at: mark) }
     ///     ;
     /// ```
@@ -183,10 +183,12 @@ extension GrammarParser {
     @inlinable
     public func __ruleName() throws -> SwiftPEGGrammar.RuleName? {
         let mark = self.mark()
+        var cut = CutFlag()
 
         if
             let name = try self.expect(kind: .identifier),
             let _ = try self.expect(kind: .leftSquare),
+            cut.toggleOn(),
             let type = try self.swiftType(),
             let _ = try self.expect(kind: .rightSquare)
         {
@@ -194,6 +196,10 @@ extension GrammarParser {
         }
 
         self.restore(mark)
+
+        if cut.isOn {
+            return nil
+        }
 
         if
             let name = try self.expect(kind: .identifier)
@@ -520,37 +526,26 @@ extension GrammarParser {
 
     /// ```
     /// swiftType[SwiftPEGGrammar.SwiftType]:
-    ///     | raw=STRING { self.setLocation(.init(name: raw.token.processedString), at: mark) }
-    ///     | '[' ~ type=swiftType ']' { self.setLocation(.init(name: "[" + type.name + "]"), at: mark) }
-    ///     | '(' ~ types=swiftTypeList ')' { self.setLocation(.init(name: "(" + types.map(\.name).joined(separator: ", ") + ")"), at: mark) }
-    ///     | name=IDENTIFIER '<' ~ types=swiftTypeList '>' '?' { self.setLocation(.init(name: name.token.string + "<" + types.map(\.name).joined(separator: ", ") + ">?"), at: mark) }
-    ///     | name=IDENTIFIER '<' ~ types=swiftTypeList '>' { self.setLocation(.init(name: name.token.string + "<" + types.map(\.name).joined(separator: ", ") + ">"), at: mark) }
-    ///     | name=IDENTIFIER '.' ~ inner=swiftType { self.setLocation(.init(name: name.token.string + "." + inner.name), at: mark) }
-    ///     | name=IDENTIFIER '?' { self.setLocation(.init(name: name.token.string + "?"), at: mark) }
-    ///     | name=IDENTIFIER { self.setLocation(.init(name: name.token.string), at: mark) }
+    ///     | '[' ~ swiftType ']' { self.setLocation(.init(name: "[\(swiftType)]"), at: mark) }
+    ///     | swiftType '<' swiftTypeList '>' { self.setLocation(.init(name: "\(swiftType)<\(swiftTypeList.map(\.name).joined(separator: ", "))>"), at: mark) }
+    ///     | swiftType '.' ident=IDENTIFIER { self.setLocation(.init(name: "\(swiftType).\(ident.token)"), at: mark) }
+    ///     | swiftType '?' { self.setLocation(.init(name: "\(swiftType)?"), at: mark) }
+    ///     | ident=IDENTIFIER { self.setLocation(.init(name: "\(ident.token)"), at: mark) }
     ///     ;
     /// ```
-    @memoized("swiftType")
+    @memoizedLeftRecursive("swiftType")
     @inlinable
     public func __swiftType() throws -> SwiftPEGGrammar.SwiftType? {
         let mark = self.mark()
         var cut = CutFlag()
 
         if
-            let raw = try self.expect(kind: .string)
-        {
-            return self.setLocation(.init(name: raw.token.processedString), at: mark)
-        }
-
-        self.restore(mark)
-
-        if
             let _ = try self.expect(kind: .leftSquare),
             cut.toggleOn(),
-            let type = try self.swiftType(),
+            let swiftType = try self.swiftType(),
             let _ = try self.expect(kind: .rightSquare)
         {
-            return self.setLocation(.init(name: "[" + type.name + "]"), at: mark)
+            return self.setLocation(.init(name: "[\(swiftType)]"), at: mark)
         }
 
         self.restore(mark)
@@ -560,81 +555,39 @@ extension GrammarParser {
         }
 
         if
-            let _ = try self.expect(kind: .leftParen),
-            cut.toggleOn(),
-            let types = try self.swiftTypeList(),
-            let _ = try self.expect(kind: .rightParen)
-        {
-            return self.setLocation(.init(name: "(" + types.map(\.name).joined(separator: ", ") + ")"), at: mark)
-        }
-
-        self.restore(mark)
-
-        if cut.isOn {
-            return nil
-        }
-
-        if
-            let name = try self.expect(kind: .identifier),
+            let swiftType = try self.swiftType(),
             let _ = try self.expect(kind: .leftAngle),
-            cut.toggleOn(),
-            let types = try self.swiftTypeList(),
-            let _ = try self.expect(kind: .rightAngle),
-            let _ = try self.expect(kind: .questionMark)
-        {
-            return self.setLocation(.init(name: name.token.string + "<" + types.map(\.name).joined(separator: ", ") + ">?"), at: mark)
-        }
-
-        self.restore(mark)
-
-        if cut.isOn {
-            return nil
-        }
-
-        if
-            let name = try self.expect(kind: .identifier),
-            let _ = try self.expect(kind: .leftAngle),
-            cut.toggleOn(),
-            let types = try self.swiftTypeList(),
+            let swiftTypeList = try self.swiftTypeList(),
             let _ = try self.expect(kind: .rightAngle)
         {
-            return self.setLocation(.init(name: name.token.string + "<" + types.map(\.name).joined(separator: ", ") + ">"), at: mark)
+            return self.setLocation(.init(name: "\(swiftType)<\(swiftTypeList.map(\.name).joined(separator: ", "))>"), at: mark)
         }
 
         self.restore(mark)
 
-        if cut.isOn {
-            return nil
-        }
-
         if
-            let name = try self.expect(kind: .identifier),
+            let swiftType = try self.swiftType(),
             let _ = try self.expect(kind: .period),
-            cut.toggleOn(),
-            let inner = try self.swiftType()
+            let ident = try self.expect(kind: .identifier)
         {
-            return self.setLocation(.init(name: name.token.string + "." + inner.name), at: mark)
+            return self.setLocation(.init(name: "\(swiftType).\(ident.token)"), at: mark)
         }
 
         self.restore(mark)
 
-        if cut.isOn {
-            return nil
-        }
-
         if
-            let name = try self.expect(kind: .identifier),
+            let swiftType = try self.swiftType(),
             let _ = try self.expect(kind: .questionMark)
         {
-            return self.setLocation(.init(name: name.token.string + "?"), at: mark)
+            return self.setLocation(.init(name: "\(swiftType)?"), at: mark)
         }
 
         self.restore(mark)
 
         if
-            let name = try self.expect(kind: .identifier)
+            let ident = try self.expect(kind: .identifier)
         {
-            return self.setLocation(.init(name: name.token.string), at: mark)
+            return self.setLocation(.init(name: "\(ident.token)"), at: mark)
         }
 
         self.restore(mark)
