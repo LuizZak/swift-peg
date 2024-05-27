@@ -29,13 +29,9 @@ extension SwiftPEGGrammar {
     /// 
     /// Represents the construct:
     /// ```
-    /// grammar[Grammar]:
-    ///     | metas rules { Grammar.Grammar(metas: metas, rules: rules) }
-    ///     | rules { Grammar.Grammar(metas: [], rules: rules) }
+    /// grammar
+    ///     | metas=meta* rules=rule+
     ///     ;
-    /// 
-    /// metas: meta+ ;
-    /// rules: rule+ ;
     /// ```
     @GeneratedNodeType<Node>
     public final class Grammar: GrammarNode {
@@ -58,7 +54,7 @@ extension SwiftPEGGrammar {
     /// Represents the construct:
     /// ```
     /// meta:
-    ///     | '@' name=IDENT metaValue?
+    ///     | "@" name=IDENTIFIER value=metaValue? ';'
     ///     ;
     /// ```
     @GeneratedNodeType<Node>
@@ -138,8 +134,7 @@ extension SwiftPEGGrammar {
     /// Represents the construct:
     /// ```
     /// rule:
-    ///     | ruleName ':' alts
-    ///     | ruleName ':' '|' alts   # "more_alts" on pegen's metagrammar.gram
+    ///     | ruleName ":" '|'? alts ';'
     ///     ;
     /// ```
     @GeneratedNodeType<Node>
@@ -206,7 +201,8 @@ extension SwiftPEGGrammar {
     /// Represents the construct:
     /// ```
     /// ruleName:
-    ///     | name=IDENT ('[' type=swiftType ']')?
+    ///     | name=IDENTIFIER '[' ~ type=swiftType ']'
+    ///     | name=IDENTIFIER
     ///     ;
     /// ```
     @GeneratedNodeType<Node>
@@ -871,21 +867,19 @@ extension SwiftPEGGrammar {
     /// 
     /// Represents the construct:
     /// ```
-    /// swiftType[SwiftType]:
-    ///     | '[' ~ type=swiftType ']' { SwiftType(name: "[" + type.name + "]") }
-    ///     | '(' ~ types=swiftTypeList ')' { SwiftType(name: "(" + types.map(\.name).joined(separator: ", ") + ")") }
-    ///     | name=IDENT '<' ~ types=swiftTypeList '>' { SwiftType(name: name.name + "<" + types.map(\.name).joined(separator: ", ") + ">") }
-    ///     | name=IDENT '.' inner=swiftType { SwiftType(name: name + "." + inner.name) }
-    ///     | name=IDENT '?' { SwiftType(name: name + "?") }
-    ///     | name=IDENT
+    /// swiftType[SwiftPEGGrammar.SwiftType]:
+    ///     | '[' ~ swiftType ']'
+    ///     | swiftType '<' ~ swiftTypeList '>'
+    ///     | swiftType '.' ident=IDENTIFIER
+    ///     | swiftType '?'
+    ///     | ident=IDENTIFIER
     ///     ;
     /// ```
     /// 
-    /// And in list form:
+    /// And in list form, as generic parameters of an enclosing generic Swift type:
     /// ```
-    /// swiftTypeList[[SwiftType]]:
-    ///     | type=swiftType ',' types=swiftTypeList { [type] + types }
-    ///     | type=swiftType { [type] }
+    /// swiftTypeList[[SwiftPEGGrammar.SwiftType]]:
+    ///     | ','.swiftType+
     ///     ;
     /// ```
     @GeneratedNodeType<Node>
@@ -940,37 +934,26 @@ extension SwiftPEGGrammar {
     ///
     /// Represents the construct:
     /// ```
-    /// balancedToken:
-    ///     | token=WHITESPACE { self.setLocation(.init(tokens: [.init(token)]), at: mark) }
-    ///     | '{' balancedTokens '}' { .init(tokens: ["{"] + balancedTokens.tokens + ["}"]) }
-    ///     | '[' balancedTokens ']' { .init(tokens: ["["] + balancedTokens.tokens + ["]"]) }
-    ///     | '<' balancedTokens '>' { .init(tokens: ["<"] + balancedTokens.tokens + [">"]) }
-    ///     | '(' balancedTokens ')' { .init(tokens: ["("] + balancedTokens.tokens + [")"]) }
-    ///     | '[' ~ ']' { .init(tokens: ["(", ")"]) }
-    ///     | '{' ~ '}' { .init(tokens: ["{", "}"]) }
-    ///     | '<' ~ '>' { .init(tokens: ["<", ">"]) }
-    ///     | '(' ~ ')' { .init(tokens: ["(", ")"]) }
+    /// balancedTokens:
+    ///     | balancedToken balancedTokens
+    ///     | balancedToken
     ///     ;
     ///
-    /// balancedTokenAtom[Token]:
-    ///     | WHITESPACE    # Includes newlines
-    ///     | IDENT
-    ///     | DIGITS
-    ///     | STRING
-    ///     | ':'
-    ///     | ';'
-    ///     | '|'
-    ///     | '='
-    ///     | '~'
-    ///     | '*'
-    ///     | '+'
-    ///     | '?'
-    ///     | ','
-    ///     | '.'
-    ///     | '@'
-    ///     | '$'
-    ///     | '/'
-    ///     | '\\'
+    /// balancedToken:
+    ///     | token=WHITESPACE
+    ///     | '{' balancedTokens '}'
+    ///     | '[' balancedTokens ']'
+    ///     | '<' balancedTokens '>'
+    ///     | '(' balancedTokens ')'
+    ///     | '[' ~ ']'
+    ///     | '{' ~ '}'
+    ///     | '<' ~ '>'
+    ///     | '(' ~ ')'
+    ///     | token=balancedTokenAtom
+    ///     ;
+    ///
+    /// balancedTokenAtom:
+    ///     | !"[" !"]" !"{" !"}" !"(" !")" token=ANY
     ///     ;
     /// ```
     @GeneratedNodeType<Node>

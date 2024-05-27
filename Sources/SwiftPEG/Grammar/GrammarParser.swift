@@ -28,7 +28,7 @@ extension GrammarParser {
 
     /// ```
     /// grammar[SwiftPEGGrammar.Grammar]:
-    ///     | metas? rules { self.setLocation(.init(metas: metas ?? [], rules: rules), at: mark) }
+    ///     | metas=meta* rules=rule+ { self.setLocation(.init(metas: metas, rules: rules), at: mark) }
     ///     ;
     /// ```
     @memoized("grammar")
@@ -37,34 +37,14 @@ extension GrammarParser {
         let mark = self.mark()
 
         if
-            let metas = try self.optional({
-                try self.metas()
-            }),
-            let rules = try self.rules()
-        {
-            return self.setLocation(.init(metas: metas ?? [], rules: rules), at: mark)
-        }
-
-        self.restore(mark)
-        return nil
-    }
-
-    /// ```
-    /// metas[[SwiftPEGGrammar.Meta]]:
-    ///     | metas=meta+ { metas }
-    ///     ;
-    /// ```
-    @memoized("metas")
-    @inlinable
-    public func __metas() throws -> [SwiftPEGGrammar.Meta]? {
-        let mark = self.mark()
-
-        if
-            let metas = try self.repeatOneOrMore({
+            let metas = try self.repeatZeroOrMore({
                 try self.meta()
+            }),
+            let rules = try self.repeatOneOrMore({
+                try self.rule()
             })
         {
-            return metas
+            return self.setLocation(.init(metas: metas, rules: rules), at: mark)
         }
 
         self.restore(mark)
@@ -119,28 +99,6 @@ extension GrammarParser {
             let string = try self.expect(kind: .string)
         {
             return self.setLocation(SwiftPEGGrammar.MetaStringValue(string: string.token), at: mark)
-        }
-
-        self.restore(mark)
-        return nil
-    }
-
-    /// ```
-    /// rules[[SwiftPEGGrammar.Rule]]:
-    ///     | rules=rule+ { rules }
-    ///     ;
-    /// ```
-    @memoized("rules")
-    @inlinable
-    public func __rules() throws -> [SwiftPEGGrammar.Rule]? {
-        let mark = self.mark()
-
-        if
-            let rules = try self.repeatOneOrMore({
-                try self.rule()
-            })
-        {
-            return rules
         }
 
         self.restore(mark)
@@ -213,7 +171,7 @@ extension GrammarParser {
 
     /// ```
     /// alts[[SwiftPEGGrammar.Alt]]:
-    ///     | alts="|".alt+ { alts }
+    ///     | "|".alt+
     ///     ;
     /// ```
     @memoized("alts")
@@ -222,13 +180,13 @@ extension GrammarParser {
         let mark = self.mark()
 
         if
-            let alts = try self.gather(separator: {
+            let alt = try self.gather(separator: {
                 try self.expect(kind: .bar)
             }, item: {
                 try self.alt()
             })
         {
-            return alts
+            return alt
         }
 
         self.restore(mark)
@@ -263,7 +221,7 @@ extension GrammarParser {
 
     /// ```
     /// namedItems[[SwiftPEGGrammar.NamedItem]]:
-    ///     | namedItems=namedItem+ { namedItems }
+    ///     | namedItem+
     ///     ;
     /// ```
     @memoized("namedItems")
@@ -272,11 +230,11 @@ extension GrammarParser {
         let mark = self.mark()
 
         if
-            let namedItems = try self.repeatOneOrMore({
+            let namedItem = try self.repeatOneOrMore({
                 try self.namedItem()
             })
         {
-            return namedItems
+            return namedItem
         }
 
         self.restore(mark)
@@ -527,7 +485,7 @@ extension GrammarParser {
     /// ```
     /// swiftType[SwiftPEGGrammar.SwiftType]:
     ///     | '[' ~ swiftType ']' { self.setLocation(.init(name: "[\(swiftType)]"), at: mark) }
-    ///     | swiftType '<' swiftTypeList '>' { self.setLocation(.init(name: "\(swiftType)<\(swiftTypeList.map(\.name).joined(separator: ", "))>"), at: mark) }
+    ///     | swiftType '<' ~ swiftTypeList '>' { self.setLocation(.init(name: "\(swiftType)<\(swiftTypeList.map(\.name).joined(separator: ", "))>"), at: mark) }
     ///     | swiftType '.' ident=IDENTIFIER { self.setLocation(.init(name: "\(swiftType).\(ident.token)"), at: mark) }
     ///     | swiftType '?' { self.setLocation(.init(name: "\(swiftType)?"), at: mark) }
     ///     | ident=IDENTIFIER { self.setLocation(.init(name: "\(ident.token)"), at: mark) }
@@ -557,6 +515,7 @@ extension GrammarParser {
         if
             let swiftType = try self.swiftType(),
             let _ = try self.expect(kind: .leftAngle),
+            cut.toggleOn(),
             let swiftTypeList = try self.swiftTypeList(),
             let _ = try self.expect(kind: .rightAngle)
         {
@@ -564,6 +523,10 @@ extension GrammarParser {
         }
 
         self.restore(mark)
+
+        if cut.isOn {
+            return nil
+        }
 
         if
             let swiftType = try self.swiftType(),
@@ -596,8 +559,7 @@ extension GrammarParser {
 
     /// ```
     /// swiftTypeList[[SwiftPEGGrammar.SwiftType]]:
-    ///     | type=swiftType ',' types=swiftTypeList { [type] + types }
-    ///     | type=swiftType { [type] }
+    ///     | ','.swiftType+
     ///     ;
     /// ```
     @memoized("swiftTypeList")
@@ -606,19 +568,13 @@ extension GrammarParser {
         let mark = self.mark()
 
         if
-            let type = try self.swiftType(),
-            let _ = try self.expect(kind: .comma),
-            let types = try self.swiftTypeList()
+            let swiftType = try self.gather(separator: {
+                try self.expect(kind: .comma)
+            }, item: {
+                try self.swiftType()
+            })
         {
-            return [type] + types
-        }
-
-        self.restore(mark)
-
-        if
-            let type = try self.swiftType()
-        {
-            return [type]
+            return swiftType
         }
 
         self.restore(mark)
