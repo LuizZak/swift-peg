@@ -6,6 +6,26 @@ class MetaPropertyManager {
 
     var diagnostics: [Diagnostic] = []
 
+    /// Registers a new known property with the specified parameters, returning
+    /// the newly generated property for querying this manager in the future.
+    func register(
+        name: String,
+        description: String,
+        acceptedValues: [KnownProperty.AcceptedValue],
+        repeatMode: KnownProperty.RepeatMode = .always
+    ) -> KnownProperty {
+
+        let prop = KnownProperty(
+            name: name,
+            propertyDescription: description,
+            acceptedValues: acceptedValues,
+            repeatMode: repeatMode
+        )
+        registerKnownProperty(prop)
+
+        return prop
+    }
+
     /// Registers a new known meta property into this meta property manager.
     ///
     /// If a meta-property has been previously been registered with the same
@@ -20,8 +40,15 @@ class MetaPropertyManager {
         knownProperties.append(knownProperty)
     }
 
+    /// Clears all currently registered properties and diagnostics in the process.
+    /// Does not remove registered known properties.
+    func clearAdded() {
+        metaProperties.removeAll()
+        diagnostics.removeAll()
+    }
+
     /// Resolves meta-properties by loading them from a given grammar.
-    func resolve(from grammar: SwiftPEGGrammar.Grammar) {
+    func add(from grammar: SwiftPEGGrammar.Grammar) {
         for property in grammar.metas.map(MetaProperty.from) {
             add(property)
         }
@@ -59,7 +86,7 @@ class MetaPropertyManager {
 
         // Validate repetition
         for knownProperty in knownProperties {
-            let properties = propertyValues(fromKnown: knownProperty)
+            let properties = properties(fromKnown: knownProperty)
 
             switch knownProperty.repeatMode {
             case .always:
@@ -89,14 +116,22 @@ class MetaPropertyManager {
 
     /// Returns all meta-properties within this manager that are associated with
     /// a given known property by name.
-    /// Returns an empty array if none have been registered with `add()` beforehand.
-    func propertyValues(fromKnown knownProperty: KnownProperty) -> [MetaProperty] {
+    /// Returns an empty array if none have been registered with `add()` or beforehand.
+    func properties(fromKnown knownProperty: KnownProperty) -> [MetaProperty] {
         metaProperties.filter { $0.name == knownProperty.name }
     }
 
+    /// Returns all meta-properties within this manager that are associated
+    /// with a given known property by name. Only returns values that pass the
+    /// known property's registered accepted values filters.
+    func propertiesValidating(knownProperty: KnownProperty) -> [MetaProperty] {
+        metaProperties.filter({
+            $0.name == knownProperty.name && knownProperty.acceptsValue(of: $0)
+        })
+    }
+
     private func validateValue(_ property: MetaProperty, _ knownProperty: KnownProperty) {
-        let acceptedValues = knownProperty.effectiveAccepted
-        if !acceptedValues.contains(where: { $0.accepts(property.value) }) {
+        if !knownProperty.acceptsValue(of: property) {
             diagnostics.append(
                 .unexpectedValue(property, expected: knownProperty.acceptedValues)
             )
@@ -104,6 +139,17 @@ class MetaPropertyManager {
     }
 
     private func validateDistinctValues(_ properties: [MetaProperty]) {
+        var metaDict: [MetaProperty.Value: MetaProperty] = [:]
+        
+        for property in properties {
+            if let original = metaDict[property.value] {
+                diagnoseRepeatedValue(original: original, property)
+            } else {
+                metaDict[property.value] = property
+            }
+        }
+
+        /*
         let byValue = Dictionary(grouping: properties, by: \.value)
 
         for properties in byValue.values where properties.count > 1 {
@@ -113,6 +159,7 @@ class MetaPropertyManager {
                 diagnoseRepeatedValue(original: original, remaining)
             }
         }
+        */
     }
 
     private func diagnoseRepeatedValue(original: MetaProperty, _ next: MetaProperty) {
@@ -164,10 +211,23 @@ class MetaPropertyManager {
         /// kind.
         case unexpectedValue(MetaProperty, expected: [KnownProperty.AcceptedValue])
 
+        /// Returns the meta-property that originated this diagnostic; suitable
+        /// for using as source location for displaying diagnostic to users.
+        var metaProperty: MetaProperty {
+            switch self {
+            case .repeatedDefinitions(_, let meta),
+                .unexpectedValue(let meta, _):
+                return meta
+            }
+        }
+
         var description: String {
             switch self {
             case .repeatedDefinitions(let firstDefinition, let other):
-                return "Meta-property '\(other.name)' @ \(other.node.location) has been declared at least once @ \(firstDefinition.node.location)."
+                if let value = other.value.stringValue {
+                    return "@\(other.name) with value '\(value)' @ \(other.node.location) has been declared at least once @ \(firstDefinition.node.location)."
+                }
+                return "@\(other.name) @ \(other.node.location) has been declared at least once @ \(firstDefinition.node.location)."
 
             case .unexpectedValue(let property, let expected):
                 return "Unexpected value '\(property.value)' for @\(property.name): expected: \(MetaPropertyManager.makeAcceptedValueDescription(expected))"
@@ -199,6 +259,14 @@ class MetaPropertyManager {
                 case .none: "<empty>"
                 case .string(let value): #""\#(value)""#
                 case .identifier(let value): value
+                }
+            }
+
+            var stringValue: String? {
+                switch self {
+                case .none: nil
+                case .string(let string): string
+                case .identifier(let identifier): identifier
                 }
             }
 
@@ -237,12 +305,11 @@ class MetaPropertyManager {
             "KnownProperty(name: \(name), propertyDescription: \(propertyDescription), acceptedValues: \(acceptedValues), repeatMode: \(repeatMode))"
         }
 
-        /// Returns an always non-empty list of accepted values.
-        /// If the list of accepted values is empty, `[AcceptedValue.none]` is
-        /// returned, instead.
-        internal var effectiveAccepted: [AcceptedValue] {
-            if acceptedValues.isEmpty { return [.none] }
-            return acceptedValues
+        /// Returns `true` if this known property entry accepts values defined by
+        /// a given grammar's meta property.
+        internal func acceptsValue(of property: MetaProperty) -> Bool {
+            if acceptedValues.isEmpty { return property.value == .none }
+            return acceptedValues.contains(where: { $0.accepts(property.value) })
         }
 
         enum AcceptedValue: Equatable {

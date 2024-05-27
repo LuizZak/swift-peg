@@ -33,6 +33,29 @@ class GrammarRawTokenizerTests: XCTestCase {
             (.identifier("a"),                           makeLocation(line: 4, column: 5)),
         ])
     }
+    
+    func testParseTokens_onNewlineLocations() throws {
+        let sut = makeSut(#"""
+        @token a ;
+        @token b ;
+        """#)
+
+        try assertTokensAndLocations(sut, [
+            (.at,                   makeLocation(line: 1, column: 1)),
+            (.identifier("token"),  makeLocation(line: 1, column: 2)),
+            (.whitespace(" "),      makeLocation(line: 1, column: 7)),
+            (.identifier("a"),      makeLocation(line: 1, column: 8)),
+            (.whitespace(" "),      makeLocation(line: 1, column: 9)),
+            (.semicolon,            makeLocation(line: 1, column: 10)),
+            (.whitespace("\n"),     makeLocation(line: 1, column: 11)),
+            (.at,                   makeLocation(line: 2, column: 1)),
+            (.identifier("token"),  makeLocation(line: 2, column: 2)),
+            (.whitespace(" "),      makeLocation(line: 2, column: 7)),
+            (.identifier("b"),      makeLocation(line: 2, column: 8)),
+            (.whitespace(" "),      makeLocation(line: 2, column: 9)),
+            (.semicolon,            makeLocation(line: 2, column: 10)),
+        ])
+    }
 
     func testSkipsComments() throws {
         let sut = makeSut(#"""

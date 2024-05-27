@@ -1,12 +1,18 @@
 /// Performs pre-code generation operations and returns an internal representation
 /// grammar suitable to be consumed by code generators.
 public class GrammarProcessor {
+    typealias KnownProperty = MetaPropertyManager.KnownProperty
+
     /// Regex for validating rule names.
     public static let ruleNameGrammar = #"[A-Za-z][0-9A-Za-z_]*"#
 
     /// Name of optional @meta-property that is queried for loading a .tokens
     /// file with extra token definition information.
     public static let tokensFile = "tokensFile"
+
+    let metaPropertyManager: MetaPropertyManager
+    let tokensFileProp: KnownProperty
+    let tokenProp: KnownProperty
 
     /// A list of non-Error diagnostics issued during grammar analysis.
     ///
@@ -26,6 +32,26 @@ public class GrammarProcessor {
 
     /// Creates a new `GrammarProcessor` instance.
     public init(delegate: Delegate?, verbose: Bool = false) {
+        let propManager = MetaPropertyManager()
+
+        // @tokensFile
+        let tokensFileProp = propManager.register(
+            name: "tokensFile",
+            description: "Optional property for specifying a file containing extra token definitions.",
+            acceptedValues: [.string(description: "A file path, usually ending in .tokens.")],
+            repeatMode: .never
+        )
+        // @token
+        let tokenProp = propManager.register(
+            name: "token",
+            description: "Forward-declares a token identifier.",
+            acceptedValues: [.identifier(description: "A unique identifier for the token reference.")],
+            repeatMode: .distinctValues
+        )
+
+        self.metaPropertyManager = propManager
+        self.tokensFileProp = tokensFileProp
+        self.tokenProp = tokenProp
         self.delegate = delegate
         self.verbose = verbose
     }
@@ -38,6 +64,16 @@ public class GrammarProcessor {
         _ grammar: SwiftPEGGrammar.Grammar,
         entryRuleName: String = "start"
     ) throws -> ProcessedGrammar {
+
+        metaPropertyManager.clearAdded()
+        metaPropertyManager.add(from: grammar)
+        metaPropertyManager.validateAll()
+
+        for diagnostic in metaPropertyManager.diagnostics {
+            diagnostics.append(
+                .metaPropertyDiagnostic(diagnostic.metaProperty.node, diagnostic.description)
+            )
+        }
 
         let knownRules = try validateRuleNames(in: grammar)
         let tokensFile = try loadTokensFile(from: grammar)
@@ -91,27 +127,27 @@ public class GrammarProcessor {
     }
 
     func loadTokensFile(from grammar: SwiftPEGGrammar.Grammar) throws -> [SwiftPEGGrammar.TokenDefinition] {
-        guard let tokensMeta = grammar.meta(named: Self.tokensFile) else {
+        guard let tokensMeta = metaPropertyManager.propertiesValidating(knownProperty: self.tokensFileProp).first else {
             return []
         }
-        guard let tokensFileName = grammar.tokensFile() else {
-            throw recordAndReturn(GrammarProcessorError.failedToLoadTokensFile(tokensMeta))
+        guard let tokensFileName = tokensMeta.value.stringValue else {
+            return []
         }
         
         guard let fileContents = try delegate?.grammarProcessor(self, loadTokensFileNamed: tokensFileName, ofGrammar: grammar) else {
-            throw recordAndReturn(GrammarProcessorError.failedToLoadTokensFile(tokensMeta))
+            throw recordAndReturn(GrammarProcessorError.failedToLoadTokensFile(tokensMeta.node))
         }
 
         let parser = GrammarParser(raw: GrammarRawTokenizer(source: fileContents))
         
         do {
             guard let tokens = try parser.tokensFile(), parser.tokenizer.isEOF else {
-                throw recordAndReturn(GrammarProcessorError.tokensFileSyntaxError(tokensMeta, parser.makeSyntaxError()))
+                throw recordAndReturn(GrammarProcessorError.tokensFileSyntaxError(tokensMeta.node, parser.makeSyntaxError()))
             }
             
             return tokens
         } catch let error as ParserError {
-            throw recordAndReturn(GrammarProcessorError.tokensFileSyntaxError(tokensMeta, error))
+            throw recordAndReturn(GrammarProcessorError.tokensFileSyntaxError(tokensMeta.node, error))
         } catch {
             throw error
         }
@@ -121,28 +157,15 @@ public class GrammarProcessor {
         in grammar: SwiftPEGGrammar.Grammar,
         tokensFile: [SwiftPEGGrammar.TokenDefinition]
     ) throws -> Set<String> {
-        var metaTokens: [String: SwiftPEGGrammar.Meta] = [:]
-        var issuedWarnings: Set<String> = []
+        var metaTokens: Set<String> = []
 
         for token in tokenMetaProperties(in: grammar) {
             guard let value = token.value as? SwiftPEGGrammar.MetaIdentifierValue else {
-                diagnostics.append(.tokenMissingName(token))
                 continue
             }
 
             let name = String(value.identifier.string)
-            guard !issuedWarnings.contains(name) else {
-                continue
-            }
-
-            if let prior = metaTokens[name] {
-                diagnostics.append(
-                    .repeatedTokenDeclaration(name: name, token, prior: prior)
-                )
-                issuedWarnings.insert(name)
-            } else {
-                metaTokens[name] = token
-            }
+            metaTokens.insert(name)
         }
 
         var tokensFromFile: Set<String> = []
@@ -150,7 +173,7 @@ public class GrammarProcessor {
             tokensFromFile.insert(String(token.name.string))
         }
 
-        return Set(metaTokens.keys).union(tokensFromFile)
+        return Set(metaTokens).union(tokensFromFile)
     }
 
     func validateReferences(
@@ -236,7 +259,7 @@ public class GrammarProcessor {
 
         let unreachableRules = try computeUnreachableRules(in: grammar, startRuleName: entryRuleName, rules: knownRules)
 
-        for unreachable in unreachableRules {
+        for unreachable in unreachableRules.sorted() { // Sort results to ensure stable and predictable diagnostics issuing
             guard let rule = knownRules[unreachable] else {
                 continue
             }
@@ -251,7 +274,7 @@ public class GrammarProcessor {
 
     /// Gets all @token meta-properties in the grammar.
     func tokenMetaProperties(in grammar: SwiftPEGGrammar.Grammar) -> [SwiftPEGGrammar.Meta] {
-        return grammar.metas.filter { $0.name.string == "token" }
+        metaPropertyManager.propertiesValidating(knownProperty: tokenProp).map(\.node)
     }
 
     func printIfVerbose(_ item: Any) {
@@ -322,14 +345,6 @@ public class GrammarProcessor {
 
     /// A non-fatal GrammarProcessor diagnostic.
     public enum GrammarProcessorDiagnostic {
-        /// A token has been declared multiple times with '@token'.
-        /// Only reported the first time a duplicated token with a matching name
-        /// is declared.
-        case repeatedTokenDeclaration(name: String, SwiftPEGGrammar.GrammarNode, prior: SwiftPEGGrammar.GrammarNode)
-
-        /// A '@token' meta-property is missing an identifier as its value.
-        case tokenMissingName(SwiftPEGGrammar.Meta)
-
         /// An alt that executes before another, if it succeeds, will always
         /// prevent the other alt from being attempted.
         case altOrderIssue(rule: SwiftPEGGrammar.Rule, SwiftPEGGrammar.Alt, alwaysSucceedsBefore: SwiftPEGGrammar.Alt)
@@ -337,14 +352,11 @@ public class GrammarProcessor {
         /// A rule is not reachable from the set start rule.
         case unreachableRule(SwiftPEGGrammar.Rule, startRuleName: String)
 
+        /// Diagnostic reported by meta-property manager.
+        case metaPropertyDiagnostic(SwiftPEGGrammar.Meta, String)
+
         public var description: String {
             switch self {
-            case .repeatedTokenDeclaration(let name, let meta, let prior):
-                return "Token '\(name)' @ \(meta.location) has been declared at least once @ \(prior.location)."
-
-            case .tokenMissingName(let meta):
-                return "Expected token @ \(meta.location) to have an identifier name."
-
             case .altOrderIssue(let rule, let prior, let former):
                 func describe(_ alt: InternalGrammar.Alt) -> String {
                     if alt == alt.reduced { return "'\(alt)'" }
@@ -362,6 +374,9 @@ public class GrammarProcessor {
             
             case .unreachableRule(let rule, let startRuleName):
                 return "Rule '\(rule.name.name.processedString)' @ \(rule.location) is not reachable from the set start rule '\(startRuleName)'."
+            
+            case .metaPropertyDiagnostic(_, let message):
+                return message
             }
         }
     }

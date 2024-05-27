@@ -2,17 +2,21 @@ import SwiftPEG
 
 extension GrammarProcessor {
 
-    func diagnosticsCount(
+    func test_diagnosticsCount(
         where predicate: (GrammarProcessor.GrammarProcessorDiagnostic) -> Bool
     ) -> Int {
 
-        return diagnostics(where: predicate).count
+        return test_diagnostics(where: predicate).count
     }
 
-    func diagnostics(
+    func test_diagnostics(
         where predicate: (GrammarProcessor.GrammarProcessorDiagnostic) -> Bool
     ) -> [GrammarProcessor.GrammarProcessorDiagnostic] {
 
         return diagnostics.filter(predicate)
+    }
+
+    func test_diagnosticMessages() -> String {
+        diagnostics.map(\.description).joined(separator: "\n")
     }
 }

@@ -112,11 +112,35 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
         try tokenizer.location()
     }
 
-    /// Updates a node's location to point at a given mark.
+    /// Updates a node's location to point to a given mark, optionally skipping
+    /// leading whitespace.
+    ///
     /// Returns `node` back.
     @inlinable
-    open func setLocation<T>(_ node: T, at mark: Mark) -> T where T: Node {
-        node.location = tokenizer.location(at: mark)
+    open func setLocation<T>(
+        _ node: T,
+        at mark: Mark,
+        skippingWhitespace: Bool = true
+    ) -> T where T: Node {
+
+        guard skippingWhitespace else {
+            node.location = tokenizer.location(at: mark)
+            return node
+        }
+
+        let prevMark = tokenizer.mark()
+        defer { tokenizer.restore(prevMark) }
+
+        tokenizer.restore(mark)
+
+        do {
+            while try tokenizer.peekToken()?.token.isWhitespace == true {
+                _=try tokenizer.next()
+            }
+        } catch {
+        }
+
+        node.location = tokenizer.location(at: tokenizer.mark())
         return node
     }
 

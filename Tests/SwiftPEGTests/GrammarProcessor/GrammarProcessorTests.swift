@@ -27,9 +27,11 @@ class GrammarProcessorTests: XCTestCase {
         let delegate = stubDelegate()
         let sut = makeSut(delegate)
 
+        // Act 1
+
         _ = try sut.process(grammar)
 
-        var diags = sut.diagnosticsCount(where: { diag in
+        var diags = sut.test_diagnosticsCount(where: { diag in
             switch diag {
             case .unreachableRule(let rule, "start")
                 where rule === rule3:
@@ -39,10 +41,15 @@ class GrammarProcessorTests: XCTestCase {
             }
         })
         assertEqual(diags, 1)
+        assertEqual(sut.test_diagnosticMessages(), """
+            Rule 'rule3' @ 0 is not reachable from the set start rule 'start'.
+            """)
+
+        // Act 2
 
         _ = try sut.process(grammar, entryRuleName: "rule3")
 
-        diags = sut.diagnosticsCount(where: { diag in
+        diags = sut.test_diagnosticsCount(where: { diag in
             switch diag {
             case .unreachableRule(let rule, "rule3")
                 where rule === start || rule === rule1 || rule === rule2:
@@ -52,6 +59,12 @@ class GrammarProcessorTests: XCTestCase {
             }
         })
         assertEqual(diags, 3)
+        assertEqual(sut.test_diagnosticMessages(), """
+            Rule 'rule3' @ 0 is not reachable from the set start rule 'start'.
+            Rule 'rule1' @ 0 is not reachable from the set start rule 'rule3'.
+            Rule 'rule2' @ 0 is not reachable from the set start rule 'rule3'.
+            Rule 'start' @ 0 is not reachable from the set start rule 'rule3'.
+            """)
     }
 
     func testUnreachableRuleDiagnostics_searchesNestedIdentifiers() throws {
@@ -78,7 +91,7 @@ class GrammarProcessorTests: XCTestCase {
 
         _ = try sut.process(grammar)
 
-        let diagnostics = sut.diagnostics(where: { diag in
+        let diagnostics = sut.test_diagnostics(where: { diag in
             switch diag {
             case .unreachableRule:
                 return true
@@ -87,6 +100,39 @@ class GrammarProcessorTests: XCTestCase {
             }
         })
         assertEmpty(diagnostics, message: "in grammar \(grammarString)")
+    }
+
+    func testRedefinedTokenDiagnostics() throws {
+        let grammarString = """
+        @token a ;
+        @token b ;
+        
+        @token a ;
+        @token a ;
+        @token b ;
+
+        start: a ;
+        """
+        let grammar = try parseGrammar(grammarString)
+        let delegate = stubDelegate()
+        let sut = makeSut(delegate)
+
+        _ = try sut.process(grammar)
+
+        let diags = sut.test_diagnosticsCount(where: { diag in
+            switch diag {
+            case .metaPropertyDiagnostic:
+                return true
+            default:
+                return false
+            }
+        })
+        assertEqual(diags, 3)
+        assertEqual(sut.test_diagnosticMessages(), """
+            @token with value 'a' @ line 4 column 1 has been declared at least once @ line 1 column 1.
+            @token with value 'a' @ line 5 column 1 has been declared at least once @ line 1 column 1.
+            @token with value 'b' @ line 6 column 1 has been declared at least once @ line 2 column 1.
+            """)
     }
 }
 

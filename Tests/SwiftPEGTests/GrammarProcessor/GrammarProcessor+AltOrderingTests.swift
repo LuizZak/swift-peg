@@ -26,7 +26,7 @@ class GrammarProcessor_AltOrderingTests: XCTestCase {
 
         _ = try sut.process(grammar)
 
-        let diags = sut.diagnosticsCount(where: { diag in
+        let diags = sut.test_diagnosticsCount(where: { diag in
             switch diag {
             case .altOrderIssue(let rule, let prior, let alt)
                 where rule === rule1 && prior === alt1 && alt === alt2:
@@ -36,6 +36,9 @@ class GrammarProcessor_AltOrderingTests: XCTestCase {
             }
         })
         assertEqual(diags, 1)
+        assertEqual(sut.test_diagnosticMessages(), """
+            Alt 'a' @ 0 always succeeds before 'a b' @ 0 can be tried in rule rule1 @ 0.
+            """)
     }
 
     func testAltOrderDiagnostics_inspectsNestedAlts() throws {
@@ -62,7 +65,7 @@ class GrammarProcessor_AltOrderingTests: XCTestCase {
 
         _ = try sut.process(grammar)
 
-        let diags = sut.diagnosticsCount(where: { diag in
+        let diags = sut.test_diagnosticsCount(where: { diag in
             switch diag {
             case .altOrderIssue(let rule, let prior, let alt)
                 where rule === rule1 && prior === alt1 && alt === alt2:
@@ -72,6 +75,9 @@ class GrammarProcessor_AltOrderingTests: XCTestCase {
             }
         })
         assertEqual(diags, 1)
+        assertEqual(sut.test_diagnosticMessages(), """
+            Alt 'a' @ 0 always succeeds before 'a b' @ 0 can be tried in rule rule1 @ 0.
+            """)
     }
 
     func testAltOrderDiagnostics_inspectsAltsByReduction() throws {
@@ -90,7 +96,7 @@ class GrammarProcessor_AltOrderingTests: XCTestCase {
 
         _ = try sut.process(grammar)
 
-        let diags = sut.diagnosticsCount(where: { diag in
+        let diags = sut.test_diagnosticsCount(where: { diag in
             switch diag {
             case .altOrderIssue:
                 return true
@@ -99,6 +105,9 @@ class GrammarProcessor_AltOrderingTests: XCTestCase {
             }
         })
         assertEqual(diags, 1)
+        assertEqual(sut.test_diagnosticMessages(), """
+            Alt 'a b? c' (when reduced as 'a c') @ line 4 column 7 always succeeds before 'a c d' @ line 5 column 7 can be tried in rule start @ line 3 column 1.
+            """)
     }
 
     func testAltOrderDiagnostics_detectsNullableEarlyAlt() throws {
@@ -116,7 +125,7 @@ class GrammarProcessor_AltOrderingTests: XCTestCase {
 
         _ = try sut.process(grammar)
 
-        let diags = sut.diagnosticsCount(where: { diag in
+        let diags = sut.test_diagnosticsCount(where: { diag in
             switch diag {
             case .altOrderIssue:
                 return true
@@ -125,6 +134,10 @@ class GrammarProcessor_AltOrderingTests: XCTestCase {
             }
         })
         assertEqual(diags, 2)
+        assertEqual(sut.test_diagnosticMessages(), """
+            Alt 'a? b*' (when reduced as '<empty>') @ line 4 column 7 always succeeds before 'a b b c' @ line 5 column 7 can be tried in rule start @ line 3 column 1.
+            Alt 'a? b*' (when reduced as '<empty>') @ line 4 column 7 always succeeds before 'a b c' @ line 6 column 7 can be tried in rule start @ line 3 column 1.
+            """)
     }
 
     func testAltOrderDiagnostics_computesPermutations() throws {
@@ -143,7 +156,7 @@ class GrammarProcessor_AltOrderingTests: XCTestCase {
 
         _ = try sut.process(grammar)
 
-        let diags = sut.diagnosticsCount(where: { diag in
+        let diags = sut.test_diagnosticsCount(where: { diag in
             switch diag {
             case .altOrderIssue:
                 return true
@@ -152,6 +165,11 @@ class GrammarProcessor_AltOrderingTests: XCTestCase {
             }
         })
         assertEqual(diags, 3)
+        assertEqual(sut.test_diagnosticMessages(), """
+            Alt 'a? b? c' (when reduced as 'c') @ line 4 column 7 always succeeds before 'a c d' @ line 5 column 7 can be tried in rule start @ line 3 column 1.
+            Alt 'a? b? c' (when reduced as 'c') @ line 4 column 7 always succeeds before 'b c e' @ line 6 column 7 can be tried in rule start @ line 3 column 1.
+            Alt 'a? b? c' (when reduced as 'c') @ line 4 column 7 always succeeds before 'e? c b' (when reduced as 'c b') @ line 7 column 7 can be tried in rule start @ line 3 column 1.
+            """)
     }
 
     func testAltOrderDiagnostics_computesPermutations_ignoresOptionalPrefixInLatterAlts() throws {
@@ -168,7 +186,7 @@ class GrammarProcessor_AltOrderingTests: XCTestCase {
 
         _ = try sut.process(grammar)
 
-        let diags = sut.diagnosticsCount(where: { diag in
+        let diags = sut.test_diagnosticsCount(where: { diag in
             switch diag {
             case .altOrderIssue:
                 return true
@@ -177,6 +195,7 @@ class GrammarProcessor_AltOrderingTests: XCTestCase {
             }
         })
         assertEqual(diags, 0)
+        assertEqual(sut.test_diagnosticMessages(), "")
     }
 
     func testAltOrderDiagnostics_stressMaxPermutations() throws {
@@ -193,7 +212,7 @@ class GrammarProcessor_AltOrderingTests: XCTestCase {
 
         _ = try sut.process(grammar)
 
-        let diags = sut.diagnosticsCount(where: { diag in
+        let diags = sut.test_diagnosticsCount(where: { diag in
             switch diag {
             case .altOrderIssue:
                 return true
@@ -202,6 +221,7 @@ class GrammarProcessor_AltOrderingTests: XCTestCase {
             }
         })
         assertEqual(diags, 0)
+        assertEqual(sut.test_diagnosticMessages(), "")
     }
 }
 
