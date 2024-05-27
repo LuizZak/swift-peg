@@ -14,9 +14,9 @@ Starting from a grammar file of a left-recursive mathematical expression:
 
 ```
 # Define that the parser being generated is called 'TestGrammarParser'. Assumes it already exists as a subclass of PEGParser<RawTokenizer>
-@parserName "TestGrammarParser" ; # @meta-properties can be used to signal grammar processors and code generators of certain properties
+@parserName "TestGrammarParser" ; # @meta-properties can be used to signal grammar processors and code generators of certain properties, and must precede all rules in a grammar
 
-@token NAME ;     # Identifiers must resolve to rules/tokens; @token forward-declares token identifiers
+@token NAME ;     # Identifiers must resolve to rules/tokens; @token meta-property forward-declares token identifiers and is identified by GrammarProcessor
 @token NUMBER ;
 @token NEWLINE ;
 
