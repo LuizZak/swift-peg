@@ -6,10 +6,6 @@ public class GrammarProcessor {
     /// Regex for validating rule names.
     public static let ruleNameGrammar = #"[A-Za-z][0-9A-Za-z_]*"#
 
-    /// Name of optional @meta-property that is queried for loading a .tokens
-    /// file with extra token definition information.
-    public static let tokensFile = "tokensFile"
-
     let metaPropertyManager: MetaPropertyManager
     let tokensFileProp: KnownProperty
     let tokenProp: KnownProperty
@@ -201,6 +197,8 @@ public class GrammarProcessor {
             return
         }
 
+        let tokensFile = metaPropertyManager.firstValue(of: tokensFileProp)?.stringValue
+
         var firstError: Error?
         for ref in visitor.unknownReferences {
             guard let rule: SwiftPEGGrammar.Rule = ref.firstAncestor() else {
@@ -209,7 +207,7 @@ public class GrammarProcessor {
 
             let error = recordAndReturn(
                 GrammarProcessorError.unknownReference(
-                    ref, rule, tokensFileName: grammar.tokensFile()
+                    ref, rule, tokensFileName: tokensFile
                 )
             )
 
@@ -442,17 +440,6 @@ private extension GrammarProcessor {
 // MARK: Helper extensions
 
 extension SwiftPEGGrammar.Grammar {
-    func tokensFile() -> String? {
-        guard let tokensMeta = meta(named: GrammarProcessor.tokensFile) else {
-            return nil
-        }
-        guard let stringValue = (tokensMeta.value as? SwiftPEGGrammar.MetaStringValue) else {
-            return nil
-        }
-
-        return String(stringValue.string.processedString)
-    }
-
     func hasMeta(named name: String) -> Bool {
         self.meta(named: name) != nil
     }

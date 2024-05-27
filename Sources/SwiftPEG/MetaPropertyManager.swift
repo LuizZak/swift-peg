@@ -130,6 +130,15 @@ class MetaPropertyManager {
         })
     }
 
+    /// Returns the first meta-property value within this manager from a property
+    /// that is associated with a given known property. Only meta property values
+    /// that pass the known property's registered accepted values are considered.
+    func firstValue(of knownProperty: KnownProperty) -> MetaProperty.Value? {
+        metaProperties.filter({
+            $0.name == knownProperty.name && knownProperty.acceptsValue(of: $0)
+        }).first?.value
+    }
+
     private func validateValue(_ property: MetaProperty, _ knownProperty: KnownProperty) {
         if !knownProperty.acceptsValue(of: property) {
             diagnostics.append(
@@ -148,18 +157,6 @@ class MetaPropertyManager {
                 metaDict[property.value] = property
             }
         }
-
-        /*
-        let byValue = Dictionary(grouping: properties, by: \.value)
-
-        for properties in byValue.values where properties.count > 1 {
-            let original = properties[0]
-
-            for remaining in properties.dropFirst() {
-                diagnoseRepeatedValue(original: original, remaining)
-            }
-        }
-        */
     }
 
     private func diagnoseRepeatedValue(original: MetaProperty, _ next: MetaProperty) {
