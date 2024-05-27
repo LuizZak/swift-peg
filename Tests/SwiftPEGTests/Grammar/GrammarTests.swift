@@ -99,7 +99,7 @@ private func runTokenTest(
         assertEqual(
             String(token.string),
             literal,
-            "Token string does not match provided literal",
+            message: "Token string does not match provided literal",
             file: file,
             line: line
         )
@@ -107,7 +107,7 @@ private func runTokenTest(
     assertEqual(
         token.length,
         expectedLength ?? literal.count,
-        "Token length does not match expected length",
+        message: "Token length does not match expected length",
         file: file,
         line: line
     )

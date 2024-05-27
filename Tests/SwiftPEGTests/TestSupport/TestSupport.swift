@@ -21,7 +21,7 @@ func fail(_ message: String, file: StaticString = #file, line: UInt = #line) {
 /// nil.
 func assertUnwrap<T>(
     _ value: T?,
-    _ message: @autoclosure () -> String = "",
+    message: @autoclosure () -> String = "",
     file: StaticString = #file,
     line: UInt = #line
 ) throws -> T {
@@ -33,14 +33,14 @@ func assertUnwrap<T>(
 func assertCast<T, U>(
     _ value: T,
     to type: U.Type = U.self,
-    _ message: @autoclosure () -> String = "",
+    message: @autoclosure () -> String = "",
     file: StaticString = #file,
     line: UInt = #line
 ) throws -> U {
 
     try assertUnwrap(
         value as? U,
-        "\(#function) failure: \(value) cannot be cast to \(U.self) \(message())",
+        message: "\(#function) failure: \(value) cannot be cast to \(U.self) \(message())",
         file: file,
         line: line
     )
@@ -49,7 +49,7 @@ func assertCast<T, U>(
 /// Asserts a given Optional is not nil.
 func assertNotNil<T>(
     _ value: T?,
-    _ message: @autoclosure () -> String = "",
+    message: @autoclosure () -> String = "",
     file: StaticString = #file,
     line: UInt = #line
 ) {
@@ -59,7 +59,7 @@ func assertNotNil<T>(
 /// Asserts a given Optional is nil.
 func assertNil<T>(
     _ value: T?,
-    _ message: @autoclosure () -> String = "",
+    message: @autoclosure () -> String = "",
     file: StaticString = #file,
     line: UInt = #line
 ) {
@@ -69,7 +69,7 @@ func assertNil<T>(
 /// Asserts a given Bool is `true`.
 func assertTrue(
     _ value: Bool,
-    _ message: @autoclosure () -> String = "",
+    message: @autoclosure () -> String = "",
     file: StaticString = #file,
     line: UInt = #line
 ) {
@@ -79,7 +79,7 @@ func assertTrue(
 /// Asserts a given Bool is `false`.
 func assertFalse(
     _ value: Bool,
-    _ message: @autoclosure () -> String = "",
+    message: @autoclosure () -> String = "",
     file: StaticString = #file,
     line: UInt = #line
 ) {
@@ -90,7 +90,7 @@ func assertFalse(
 func assertIdentical<T>(
     _ lhs: T?,
     _ rhs: T?,
-    _ message: @autoclosure () -> String = "",
+    message: @autoclosure () -> String = "",
     file: StaticString = #file,
     line: UInt = #line
 ) where T: AnyObject {
@@ -102,7 +102,7 @@ func assertIdentical<T>(
 func assertEqual<T>(
     _ lhs: T,
     _ rhs: T,
-    _ message: @autoclosure () -> String = "",
+    message: @autoclosure () -> String = "",
     file: StaticString = #file,
     line: UInt = #line
 ) where T: Equatable {
@@ -115,7 +115,7 @@ func assertEqual<T>(
 func assertEqual<T>(
     _ lhs: T,
     _ rhs: T,
-    _ message: @autoclosure () -> String = "",
+    message: @autoclosure () -> String = "",
     file: StaticString = #file,
     line: UInt = #line
 ) where T: Equatable & CustomDebugStringConvertible {
@@ -133,7 +133,7 @@ func assertEqual<T>(
 func assertEqual<T, E>(
     _ lhs: Result<T, E>,
     _ rhs: Result<T, E>,
-    _ message: @autoclosure () -> String = "",
+    message: @autoclosure () -> String = "",
     file: StaticString = #file,
     line: UInt = #line
 ) where T: Equatable, E: Equatable {
@@ -144,7 +144,7 @@ func assertEqual<T, E>(
 /// Asserts a block does not throw an error.
 func assertNoThrow<T>(
     _ block: () throws -> T,
-    _ message: @autoclosure () -> String = "",
+    message: @autoclosure () -> String = "",
     file: StaticString = #file,
     line: UInt = #line
 ) throws -> T {
@@ -165,7 +165,7 @@ func assertNoThrow<T>(
 /// Asserts a block throws an error.
 func assertThrows<T>(
     _ block: () throws -> T,
-    _ message: @autoclosure () -> String = "",
+    message: @autoclosure () -> String = "",
     file: StaticString = #file,
     line: UInt = #line
 ) {
@@ -184,7 +184,7 @@ func assertThrows<T>(
 /// Asserts a `Result<T, any Error>` value is a `.failure()` case.
 func assertFailure<T>(
     _ value: Result<T, any Error>,
-    _ message: @autoclosure () -> String = "",
+    message: @autoclosure () -> String = "",
     file: StaticString = #file,
     line: UInt = #line
 ) {
@@ -202,14 +202,14 @@ func assertFailure<T>(
 func assertSuccessEqual<T>(
     _ lhs: Result<T, any Error>,
     _ rhs: Result<T, any Error>,
-    _ message: @autoclosure () -> String = "",
+    message: @autoclosure () -> String = "",
     file: StaticString = #file,
     line: UInt = #line
 ) where T: Equatable {
 
     switch (lhs, rhs) {
     case (.success(let lhs), .success(let rhs)):
-        assertEqual(lhs, rhs, message(), file: file, line: line)
+        assertEqual(lhs, rhs, message: message(), file: file, line: line)
 
     case (.failure(let lhs), .failure(let rhs)):
         fail(
@@ -239,14 +239,14 @@ func assertSuccessEqual<T>(
 func assertSuccessEqual<T>(
     _ lhs: Result<T?, any Error>,
     _ rhs: Result<T, any Error>,
-    _ message: @autoclosure () -> String = "",
+    message: @autoclosure () -> String = "",
     file: StaticString = #file,
     line: UInt = #line
 ) where T: Equatable {
 
     switch (lhs, rhs) {
     case (.success(let lhs), .success(let rhs)):
-        assertEqual(lhs, rhs, message(), file: file, line: line)
+        assertEqual(lhs, rhs, message: message(), file: file, line: line)
 
     case (.failure(let lhs), .failure(let rhs)):
         fail(
@@ -295,7 +295,7 @@ func assertSuccessesEqual<T>(
         assertSuccessEqual(
             lhsEntry,
             rhsEntry,
-            "at index \(i)",
+            message: "at index \(i)",
             file: file,
             line: line
         )
@@ -312,7 +312,7 @@ func assertFailures<T>(
     for (i, valueEntry) in value.enumerated() {
         assertFailure(
             valueEntry,
-            "at index \(i)",
+            message: "at index \(i)",
             file: file,
             line: line
         )
@@ -343,22 +343,23 @@ func assertEmpty(
 func assertEqualUnordered<T>(
     _ lhs: some Collection<T>,
     _ rhs: some Collection<T>,
+    message: @autoclosure () -> String = "",
     file: StaticString = #file,
     line: UInt = #line
 ) where T: Equatable {
 
     if lhs.count != rhs.count {
         fail(
-            "lhs.count != rhs.count (\(lhs.count) != \(rhs.count))",
+            "lhs.count != rhs.count (\(lhs.count) != \(rhs.count)) \(message())",
             file: file,
             line: line
         )
         return
     }
 
-    let signal: () -> Void = {
+    let signal: (String) -> Void = {
         fail(
-            "lhs != rhs (\(lhs) != \(rhs))",
+            "lhs != rhs (\(lhs) != \(rhs)) \($0)",
             file: file,
             line: line
         )
@@ -369,12 +370,12 @@ func assertEqualUnordered<T>(
         if let nextIndex = remaining.firstIndex(of: item) {
             remaining.remove(at: nextIndex)
         } else {
-            return signal()
+            return signal(message())
         }
     }
 
     if !remaining.isEmpty {
-        signal()
+        signal(message())
     }
 }
 
