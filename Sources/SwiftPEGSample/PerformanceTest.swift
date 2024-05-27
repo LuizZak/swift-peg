@@ -5,7 +5,7 @@ class PerformanceTest {
 
     func run() throws {
         let tokensToCopy: [SwiftPEGGrammar.GrammarToken] = [
-            "ruleA", ":",
+            "ruleA", "[", "Some", ".", "SwiftType", "<", "Int", ">", "]", ":",
                 "|", "'a'",
                 "|", "'b'",
                 "|", "'c'", "'d'", "'e'",
