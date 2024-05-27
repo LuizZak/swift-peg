@@ -182,4 +182,4 @@ Prints:
               - number: 10.0
 ```
 
-A full implementation of this example can be found in [TestGrammarParser.swift](Tests/SwiftPEGTests/TestGrammarParser.swift) which is bootstrapped in unit test [SwiftCodeGenTests.testGenerateParser_fullGrammar](Tests/SwiftPEGTests/CodeGen+Swift/SwiftCodeGenTests.swift).
+A full implementation of this example can be found in [TestGrammarParser.swift](Tests/SwiftPEGTests/TestGrammarParser.swift) which is bootstrapped in unit test `testGenerateParser_fullGrammar` within [SwiftCodeGenTests.swift](Tests/SwiftPEGTests/CodeGen+Swift/SwiftCodeGenTests.swift).
