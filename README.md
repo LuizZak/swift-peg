@@ -1,6 +1,6 @@
 # SwiftPEG
 
-An implementation of [Parsing Expression Grammar](https://en.wikipedia.org/wiki/Parsing_expression_grammar) in Swift for generating memoized [Packrat parsers](https://en.wikipedia.org/wiki/Packrat_parser) with support for left-recursive rules.
+An implementation of a [Parsing Expression Grammar](https://en.wikipedia.org/wiki/Parsing_expression_grammar) in Swift for generating memoized [Packrat parsers](https://en.wikipedia.org/wiki/Packrat_parser) with support for left-recursive rules.
 
 Contains a [self-describing grammar implementation](Sources/SwiftPEG/Grammar/metagrammar.gram) which can be used to describe grammars and later generate parsers for those grammars.
 
