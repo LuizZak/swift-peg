@@ -81,26 +81,5 @@ extension GrammarProcessor {
         }
 
         return unreachable
-
-        /*
-        // Search the graph
-        var unreached: Set<String> = Set(rules.keys)
-        unreached.remove(startRuleName)
-        graph.breadthFirstVisit(start: startNode) { visit in
-            unreached.remove(visit.node.ruleName)
-            return true
-        }
-
-        // Reduced redundant diagnostics by only diagnosing the start of large
-        // chains of connected unreachable rules
-        var graphs: [InitialGraph] = []
-        for rule in unreached {
-            for subgraph in graphs {
-                if 
-            }
-        }
-
-        return unreached
-        */
     }
 }

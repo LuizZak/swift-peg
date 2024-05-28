@@ -100,6 +100,31 @@ class GrammarProcessor_ReachabilityTests: XCTestCase {
         })
         assertEmpty(diagnostics, message: "in grammar \(grammarString)")
     }
+
+    func testUnreachableRuleDiagnostics_recursiveRules() throws {
+        let grammarString = """
+        @token a; @token b; @token c; @token d;
+
+        start: rule1 ;
+
+        rule1: a b | rule2 d ;
+        rule2: rule1 b | c d ;
+        """
+        let grammar = try parseGrammar(grammarString)
+        let sut = makeSut()
+
+        _ = try sut.process(grammar)
+
+        let diagnostics = sut.test_diagnostics(where: { diag in
+            switch diag {
+            case .unreachableRule:
+                return true
+            default:
+                return false
+            }
+        })
+        assertEmpty(diagnostics, message: "in grammar \(grammarString)")
+    }
 }
 
 // MARK: - Test internals

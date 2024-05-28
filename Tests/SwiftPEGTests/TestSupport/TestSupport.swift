@@ -368,7 +368,7 @@ func assertEqualUnordered<T>(
 
     if lhs.count != rhs.count {
         fail(
-            "lhs.count != rhs.count (\(lhs.count) != \(rhs.count)) \(message())",
+            "lhs.count != rhs.count (\(lhs.count) != \(rhs.count)) lhs: \(lhs) rhs: \(rhs) \(message())",
             file: file,
             line: line
         )

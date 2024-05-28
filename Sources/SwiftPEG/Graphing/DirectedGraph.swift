@@ -387,24 +387,18 @@ extension DirectedGraph {
 
         while let start = remaining.popFirst() {
             var component: Set<Node> = []
-            var backNodes: Set<Node> = Set(nodesConnected(towards: start))
-
-            // Search forward
-            self.breadthFirstVisit(start: start) { path in
-                remaining.remove(path.node)
-                component.insert(path.node)
-                return true
-            }
+            var nextNodes: [Node] = [start]
 
             // Backtrack
-            while let next = backNodes.popFirst() {
+            while !nextNodes.isEmpty {
+                let next = nextNodes.removeFirst()
+                remaining.remove(next)
                 guard component.insert(next).inserted else {
-                    // Already visited; graph has a cycle within component
-                    break
+                    // Already visited
+                    continue
                 }
 
-                remaining.remove(next)
-                backNodes.formUnion(nodesConnected(towards: next))
+                nextNodes.append(contentsOf: allNodesConnected(to: next))
             }
 
             result.append(component)
