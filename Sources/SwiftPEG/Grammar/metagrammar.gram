@@ -141,21 +141,32 @@ tokensFile[[SwiftPEGGrammar.TokenDefinition]]:
 #       Usually this can be simplified to a `.tokenReference` for TokenType/TokenType.TokenKind types that provide statically-accessible token declarations,
 #       but may be any Swift expression that resolves to the desired token when paired with an appropriate tokenizer's token type.
 tokenDefinition[SwiftPEGGrammar.TokenDefinition]:
-    | '$' name=IDENTIFIER '[' staticToken=STRING ']' ':' ~ literal=STRING ';' { self.setLocation(.init(name: name.token, staticToken: staticToken.token, literal: literal.token), at: mark) }
-    | '$' name=IDENTIFIER '[' staticToken=STRING ']' ';'                      { self.setLocation(.init(name: name.token, staticToken: staticToken.token, literal: nil), at: mark) }
-    | '$' name=IDENTIFIER ':' ~ literal=STRING ';'                            { self.setLocation(.init(name: name.token, staticToken: nil, literal: literal.token), at: mark) }
-    | '$' name=IDENTIFIER ';'                                                 { self.setLocation(.init(name: name.token, staticToken: nil, literal: nil), at: mark) }
+    | '$' name=IDENTIFIER '[' staticToken=STRING ']' ':' ~ tokenSyntax ';'    { self.setLocation(.init(name: name.token, staticToken: staticToken.token, tokenSyntax: tokenSyntax), at: mark) }
+    | '$' name=IDENTIFIER '[' staticToken=STRING ']' ';'                      { self.setLocation(.init(name: name.token, staticToken: staticToken.token, tokenSyntax: nil), at: mark) }
+    | '$' name=IDENTIFIER ':' ~ tokenSyntax ';'                               { self.setLocation(.init(name: name.token, staticToken: nil, tokenSyntax: tokenSyntax), at: mark) }
+    | '$' name=IDENTIFIER ';'                                                 { self.setLocation(.init(name: name.token, staticToken: nil, tokenSyntax: nil), at: mark) }
     ;
 
 tokenSyntax[CommonAbstract.TokenSyntax]:
-    | '|'.tokenSyntaxComponent+                 { .init(components: tokenSyntaxComponent) }
+    | '|'.tokenSyntaxAlt+                       { .init(alts: tokenSyntaxAlt) }
     ;
 
-tokenSyntaxComponent[CommonAbstract.TokenComponent]:
-    | tokenSyntaxTerminal+                      { .init(terminals: tokenSyntaxTerminal) }
+tokenSyntaxAlt[CommonAbstract.TokenAlt]:
+    | tokenSyntaxAtom+                          { .init(atoms: tokenSyntaxAtom) }
+    ;
+
+tokenSyntaxAtom[CommonAbstract.TokenAtom]:
+    | IDENTIFIER action                         { .characterPredicate("\(identifier)", "\(action.description)") }
+    | '(' '|'.tokenSyntaxTerminal+ ')' '*'      { .zeroOrMore(tokenSyntaxTerminal) }
+    | '(' '|'.tokenSyntaxTerminal+ ')' '+'      { .oneOrMore(tokenSyntaxTerminal) }
+    | tokenSyntaxTerminal                       { .terminal(tokenSyntaxTerminal) }
     ;
 
 tokenSyntaxTerminal[CommonAbstract.TokenTerminal]:
+    | '!' STRING tokenSyntaxTerminal            { .excludingLiteral("\(string)", tokenSyntaxTerminal) }
+    | '!' IDENTIFIER tokenSyntaxTerminal        { .excludingIdentifier("\(identifier)", tokenSyntaxTerminal) }
     | start=STRING '...' end=STRING             { .rangeLiteral("\(start)", "\(end)") }
-    | STRING                                    { .literal("\(start)") }
+    | STRING                                    { .literal("\(string)") }
+    | IDENTIFIER                                { .identifier("\(identifier)") }
+    | '.'                                       { .any }
     ;

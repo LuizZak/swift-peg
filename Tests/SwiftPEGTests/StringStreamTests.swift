@@ -196,6 +196,17 @@ class StringStreamTests: XCTestCase {
         sut.advance()
         assertEqual(sut.index, makeIndex(sut, 3))
     }
+
+    func testAdvanceDistance() {
+        var sut = makeSut("abcdefg")
+
+        sut.advance(1)
+        assertEqual(sut.index, makeIndex(sut, 1))
+        sut.advance(2)
+        assertEqual(sut.index, makeIndex(sut, 3))
+        sut.advance(0)
+        assertEqual(sut.index, makeIndex(sut, 3))
+    }
 }
 
 // MARK: - Test internals

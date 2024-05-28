@@ -1,20 +1,39 @@
 public enum InternalGrammar {
     /// ```
     /// tokenDefinition:
-    ///     | '$' name=IDENTIFIER '[' staticToken=STRING ']' ':' ~ literal=STRING ';' 
+    ///     | '$' name=IDENTIFIER '[' staticToken=STRING ']' ':' ~ tokenSyntax ';' 
     ///     | '$' name=IDENTIFIER '[' staticToken=STRING ']' ';'
-    ///     | '$' name=IDENTIFIER ':' ~ literal=STRING ';'
+    ///     | '$' name=IDENTIFIER ':' ~ tokenSyntax ';'
     ///     | '$' name=IDENTIFIER ';'
     ///     ;
     /// ```
     public struct TokenDefinition: CustomStringConvertible {
         public var name: String
         public var staticToken: String?
+
+        /// The syntax definition of this token.
+        public var tokenSyntax: CommonAbstract.TokenSyntax?
         
         /// String literal. Does not contains the quotes around the literal.
         /// May not be provided; in which case the literal is assumed to be the
         /// same value as `name` wrapped in any type of quotes.
-        public var string: String?
+        public var string: String? {
+            guard let tokenSyntax else { return nil }
+            guard let alt = tokenSyntax.alts.first, tokenSyntax.alts.count == 1 else {
+                return nil
+            }
+            guard let atom = alt.atoms.first, alt.atoms.count == 1 else {
+                return nil
+            }
+            guard case .terminal(let term) = atom else {
+                return nil
+            }
+            guard case .literal(let literal) = term else {
+                return nil
+            }
+
+            return literal
+        }
 
         /// Returns the computed literal for this token.
         ///
@@ -56,7 +75,7 @@ public enum InternalGrammar {
             .init(
                 name: String(node.name.string),
                 staticToken: node.staticToken.map({ String($0.processedString) }),
-                string: node.literal.map { String($0.processedString) }
+                tokenSyntax: node.tokenSyntax
             )
         }
     }

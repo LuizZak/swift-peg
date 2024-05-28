@@ -404,9 +404,7 @@ extension SwiftPEGGrammar {
             loop:
             while !stream.isEof {
                 switch stream.peek() {
-                case let c where c.isLetter:
-                    stream.advance()
-                case let c where c.isWholeNumber:
+                case let c where c.isLetter || c.isWholeNumber:
                     stream.advance()
                 case "_":
                     stream.advance()

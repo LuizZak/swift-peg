@@ -77,7 +77,8 @@ public class CodeStringBuffer {
     }
 
     /// Emits the given text into the buffer, automatically indenting text if
-    /// the line is empty.
+    /// the current line is empty and the incoming text is not prefixed by a newline
+    /// of its own.
     /// 
     /// Does not emit a newline at the end.
     public func emit(_ text: String) {
@@ -88,16 +89,16 @@ public class CodeStringBuffer {
         emitRaw(text)
     }
 
-    /// Emits the given text on the current line and pushes a new line onto the
-    /// buffer.
-    public func emitLine(_ text: String) {
-        emit(text)
-        emitNewline()
-    }
-
     /// Emits a line feed (\n) into the buffer.
     public func emitNewline() {
         emitRaw("\n")
+    }
+
+    /// Emits the given text on the current line and pushes a new line onto the
+    /// buffer.
+    public func emitLine(_ text: String = "") {
+        emit(text)
+        emitNewline()
     }
 
     /// Emits a space separator to separate the current stream of characters from

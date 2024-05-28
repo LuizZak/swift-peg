@@ -110,37 +110,77 @@ extension CommonAbstract {
     ///
     /// ```
     /// tokenSyntax:
-    ///     | '|'.tokenSyntaxComponent+
+    ///     | '|'.tokenSyntaxAlt+
     ///     ;
     /// ```
-    struct TokenSyntax: CustomStringConvertible {
-        var components: [TokenComponent]
+    public struct TokenSyntax: CustomStringConvertible {
+        public var alts: [TokenAlt]
 
-        var description: String {
-            return components.map(\.description).joined(separator: " | ")
+        public var description: String {
+            return alts.map(\.description).joined(separator: " | ")
         }
 
-        init(components: [CommonAbstract.TokenComponent]) {
-            self.components = components
+        public init(alts: [CommonAbstract.TokenAlt]) {
+            self.alts = alts
         }
     }
 
-    /// A token syntax component.
+    /// A token syntax alternative.
     /// 
     /// ```
-    /// tokenSyntaxComponent:
-    ///     | tokenSyntaxTerminal+
+    /// tokenSyntaxAlt:
+    ///     | tokenSyntaxAtom+
     ///     ;
     /// ```
-    struct TokenComponent: CustomStringConvertible {
-        var terminals: [TokenTerminal]
+    public struct TokenAlt: CustomStringConvertible {
+        public var atoms: [TokenAtom]
 
-        var description: String {
-            terminals.map(\.description).joined(separator: " ")
+        public var description: String {
+            atoms.map(\.description).joined(separator: " ")
         }
 
-        init(terminals: [TokenTerminal]) {
-            self.terminals = terminals
+        public init(atoms: [TokenAtom]) {
+            self.atoms = atoms
+        }
+    }
+
+    /// A token syntax atom.
+    /// 
+    /// ```
+    /// tokenSyntaxAtom:
+    ///     | IDENTIFIER action
+    ///     | '(' '|'.tokenSyntaxTerminal+ ')' '*'
+    ///     | '(' '|'.tokenSyntaxTerminal+ ')' '+'
+    ///     | tokenSyntaxTerminal
+    ///     ;
+    /// ```
+    public enum TokenAtom: CustomStringConvertible {
+        /// `IDENTIFIER action`
+        case characterPredicate(String, String)
+
+        /// '(' '|'.tokenSyntaxTerminal+ ')' '*'
+        case zeroOrMore([TokenTerminal])
+
+        /// '(' '|'.tokenSyntaxTerminal+ ')' '+'
+        case oneOrMore([TokenTerminal])
+
+        /// `tokenSyntaxTerminal`
+        case terminal(TokenTerminal)
+
+        public var description: String {
+            switch self {
+            case .characterPredicate(let bind, let action):
+                return "\(bind) {\(action)}"
+
+            case .oneOrMore(let terminals):
+                return "(\(terminals.map(\.description).joined(separator: " | ")))*"
+
+            case .zeroOrMore(let terminals):
+                return "(\(terminals.map(\.description).joined(separator: " | ")))+"
+
+            case .terminal(let terminal):
+                return terminal.description
+            }
         }
     }
 
@@ -153,15 +193,15 @@ extension CommonAbstract {
     ///     | STRING '...' STRING
     ///     | STRING
     ///     | IDENTIFIER
-    ///     | '*'
+    ///     | '.'
     ///     ;
     /// ```
-    enum TokenTerminal: CustomStringConvertible {
+    public enum TokenTerminal: CustomStringConvertible {
         /// `'!' STRING tokenSyntaxTerminal`
-        indirect case notLiteral(String, Self)
+        indirect case excludingLiteral(String, Self)
 
         /// `'!' IDENTIFIER tokenSyntaxTerminal`
-        indirect case notIdentifier(String, Self)
+        indirect case excludingIdentifier(String, Self)
 
         /// `STRING '...' STRING`
         case rangeLiteral(String, String)
@@ -172,15 +212,15 @@ extension CommonAbstract {
         /// IDENTIFIER
         case identifier(String)
 
-        /// `'*'`
+        /// `'.'`
         case any
 
-        var description: String {
+        public var description: String {
             switch self {
-            case .notLiteral(let lookahead, let next):
+            case .excludingLiteral(let lookahead, let next):
                 return #"!"\#(lookahead)" \#(next)"#
 
-            case .notIdentifier(let lookahead, let next):
+            case .excludingIdentifier(let lookahead, let next):
                 return "!\(lookahead) \(next)"
 
             case .rangeLiteral(let start, let end):
@@ -194,7 +234,7 @@ extension CommonAbstract {
                 return ident
 
             case .any:
-                return "*"
+                return "."
             }
         }
     }

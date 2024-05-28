@@ -1818,7 +1818,7 @@ private func makeTokenDef(
     literal: String
 ) -> InternalGrammar.TokenDefinition {
 
-    .init(name: name, staticToken: staticToken, string: literal)
+    .init(name: name, staticToken: staticToken, tokenSyntax: .init(stringLiteral: literal))
 }
 
 private func parseGrammar(

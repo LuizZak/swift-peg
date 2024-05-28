@@ -876,7 +876,7 @@ extension SwiftPEGGrammar {
     /// failAction: '!!' '{' ~ balancedTokens? '}' ;
     /// ```
     @GeneratedNodeType<Node>
-    public final class Action: GrammarNode {
+    public final class Action: GrammarNode, CustomStringConvertible {
         /// Balanced tokens contained within this action.
         @NodeProperty
         var _balancedTokens: BalancedTokens?
@@ -887,6 +887,13 @@ extension SwiftPEGGrammar {
             }
 
             return "{ \(balancedTokens.tokens.map(\.token.string).joined()) }"
+        }
+
+        /// Returns the combination of all tokens within, with no surrounding
+        /// curly braces. Results in the action string being emitted as it was
+        /// laid out in the grammar.
+        public var description: String {
+            balancedTokens?.tokens.map(\.token.string).joined() ?? ""
         }
 
         /// Accepts a given grammar-node visitor into this node.
@@ -940,9 +947,9 @@ extension SwiftPEGGrammar {
     /// Represents the construct:
     /// ```
     /// tokenDefinition:
-    ///     | '$' name=IDENTIFIER '[' staticToken=STRING ']' ':' ~ literal=STRING ';' 
+    ///     | '$' name=IDENTIFIER '[' staticToken=STRING ']' ':' ~ tokenSyntax ';' 
     ///     | '$' name=IDENTIFIER '[' staticToken=STRING ']' ';'
-    ///     | '$' name=IDENTIFIER ':' ~ literal=STRING ';'
+    ///     | '$' name=IDENTIFIER ':' ~ tokenSyntax ';'
     ///     | '$' name=IDENTIFIER ';'
     ///     ;
     /// ```
@@ -958,9 +965,9 @@ extension SwiftPEGGrammar {
         @NodeRequired
         public var staticToken: Token?
 
-        /// The string literal associated with the token.
+        /// The syntax of the token.
         @NodeRequired
-        public var literal: Token?
+        public var tokenSyntax: CommonAbstract.TokenSyntax?
     }
 
     /// Protocol for visiting Grammar node types.

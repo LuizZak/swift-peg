@@ -891,10 +891,10 @@ extension GrammarParser {
 
     /// ```
     /// tokenDefinition[SwiftPEGGrammar.TokenDefinition]:
-    ///     | '$' name=IDENTIFIER '[' staticToken=STRING ']' ':' ~ literal=STRING ';' { self.setLocation(.init(name: name.token, staticToken: staticToken.token, literal: literal.token), at: mark) }
-    ///     | '$' name=IDENTIFIER '[' staticToken=STRING ']' ';' { self.setLocation(.init(name: name.token, staticToken: staticToken.token, literal: nil), at: mark) }
-    ///     | '$' name=IDENTIFIER ':' ~ literal=STRING ';' { self.setLocation(.init(name: name.token, staticToken: nil, literal: literal.token), at: mark) }
-    ///     | '$' name=IDENTIFIER ';' { self.setLocation(.init(name: name.token, staticToken: nil, literal: nil), at: mark) }
+    ///     | '$' name=IDENTIFIER '[' staticToken=STRING ']' ':' ~ tokenSyntax ';' { self.setLocation(.init(name: name.token, staticToken: staticToken.token, tokenSyntax: tokenSyntax), at: mark) }
+    ///     | '$' name=IDENTIFIER '[' staticToken=STRING ']' ';' { self.setLocation(.init(name: name.token, staticToken: staticToken.token, tokenSyntax: nil), at: mark) }
+    ///     | '$' name=IDENTIFIER ':' ~ tokenSyntax ';' { self.setLocation(.init(name: name.token, staticToken: nil, tokenSyntax: tokenSyntax), at: mark) }
+    ///     | '$' name=IDENTIFIER ';' { self.setLocation(.init(name: name.token, staticToken: nil, tokenSyntax: nil), at: mark) }
     ///     ;
     /// ```
     @memoized("tokenDefinition")
@@ -911,10 +911,10 @@ extension GrammarParser {
             let _ = try self.expect(kind: .rightSquare),
             let _ = try self.expect(kind: .colon),
             cut.toggleOn(),
-            let literal = try self.expect(kind: .string),
+            let tokenSyntax = try self.tokenSyntax(),
             let _ = try self.expect(kind: .semicolon)
         {
-            return self.setLocation(.init(name: name.token, staticToken: staticToken.token, literal: literal.token), at: mark)
+            return self.setLocation(.init(name: name.token, staticToken: staticToken.token, tokenSyntax: tokenSyntax), at: mark)
         }
 
         self.restore(mark)
@@ -931,7 +931,7 @@ extension GrammarParser {
             let _ = try self.expect(kind: .rightSquare),
             let _ = try self.expect(kind: .semicolon)
         {
-            return self.setLocation(.init(name: name.token, staticToken: staticToken.token, literal: nil), at: mark)
+            return self.setLocation(.init(name: name.token, staticToken: staticToken.token, tokenSyntax: nil), at: mark)
         }
 
         self.restore(mark)
@@ -941,10 +941,10 @@ extension GrammarParser {
             let name = try self.expect(kind: .identifier),
             let _ = try self.expect(kind: .colon),
             cut.toggleOn(),
-            let literal = try self.expect(kind: .string),
+            let tokenSyntax = try self.tokenSyntax(),
             let _ = try self.expect(kind: .semicolon)
         {
-            return self.setLocation(.init(name: name.token, staticToken: nil, literal: literal.token), at: mark)
+            return self.setLocation(.init(name: name.token, staticToken: nil, tokenSyntax: tokenSyntax), at: mark)
         }
 
         self.restore(mark)
@@ -958,7 +958,186 @@ extension GrammarParser {
             let name = try self.expect(kind: .identifier),
             let _ = try self.expect(kind: .semicolon)
         {
-            return self.setLocation(.init(name: name.token, staticToken: nil, literal: nil), at: mark)
+            return self.setLocation(.init(name: name.token, staticToken: nil, tokenSyntax: nil), at: mark)
+        }
+
+        self.restore(mark)
+        return nil
+    }
+
+    /// ```
+    /// tokenSyntax[CommonAbstract.TokenSyntax]:
+    ///     | '|'.tokenSyntaxAlt+ { .init(alts: tokenSyntaxAlt) }
+    ///     ;
+    /// ```
+    @memoized("tokenSyntax")
+    @inlinable
+    public func __tokenSyntax() throws -> CommonAbstract.TokenSyntax? {
+        let mark = self.mark()
+
+        if
+            let tokenSyntaxAlt = try self.gather(separator: {
+                try self.expect(kind: .bar)
+            }, item: {
+                try self.tokenSyntaxAlt()
+            })
+        {
+            return .init(alts: tokenSyntaxAlt)
+        }
+
+        self.restore(mark)
+        return nil
+    }
+
+    /// ```
+    /// tokenSyntaxAlt[CommonAbstract.TokenAlt]:
+    ///     | tokenSyntaxAtom+ { .init(atoms: tokenSyntaxAtom) }
+    ///     ;
+    /// ```
+    @memoized("tokenSyntaxAlt")
+    @inlinable
+    public func __tokenSyntaxAlt() throws -> CommonAbstract.TokenAlt? {
+        let mark = self.mark()
+
+        if
+            let tokenSyntaxAtom = try self.repeatOneOrMore({
+                try self.tokenSyntaxAtom()
+            })
+        {
+            return .init(atoms: tokenSyntaxAtom)
+        }
+
+        self.restore(mark)
+        return nil
+    }
+
+    /// ```
+    /// tokenSyntaxAtom[CommonAbstract.TokenAtom]:
+    ///     | IDENTIFIER action { .characterPredicate("\(identifier)", "\(action.description)") }
+    ///     | '(' '|'.tokenSyntaxTerminal+ ')' '*' { .zeroOrMore(tokenSyntaxTerminal) }
+    ///     | '(' '|'.tokenSyntaxTerminal+ ')' '+' { .oneOrMore(tokenSyntaxTerminal) }
+    ///     | tokenSyntaxTerminal { .terminal(tokenSyntaxTerminal) }
+    ///     ;
+    /// ```
+    @memoized("tokenSyntaxAtom")
+    @inlinable
+    public func __tokenSyntaxAtom() throws -> CommonAbstract.TokenAtom? {
+        let mark = self.mark()
+
+        if
+            let identifier = try self.expect(kind: .identifier),
+            let action = try self.action()
+        {
+            return .characterPredicate("\(identifier)", "\(action.description)")
+        }
+
+        self.restore(mark)
+
+        if
+            let _ = try self.expect(kind: .leftParen),
+            let tokenSyntaxTerminal = try self.gather(separator: {
+                try self.expect(kind: .bar)
+            }, item: {
+                try self.tokenSyntaxTerminal()
+            }),
+            let _ = try self.expect(kind: .rightParen),
+            let _ = try self.expect(kind: .star)
+        {
+            return .zeroOrMore(tokenSyntaxTerminal)
+        }
+
+        self.restore(mark)
+
+        if
+            let _ = try self.expect(kind: .leftParen),
+            let tokenSyntaxTerminal = try self.gather(separator: {
+                try self.expect(kind: .bar)
+            }, item: {
+                try self.tokenSyntaxTerminal()
+            }),
+            let _ = try self.expect(kind: .rightParen),
+            let _ = try self.expect(kind: .plus)
+        {
+            return .oneOrMore(tokenSyntaxTerminal)
+        }
+
+        self.restore(mark)
+
+        if
+            let tokenSyntaxTerminal = try self.tokenSyntaxTerminal()
+        {
+            return .terminal(tokenSyntaxTerminal)
+        }
+
+        self.restore(mark)
+        return nil
+    }
+
+    /// ```
+    /// tokenSyntaxTerminal[CommonAbstract.TokenTerminal]:
+    ///     | '!' STRING tokenSyntaxTerminal { .excludingLiteral("\(string)", tokenSyntaxTerminal) }
+    ///     | '!' IDENTIFIER tokenSyntaxTerminal { .excludingIdentifier("\(identifier)", tokenSyntaxTerminal) }
+    ///     | start=STRING '...' end=STRING { .rangeLiteral("\(start)", "\(end)") }
+    ///     | STRING { .literal("\(string)") }
+    ///     | IDENTIFIER { .identifier("\(identifier)") }
+    ///     | '.' { .any }
+    ///     ;
+    /// ```
+    @memoized("tokenSyntaxTerminal")
+    @inlinable
+    public func __tokenSyntaxTerminal() throws -> CommonAbstract.TokenTerminal? {
+        let mark = self.mark()
+
+        if
+            let _ = try self.expect(kind: .exclamationMark),
+            let string = try self.expect(kind: .string),
+            let tokenSyntaxTerminal = try self.tokenSyntaxTerminal()
+        {
+            return .excludingLiteral("\(string)", tokenSyntaxTerminal)
+        }
+
+        self.restore(mark)
+
+        if
+            let _ = try self.expect(kind: .exclamationMark),
+            let identifier = try self.expect(kind: .identifier),
+            let tokenSyntaxTerminal = try self.tokenSyntaxTerminal()
+        {
+            return .excludingIdentifier("\(identifier)", tokenSyntaxTerminal)
+        }
+
+        self.restore(mark)
+
+        if
+            let start = try self.expect(kind: .string),
+            let _ = try self.expect(kind: .ellipsis),
+            let end = try self.expect(kind: .string)
+        {
+            return .rangeLiteral("\(start)", "\(end)")
+        }
+
+        self.restore(mark)
+
+        if
+            let string = try self.expect(kind: .string)
+        {
+            return .literal("\(string)")
+        }
+
+        self.restore(mark)
+
+        if
+            let identifier = try self.expect(kind: .identifier)
+        {
+            return .identifier("\(identifier)")
+        }
+
+        self.restore(mark)
+
+        if
+            let _ = try self.expect(kind: .period)
+        {
+            return .any
         }
 
         self.restore(mark)

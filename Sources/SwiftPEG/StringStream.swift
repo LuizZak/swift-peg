@@ -133,6 +133,13 @@ public struct StringStream<StringType: StringProtocol> {
         source.formIndex(after: &index)
     }
 
+    /// Performs an unchecked advance of the string index by a given distance
+    /// forward.
+    @inlinable
+    public mutating func advance(_ distance: Int) {
+        source.formIndex(&index, offsetBy: distance)
+    }
+
     /// Contains information about the state of a string stream, allowing for
     /// recording and reversing of the stream.
     public struct State {
