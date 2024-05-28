@@ -13,7 +13,7 @@ public class SwiftCodeGen {
     /// indicates the strategy of token call to emit; by default token checks
     /// are emitted with `PEGParser.expect(_:)`, and specifying a value of
     /// 'expectKind' for this meta-property indicates that the code generator
-    /// should emit `PEGParser.expect(kind:)`, calls for the string literals,
+    /// should emit `PEGParser.expect(kind:)` calls for the string literals,
     /// instead.
     public static let tokenCall: String = "tokenCall"
 

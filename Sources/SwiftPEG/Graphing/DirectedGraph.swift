@@ -16,7 +16,7 @@ protocol DirectedGraph {
     /// the sequence.
     @inlinable
     func subgraph(of nodes: some Sequence<Node>) -> Self
-    
+
     /// Returns `true` iff two node references represent the same underlying node
     /// in this graph.
     @inlinable
@@ -94,30 +94,47 @@ protocol DirectedGraph {
     
     /// Performs a depth-first visiting of this directed graph, finishing once
     /// all nodes are visited, or when `visitor` returns false.
+    ///
+    /// In case a cycle is found, the previously-visited nodes are skipped.
     @inlinable
     func depthFirstVisit(start: Node, _ visitor: (VisitElement) -> Bool)
     
     /// Performs a breadth-first visiting of this directed graph, finishing once
     /// all nodes are visited, or when `visitor` returns false.
+    ///
+    /// In case a cycle is found, the previously-visited nodes are skipped.
     @inlinable
     func breadthFirstVisit(start: Node, _ visitor: (VisitElement) -> Bool)
 
     /// Computes and returns the strongly connected components of this directed
     /// graph.
-    /// 
-    /// Each strongly connected component is returned as an array of nodes
-    /// belonging to the component.
-    /// 
+    ///
+    /// Each strongly connected component is returned as a set of nodes belonging
+    /// to the component.
+    ///
     /// A node in this graph only ever shows up once in one of the components.
-    /// 
-    /// Nodes that are not strongly connected to any other node show up as an
-    /// array containing that node only.
+    ///
+    /// Nodes that are not strongly connected to any other node show up as a
+    /// set containing that node only.
     @inlinable
     func stronglyConnectedComponents() -> [Set<Node>]
 
+    /// Computes and returns the connected components of this directed graph.
+    ///
+    /// Each connected component is returned as a set of nodes belonging to the
+    /// component, where for each node in a component, there exists an undirected
+    /// path reaching every other node in the component.
+    ///
+    /// A node in this graph only ever shows up once in one of the components.
+    ///
+    /// Nodes that are not connected to any other node show up as a set containing
+    /// that node only.
+    @inlinable
+    func connectedComponents() -> [Set<Node>]
+
     /// Returns cycles found within a this graph returned from a given start
     /// node.
-    /// 
+    ///
     /// Returns an array of array of nodes that connects from `start` into a cycle,
     /// with the remaining nodes looping from the last index into an earlier index.
     @inlinable
@@ -262,9 +279,7 @@ extension DirectedGraph {
 
         return paths.sorted(by: { $0.length < $1.length }).first?.allNodes
     }
-    
-    /// Performs a depth-first visiting of this directed graph, finishing once
-    /// all nodes are visited, or when `visitor` returns false.
+
     @inlinable
     func depthFirstVisit(start: Node, _ visitor: (VisitElement) -> Bool) {
         var visited: Set<Node> = []
@@ -289,9 +304,7 @@ extension DirectedGraph {
             }
         }
     }
-    
-    /// Performs a breadth-first visiting of this directed graph, finishing once
-    /// all nodes are visited, or when `visitor` returns false.
+
     @inlinable
     func breadthFirstVisit(start: Node, _ visitor: (VisitElement) -> Bool) {
         var visited: Set<Node> = []
@@ -321,7 +334,6 @@ extension DirectedGraph {
     @inlinable
     func stronglyConnectedComponents() -> [Set<Node>] {
         // TODO: Cleanup implementation
-
         var result: [Set<Node>] = []
 
         var indices: [Node: Int] = [:]
@@ -363,6 +375,39 @@ extension DirectedGraph {
             if indices[node] == nil {
                 strongConnect(node)
             }
+        }
+
+        return result
+    }
+
+    @inlinable
+    func connectedComponents() -> [Set<Node>] {
+        var result: [Set<Node>] = []
+        var remaining = Set(self.nodes)
+
+        while let start = remaining.popFirst() {
+            var component: Set<Node> = []
+            var backNodes: Set<Node> = Set(nodesConnected(towards: start))
+
+            // Search forward
+            self.breadthFirstVisit(start: start) { path in
+                remaining.remove(path.node)
+                component.insert(path.node)
+                return true
+            }
+
+            // Backtrack
+            while let next = backNodes.popFirst() {
+                guard component.insert(next).inserted else {
+                    // Already visited; graph has a cycle within component
+                    break
+                }
+
+                remaining.remove(next)
+                backNodes.formUnion(nodesConnected(towards: next))
+            }
+
+            result.append(component)
         }
 
         return result

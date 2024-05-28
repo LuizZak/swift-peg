@@ -265,28 +265,6 @@ public class GrammarProcessor {
         }
     }
 
-    /// Diagnoses unreachable rules, when starting from a given entry rule name.
-    func diagnoseUnreachableRules(
-        in grammar: SwiftPEGGrammar.Grammar,
-        _ knownRules: [String: SwiftPEGGrammar.Rule],
-        entryRuleName: String
-    ) throws {
-
-        let unreachableRules = try computeUnreachableRules(in: grammar, startRuleName: entryRuleName, rules: knownRules)
-
-        for unreachable in unreachableRules.sorted() { // Sort results to ensure stable and predictable diagnostics issuing
-            guard let rule = knownRules[unreachable] else {
-                continue
-            }
-
-            rule.isReachable = false
-
-            diagnostics.append(
-                .unreachableRule(rule, startRuleName: entryRuleName)
-            )
-        }
-    }
-
     /// Gets all @token meta-properties in the grammar.
     func tokenMetaProperties(in grammar: SwiftPEGGrammar.Grammar) -> [SwiftPEGGrammar.Meta] {
         metaPropertyManager.propertiesValidating(knownProperty: tokenProp).map(\.node)

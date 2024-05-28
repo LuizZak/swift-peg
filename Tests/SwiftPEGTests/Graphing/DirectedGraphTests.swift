@@ -224,6 +224,41 @@ class DirectedGraphTests: XCTestCase {
         assertEqualUnordered(result, [[node1, node2], [node3, node4]])
     }
 
+    func testConnectedComponents() {
+        let sut = makeSut()
+        let node1 = sut.addNode(1)
+        let node2 = sut.addNode(2)
+        let node3 = sut.addNode(3)
+        let node4 = sut.addNode(4)
+        sut.addEdge(from: node1, to: node2)
+        sut.addEdge(from: node3, to: node1)
+
+        let result = sut.connectedComponents()
+
+        assertEqualUnordered(result, [
+            [node1, node2, node3],
+            [node4],
+        ])
+    }
+
+    func testConnectedComponents_withCycles() {
+        let sut = makeSut()
+        let node1 = sut.addNode(1)
+        let node2 = sut.addNode(2)
+        let node3 = sut.addNode(3)
+        let node4 = sut.addNode(4)
+        sut.addEdge(from: node1, to: node2)
+        sut.addEdge(from: node2, to: node3)
+        sut.addEdge(from: node3, to: node1)
+
+        let result = sut.connectedComponents()
+
+        assertEqualUnordered(result, [
+            [node1, node2, node3],
+            [node4],
+        ])
+    }
+
     // MARK: - Test internals
 
     private func makeSut() -> TestGraph {
