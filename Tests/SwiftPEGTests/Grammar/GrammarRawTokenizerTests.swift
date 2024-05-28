@@ -8,7 +8,7 @@ class GrammarRawTokenizerTests: XCTestCase {
         "a"  'b' ; 
         $ [ ] abc 123 """
         abc
-        """ a
+        """ a ... . .. ....
         """#)
 
         try assertTokensAndLocations(sut, [
@@ -31,9 +31,19 @@ class GrammarRawTokenizerTests: XCTestCase {
             (.string(.tripleQuote(#""""\#nabc\#n""""#)), makeLocation(line: 2, column: 15)),
             (.whitespace(" "),                           makeLocation(line: 4, column: 4)),
             (.identifier("a"),                           makeLocation(line: 4, column: 5)),
+            (.whitespace(" "),                           makeLocation(line: 4, column: 6)),
+            (.ellipsis,                                  makeLocation(line: 4, column: 7)),
+            (.whitespace(" "),                           makeLocation(line: 4, column: 10)),
+            (.period,                                    makeLocation(line: 4, column: 11)),
+            (.whitespace(" "),                           makeLocation(line: 4, column: 12)),
+            (.period,                                    makeLocation(line: 4, column: 13)),
+            (.period,                                    makeLocation(line: 4, column: 14)),
+            (.whitespace(" "),                           makeLocation(line: 4, column: 15)),
+            (.ellipsis,                                  makeLocation(line: 4, column: 16)),
+            (.period,                                    makeLocation(line: 4, column: 19)),
         ])
     }
-    
+
     func testParseTokens_onNewlineLocations() throws {
         let sut = makeSut(#"""
         @token a ;

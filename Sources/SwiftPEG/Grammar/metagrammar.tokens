@@ -24,6 +24,7 @@ $DOUBLEEXCLAMATIONMARK[".doubleExclamationMark"]: "!!" ;
 $AMPERSAND[".ampersand"]: "&" ;
 $COMMA[".comma"]: "," ;
 $PERIOD[".period"]: "." ;
+$ELLIPSIS[".ellipsis"]: "..." ;
 $BACKTICK[".backtick"]: "`" ;
 $AT[".at"]: "@" ;
 $DOLLAR[".dollarSign"]: "$" ;

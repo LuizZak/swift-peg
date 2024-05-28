@@ -78,6 +78,8 @@ extension SwiftPEGGrammar {
         case comma
         /// `.`
         case period
+        /// `...`
+        case ellipsis
         /// `@`
         case at
         /// `$`
@@ -117,6 +119,7 @@ extension SwiftPEGGrammar {
             case .ampersand: return .ampersand
             case .comma: return .comma
             case .period: return .period
+            case .ellipsis: return .ellipsis
             case .at: return .at
             case .dollarSign: return .dollarSign
             case .forwardSlash: return .forwardSlash
@@ -153,6 +156,7 @@ extension SwiftPEGGrammar {
             case .ampersand: return "&"
             case .comma: return ","
             case .period: return "."
+            case .ellipsis: return "..."
             case .at: return "@"
             case .dollarSign: return "$"
             case .forwardSlash: return "/"
@@ -191,6 +195,7 @@ extension SwiftPEGGrammar {
             case .ampersand: return "&"
             case .comma: return ","
             case .period: return "."
+            case .ellipsis: return "..."
             case .at: return "@"
             case .dollarSign: return "$"
             case .forwardSlash: return "/"
@@ -218,6 +223,12 @@ extension SwiftPEGGrammar {
 
             case .string(let value):
                 return value.length
+            
+            case .ellipsis:
+                return 3
+
+            case .doubleExclamationMark:
+                return 2
 
             case
                 .leftParen, .rightParen, .leftBrace, .rightBrace, .leftSquare,
@@ -226,9 +237,6 @@ extension SwiftPEGGrammar {
                 .ampersand, .comma, .period, .at, .dollarSign, .forwardSlash,
                 .backslash:
                 return 1
-
-            case .doubleExclamationMark:
-                return 2
             }
         }
 
@@ -280,6 +288,7 @@ extension SwiftPEGGrammar {
             case .ampersand: return .ampersand
             case .comma: return .comma
             case .period: return .period
+            case .ellipsis: return .ellipsis
             case .at: return .at
             case .dollarSign: return .dollarSign
             case .forwardSlash: return .forwardSlash
@@ -319,7 +328,11 @@ extension SwiftPEGGrammar {
                 return .exclamationMark
             case "&": return .ampersand
             case ",": return .comma
-            case ".": return .period
+            case ".":
+                if stream.isNext("...") {
+                    return .ellipsis
+                }
+                return .period
             case "@": return .at
             case "$": return .dollarSign
             case "/": return .forwardSlash
@@ -629,6 +642,8 @@ extension SwiftPEGGrammar {
         case comma = ","
         /// `.`
         case period = "."
+        /// `...`
+        case ellipsis = "..."
         /// `@`
         case at = "@"
         /// `$`
