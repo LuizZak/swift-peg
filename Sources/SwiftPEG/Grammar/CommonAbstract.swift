@@ -68,7 +68,7 @@ public enum CommonAbstract {
         /// Initializes this `SwiftType` as a nominal type of the given identifier
         /// string.
         public init(stringLiteral value: String) {
-            self = .nominal(.init(identifier: value[...]))
+            self = .nominal(.init(identifier: value))
         }
     }
 
@@ -76,7 +76,7 @@ public enum CommonAbstract {
     /// type, with optional generic arguments.
     public struct IdentifierSwiftType: Hashable, CustomStringConvertible {
         /// The identifier name of the type.
-        public var identifier: Substring
+        public var identifier: String
 
         /// An optional set of generic arguments, in case this identifier is
         /// a generic type reference.
@@ -92,8 +92,59 @@ public enum CommonAbstract {
         }
 
         public init(identifier: Substring, genericArguments: [SwiftType] = []) {
+            self.identifier = String(identifier)
+            self.genericArguments = genericArguments
+        }
+
+        public init(identifier: String, genericArguments: [SwiftType] = []) {
             self.identifier = identifier
             self.genericArguments = genericArguments
+        }
+    }
+}
+
+// MARK: Token syntax definition
+
+extension CommonAbstract {
+    struct TokSyntax: CustomStringConvertible {
+        var components: [TokComponent]
+
+        var description: String {
+            return components.map(\.description).joined(separator: " | ")
+        }
+    }
+
+    struct TokComponent: CustomStringConvertible {
+        var terminals: [TokTerminal]
+
+        var description: String {
+            terminals.map(\.description).joined(separator: " ")
+        }
+    }
+
+    enum TokTerminal: CustomStringConvertible {
+        indirect case notLiteral(String, Self)
+        indirect case notIdent(String, Self)
+        case rangeLiteral(String, String)
+        case literal(String)
+        case ident(String)
+        case any
+
+        var description: String {
+            switch self {
+            case .notLiteral(let lookahead, let next):
+                return #"!"\#(lookahead)" \#(next)"#
+            case .notIdent(let lookahead, let next):
+                return "!\(lookahead) \(next)"
+            case .rangeLiteral(let start, let end):
+                return #""\#(start)"..."\#(end)""#
+            case .literal(let string):
+                return #""\#(string)""#
+            case .ident(let ident):
+                return ident
+            case .any:
+                return "*"
+            }
         }
     }
 }

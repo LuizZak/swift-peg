@@ -30,3 +30,36 @@ $AT[".at"]: "@" ;
 $DOLLAR[".dollarSign"]: "$" ;
 $FORWARDSLASH[".forwardSlash"]: "/" ;
 $BACKSLASH[".backslash"]: "\\" ;
+
+$stringToken:
+    | '"""' _tripleQuoteContents '"""'
+    | '"' _doubleQuoteContents '"'
+    | "'" _singleQuoteContents "'"
+    ;
+
+$_tripleQuoteContents:
+    | "\\(" _interpolationContents ")"
+    | '\\"\"\"' _doubleQuoteContents
+    | *
+    ;
+
+$_doubleQuoteContents:
+    | "\\(" _interpolationContents ")"
+    | '\\"' _doubleQuoteContents
+    | !'"' _doubleQuoteContents
+    | !'\n' _doubleQuoteContents
+    | *
+    ;
+
+$_singleQuoteContents:
+    | "\\(" _interpolationContents ")"
+    | '\\' "'" _singleQuoteContents
+    | !"'" _singleQuoteContents
+    | !'\n' _singleQuoteContents
+    | *
+    ;
+
+$_interpolationContents:
+    | "(" _interpolationContents ")"
+    | *
+    ;

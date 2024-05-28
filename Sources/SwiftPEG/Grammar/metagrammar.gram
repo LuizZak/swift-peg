@@ -146,3 +146,20 @@ tokenDefinition[SwiftPEGGrammar.TokenDefinition]:
     | '$' name=IDENTIFIER ':' ~ literal=STRING ';'                            { self.setLocation(.init(name: name.token, staticToken: nil, literal: literal.token), at: mark) }
     | '$' name=IDENTIFIER ';'                                                 { self.setLocation(.init(name: name.token, staticToken: nil, literal: nil), at: mark) }
     ;
+
+tokenSyntax:
+    | '|'.tokenSyntaxTerminal+
+    ;
+
+tokenSyntaxComponent:
+    | tokenSyntaxTerminal+
+    ;
+
+tokenSyntaxTerminal:
+    | '!' STRING tokenSyntaxTerminal
+    | '!' IDENTIFIER tokenSyntaxTerminal
+    | STRING '...' STRING
+    | STRING
+    | IDENTIFIER
+    | '*'
+    ;
