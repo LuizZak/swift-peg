@@ -159,7 +159,7 @@ public enum InternalGrammar {
     /// ```
     public struct Rule: Hashable {
         public var name: String
-        public var type: SwiftType?
+        public var type: Abstract.SwiftType?
         public var alts: [Alt]
 
         /// Whether this rule has been marked as reachable from a starting rule
@@ -179,7 +179,6 @@ public enum InternalGrammar {
             try visitor.willVisit(self)
             try visitor.visit(self)
 
-            try type?.accept(visitor)
             try alts.forEach { try $0.accept(visitor) }
 
             try visitor.didVisit(self)
@@ -209,7 +208,7 @@ public enum InternalGrammar {
 
             .init(
                 name: String(node.name.name.string),
-                type: node.name.type.map(SwiftType.from),
+                type: node.name.type,
                 alts: node.alts.map(Alt.from),
                 isReachable: node.isReachable,
                 isRecursive: node.isLeftRecursive,
@@ -359,7 +358,7 @@ public enum InternalGrammar {
     @GeneratedCaseChecks
     public enum NamedItem: Hashable, CustomStringConvertible {
         /// `name=IDENT? item ('[' swiftType ']')?`
-        case item(name: String? = nil, Item, type: SwiftType? = nil)
+        case item(name: String? = nil, Item, type: Abstract.SwiftType? = nil)
         /// ```
         /// lookahead:
         ///     | '&' ~ atom
@@ -437,9 +436,8 @@ public enum InternalGrammar {
             try visitor.visit(self)
 
             switch self {
-            case .item(_, let item, let type):
+            case .item(_, let item, _):
                 try item.accept(visitor)
-                try type?.accept(visitor)
             case .lookahead(let lookahead):
                 try lookahead.accept(visitor)
             }
@@ -485,7 +483,7 @@ public enum InternalGrammar {
             if let item = node.item {
                 let name = (node.name?.string).map(String.init)
 
-                return .item(name: name, .from(item), type: node.type.map(SwiftType.from))
+                return .item(name: name, .from(item), type: node.type)
             } else {
                 return .lookahead(.from(node.lookahead!))
             }
@@ -976,24 +974,6 @@ public enum InternalGrammar {
         }
     }
 
-    public struct SwiftType: Hashable, CustomStringConvertible {
-        public var name: String
-
-        public var description: String { name }
-
-        public static func from(
-            _ node: SwiftPEGGrammar.SwiftType
-        ) -> Self {
-            .init(name: String(node.name))
-        }
-
-        /// Accepts a given visitor, and recursively passes the visitor to nested
-        /// property types within this object that can be visited, if present.
-        public func accept(_ visitor: some Visitor) throws {
-            try visitor.visit(self)
-        }
-    }
-
     /// Simplified visitor protocol for internal grammar trees.
     public protocol Visitor {
         func visit(_ node: TokenDefinition) throws
@@ -1029,8 +1009,6 @@ public enum InternalGrammar {
         func willVisit(_ node: Atom) throws
         func visit(_ node: Atom) throws
         func didVisit(_ node: Atom) throws
-
-        func visit(_ node: SwiftType) throws
     }
 }
 
@@ -1078,6 +1056,4 @@ public extension InternalGrammar.Visitor {
     func willVisit(_ node: InternalGrammar.Atom) throws { }
     func visit(_ node: InternalGrammar.Atom) throws { }
     func didVisit(_ node: InternalGrammar.Atom) throws { }
-
-    func visit(_ node: InternalGrammar.SwiftType) throws { }
 }

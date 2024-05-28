@@ -785,7 +785,7 @@ class SwiftCodeGenTests: XCTestCase {
 
     func testGenerateParser_singleRule() throws {
         let grammar = makeGrammar([
-            .init(name: "a", type: .init(name: "ANode"), alts: [
+            .init(name: "a", type: "ANode", alts: [
                 ["b", "c", .item(.optional("d"))],
             ])
         ])
@@ -825,7 +825,7 @@ class SwiftCodeGenTests: XCTestCase {
 
     func testGenerateParser_groupInAtom() throws {
         let grammar = makeGrammar([
-            .init(name: "a", type: .init(name: "ANode"), alts: [
+            .init(name: "a", type: "ANode", alts: [
                 ["b", "c", .item(.atom(.group([["d", "e"]])))],
             ])
         ])

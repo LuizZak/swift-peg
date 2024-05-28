@@ -189,7 +189,7 @@ private func parseMetaProperties(
     let tokenizer = GrammarRawTokenizer(source: grammar)
     let parser = GrammarParser(raw: tokenizer)
 
-    guard let metas = try parser.metas() else {
+    guard let metas = try parser.repeatOneOrMore({ try parser.meta() }) else {
         throw parser.makeSyntaxError()
     }
 

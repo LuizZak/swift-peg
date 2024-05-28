@@ -82,15 +82,17 @@ atom[SwiftPEGGrammar.Atom]:
     | STRING            { self.setLocation(SwiftPEGGrammar.StringAtom(string: string.token), at: mark) }
     ;
 
-swiftType[SwiftPEGGrammar.SwiftType]:
-    | '[' ~ swiftType ']'                   { self.setLocation(.init(name: "[\(swiftType)]"), at: mark) }
-    | swiftType '<' ~ swiftTypeList '>'     { self.setLocation(.init(name: "\(swiftType)<\(swiftTypeList.map(\.name).joined(separator: ", "))>"), at: mark) }
-    | swiftType '.' ident=IDENTIFIER        { self.setLocation(.init(name: "\(swiftType).\(ident.token)"), at: mark) }
-    | swiftType '?'                         { self.setLocation(.init(name: "\(swiftType)?"), at: mark) }
-    | ident=IDENTIFIER                      { self.setLocation(.init(name: "\(ident.token)"), at: mark) }
+swiftType[Abstract.SwiftType]:
+    | '[' key=swiftType ':' ~ value=swiftType ']'       { .dictionary(key: key, value: value) }
+    | '[' ~ swiftType ']'                               { .array(swiftType) }
+    | swiftType '?'                                     { .optional(swiftType) }
+    | swiftType '.' IDENTIFIER '<' swiftTypeList '>'    { .nested(swiftType, .init(identifier: identifier.token.string, genericArguments: swiftTypeList)) }
+    | swiftType '.' IDENTIFIER                          { .nested(swiftType, .init(identifier: identifier.token.string)) }
+    | IDENTIFIER '<' swiftTypeList '>'                  { .nominal(.init(identifier: identifier.token.string, genericArguments: swiftTypeList)) }
+    | IDENTIFIER                                        { .nominal(.init(identifier: identifier.token.string)) }
     ;
 
-swiftTypeList[[SwiftPEGGrammar.SwiftType]]:
+swiftTypeList[[Abstract.SwiftType]]:
     | ','.swiftType+
     ;
 

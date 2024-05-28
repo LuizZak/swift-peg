@@ -212,8 +212,8 @@ extension SwiftPEGGrammar {
         public var name: Token
 
         /// A type name directly associated with this rule.
-        @NodeProperty
-        var _type: SwiftType?
+        @NodeRequired
+        public var type: Abstract.SwiftType?
 
         public override var shortDebugDescription: String { String(name.string) }
 
@@ -303,8 +303,8 @@ extension SwiftPEGGrammar {
         var _item: Item?
 
         /// A type hint for this named production.
-        @NodeProperty
-        var _type: SwiftType?
+        @NodeRequired
+        public var type: Abstract.SwiftType?
 
         /// Lookahead associated with this named item.
         @NodeProperty
@@ -863,41 +863,6 @@ extension SwiftPEGGrammar {
         }
     }
 
-    /// Describes the type of a grammar production.
-    /// 
-    /// Represents the construct:
-    /// ```
-    /// swiftType[SwiftPEGGrammar.SwiftType]:
-    ///     | '[' ~ swiftType ']'
-    ///     | swiftType '<' ~ swiftTypeList '>'
-    ///     | swiftType '.' ident=IDENTIFIER
-    ///     | swiftType '?'
-    ///     | ident=IDENTIFIER
-    ///     ;
-    /// ```
-    /// 
-    /// And in list form, as generic parameters of an enclosing generic Swift type:
-    /// ```
-    /// swiftTypeList[[SwiftPEGGrammar.SwiftType]]:
-    ///     | ','.swiftType+
-    ///     ;
-    /// ```
-    @GeneratedNodeType<Node>
-    public final class SwiftType: GrammarNode, CustomStringConvertible {
-        /// The name of the type.
-        @NodeRequired
-        public var name: Substring
-
-        public override var shortDebugDescription: String { String(self.name) }
-
-        public var description: String { String(self.name) }
-
-        /// Accepts a given grammar-node visitor into this node.
-        public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: GrammarNodeVisitorType {
-            try visitor.visit(self)
-        }
-    }
-
     /// An action of an alt. Represents a segment of code that is inserted on
     /// the generated code for when the alt associated with an action is matched
     /// or not.
@@ -1058,9 +1023,6 @@ extension SwiftPEGGrammar {
         /// Visits an Identifier Atom node.
         func visit(_ node: IdentAtom) throws -> NodeVisitChildrenResult
 
-        /// Visits a Swift Type node.
-        func visit(_ node: SwiftType) throws -> NodeVisitChildrenResult
-
         /// Visits an Action node.
         func visit(_ node: Action) throws -> NodeVisitChildrenResult
 
@@ -1090,7 +1052,6 @@ public extension SwiftPEGGrammar.GrammarNodeVisitorType {
     func visit(_ node: SwiftPEGGrammar.GroupAtom) throws -> NodeVisitChildrenResult { .visitChildren }
     func visit(_ node: SwiftPEGGrammar.StringAtom) throws -> NodeVisitChildrenResult { .visitChildren }
     func visit(_ node: SwiftPEGGrammar.IdentAtom) throws -> NodeVisitChildrenResult { .visitChildren }
-    func visit(_ node: SwiftPEGGrammar.SwiftType) throws -> NodeVisitChildrenResult { .visitChildren }
     func visit(_ node: SwiftPEGGrammar.Action) throws -> NodeVisitChildrenResult { .visitChildren }
     func visit(_ node: SwiftPEGGrammar.BalancedTokens) throws -> NodeVisitChildrenResult { .visitChildren }
 }

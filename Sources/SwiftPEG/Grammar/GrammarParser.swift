@@ -484,18 +484,37 @@ extension GrammarParser {
 
     /// ```
     /// swiftType[SwiftPEGGrammar.SwiftType]:
-    ///     | '[' ~ swiftType ']' { self.setLocation(.init(name: "[\(swiftType)]"), at: mark) }
-    ///     | swiftType '<' ~ swiftTypeList '>' { self.setLocation(.init(name: "\(swiftType)<\(swiftTypeList.map(\.name).joined(separator: ", "))>"), at: mark) }
-    ///     | swiftType '.' ident=IDENTIFIER { self.setLocation(.init(name: "\(swiftType).\(ident.token)"), at: mark) }
-    ///     | swiftType '?' { self.setLocation(.init(name: "\(swiftType)?"), at: mark) }
-    ///     | ident=IDENTIFIER { self.setLocation(.init(name: "\(ident.token)"), at: mark) }
+    ///     | '[' key=swiftType ':' ~ value=swiftType ']' { .dictionary(key: key, value: value) }
+    ///     | '[' ~ swiftType ']' { .array(swiftType) }
+    ///     | swiftType '?' { .optional(swiftType) }
+    ///     | swiftType '.' IDENTIFIER '<' swiftTypeList '>' { .nested(swiftType, .init(identifier: identifier.token.string, genericArguments: swiftTypeList)) }
+    ///     | swiftType '.' IDENTIFIER { .nested(swiftType, .init(identifier: identifier.token.string)) }
+    ///     | IDENTIFIER '<' swiftTypeList '>' { .nominal(.init(identifier: identifier.token.string, genericArguments: swiftTypeList)) }
+    ///     | IDENTIFIER { .nominal(.init(identifier: identifier.token.string)) }
     ///     ;
     /// ```
     @memoizedLeftRecursive("swiftType")
     @inlinable
-    public func __swiftType() throws -> SwiftPEGGrammar.SwiftType? {
+    public func __swiftType() throws -> Abstract.SwiftType? {
         let mark = self.mark()
         var cut = CutFlag()
+
+        if
+            let _ = try self.expect(kind: .leftSquare),
+            let key = try self.swiftType(),
+            let _ = try self.expect(kind: .colon),
+            cut.toggleOn(),
+            let value = try self.swiftType(),
+            let _ = try self.expect(kind: .rightSquare)
+        {
+            return .dictionary(key: key, value: value)
+        }
+
+        self.restore(mark)
+
+        if cut.isOn {
+            return nil
+        }
 
         if
             let _ = try self.expect(kind: .leftSquare),
@@ -503,7 +522,7 @@ extension GrammarParser {
             let swiftType = try self.swiftType(),
             let _ = try self.expect(kind: .rightSquare)
         {
-            return self.setLocation(.init(name: "[\(swiftType)]"), at: mark)
+            return .array(swiftType)
         }
 
         self.restore(mark)
@@ -511,46 +530,54 @@ extension GrammarParser {
         if cut.isOn {
             return nil
         }
-
-        if
-            let swiftType = try self.swiftType(),
-            let _ = try self.expect(kind: .leftAngle),
-            cut.toggleOn(),
-            let swiftTypeList = try self.swiftTypeList(),
-            let _ = try self.expect(kind: .rightAngle)
-        {
-            return self.setLocation(.init(name: "\(swiftType)<\(swiftTypeList.map(\.name).joined(separator: ", "))>"), at: mark)
-        }
-
-        self.restore(mark)
-
-        if cut.isOn {
-            return nil
-        }
-
-        if
-            let swiftType = try self.swiftType(),
-            let _ = try self.expect(kind: .period),
-            let ident = try self.expect(kind: .identifier)
-        {
-            return self.setLocation(.init(name: "\(swiftType).\(ident.token)"), at: mark)
-        }
-
-        self.restore(mark)
 
         if
             let swiftType = try self.swiftType(),
             let _ = try self.expect(kind: .questionMark)
         {
-            return self.setLocation(.init(name: "\(swiftType)?"), at: mark)
+            return .optional(swiftType)
         }
 
         self.restore(mark)
 
         if
-            let ident = try self.expect(kind: .identifier)
+            let swiftType = try self.swiftType(),
+            let _ = try self.expect(kind: .period),
+            let identifier = try self.expect(kind: .identifier),
+            let _ = try self.expect(kind: .leftAngle),
+            let swiftTypeList = try self.swiftTypeList(),
+            let _ = try self.expect(kind: .rightAngle)
         {
-            return self.setLocation(.init(name: "\(ident.token)"), at: mark)
+            return .nested(swiftType, .init(identifier: identifier.token.string, genericArguments: swiftTypeList))
+        }
+
+        self.restore(mark)
+
+        if
+            let swiftType = try self.swiftType(),
+            let _ = try self.expect(kind: .period),
+            let identifier = try self.expect(kind: .identifier)
+        {
+            return .nested(swiftType, .init(identifier: identifier.token.string))
+        }
+
+        self.restore(mark)
+
+        if
+            let identifier = try self.expect(kind: .identifier),
+            let _ = try self.expect(kind: .leftAngle),
+            let swiftTypeList = try self.swiftTypeList(),
+            let _ = try self.expect(kind: .rightAngle)
+        {
+            return .nominal(.init(identifier: identifier.token.string, genericArguments: swiftTypeList))
+        }
+
+        self.restore(mark)
+
+        if
+            let identifier = try self.expect(kind: .identifier)
+        {
+            return .nominal(.init(identifier: identifier.token.string))
         }
 
         self.restore(mark)
@@ -564,7 +591,7 @@ extension GrammarParser {
     /// ```
     @memoized("swiftTypeList")
     @inlinable
-    public func __swiftTypeList() throws -> [SwiftPEGGrammar.SwiftType]? {
+    public func __swiftTypeList() throws -> [Abstract.SwiftType]? {
         let mark = self.mark()
 
         if

@@ -47,12 +47,6 @@ extension InternalGrammar.Action: ExpressibleByStringLiteral {
     }
 }
 
-extension InternalGrammar.SwiftType: ExpressibleByStringLiteral {
-    public init(stringLiteral value: String) {
-        self.init(name: value)
-    }
-}
-
 // MARK: Operator support
 
 extension InternalGrammar.NamedItem {
@@ -130,7 +124,6 @@ extension InternalGrammar.NamedItem: SupportsWith { }
 extension InternalGrammar.Item: SupportsWith { }
 extension InternalGrammar.Lookahead: SupportsWith { }
 extension InternalGrammar.Atom: SupportsWith { }
-extension InternalGrammar.SwiftType: SupportsWith { }
 
 protocol SupportsWith {
     func with<V>(_ keypath: WritableKeyPath<Self, V>, value: V) -> Self

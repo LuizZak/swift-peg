@@ -116,7 +116,7 @@ public class SwiftCodeGen {
     }
 
     func generateRule(_ rule: InternalGrammar.Rule) throws {
-        let type = rule.type?.name ?? "Node"
+        let type = rule.type?.description ?? "Node"
         let name = alias(for: rule)
 
         // Derive a doc comment for the generated rule
@@ -125,7 +125,7 @@ public class SwiftCodeGen {
         buffer.emitLine("\(linePrefix) ```")
         buffer.emit("\(linePrefix) \(rule.name)")
         if let type = rule.type {
-            buffer.emit("[\(type.name)]")
+            buffer.emit("[\(type.description)]")
         }
         buffer.emitLine(":")
         for alt in rule.alts {
@@ -234,7 +234,7 @@ public class SwiftCodeGen {
         // Fallback: Return an initialization of the associated node type, assuming
         // it is not `nil` and is not a known existential type, otherwise return
         // `Node()`.
-        if let type = rule.type?.name, type != "Any" {
+        if let type = rule.type?.description, type != "Any" {
             buffer.emitLine("\(type)()")
         } else {
             buffer.emitLine("Node()")
@@ -443,12 +443,11 @@ extension SwiftCodeGen {
     func enqueueAuxiliaryRule(
         for rule: InternalGrammar.Rule,
         suffix: String,
-        type: String? = nil,
+        type: Abstract.SwiftType? = nil,
         _ alts: [InternalGrammar.Alt]
     ) -> String {
 
         let name = "_\(rule.name)_\(suffix)"
-        let type = type.map(InternalGrammar.SwiftType.init(name:))
 
         return enqueueAuxiliaryRule(.init(name: name, type: type, alts: alts))
     }
