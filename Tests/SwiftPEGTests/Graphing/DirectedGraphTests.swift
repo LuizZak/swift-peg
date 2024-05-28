@@ -241,7 +241,7 @@ class DirectedGraphTests: XCTestCase {
         ])
     }
 
-    func testConnectedComponents_withCycles() {
+    func testConnectedComponents_withCycle() {
         let sut = makeSut()
         let node1 = sut.addNode(1)
         let node2 = sut.addNode(2)
@@ -249,13 +249,28 @@ class DirectedGraphTests: XCTestCase {
         let node4 = sut.addNode(4)
         sut.addEdge(from: node1, to: node2)
         sut.addEdge(from: node2, to: node3)
-        sut.addEdge(from: node3, to: node1)
+        sut.addEdge(from: node3, to: node2)
 
         let result = sut.connectedComponents()
 
         assertEqualUnordered(result, [
             [node1, node2, node3],
             [node4],
+        ])
+    }
+
+    func testConnectedComponents_withLargeCycle() {
+        let sut = makeSut()
+        let node1 = sut.addNode(1)
+        let nodes = (2...100).map(sut.addNode)
+        sut.addEdge(from: node1, to: nodes[0])
+        _=zip(nodes, nodes.dropFirst()).map(sut.addEdge)
+        sut.addEdge(from: nodes.last!, to: nodes[0])
+
+        let result = sut.connectedComponents()
+
+        assertEqualUnordered(result, [
+            Set(nodes).union([node1]),
         ])
     }
 

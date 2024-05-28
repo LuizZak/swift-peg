@@ -60,14 +60,14 @@ class DirectedGraphBase<Node, Edge: DirectedGraphBaseEdgeType>: DirectedGraph wh
     /// Returns all outgoing edges for a given graph node.
     ///
     /// A reference equality test (===) is used to determine graph node equality.
-    public func edges(from node: Node) -> [Edge] {
+    func edges(from node: Node) -> [Edge] {
         edges.filter { $0.start === node }
     }
     
     /// Returns all ingoing edges for a given graph node.
     ///
     /// A reference equality test (===) is used to determine graph node equality.
-    public func edges(towards node: Node) -> [Edge] {
+    func edges(towards node: Node) -> [Edge] {
         edges.filter { $0.end === node }
     }
     
@@ -75,7 +75,7 @@ class DirectedGraphBase<Node, Edge: DirectedGraphBaseEdgeType>: DirectedGraph wh
     /// them currently exist.
     ///
     /// A reference equality test (===) is used to determine graph node equality.
-    public func edge(from start: Node, to end: Node) -> Edge? {
+    func edge(from start: Node, to end: Node) -> Edge? {
         edges.first { $0.start === start && $0.end === end }
     }
 
@@ -130,40 +130,74 @@ class DirectedGraphBase<Node, Edge: DirectedGraphBaseEdgeType>: DirectedGraph wh
     func addEdge(_ edge: Edge) {
         edges.append(edge)
     }
-    
+
+    @discardableResult
+    private func _uncheckedRemoveNode(_ node: Node) -> Bool {
+        if let index = nodes.firstIndex(where: { areNodesEqual($0, node) }) {
+            nodes.remove(at: index)
+            return true
+        }
+        return false
+    }
+
+    @discardableResult
+    private func _uncheckedRemoveEdge(_ edge: Edge) -> Bool {
+        if let index = edges.firstIndex(where: { areEdgesEqual($0, edge) }) {
+            edges.remove(at: index)
+            return true
+        }
+        return false
+    }
+
+    /// Removes a given edge from this graph.
+    func removeEdge(_ edge: Edge) {
+        if !_uncheckedRemoveEdge(edge) {
+            assertionFailure("Attempted to remove edge \(edge) that is not a member of this graph.")
+        }
+    }
+
     /// Removes an edge between two nodes from this graph.
     func removeEdge(from start: Node, to end: Node) {
         func predicate(_ edge: Edge) -> Bool {
             areNodesEqual(edge.start, start) && self.areNodesEqual(edge.end, end)
         }
 
+        var found = false
+        for edge in edges.filter(predicate) {
+            _uncheckedRemoveEdge(edge)
+            found = true
+        }
+
         assert(
-            edges.contains(where: predicate),
+            found,
             "Attempted to remove edge from nodes \(start) -> \(end) that do not exist in this graph."
         )
-
-        edges.removeAll(where: predicate)
     }
     
     /// Removes a given node from this graph.
     func removeNode(_ node: Node) {
-        assert(
-            containsNode(node),
-            "Attempted to remove a node that is not present in this graph: \(node)."
-        )
-
-        removeEdges(allEdges(for: node))
-        nodes.removeAll(where: { $0 === node })
+        if _uncheckedRemoveNode(node) {
+            removeEdges(allEdges(for: node))
+        } else {
+            assertionFailure(
+                "Attempted to remove a node that is not present in this graph: \(node)."
+            )
+        }
     }
     
     /// Removes a given sequence of edges from this graph.
     func removeEdges<S: Sequence>(_ edgesToRemove: S) where S.Element == Edge {
-        edges.removeAll(where: edgesToRemove.contains)
+        for edge in edgesToRemove {
+            _uncheckedRemoveEdge(edge)
+        }
     }
     
     /// Removes a given sequence of nodes from this graph.
     func removeNodes<S: Sequence>(_ nodesToRemove: S) where S.Element == Node {
-        nodes.removeAll(where: nodesToRemove.contains)
+        for node in nodesToRemove {
+            removeEdges(allEdges(for: node))
+            removeNode(node)
+        }
     }
 
     /// Removes the entry edges from a given node.

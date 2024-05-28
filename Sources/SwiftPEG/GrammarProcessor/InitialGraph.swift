@@ -21,8 +21,12 @@ final class InitialGraph: DirectedGraphBase<RuleNode, RuleEdge> {
     }
 }
 
-class RuleNode: DirectedGraphNode {
+class RuleNode: DirectedGraphNode, CustomStringConvertible {
     let ruleName: String
+
+    var description: String {
+        "\(type(of: self))(ruleName: \(ruleName))"
+    }
 
     init(ruleName: String) {
         self.ruleName = ruleName
