@@ -137,9 +137,12 @@ tokensFile[[SwiftPEGGrammar.TokenDefinition]]:
     | tokens=tokenDefinition* { tokens }
     ;
 
+# Note: staticToken must resolve statically to a token reference when PEGParser.expect()/PEGParser.expect(kind:) uses it as its argument.
+#       Usually this can be simplified to a `.tokenReference` for TokenType/TokenType.TokenKind types that provide statically-accessible token declarations,
+#       but may be any Swift expression that resolves to the desired token when paired with an appropriate tokenizer's token type.
 tokenDefinition[SwiftPEGGrammar.TokenDefinition]:
-    | '$' name=IDENTIFIER '[' expectArgs=STRING ']' ':' ~ literal=STRING ';' { self.setLocation(.init(name: name.token, expectArgs: expectArgs.token, literal: literal.token), at: mark) }
-    | '$' name=IDENTIFIER '[' expectArgs=STRING ']' ';'                      { self.setLocation(.init(name: name.token, expectArgs: expectArgs.token, literal: nil), at: mark) }
-    | '$' name=IDENTIFIER ':' ~ literal=STRING ';'                           { self.setLocation(.init(name: name.token, expectArgs: nil, literal: literal.token), at: mark) }
-    | '$' name=IDENTIFIER ';'                                                { self.setLocation(.init(name: name.token, expectArgs: nil, literal: nil), at: mark) }
+    | '$' name=IDENTIFIER '[' staticToken=STRING ']' ':' ~ literal=STRING ';' { self.setLocation(.init(name: name.token, staticToken: staticToken.token, literal: literal.token), at: mark) }
+    | '$' name=IDENTIFIER '[' staticToken=STRING ']' ';'                      { self.setLocation(.init(name: name.token, staticToken: staticToken.token, literal: nil), at: mark) }
+    | '$' name=IDENTIFIER ':' ~ literal=STRING ';'                            { self.setLocation(.init(name: name.token, staticToken: nil, literal: literal.token), at: mark) }
+    | '$' name=IDENTIFIER ';'                                                 { self.setLocation(.init(name: name.token, staticToken: nil, literal: nil), at: mark) }
     ;

@@ -1,15 +1,15 @@
 public enum InternalGrammar {
     /// ```
     /// tokenDefinition:
-    ///     | '$' name=IDENTIFIER '[' expectArgs=STRING ']' ':' ~ literal=STRING ';' 
-    ///     | '$' name=IDENTIFIER '[' expectArgs=STRING ']' ';'
+    ///     | '$' name=IDENTIFIER '[' staticToken=STRING ']' ':' ~ literal=STRING ';' 
+    ///     | '$' name=IDENTIFIER '[' staticToken=STRING ']' ';'
     ///     | '$' name=IDENTIFIER ':' ~ literal=STRING ';'
     ///     | '$' name=IDENTIFIER ';'
     ///     ;
     /// ```
     public struct TokenDefinition: CustomStringConvertible {
         public var name: String
-        public var expectArgs: String?
+        public var staticToken: String?
         
         /// String literal. Does not contains the quotes around the literal.
         /// May not be provided; in which case the literal is assumed to be the
@@ -31,11 +31,11 @@ public enum InternalGrammar {
         }
 
         public var description: String {
-            switch (expectArgs, string) {
-            case (let expectArgs?, let string?):
-                return #"$\#(name)["\#(expectArgs)"]: "\#(string)" ;"#
-            case (let expectArgs?, nil):
-                return #"$\#(name)["\#(expectArgs)"] ;"#
+            switch (staticToken, string) {
+            case (let staticToken?, let string?):
+                return #"$\#(name)["\#(staticToken)"]: "\#(string)" ;"#
+            case (let staticToken?, nil):
+                return #"$\#(name)["\#(staticToken)"] ;"#
             case (nil, let string?):
                 return #"$\#(name) : "\#(string)" ;"#
             case (nil, nil):
@@ -55,7 +55,7 @@ public enum InternalGrammar {
 
             .init(
                 name: String(node.name.string),
-                expectArgs: node.expectArgs.map({ String($0.processedString) }),
+                staticToken: node.staticToken.map({ String($0.processedString) }),
                 string: node.literal.map { String($0.processedString) }
             )
         }

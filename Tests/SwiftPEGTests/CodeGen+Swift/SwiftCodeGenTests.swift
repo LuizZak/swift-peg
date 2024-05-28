@@ -281,7 +281,7 @@ class SwiftCodeGenTests: XCTestCase {
             """#).diff(result)
     }
 
-    func testGenerateParser_usesTokenExpectArgs() throws {
+    func testGenerateParser_usesTokenstaticToken() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
                 .init(items: [
@@ -301,8 +301,8 @@ class SwiftCodeGenTests: XCTestCase {
             ]),
         ])
         let tokens = makeTokenDefs([
-            makeTokenDef(name: "ADD", expectArgs: "custom: .add", literal: "+"),
-            makeTokenDef(name: "BACKSLASH", expectArgs: "custom: .back", literal: #"\"#),
+            makeTokenDef(name: "ADD", staticToken: "custom: .add", literal: "+"),
+            makeTokenDef(name: "BACKSLASH", staticToken: "custom: .back", literal: #"\"#),
         ])
         let sut = makeSut(grammar, tokens)
 
@@ -573,6 +573,49 @@ class SwiftCodeGenTests: XCTestCase {
                         let _ = try self.d()
                     {
                         return Node()
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+            }
+            """).diff(result)
+    }
+
+    func testGenerateParser_tokenLiteral_expectKind_withStaticToken() throws {
+        let grammar = makeGrammar([
+            .init(name: "a", alts: [
+                .init(items: [
+                    .item("ADD"),
+                ]),
+            ]),
+        ], metas: [
+            .init(name: "tokenCall", value: .identifier("expectKind")),
+        ])
+        let tokens = [
+            makeTokenDef(name: "ADD", staticToken: ".add", literal: "+"),
+        ]
+        let sut = makeSut(grammar, tokens)
+
+        let result = try sut.generateParser()
+
+        diffTest(expected: """
+            // TestParser
+            extension TestParser {
+                /// ```
+                /// a:
+                ///     | ADD
+                ///     ;
+                /// ```
+                @memoized("a")
+                @inlinable
+                public func __a() throws -> Node? {
+                    let mark = self.mark()
+
+                    if
+                        let add = try self.expect(kind: .add)
+                    {
+                        return add
                     }
 
                     self.restore(mark)
@@ -1771,11 +1814,11 @@ private func makeTokenDefs(
 
 private func makeTokenDef(
     name: String,
-    expectArgs: String? = nil,
+    staticToken: String? = nil,
     literal: String
 ) -> InternalGrammar.TokenDefinition {
 
-    .init(name: name, expectArgs: expectArgs, string: literal)
+    .init(name: name, staticToken: staticToken, string: literal)
 }
 
 private func parseGrammar(

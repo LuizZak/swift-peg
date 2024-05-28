@@ -38,6 +38,7 @@ public class SwiftCodeGen {
     var declContext: DeclarationsContext
 
     var latestSettings: Settings = .default
+    var tokenCallKind: TokenCallKind = .expect
     var remaining: [InternalGrammar.Rule] = []
     var ruleAliases: [String: String] = [:]
     var implicitReturns: Bool = true
@@ -62,6 +63,7 @@ public class SwiftCodeGen {
     ) {
         self.grammar = grammar
         self.tokenDefinitions = tokenDefinitions
+        self.tokenCallKind = grammar.tokenCall().flatMap(TokenCallKind.init) ?? .expect
 
         parserName = grammar.parserName() ?? "Parser"
         buffer = CodeStringBuffer()
@@ -402,6 +404,14 @@ public class SwiftCodeGen {
         }
     }
 
+    enum TokenCallKind: String {
+        /// "self.expect(<token value>)"
+        case expect
+
+        /// "self.expect(kind: <token value>)"
+        case expectKind
+    }
+
     /// Describes an error that can be raised during Swift parser code generation.
     public enum Error: Swift.Error, CustomStringConvertible {
         public var description: String {
@@ -502,17 +512,36 @@ extension SwiftCodeGen: TokenLiteralResolver {
     /// identifier
     /// 
     /// If the identifier matches a known token definition with explicit
-    /// 'expectArgs', returns `self.expect(<expectArgs>)`, otherwise returns
+    /// 'staticToken', returns `self.expect(<staticToken>)`, otherwise returns
     /// `self.<ident>()`, as a fallback.
     func expandTokenName(_ ident: String) -> String {
         if
             let token = tokenDefinition(named: ident),
-            let expectArgs = token.expectArgs
+            let staticToken = token.staticToken
         {
-            return "self.expect(\(expectArgs))"
+            return "self.expect(\(expectArguments(forResolvedToken: staticToken)))"
         }
 
         return "self.\(escapeIdentifier(ident))()"
+    }
+
+    /// Returns the arguments to invoke a `PEGParser.expect()` call, as a
+    /// non-parenthesized labeled expression list separated by commas, in order
+    /// to probe the parser about a specific token identifier.
+    /// 
+    /// If no associated token identifier has been defined in a .tokens file,
+    /// the result is a default `kind: <identifier>` or `<identifier>`,
+    /// depending on the value of '@tokenCall' meta-property, if present.
+    func expectArguments(forIdentifier identifier: String) -> String {
+        // Check for explicit token aliases
+        if
+            let token = tokenDefinition(named: identifier),
+            let staticToken = token.staticToken
+        {
+            return expectArguments(forResolvedToken: staticToken)
+        }
+
+        return expectArguments(forResolvedToken: identifier)
     }
 
     /// Returns the arguments to invoke a `PEGParser.expect()` call, as a
@@ -526,15 +555,21 @@ extension SwiftCodeGen: TokenLiteralResolver {
         // Check for explicit token aliases
         if
             let token = tokenDefinition(ofRawLiteral: raw),
-            let expectArgs = token.expectArgs
+            let staticToken = token.staticToken
         {
-            return expectArgs
+            return expectArguments(forResolvedToken: staticToken)
         }
 
-        if grammar.tokenCall() == "expectKind" {
-            return "kind: \(literal)"
+        return expectArguments(forResolvedToken: literal)
+    }
+
+    /// Does final expansion of token `self.expect` call arguments based on the
+    /// current configuration of `tokenCallKind`.
+    func expectArguments(forResolvedToken resolvedToken: String) -> String {
+        if tokenCallKind == .expectKind {
+            return "kind: \(resolvedToken)"
         } else {
-            return "\(literal)"
+            return "\(resolvedToken)"
         }
     }
 

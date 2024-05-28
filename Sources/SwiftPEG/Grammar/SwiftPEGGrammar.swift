@@ -940,8 +940,8 @@ extension SwiftPEGGrammar {
     /// Represents the construct:
     /// ```
     /// tokenDefinition:
-    ///     | '$' name=IDENTIFIER '[' expectArgs=STRING ']' ':' ~ literal=STRING ';' 
-    ///     | '$' name=IDENTIFIER '[' expectArgs=STRING ']' ';'
+    ///     | '$' name=IDENTIFIER '[' staticToken=STRING ']' ':' ~ literal=STRING ';' 
+    ///     | '$' name=IDENTIFIER '[' staticToken=STRING ']' ';'
     ///     | '$' name=IDENTIFIER ':' ~ literal=STRING ';'
     ///     | '$' name=IDENTIFIER ';'
     ///     ;
@@ -952,9 +952,11 @@ extension SwiftPEGGrammar {
         @NodeRequired
         public var name: Token
 
-        /// An optional 'expect' call that fetches the token from the parser.
+        /// The statically-resolvable reference to the token definition.
+        /// Is expected to resolve to a valid token/token kind when paired with
+        /// a parser's `PEGParser.expect(_:)`/`PEGParser.expect(kind:)` calls.
         @NodeRequired
-        public var expectArgs: Token?
+        public var staticToken: Token?
 
         /// The string literal associated with the token.
         @NodeRequired

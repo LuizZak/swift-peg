@@ -483,7 +483,7 @@ extension GrammarParser {
     }
 
     /// ```
-    /// swiftType[SwiftPEGGrammar.SwiftType]:
+    /// swiftType[Abstract.SwiftType]:
     ///     | '[' key=swiftType ':' ~ value=swiftType ']' { .dictionary(key: key, value: value) }
     ///     | '[' ~ swiftType ']' { .array(swiftType) }
     ///     | swiftType '?' { .optional(swiftType) }
@@ -585,7 +585,7 @@ extension GrammarParser {
     }
 
     /// ```
-    /// swiftTypeList[[SwiftPEGGrammar.SwiftType]]:
+    /// swiftTypeList[[Abstract.SwiftType]]:
     ///     | ','.swiftType+
     ///     ;
     /// ```
@@ -891,10 +891,10 @@ extension GrammarParser {
 
     /// ```
     /// tokenDefinition[SwiftPEGGrammar.TokenDefinition]:
-    ///     | '$' name=IDENTIFIER '[' expectArgs=STRING ']' ':' ~ literal=STRING ';' { self.setLocation(.init(name: name.token, expectArgs: expectArgs.token, literal: literal.token), at: mark) }
-    ///     | '$' name=IDENTIFIER '[' expectArgs=STRING ']' ';' { self.setLocation(.init(name: name.token, expectArgs: expectArgs.token, literal: nil), at: mark) }
-    ///     | '$' name=IDENTIFIER ':' ~ literal=STRING ';' { self.setLocation(.init(name: name.token, expectArgs: nil, literal: literal.token), at: mark) }
-    ///     | '$' name=IDENTIFIER ';' { self.setLocation(.init(name: name.token, expectArgs: nil, literal: nil), at: mark) }
+    ///     | '$' name=IDENTIFIER '[' staticToken=STRING ']' ':' ~ literal=STRING ';' { self.setLocation(.init(name: name.token, staticToken: staticToken.token, literal: literal.token), at: mark) }
+    ///     | '$' name=IDENTIFIER '[' staticToken=STRING ']' ';' { self.setLocation(.init(name: name.token, staticToken: staticToken.token, literal: nil), at: mark) }
+    ///     | '$' name=IDENTIFIER ':' ~ literal=STRING ';' { self.setLocation(.init(name: name.token, staticToken: nil, literal: literal.token), at: mark) }
+    ///     | '$' name=IDENTIFIER ';' { self.setLocation(.init(name: name.token, staticToken: nil, literal: nil), at: mark) }
     ///     ;
     /// ```
     @memoized("tokenDefinition")
@@ -907,14 +907,14 @@ extension GrammarParser {
             let _ = try self.expect(kind: .dollarSign),
             let name = try self.expect(kind: .identifier),
             let _ = try self.expect(kind: .leftSquare),
-            let expectArgs = try self.expect(kind: .string),
+            let staticToken = try self.expect(kind: .string),
             let _ = try self.expect(kind: .rightSquare),
             let _ = try self.expect(kind: .colon),
             cut.toggleOn(),
             let literal = try self.expect(kind: .string),
             let _ = try self.expect(kind: .semicolon)
         {
-            return self.setLocation(.init(name: name.token, expectArgs: expectArgs.token, literal: literal.token), at: mark)
+            return self.setLocation(.init(name: name.token, staticToken: staticToken.token, literal: literal.token), at: mark)
         }
 
         self.restore(mark)
@@ -927,11 +927,11 @@ extension GrammarParser {
             let _ = try self.expect(kind: .dollarSign),
             let name = try self.expect(kind: .identifier),
             let _ = try self.expect(kind: .leftSquare),
-            let expectArgs = try self.expect(kind: .string),
+            let staticToken = try self.expect(kind: .string),
             let _ = try self.expect(kind: .rightSquare),
             let _ = try self.expect(kind: .semicolon)
         {
-            return self.setLocation(.init(name: name.token, expectArgs: expectArgs.token, literal: nil), at: mark)
+            return self.setLocation(.init(name: name.token, staticToken: staticToken.token, literal: nil), at: mark)
         }
 
         self.restore(mark)
@@ -944,7 +944,7 @@ extension GrammarParser {
             let literal = try self.expect(kind: .string),
             let _ = try self.expect(kind: .semicolon)
         {
-            return self.setLocation(.init(name: name.token, expectArgs: nil, literal: literal.token), at: mark)
+            return self.setLocation(.init(name: name.token, staticToken: nil, literal: literal.token), at: mark)
         }
 
         self.restore(mark)
@@ -958,7 +958,7 @@ extension GrammarParser {
             let name = try self.expect(kind: .identifier),
             let _ = try self.expect(kind: .semicolon)
         {
-            return self.setLocation(.init(name: name.token, expectArgs: nil, literal: nil), at: mark)
+            return self.setLocation(.init(name: name.token, staticToken: nil, literal: nil), at: mark)
         }
 
         self.restore(mark)
