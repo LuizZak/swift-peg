@@ -159,7 +159,7 @@ public enum InternalGrammar {
     /// ```
     public struct Rule: Hashable {
         public var name: String
-        public var type: Abstract.SwiftType?
+        public var type: CommonAbstract.SwiftType?
         public var alts: [Alt]
 
         /// Whether this rule has been marked as reachable from a starting rule
@@ -358,7 +358,7 @@ public enum InternalGrammar {
     @GeneratedCaseChecks
     public enum NamedItem: Hashable, CustomStringConvertible {
         /// `name=IDENT? item ('[' swiftType ']')?`
-        case item(name: String? = nil, Item, type: Abstract.SwiftType? = nil)
+        case item(name: String? = nil, Item, type: CommonAbstract.SwiftType? = nil)
         /// ```
         /// lookahead:
         ///     | '&' ~ atom

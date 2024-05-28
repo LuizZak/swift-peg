@@ -82,7 +82,7 @@ atom[SwiftPEGGrammar.Atom]:
     | STRING            { self.setLocation(SwiftPEGGrammar.StringAtom(string: string.token), at: mark) }
     ;
 
-swiftType[Abstract.SwiftType]:
+swiftType[CommonAbstract.SwiftType]:
     | '[' key=swiftType ':' ~ value=swiftType ']'       { .dictionary(key: key, value: value) }
     | '[' ~ swiftType ']'                               { .array(swiftType) }
     | swiftType '?'                                     { .optional(swiftType) }
@@ -92,7 +92,7 @@ swiftType[Abstract.SwiftType]:
     | IDENTIFIER                                        { .nominal(.init(identifier: identifier.token.string)) }
     ;
 
-swiftTypeList[[Abstract.SwiftType]]:
+swiftTypeList[[CommonAbstract.SwiftType]]:
     | ','.swiftType+
     ;
 

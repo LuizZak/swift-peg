@@ -42,7 +42,7 @@ extension TokenType {
 
 /// Specifies a kind of a token.
 public protocol TokenKindType: Hashable, CustomStringConvertible {
-    // TODO: Abstract notion of whitespace into sets of tokens that can be skipped without affecting the parser under certain conditions.
+    // TODO: CommonAbstract notion of whitespace into sets of tokens that can be skipped without affecting the parser under certain conditions.
 
     /// Gets the token type associated with whitespace, or other spacing tokens
     /// that can be skipped in regular parsing, unless they are queried for

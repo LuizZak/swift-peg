@@ -483,7 +483,7 @@ extension GrammarParser {
     }
 
     /// ```
-    /// swiftType[Abstract.SwiftType]:
+    /// swiftType[CommonAbstract.SwiftType]:
     ///     | '[' key=swiftType ':' ~ value=swiftType ']' { .dictionary(key: key, value: value) }
     ///     | '[' ~ swiftType ']' { .array(swiftType) }
     ///     | swiftType '?' { .optional(swiftType) }
@@ -495,7 +495,7 @@ extension GrammarParser {
     /// ```
     @memoizedLeftRecursive("swiftType")
     @inlinable
-    public func __swiftType() throws -> Abstract.SwiftType? {
+    public func __swiftType() throws -> CommonAbstract.SwiftType? {
         let mark = self.mark()
         var cut = CutFlag()
 
@@ -585,13 +585,13 @@ extension GrammarParser {
     }
 
     /// ```
-    /// swiftTypeList[[Abstract.SwiftType]]:
+    /// swiftTypeList[[CommonAbstract.SwiftType]]:
     ///     | ','.swiftType+
     ///     ;
     /// ```
     @memoized("swiftTypeList")
     @inlinable
-    public func __swiftTypeList() throws -> [Abstract.SwiftType]? {
+    public func __swiftTypeList() throws -> [CommonAbstract.SwiftType]? {
         let mark = self.mark()
 
         if

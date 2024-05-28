@@ -213,7 +213,7 @@ extension SwiftPEGGrammar {
 
         /// A type name directly associated with this rule.
         @NodeRequired
-        public var type: Abstract.SwiftType?
+        public var type: CommonAbstract.SwiftType?
 
         public override var shortDebugDescription: String { String(name.string) }
 
@@ -304,7 +304,7 @@ extension SwiftPEGGrammar {
 
         /// A type hint for this named production.
         @NodeRequired
-        public var type: Abstract.SwiftType?
+        public var type: CommonAbstract.SwiftType?
 
         /// Lookahead associated with this named item.
         @NodeProperty

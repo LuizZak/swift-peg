@@ -3,7 +3,7 @@
 /// code.
 /// 
 /// Namespaced to keep type pollution to a minimum.
-public enum Abstract {
+public enum CommonAbstract {
     /// Describes the type of a grammar production, as a Swift type.
     /// 
     /// Represents the construct:

@@ -453,7 +453,7 @@ extension SwiftCodeGen {
     func enqueueAuxiliaryRule(
         for rule: InternalGrammar.Rule,
         suffix: String,
-        type: Abstract.SwiftType? = nil,
+        type: CommonAbstract.SwiftType? = nil,
         _ alts: [InternalGrammar.Alt]
     ) -> String {
 
