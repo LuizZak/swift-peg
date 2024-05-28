@@ -106,42 +106,93 @@ public enum CommonAbstract {
 // MARK: Token syntax definition
 
 extension CommonAbstract {
-    struct TokSyntax: CustomStringConvertible {
-        var components: [TokComponent]
+    /// A token syntax description.
+    ///
+    /// ```
+    /// tokenSyntax:
+    ///     | '|'.tokenSyntaxComponent+
+    ///     ;
+    /// ```
+    struct TokenSyntax: CustomStringConvertible {
+        var components: [TokenComponent]
 
         var description: String {
             return components.map(\.description).joined(separator: " | ")
         }
+
+        init(components: [CommonAbstract.TokenComponent]) {
+            self.components = components
+        }
     }
 
-    struct TokComponent: CustomStringConvertible {
-        var terminals: [TokTerminal]
+    /// A token syntax component.
+    /// 
+    /// ```
+    /// tokenSyntaxComponent:
+    ///     | tokenSyntaxTerminal+
+    ///     ;
+    /// ```
+    struct TokenComponent: CustomStringConvertible {
+        var terminals: [TokenTerminal]
 
         var description: String {
             terminals.map(\.description).joined(separator: " ")
         }
+
+        init(terminals: [TokenTerminal]) {
+            self.terminals = terminals
+        }
     }
 
-    enum TokTerminal: CustomStringConvertible {
+    /// A token syntax terminal element.
+    ///
+    /// ```
+    /// tokenSyntaxTerminal:
+    ///     | '!' STRING tokenSyntaxTerminal
+    ///     | '!' IDENTIFIER tokenSyntaxTerminal
+    ///     | STRING '...' STRING
+    ///     | STRING
+    ///     | IDENTIFIER
+    ///     | '*'
+    ///     ;
+    /// ```
+    enum TokenTerminal: CustomStringConvertible {
+        /// `'!' STRING tokenSyntaxTerminal`
         indirect case notLiteral(String, Self)
-        indirect case notIdent(String, Self)
+
+        /// `'!' IDENTIFIER tokenSyntaxTerminal`
+        indirect case notIdentifier(String, Self)
+
+        /// `STRING '...' STRING`
         case rangeLiteral(String, String)
+
+        /// `STRING`
         case literal(String)
-        case ident(String)
+
+        /// IDENTIFIER
+        case identifier(String)
+
+        /// `'*'`
         case any
 
         var description: String {
             switch self {
             case .notLiteral(let lookahead, let next):
                 return #"!"\#(lookahead)" \#(next)"#
-            case .notIdent(let lookahead, let next):
+
+            case .notIdentifier(let lookahead, let next):
                 return "!\(lookahead) \(next)"
+
             case .rangeLiteral(let start, let end):
                 return #""\#(start)"..."\#(end)""#
+
             case .literal(let string):
+
                 return #""\#(string)""#
-            case .ident(let ident):
+
+            case .identifier(let ident):
                 return ident
+
             case .any:
                 return "*"
             }

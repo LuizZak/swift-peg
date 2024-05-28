@@ -23,4 +23,12 @@ open class TokenNode<Token, Location>: Node where Token: TokenType, Location: Ha
 
         self.location = location
     }
+
+    public init<Raw>(_ token: Tokenizer<Raw>.TokenResult) where Raw.Token == Token, Raw.Location == Location {
+        self.token = token.token
+
+        super.init()
+
+        self.location = location
+    }
 }

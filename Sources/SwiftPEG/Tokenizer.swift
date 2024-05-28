@@ -4,8 +4,6 @@ import Foundation
 open class Tokenizer<Raw: RawTokenizerType> {
     public typealias Token = Raw.Token
     public typealias Location = Raw.Location
-    /// Alias for results of parsing methods that query single tokens.
-    public typealias TokenResult = (token: Token, location: Location)
 
 #if DEBUG
     /// Used for uniquely identifying tokenizers in debug builds for asserting
@@ -31,7 +29,7 @@ open class Tokenizer<Raw: RawTokenizerType> {
 
     /// Cached tokens to be returned for index-based token requests
     @usableFromInline
-    internal var cachedTokens: [(token: Token, location: Location)] = []
+    internal var cachedTokens: [TokenResult] = []
 
     /// Index into `_cachedTokens` that tokens are fetched from, currently.
     @usableFromInline
@@ -103,8 +101,9 @@ open class Tokenizer<Raw: RawTokenizerType> {
 
         // Peek raw stream
         if let nextToken = try _raw.next() {
-            cachedTokens.append(nextToken)
-            return nextToken
+            let result = TokenResult(token: nextToken.token, location: nextToken.location)
+            cachedTokens.append(result)
+            return result
         } else {
             _rawEOFIndex = tokenIndex
             return nil
@@ -184,6 +183,18 @@ open class Tokenizer<Raw: RawTokenizerType> {
         return oldReach
     }
 
+    /// Type for results of parsing methods that query single tokens.
+    public struct TokenResult {
+        public var token: Token
+        public var location: Location
+
+        @inlinable
+        public init(token: Token, location: Location) {
+            self.token = token
+            self.location = location
+        }
+    }
+
     /// A marker created by `Tokenizer.mark()`. Can be used to later restore the
     /// token stream to a previous location.
     public struct Mark: Hashable, Comparable {
@@ -240,5 +251,13 @@ open class Tokenizer<Raw: RawTokenizerType> {
             lhs.index < rhs.index
 #endif
         }
+    }
+}
+
+extension Tokenizer.TokenResult: CustomStringConvertible where Raw.Token: CustomStringConvertible {
+    /// Returns `token.description`.
+    @inlinable
+    public var description: String {
+        token.description
     }
 }
