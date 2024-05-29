@@ -148,35 +148,35 @@ extension CommonAbstract {
     /// 
     /// ```
     /// tokenSyntaxAtom:
-    ///     | IDENTIFIER action
     ///     | '(' '|'.tokenSyntaxTerminal+ ')' '*'
     ///     | '(' '|'.tokenSyntaxTerminal+ ')' '+'
+    ///     | '(' '|'.tokenSyntaxTerminal+ ')'
     ///     | tokenSyntaxTerminal
     ///     ;
     /// ```
     public enum TokenAtom: CustomStringConvertible {
-        /// `IDENTIFIER action`
-        case characterPredicate(String, String)
-
         /// '(' '|'.tokenSyntaxTerminal+ ')' '*'
         case zeroOrMore([TokenTerminal])
 
         /// '(' '|'.tokenSyntaxTerminal+ ')' '+'
         case oneOrMore([TokenTerminal])
 
+        /// '(' '|'.tokenSyntaxTerminal+ ')'
+        case group([TokenTerminal])
+
         /// `tokenSyntaxTerminal`
         case terminal(TokenTerminal)
 
         public var description: String {
             switch self {
-            case .characterPredicate(let bind, let action):
-                return "\(bind) {\(action)}"
-
             case .oneOrMore(let terminals):
                 return "(\(terminals.map(\.description).joined(separator: " | ")))*"
 
             case .zeroOrMore(let terminals):
                 return "(\(terminals.map(\.description).joined(separator: " | ")))+"
+
+            case .group(let terminals):
+                return "(\(terminals.map(\.description).joined(separator: " | ")))"
 
             case .terminal(let terminal):
                 return terminal.description
@@ -188,6 +188,7 @@ extension CommonAbstract {
     ///
     /// ```
     /// tokenSyntaxTerminal:
+    ///     | IDENTIFIER action
     ///     | '!' STRING tokenSyntaxTerminal
     ///     | '!' IDENTIFIER tokenSyntaxTerminal
     ///     | STRING '...' STRING
@@ -197,6 +198,9 @@ extension CommonAbstract {
     ///     ;
     /// ```
     public enum TokenTerminal: CustomStringConvertible {
+        /// `IDENTIFIER action`
+        case characterPredicate(String, String)
+
         /// `'!' STRING tokenSyntaxTerminal`
         indirect case excludingLiteral(String, Self)
 
@@ -217,6 +221,9 @@ extension CommonAbstract {
 
         public var description: String {
             switch self {
+            case .characterPredicate(let bind, let action):
+                return "\(bind) {\(action)}"
+
             case .excludingLiteral(let lookahead, let next):
                 return #"!"\#(lookahead)" \#(next)"#
 

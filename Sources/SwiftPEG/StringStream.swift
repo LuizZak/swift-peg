@@ -85,6 +85,14 @@ public struct StringStream<StringType: StringProtocol> {
         return source[idx]
     }
 
+    /// Performs a checked peek at the current character offset, returning the
+    /// character if the current index is not at end-of-stream, and `nil`
+    /// otherwise.
+    @inlinable
+    public func safePeek() -> StringType.Element? {
+        isEof ? nil : source[index]
+    }
+
     /// Checks that the next characters in the stream match `match`.
     /// If the first index is within bounds but `match` is larger than the rest
     /// of the string, the method doesn't raise a runtime error and simply returns

@@ -119,6 +119,18 @@ class StringStreamTests: XCTestCase {
         assertEqual(sut.peek(1), "c")
     }
 
+    func testSafePeek() {
+        var sut = makeSut("ab")
+
+        assertEqual(sut.safePeek(), "a")
+        sut.advance()
+        assertEqual(sut.safePeek(), "b")
+
+        sut.advance()
+
+        assertNil(sut.safePeek())
+    }
+
     func testIsNext_smallMatchString() {
         var sut = makeSut("abc")
 

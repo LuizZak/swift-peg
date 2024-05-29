@@ -466,13 +466,15 @@ extension SwiftPEGGrammar {
             public var contents: Substring {
                 switch self {
                 case .singleQuote(let string):
-                    return string.dropFirst().dropLast()
+                    return Self.applyEscapes(string.dropFirst().dropLast())
+
                 case .doubleQuote(let string):
-                    return string.dropFirst().dropLast()
+                    return Self.applyEscapes(string.dropFirst().dropLast())
+
                 case .tripleQuote(let string):
-                    return string.dropFirst(
+                    return Self.applyEscapes(string.dropFirst(
                         string.hasPrefix("\"\"\"\n") ? 4 : 3 // Ignore first newline past triple quote
-                    ).dropLast(3)
+                    ).dropLast(3))
                 }
             }
 
@@ -503,6 +505,17 @@ extension SwiftPEGGrammar {
             @inlinable
             public var description: String {
                 String(quotedContents)
+            }
+
+            @usableFromInline
+            static func applyEscapes<StringType: StringProtocol>(_ string: StringType) -> Substring {
+                // TODO: This should be performed during tokenization, but do it hackily for now to get it done
+                let processed =
+                    string
+                        .replacingOccurrences(of: #"\\"#, with: #"\"#)
+                        .replacingOccurrences(of: #"\n"#, with: "\n")
+                
+                return processed[...]
             }
 
             /// Returns a parsed string literal from the given substring.

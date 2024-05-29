@@ -398,7 +398,8 @@ extension DirectedGraph {
                     continue
                 }
 
-                nextNodes.append(contentsOf: allNodesConnected(to: next))
+                let connected = allNodesConnected(to: next)
+                nextNodes.append(contentsOf: connected)
             }
 
             result.append(component)

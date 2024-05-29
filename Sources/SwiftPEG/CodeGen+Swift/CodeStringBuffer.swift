@@ -96,7 +96,7 @@ public class CodeStringBuffer {
 
     /// Emits the given text on the current line and pushes a new line onto the
     /// buffer.
-    public func emitLine(_ text: String = "") {
+    public func emitLine(_ text: String) {
         emit(text)
         emitNewline()
     }

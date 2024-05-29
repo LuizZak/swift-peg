@@ -134,7 +134,7 @@ balancedTokenAtom[TokenNode<RawTokenizer.Token, RawTokenizer.Location>]:
 # Tokens file grammar
 
 tokensFile[[SwiftPEGGrammar.TokenDefinition]]:
-    | tokens=tokenDefinition* { tokens }
+    | tokens=tokenDefinition*
     ;
 
 # Note: staticToken must resolve statically to a token reference when PEGParser.expect()/PEGParser.expect(kind:) uses it as its argument.
@@ -148,7 +148,7 @@ tokenDefinition[SwiftPEGGrammar.TokenDefinition]:
     ;
 
 tokenSyntax[CommonAbstract.TokenSyntax]:
-    | '|'.tokenSyntaxAlt+                       { .init(alts: tokenSyntaxAlt) }
+    | '|'? '|'.tokenSyntaxAlt+                  { .init(alts: tokenSyntaxAlt) }
     ;
 
 tokenSyntaxAlt[CommonAbstract.TokenAlt]:
@@ -156,13 +156,14 @@ tokenSyntaxAlt[CommonAbstract.TokenAlt]:
     ;
 
 tokenSyntaxAtom[CommonAbstract.TokenAtom]:
-    | IDENTIFIER action                         { .characterPredicate("\(identifier)", "\(action.description)") }
     | '(' '|'.tokenSyntaxTerminal+ ')' '*'      { .zeroOrMore(tokenSyntaxTerminal) }
     | '(' '|'.tokenSyntaxTerminal+ ')' '+'      { .oneOrMore(tokenSyntaxTerminal) }
+    | '(' '|'.tokenSyntaxTerminal+ ')'          { .group(tokenSyntaxTerminal) }
     | tokenSyntaxTerminal                       { .terminal(tokenSyntaxTerminal) }
     ;
 
 tokenSyntaxTerminal[CommonAbstract.TokenTerminal]:
+    | IDENTIFIER action                         { .characterPredicate("\(identifier)", "\(action.description)") }
     | '!' STRING tokenSyntaxTerminal            { .excludingLiteral("\(string)", tokenSyntaxTerminal) }
     | '!' IDENTIFIER tokenSyntaxTerminal        { .excludingIdentifier("\(identifier)", tokenSyntaxTerminal) }
     | start=STRING '...' end=STRING             { .rangeLiteral("\(start)", "\(end)") }

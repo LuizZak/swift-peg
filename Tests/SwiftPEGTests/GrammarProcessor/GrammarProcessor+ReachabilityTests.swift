@@ -125,6 +125,37 @@ class GrammarProcessor_ReachabilityTests: XCTestCase {
         })
         assertEmpty(diagnostics, message: "in grammar \(grammarString)")
     }
+
+    func testUnreachableRuleDiagnostics_sharedDependency() throws {
+        let grammarString = #"""
+        @token a; @token b; @token c; @token d;
+
+        start: rule1 ;
+
+        rule1: rule2 ;
+        rule2: a;
+
+        rule3: rule4;
+        rule4: rule2;
+        """#
+        let grammar = try parseGrammar(grammarString)
+        let sut = makeSut()
+
+        _ = try sut.process(grammar)
+
+        let diags = sut.test_diagnosticsCount(where: { diag in
+            switch diag {
+            case .unreachableRule:
+                return true
+            default:
+                return false
+            }
+        })
+        assertEqual(diags, 1)
+        assertEqual(sut.test_diagnosticMessages(), """
+            Rule 'rule3' @ line 8 column 1 is not reachable from the set start rule 'start'.
+            """)
+    }
 }
 
 // MARK: - Test internals

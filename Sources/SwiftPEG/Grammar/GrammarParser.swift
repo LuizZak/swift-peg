@@ -869,7 +869,7 @@ extension GrammarParser {
 
     /// ```
     /// tokensFile[[SwiftPEGGrammar.TokenDefinition]]:
-    ///     | tokens=tokenDefinition* { tokens }
+    ///     | tokens=tokenDefinition*
     ///     ;
     /// ```
     @memoized("tokensFile")
@@ -967,7 +967,7 @@ extension GrammarParser {
 
     /// ```
     /// tokenSyntax[CommonAbstract.TokenSyntax]:
-    ///     | '|'.tokenSyntaxAlt+ { .init(alts: tokenSyntaxAlt) }
+    ///     | '|'? '|'.tokenSyntaxAlt+ { .init(alts: tokenSyntaxAlt) }
     ///     ;
     /// ```
     @memoized("tokenSyntax")
@@ -976,6 +976,9 @@ extension GrammarParser {
         let mark = self.mark()
 
         if
+            let _ = try self.optional({
+                try self.expect(kind: .bar)
+            }),
             let tokenSyntaxAlt = try self.gather(separator: {
                 try self.expect(kind: .bar)
             }, item: {
@@ -1013,9 +1016,9 @@ extension GrammarParser {
 
     /// ```
     /// tokenSyntaxAtom[CommonAbstract.TokenAtom]:
-    ///     | IDENTIFIER action { .characterPredicate("\(identifier)", "\(action.description)") }
     ///     | '(' '|'.tokenSyntaxTerminal+ ')' '*' { .zeroOrMore(tokenSyntaxTerminal) }
     ///     | '(' '|'.tokenSyntaxTerminal+ ')' '+' { .oneOrMore(tokenSyntaxTerminal) }
+    ///     | '(' '|'.tokenSyntaxTerminal+ ')' { .group(tokenSyntaxTerminal) }
     ///     | tokenSyntaxTerminal { .terminal(tokenSyntaxTerminal) }
     ///     ;
     /// ```
@@ -1023,15 +1026,6 @@ extension GrammarParser {
     @inlinable
     public func __tokenSyntaxAtom() throws -> CommonAbstract.TokenAtom? {
         let mark = self.mark()
-
-        if
-            let identifier = try self.expect(kind: .identifier),
-            let action = try self.action()
-        {
-            return .characterPredicate("\(identifier)", "\(action.description)")
-        }
-
-        self.restore(mark)
 
         if
             let _ = try self.expect(kind: .leftParen),
@@ -1064,6 +1058,20 @@ extension GrammarParser {
         self.restore(mark)
 
         if
+            let _ = try self.expect(kind: .leftParen),
+            let tokenSyntaxTerminal = try self.gather(separator: {
+                try self.expect(kind: .bar)
+            }, item: {
+                try self.tokenSyntaxTerminal()
+            }),
+            let _ = try self.expect(kind: .rightParen)
+        {
+            return .group(tokenSyntaxTerminal)
+        }
+
+        self.restore(mark)
+
+        if
             let tokenSyntaxTerminal = try self.tokenSyntaxTerminal()
         {
             return .terminal(tokenSyntaxTerminal)
@@ -1075,6 +1083,7 @@ extension GrammarParser {
 
     /// ```
     /// tokenSyntaxTerminal[CommonAbstract.TokenTerminal]:
+    ///     | IDENTIFIER action { .characterPredicate("\(identifier)", "\(action.description)") }
     ///     | '!' STRING tokenSyntaxTerminal { .excludingLiteral("\(string)", tokenSyntaxTerminal) }
     ///     | '!' IDENTIFIER tokenSyntaxTerminal { .excludingIdentifier("\(identifier)", tokenSyntaxTerminal) }
     ///     | start=STRING '...' end=STRING { .rangeLiteral("\(start)", "\(end)") }
@@ -1087,6 +1096,15 @@ extension GrammarParser {
     @inlinable
     public func __tokenSyntaxTerminal() throws -> CommonAbstract.TokenTerminal? {
         let mark = self.mark()
+
+        if
+            let identifier = try self.expect(kind: .identifier),
+            let action = try self.action()
+        {
+            return .characterPredicate("\(identifier)", "\(action.description)")
+        }
+
+        self.restore(mark)
 
         if
             let _ = try self.expect(kind: .exclamationMark),

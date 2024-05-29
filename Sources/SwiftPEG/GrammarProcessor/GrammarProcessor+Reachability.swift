@@ -51,9 +51,20 @@ extension GrammarProcessor {
             }
         }
 
-        var unreachable: Set<String> = Set()
+        var unreachable: Set<String> = Set(rules.keys)
+        graph.breadthFirstVisit(start: startNode) { visit in
+            unreachable.remove(visit.node.ruleName)
+            return true
+        }
 
-        let components = graph.connectedComponents()
+        // Split graph based on unreachable nodes, and try to do topological sort
+        // on each subgraph, diagnosing only on the first node
+        let unreachableNodes = graph.nodes.filter({ unreachable.contains($0.ruleName) })
+        let subgraph = graph.subgraph(of: unreachableNodes)
+
+        var diagnose: Set<String> = []
+
+        let components = subgraph.connectedComponents()
         for component in components where !component.contains(startNode) {
             guard let first = component.first else {
                 // Component empty?
@@ -65,7 +76,7 @@ extension GrammarProcessor {
             // rules in this component
             guard component.count > 1 else {
                 // Component is a single rule
-                unreachable.insert(first.ruleName)
+                diagnose.insert(first.ruleName)
                 continue
             }
 
@@ -73,13 +84,13 @@ extension GrammarProcessor {
             guard let sorted = subgraph.topologicalSorted(), !sorted.isEmpty else {
                 // Fallback: report on previously randomly-picked first component
                 // and move on
-                unreachable.insert(first.ruleName)
+                diagnose.insert(first.ruleName)
                 continue
             }
 
-            unreachable.insert(sorted[0].ruleName)
+            diagnose.insert(sorted[0].ruleName)
         }
 
-        return unreachable
+        return diagnose
     }
 }
