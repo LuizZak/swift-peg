@@ -3,6 +3,72 @@ import XCTest
 @testable import SwiftPEG
 
 class SwiftCodeGen_TokenTests: XCTestCase {
+    func testGenerateTokenParser_singleCharacter() throws {
+        let tokens = try parseTokenDefinitions(#"""
+        $leftSquare: '[' ;
+        """#)
+
+        let sut = makeSut(tokens)
+
+        try sut.generateTokenParser(tokens[0])
+
+        diffTest(expected: #"""
+        /// ```
+        /// leftSquare:
+        ///     | "["
+        ///     ;
+        /// ```
+        func consume_leftSquare<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+            stream.advanceIfNext("[")
+        }
+        """#).diff(sut.buffer.finishBuffer())
+    }
+
+    func testGenerateTokenParser_anyPattern() throws {
+        let tokens = try parseTokenDefinitions(#"""
+        $syntax:
+            | '[' (']' | .)
+            ;
+        """#)
+
+        let sut = makeSut(tokens)
+
+        try sut.generateTokenParser(tokens[0])
+
+        diffTest(expected: #"""
+        /// ```
+        /// syntax:
+        ///     | "[" ("]" | .)
+        ///     ;
+        /// ```
+        func consume_syntax<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+            guard !stream.isEof else { return false }
+            let state = stream.save()
+
+            alt:
+            do {
+                guard stream.isNext("[") else {
+                    break alt
+                }
+                stream.advance()
+
+                switch stream.peek() {
+                case "]":
+                    stream.advance()
+                default:
+                    stream.advance()
+                }
+
+                return true
+            }
+
+            stream.restore(state)
+
+            return false
+        }
+        """#).diff(sut.buffer.finishBuffer())
+    }
+
     func testGenerateTokenParser_characterRanges() throws {
         let tokens = try parseTokenDefinitions(#"""
         $identifier:
@@ -26,26 +92,18 @@ class SwiftCodeGen_TokenTests: XCTestCase {
 
             alt:
             do {
-                if !stream.isEof, ("A"..."Z").contains(stream.peek()) {
+                switch stream.peek() {
+                case "A"..."Z", "a"..."z", "_":
                     stream.advance()
-                } else if !stream.isEof, ("a"..."z").contains(stream.peek()) {
-                    stream.advance()
-                } else if stream.isNext("_") {
-                    stream.advance()
-                } else {
+                default:
                     break alt
                 }
 
                 while !stream.isEof {
-                    if !stream.isEof, ("0"..."9").contains(stream.peek()) {
+                    switch stream.peek() {
+                    case "0"..."9", "A"..."Z", "a"..."z", "_":
                         stream.advance()
-                    } else if !stream.isEof, ("A"..."Z").contains(stream.peek()) {
-                        stream.advance()
-                    } else if !stream.isEof, ("a"..."z").contains(stream.peek()) {
-                        stream.advance()
-                    } else if stream.isNext("_") {
-                        stream.advance()
-                    } else {
+                    default:
                         break
                     }
                 }
@@ -89,9 +147,61 @@ class SwiftCodeGen_TokenTests: XCTestCase {
                 stream.advance()
 
                 while !stream.isEof {
-                    if let c = stream.safePeek(), c.isLetter || c.isWholeNumber || c == "_" {
+                    switch stream.peek() {
+                    case let c where c.isLetter || c.isWholeNumber || c == "_":
                         stream.advance()
-                    } else {
+                    default:
+                        break
+                    }
+                }
+
+                return true
+            }
+
+            stream.restore(state)
+
+            return false
+        }
+        """#).diff(sut.buffer.finishBuffer())
+    }
+
+    func testGenerateTokenParser_mixedLiteralAndCharacterActions() throws {
+        let tokens = try parseTokenDefinitions(#"""
+        $identifier:
+            | c { c.isLetter || c == "_" } ("_" | "A"..."Z" | c { c.isLetter || c.isWholeNumber || c == "_" } | "0"..."9")*
+            ;
+        """#)
+
+        let sut = makeSut(tokens)
+
+        try sut.generateTokenParser(tokens[0])
+
+        diffTest(expected: #"""
+        /// ```
+        /// identifier:
+        ///     | c { c.isLetter || c == "_" } ("_" | "A"..."Z" | c { c.isLetter || c.isWholeNumber || c == "_" } | "0"..."9")*
+        ///     ;
+        /// ```
+        func consume_identifier<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+            guard !stream.isEof else { return false }
+            let state = stream.save()
+
+            alt:
+            do {
+                guard let c = stream.safePeek(), c.isLetter || c == "_" else {
+                    break alt
+                }
+                stream.advance()
+
+                while !stream.isEof {
+                    switch stream.peek() {
+                    case "_", "A"..."Z":
+                        stream.advance()
+                    case let c where c.isLetter || c.isWholeNumber || c == "_":
+                        stream.advance()
+                    case "0"..."9":
+                        stream.advance()
+                    default:
                         break
                     }
                 }

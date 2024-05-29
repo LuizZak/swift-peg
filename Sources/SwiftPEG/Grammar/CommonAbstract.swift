@@ -113,7 +113,7 @@ extension CommonAbstract {
     ///     | '|'.tokenSyntaxAlt+
     ///     ;
     /// ```
-    public struct TokenSyntax: CustomStringConvertible {
+    public struct TokenSyntax: Equatable, CustomStringConvertible {
         public var alts: [TokenAlt]
 
         public var description: String {
@@ -132,7 +132,7 @@ extension CommonAbstract {
     ///     | tokenSyntaxAtom+
     ///     ;
     /// ```
-    public struct TokenAlt: CustomStringConvertible {
+    public struct TokenAlt: Equatable, CustomStringConvertible {
         public var atoms: [TokenAtom]
 
         public var description: String {
@@ -154,7 +154,7 @@ extension CommonAbstract {
     ///     | tokenSyntaxTerminal
     ///     ;
     /// ```
-    public enum TokenAtom: CustomStringConvertible {
+    public enum TokenAtom: Equatable, CustomStringConvertible {
         /// '(' '|'.tokenSyntaxTerminal+ ')' '*'
         case zeroOrMore([TokenTerminal])
 
@@ -197,7 +197,7 @@ extension CommonAbstract {
     ///     | '.'
     ///     ;
     /// ```
-    public enum TokenTerminal: CustomStringConvertible {
+    public enum TokenTerminal: Equatable, CustomStringConvertible {
         /// `IDENTIFIER action`
         case characterPredicate(String, String)
 
@@ -217,6 +217,7 @@ extension CommonAbstract {
         case identifier(String)
 
         /// `'.'`
+        @GeneratedIsCase(accessLevel: "public")
         case any
 
         public var description: String {

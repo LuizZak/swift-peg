@@ -88,25 +88,25 @@ public class DiffingTest {
         if diffOnly {
             message = """
                 Diff (between ---):
-                
+
                 \(diffStringSection)
                 """
         } else {
             message = """
-                Expected (between ---):
-                
-                ---
-                \(expectedDiff.string)
-                ---
-                
                 Actual result (between ---):
-                
+
                 ---
                 \(actual)
                 ---
-                
+
+                Expected (between ---):
+
+                ---
+                \(expectedDiff.string)
+                ---
+
                 Diff (between ---):
-                
+
                 \(diffStringSection)
                 """
         }

@@ -30,18 +30,18 @@ class StringDiffTestingTests: XCTestCase {
             """
             test.swift:4: Strings don't match: difference starts here: Actual line reads 'df'
 
-            Expected (between ---):
-
-            ---
-            abc
-            def
-            ---
-
             Actual result (between ---):
 
             ---
             abc
             df
+            ---
+
+            Expected (between ---):
+
+            ---
+            abc
+            def
             ---
 
             Diff (between ---):
@@ -97,16 +97,16 @@ class StringDiffTestingTests: XCTestCase {
             """
             test.swift:3: Strings don't match: difference starts here: Actual line reads 'test'
 
-            Expected (between ---):
-
-            ---
-
-            ---
-
             Actual result (between ---):
 
             ---
             test
+            ---
+
+            Expected (between ---):
+
+            ---
+
             ---
 
             Diff (between ---):
@@ -141,19 +141,19 @@ class StringDiffTestingTests: XCTestCase {
             """
             test.swift:5: Strings don't match: difference starts here: Expected matching line 'ghi'
 
+            Actual result (between ---):
+
+            ---
+            abc
+            def
+            ---
+
             Expected (between ---):
 
             ---
             abc
             def
             ghi
-            ---
-
-            Actual result (between ---):
-
-            ---
-            abc
-            def
             ---
 
             Diff (between ---):
@@ -189,19 +189,19 @@ class StringDiffTestingTests: XCTestCase {
             """
             test.swift:4: Strings don't match: difference starts here: Actual line reads 'xyz'
 
+            Actual result (between ---):
+
+            ---
+            abc
+            xyz
+            ---
+
             Expected (between ---):
 
             ---
             abc
             def
             ghi
-            ---
-
-            Actual result (between ---):
-
-            ---
-            abc
-            xyz
             ---
 
             Diff (between ---):
@@ -237,19 +237,19 @@ class StringDiffTestingTests: XCTestCase {
             """
             test.swift:4: Strings don't match: difference starts here: Extraneous content after this line
 
-            Expected (between ---):
-
-            ---
-            abc
-            def
-            ---
-
             Actual result (between ---):
 
             ---
             abc
             def
             ghi
+            ---
+
+            Expected (between ---):
+
+            ---
+            abc
+            def
             ---
 
             Diff (between ---):
@@ -286,19 +286,19 @@ class StringDiffTestingTests: XCTestCase {
             """
             test.swift:3: Strings don't match: difference starts here: Actual line reads 'if true {'
 
+            Actual result (between ---):
+
+            ---
+            if true {
+                }
+            ---
+
             Expected (between ---):
 
             ---
             label:
             if true {
             }
-            ---
-
-            Actual result (between ---):
-
-            ---
-            if true {
-                }
             ---
 
             Diff (between ---):
@@ -349,21 +349,6 @@ class StringDiffTestingTests: XCTestCase {
             """
             test.swift:7: Strings don't match: difference starts here: Actual line reads 'DIFFERENCE'
 
-            Expected (between ---):
-
-            ---
-            line 1
-            line 2
-            line 3
-            line 4
-            line 5
-            line 6
-            line 7
-            line 8
-            line 9
-            line 10
-            ---
-
             Actual result (between ---):
 
             ---
@@ -372,6 +357,21 @@ class StringDiffTestingTests: XCTestCase {
             line 3
             line 4
             DIFFERENCE
+            line 6
+            line 7
+            line 8
+            line 9
+            line 10
+            ---
+
+            Expected (between ---):
+
+            ---
+            line 1
+            line 2
+            line 3
+            line 4
+            line 5
             line 6
             line 7
             line 8
@@ -420,20 +420,20 @@ class StringDiffTestingTests: XCTestCase {
             """
             test.swift:3: Strings don't match: difference starts here: Actual line reads 'DIFFERENCE'
 
-            Expected (between ---):
+            Actual result (between ---):
 
             ---
-            line 1
+            DIFFERENCE
             line 2
             line 3
             line 4
             line 5
             ---
 
-            Actual result (between ---):
+            Expected (between ---):
 
             ---
-            DIFFERENCE
+            line 1
             line 2
             line 3
             line 4
@@ -479,16 +479,6 @@ class StringDiffTestingTests: XCTestCase {
             """
             test.swift:7: Strings don't match: difference starts here: Actual line reads 'DIFFERENCE'
 
-            Expected (between ---):
-
-            ---
-            line 1
-            line 2
-            line 3
-            line 4
-            line 5
-            ---
-
             Actual result (between ---):
 
             ---
@@ -497,6 +487,16 @@ class StringDiffTestingTests: XCTestCase {
             line 3
             line 4
             DIFFERENCE
+            ---
+
+            Expected (between ---):
+
+            ---
+            line 1
+            line 2
+            line 3
+            line 4
+            line 5
             ---
 
             Diff (between ---):
@@ -588,9 +588,50 @@ private func assertLinesMatch(
     guard actual != expected else {
         return
     }
+    guard let actual, let expected else {
+        XCTAssertEqual(actual, expected, file: file, line: line)
+        return
+    }
+    let linesActual = actual.split(separator: "\n", omittingEmptySubsequences: false)
+    let linesExpected = expected.split(separator: "\n", omittingEmptySubsequences: false)
 
-    XCTFail(
-        "Strings don't match:\n\(actual ?? "<nil>")\n\nvs\n\n\(expected ?? "<nil>")",
+    guard linesActual.count > 1 && linesExpected.count > 1 else {
+        XCTFail(
+            "Strings don't match:\n\(actual)\n\nvs\n\n\(expected)",
+            file: file,
+            line: line
+        )
+        return
+    }
+
+    let firstChangedLine = zip(linesActual, linesExpected)
+        .enumerated()
+        .first(where: { $0.element.0 != $0.element.1 })
+    
+    guard let firstChangedLine else {
+        XCTFail(
+            "Strings don't match:\n\(actual)\n\nvs\n\n\(expected)",
+            file: file,
+            line: line
+        )
+        return
+    }
+
+    XCTFail("""
+        Strings don't match starting at line \(firstChangedLine.offset):
+        --
+        \(firstChangedLine.element.0)
+        --
+        \(firstChangedLine.element.1)
+        --
+        Strings:
+        
+        \(actual)
+        
+        vs
+        
+        \(expected)
+        """,
         file: file,
         line: line
     )
