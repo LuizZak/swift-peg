@@ -22,13 +22,16 @@ public enum InternalGrammar {
             guard let alt = tokenSyntax.alts.first, tokenSyntax.alts.count == 1 else {
                 return nil
             }
-            guard let atom = alt.atoms.first, alt.atoms.count == 1 else {
+            guard let item = alt.items.first, alt.items.count == 1 else {
                 return nil
             }
-            guard case .terminal(let term) = atom else {
+            guard case .atom(let atom) = item else {
                 return nil
             }
-            guard case .literal(let literal) = term else {
+            guard atom.excluded.isEmpty else {
+                return nil
+            }
+            guard case .literal(let literal) = atom.terminal else {
                 return nil
             }
 
@@ -156,13 +159,8 @@ public enum InternalGrammar {
                     return .identifier(String(value.identifier.string))
 
                 case let value as SwiftPEGGrammar.MetaStringValue:
-                    switch value.string {
-                    case .string(.tripleQuote(let contents)) where contents.hasPrefix("\n"):
-                        return .string(String(contents.dropFirst()))
-                    default:
-                        return .string(String(value.string.processedString))
-                    }
-                
+                    return .string(String(value.string.processedString))
+
                 default:
                     fatalError("Unknown meta-property value type \(type(of: node))")
                 }

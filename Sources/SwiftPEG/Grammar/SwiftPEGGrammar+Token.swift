@@ -133,7 +133,7 @@ extension SwiftPEGGrammar {
             case .whitespace(let value): return value
             case .identifier(let value): return value
             case .digits(let value): return value
-            case .string(let value): return value.quotedContents
+            case .string(let value): return value.quotedContents[...]
             case .leftParen: return "("
             case .rightParen: return ")"
             case .leftBrace: return "{"
@@ -265,7 +265,7 @@ extension SwiftPEGGrammar {
             case .whitespace: return .whitespace(" ")
             case .identifier: return .identifier("<dummy>")
             case .digits: return .digits("<dummy>")
-            case .string: return .string(.singleQuote("<dummy>"))
+            case .string: return .string(.singleQuote("<dummy>", lengthInSource: 1))
             case .leftParen: return .leftParen
             case .rightParen: return .rightParen
             case .leftBrace: return .leftBrace
@@ -448,43 +448,44 @@ extension SwiftPEGGrammar {
             /// `'<...>'`
             /// 
             /// Includes quotes.
-            case singleQuote(Substring)
+            case singleQuote(String, lengthInSource: Int)
             
             /// `"<...>"`
             /// 
             /// Includes quotes.
-            case doubleQuote(Substring)
+            case doubleQuote(String, lengthInSource: Int)
 
             /// `"""<...>"""`
             /// 
             /// Supports newlines within.
             /// Includes quotes.
-            case tripleQuote(Substring)
+            case tripleQuote(String, lengthInSource: Int)
 
-            /// Returns contents of the string, without surrounding quotes.
+            /// Returns contents of the string, with any escape sequence expanded,
+            /// without surrounding quotes.
             @inlinable
             public var contents: Substring {
                 switch self {
-                case .singleQuote(let string):
-                    return Self.applyEscapes(string.dropFirst().dropLast())
+                case .singleQuote(let string, _):
+                    return string.dropFirst().dropLast()
 
-                case .doubleQuote(let string):
-                    return Self.applyEscapes(string.dropFirst().dropLast())
+                case .doubleQuote(let string, _):
+                    return string.dropFirst().dropLast()
 
-                case .tripleQuote(let string):
-                    return Self.applyEscapes(string.dropFirst(
+                case .tripleQuote(let string, _):
+                    return string.dropFirst(
                         string.hasPrefix("\"\"\"\n") ? 4 : 3 // Ignore first newline past triple quote
-                    ).dropLast(3))
+                    ).dropLast(3)
                 }
             }
 
             /// Returns the full representation of this literal, including quotes.
             @inlinable
-            public var quotedContents: Substring {
+            public var quotedContents: String {
                 switch self {
-                case .singleQuote(let string),
-                    .doubleQuote(let string),
-                    .tripleQuote(let string):
+                case .singleQuote(let string, _),
+                    .doubleQuote(let string, _),
+                    .tripleQuote(let string, _):
                     return string
                 }
             }
@@ -494,10 +495,10 @@ extension SwiftPEGGrammar {
             @inlinable
             public var length: Int {
                 switch self {
-                case .singleQuote(let string),
-                    .doubleQuote(let string),
-                    .tripleQuote(let string):
-                    return string.count
+                case .singleQuote(_, let length),
+                    .doubleQuote(_, let length),
+                    .tripleQuote(_, let length):
+                    return length
                 }
             }
 
@@ -505,17 +506,6 @@ extension SwiftPEGGrammar {
             @inlinable
             public var description: String {
                 String(quotedContents)
-            }
-
-            @usableFromInline
-            static func applyEscapes<StringType: StringProtocol>(_ string: StringType) -> Substring {
-                // TODO: This should be performed during tokenization, but do it hackily for now to get it done
-                let processed =
-                    string
-                        .replacingOccurrences(of: #"\\"#, with: #"\"#)
-                        .replacingOccurrences(of: #"\n"#, with: "\n")
-                
-                return processed[...]
             }
 
             /// Returns a parsed string literal from the given substring.
@@ -526,6 +516,8 @@ extension SwiftPEGGrammar {
 
                 let terminator: String
                 let multiline: Bool
+
+                let start = stream.index
 
                 if stream.advanceIfNext("\"\"\"") {
                     terminator = "\"\"\""
@@ -540,20 +532,47 @@ extension SwiftPEGGrammar {
                     return nil
                 }
 
+                var contents = terminator
+
                 var expectsEscapeSequence = false
                 while !stream.isEof {
                     if expectsEscapeSequence {
-                        // TODO: Handle escape sequences appropriately
-                        stream.advance()
+                        // Handle escape sequences
+
                         expectsEscapeSequence = false
+                        // Escaped string terminator
+                        if stream.advanceIfNext(terminator) {
+                            contents += terminator
+                            continue
+                        }
+                        // Cr+lf
+                        if stream.advanceIfNext("r\\n") {
+                            contents.append("\r\n" as Character)
+                            continue
+                        }
+
+                        switch stream.next() {
+                        // Whitespace
+                        case "n": contents += "\n"
+                        case "t": contents += "\t"
+                        case #"\"#: contents += #"\"#
+                        default:
+                            return nil // Unknown escape sequence?
+                        }
                     } else {
                         if stream.advanceIfNext(terminator) {
+                            contents += terminator
+
+                            // Calculate how much of the input stream we just
+                            // consumed to report back to the raw tokenizer
+                            let distance = stream.source.distance(from: start, to: stream.index)
+
                             if terminator == "\"\"\"" {
-                                return .tripleQuote(stream.substring)
+                                return .tripleQuote(contents, lengthInSource: distance)
                             } else if terminator == "\"" {
-                                return .doubleQuote(stream.substring)
+                                return .doubleQuote(contents, lengthInSource: distance)
                             } else if terminator == "'" {
-                                return .singleQuote(stream.substring)
+                                return .singleQuote(contents, lengthInSource: distance)
                             }
                         }
 
@@ -564,10 +583,14 @@ extension SwiftPEGGrammar {
                             if !multiline {
                                 return nil
                             }
+
+                            contents.append(next)
                         }
                         // Check escape sequence
                         else if next == "\\" {
                             expectsEscapeSequence = true
+                        } else {
+                            contents.append(next)
                         }
                     }
                 }

@@ -53,7 +53,7 @@ public class SwiftCodeGen {
     }
 
     /// Initializes a new `SwiftCodeGen`, preparing to generate a given grammar.
-    /// 
+    ///
     /// - Parameters:
     ///   - grammar: The grammar to generate.
     ///   - tokenDefinitions: A list of token definitions to use when examining string literals.
@@ -145,7 +145,7 @@ public class SwiftCodeGen {
 
         // @inlinable
         buffer.emitLine("@inlinable")
-        
+
         // func <rule>() -> <node>
         buffer.emit("public func __\(name)() throws -> \(type)? ")
         try buffer.emitBlock {
@@ -189,7 +189,7 @@ public class SwiftCodeGen {
         buffer.emitBlock {
             generateOnAltMatchBlock(alt, in: rule)
         }
-        
+
         // Alt failure results in a restore to a previous mark
         buffer.emitNewline()
         buffer.emitLine("self.restore(mark)")
@@ -210,7 +210,7 @@ public class SwiftCodeGen {
 
     /// Generates the block of code that is run when a given alt is matched
     /// successfully.
-    /// 
+    ///
     /// If `self.implicitReturns` is `true`, always appends `return` to the start
     /// of the action's resolved string.
     func generateOnAltMatchBlock(
@@ -324,7 +324,7 @@ public class SwiftCodeGen {
                 try generateAtom(atom, in: rule)
             }
             buffer.emit(")")
-            
+
         case .oneOrMore(let atom):
             buffer.emit("try self.repeatOneOrMore(")
             try buffer.emitInlinedBlock {
@@ -414,8 +414,15 @@ public class SwiftCodeGen {
 
     /// Describes an error that can be raised during Swift parser code generation.
     public enum Error: Swift.Error, CustomStringConvertible {
+        /// Issued during token type code generation, indicates that a token
+        /// definition was found that has no syntax defined, so a unified token
+        /// type cannot be generated.
+        case tokenDefinitionMissingSyntax(InternalGrammar.TokenDefinition)
+
         public var description: String {
             switch self {
+            case .tokenDefinitionMissingSyntax(let def):
+                return "Cannot generate token type: All tokens must have a syntax defined; found token '\(def.name)' that has no syntax."
             }
         }
     }
@@ -480,7 +487,7 @@ extension SwiftCodeGen {
 extension SwiftCodeGen: TokenLiteralResolver {
 
     /// Escapes the given identifier to something that can be declared as a local
-    /// or method name in Swift.
+    /// or member name in Swift.
     func escapeIdentifier(_ ident: String) -> String {
         // Wildcard; return unchanged
         if ident == "_" {
@@ -510,7 +517,7 @@ extension SwiftCodeGen: TokenLiteralResolver {
 
     /// Returns the appropriate handling of an identifier that may be a token
     /// identifier
-    /// 
+    ///
     /// If the identifier matches a known token definition with explicit
     /// 'staticToken', returns `self.expect(<staticToken>)`, otherwise returns
     /// `self.<ident>()`, as a fallback.
@@ -528,7 +535,7 @@ extension SwiftCodeGen: TokenLiteralResolver {
     /// Returns the arguments to invoke a `PEGParser.expect()` call, as a
     /// non-parenthesized labeled expression list separated by commas, in order
     /// to probe the parser about a specific token identifier.
-    /// 
+    ///
     /// If no associated token identifier has been defined in a .tokens file,
     /// the result is a default `kind: <identifier>` or `<identifier>`,
     /// depending on the value of '@tokenCall' meta-property, if present.
@@ -547,7 +554,7 @@ extension SwiftCodeGen: TokenLiteralResolver {
     /// Returns the arguments to invoke a `PEGParser.expect()` call, as a
     /// non-parenthesized labeled expression list separated by commas, in order
     /// to probe the parser about a specific token literal.
-    /// 
+    ///
     /// If no associated token literal has been defined in a .tokens file, the
     /// result is a default `kind: "<literal>"` or `"<literal>"`, depending on
     /// the value of '@tokenCall' meta-property, if present.

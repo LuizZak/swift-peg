@@ -3,6 +3,27 @@ import XCTest
 @testable import SwiftPEG
 
 class SwiftCodeGen_TokenTests: XCTestCase {
+    func testGenerateTokenParser_modifiers() throws {
+        let tokens = try parseTokenDefinitions(#"""
+        $leftSquare: '[' ;
+        """#)
+
+        let sut = makeSut(tokens)
+
+        try sut.generateTokenParser(tokens[0], modifiers: ["private", "static"])
+
+        diffTest(expected: #"""
+        /// ```
+        /// leftSquare:
+        ///     | "["
+        ///     ;
+        /// ```
+        private static func consume_leftSquare<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+            stream.advanceIfNext("[")
+        }
+        """#).diff(sut.buffer.finishBuffer())
+    }
+
     func testGenerateTokenParser_singleCharacter() throws {
         let tokens = try parseTokenDefinitions(#"""
         $leftSquare: '[' ;
@@ -57,6 +78,46 @@ class SwiftCodeGen_TokenTests: XCTestCase {
                     stream.advance()
                 default:
                     stream.advance()
+                }
+
+                return true
+            }
+
+            stream.restore(state)
+
+            return false
+        }
+        """#).diff(sut.buffer.finishBuffer())
+    }
+
+    func testGenerateTokenParser_mergeAtoms() throws {
+        let tokens = try parseTokenDefinitions(#"""
+        $identifier:
+            | ('a'...'j' | '_' | 'j'...'p' | 'p' | 'p'...'z')
+            ;
+        """#)
+
+        let sut = makeSut(tokens)
+
+        try sut.generateTokenParser(tokens[0])
+
+        diffTest(expected: #"""
+        /// ```
+        /// identifier:
+        ///     | ("a"..."j" | "_" | "j"..."p" | "p" | "p"..."z")
+        ///     ;
+        /// ```
+        func consume_identifier<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+            guard !stream.isEof else { return false }
+            let state = stream.save()
+
+            alt:
+            do {
+                switch stream.peek() {
+                case "a"..."j", "_", "j"..."z":
+                    stream.advance()
+                default:
+                    break alt
                 }
 
                 return true
@@ -327,6 +388,169 @@ class SwiftCodeGen_TokenTests: XCTestCase {
             return false
         }
         """#).diff(sut.buffer.finishBuffer())
+    }
+
+    func testGenerateTokenType() throws {
+
+        let tokens = try parseTokenDefinitions(#"""
+        $leftSquare: '[' ;
+        $rightSquare: ']' ;
+        $assign: '=' ;
+        $logicalNot: '!' ;
+        $identical: '===' ;
+        $notIdentical: '!==' ;
+        $equals: '==' ;
+        $notEquals: '!=' ;
+        """#)
+
+        let sut = makeSut(tokens)
+
+        let result = try sut.generateTokenType()
+
+        diffTest(expected: #"""
+        struct ParserToken: TokenType {
+            var kind: TokenKind
+            var string: Substring
+
+            var length: Int {
+                string.count
+            }
+
+            static func produceDummy(_ kind: TokenKind) -> Self {
+                .init(kind: kind, string: "<dummy>")
+            }
+
+            static func from<StringType>(stream: inout StringStream<StringType>) -> Self? where StringType.SubSequence == Substring {
+                guard !stream.isEof else { return nil }
+                stream.markSubstringStart()
+
+                if consume_leftSquare(stream: &stream) {
+                    return .init(kind: .leftSquare, string: stream.substring)
+                }
+                if consume_rightSquare(stream: &stream) {
+                    return .init(kind: .rightSquare, string: stream.substring)
+                }
+                if consume_identical(stream: &stream) {
+                    return .init(kind: .identical, string: stream.substring)
+                }
+                if consume_notIdentical(stream: &stream) {
+                    return .init(kind: .notIdentical, string: stream.substring)
+                }
+                if consume_equals(stream: &stream) {
+                    return .init(kind: .equals, string: stream.substring)
+                }
+                if consume_assign(stream: &stream) {
+                    return .init(kind: .assign, string: stream.substring)
+                }
+                if consume_notEquals(stream: &stream) {
+                    return .init(kind: .notEquals, string: stream.substring)
+                }
+                if consume_logicalNot(stream: &stream) {
+                    return .init(kind: .logicalNot, string: stream.substring)
+                }
+
+                return nil
+            }
+
+            enum TokenKind: TokenKindType {
+                /// `"["`
+                case leftSquare
+
+                /// `"]"`
+                case rightSquare
+
+                /// `"="`
+                case assign
+
+                /// `"!"`
+                case logicalNot
+
+                /// `"==="`
+                case identical
+
+                /// `"!=="`
+                case notIdentical
+
+                /// `"=="`
+                case equals
+
+                /// `"!="`
+                case notEquals
+            }
+
+            /// ```
+            /// leftSquare:
+            ///     | "["
+            ///     ;
+            /// ```
+            static func consume_leftSquare<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+                stream.advanceIfNext("[")
+            }
+
+            /// ```
+            /// rightSquare:
+            ///     | "]"
+            ///     ;
+            /// ```
+            static func consume_rightSquare<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+                stream.advanceIfNext("]")
+            }
+
+            /// ```
+            /// assign:
+            ///     | "="
+            ///     ;
+            /// ```
+            static func consume_assign<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+                stream.advanceIfNext("=")
+            }
+
+            /// ```
+            /// logicalNot:
+            ///     | "!"
+            ///     ;
+            /// ```
+            static func consume_logicalNot<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+                stream.advanceIfNext("!")
+            }
+
+            /// ```
+            /// identical:
+            ///     | "==="
+            ///     ;
+            /// ```
+            static func consume_identical<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+                stream.advanceIfNext("===")
+            }
+
+            /// ```
+            /// notIdentical:
+            ///     | "!=="
+            ///     ;
+            /// ```
+            static func consume_notIdentical<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+                stream.advanceIfNext("!==")
+            }
+
+            /// ```
+            /// equals:
+            ///     | "=="
+            ///     ;
+            /// ```
+            static func consume_equals<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+                stream.advanceIfNext("==")
+            }
+
+            /// ```
+            /// notEquals:
+            ///     | "!="
+            ///     ;
+            /// ```
+            static func consume_notEquals<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+                stream.advanceIfNext("!=")
+            }
+        }
+        """#).diff(result)
     }
 }
 

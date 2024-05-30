@@ -1573,7 +1573,7 @@ class SwiftCodeGenTests: XCTestCase {
         let grammar = try parseGrammar(#"""
         @parserName "TestGrammarParser" ;
         @parserHeader """
-        \#(parserHeader)
+        \#(StringEscaping.escape(parserHeader, terminator: "\"\"\""))
         """ ;
         @token NAME ;
         @token NUMBER ;
@@ -1830,7 +1830,7 @@ private func parseGrammar(
     let tokenizer = GrammarRawTokenizer(source: grammar)
     let parser = GrammarParser(raw: tokenizer)
 
-    guard let grammar = try parser.start() else {
+    guard let grammar = try parser.start(), tokenizer.isEOF else {
         throw parser.makeSyntaxError()
     }
 

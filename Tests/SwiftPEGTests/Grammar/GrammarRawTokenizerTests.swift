@@ -12,35 +12,38 @@ class GrammarRawTokenizerTests: XCTestCase {
         """#)
 
         try assertTokensAndLocations(sut, [
-            (.string(.doubleQuote(#""a""#)),             makeLocation(line: 1, column: 1)),
-            (.whitespace("  "),                          makeLocation(line: 1, column: 4)),
-            (.string(.singleQuote(#"'b'"#)),             makeLocation(line: 1, column: 6)),
-            (.whitespace(" "),                           makeLocation(line: 1, column: 9)),
-            (.semicolon,                                 makeLocation(line: 1, column: 10)),
-            (.whitespace(" \n"),                         makeLocation(line: 1, column: 11)),
-            (.dollarSign,                                makeLocation(line: 2, column: 1)),
-            (.whitespace(" "),                           makeLocation(line: 2, column: 2)),
-            (.leftSquare,                                makeLocation(line: 2, column: 3)),
-            (.whitespace(" "),                           makeLocation(line: 2, column: 4)),
-            (.rightSquare,                               makeLocation(line: 2, column: 5)),
-            (.whitespace(" "),                           makeLocation(line: 2, column: 6)),
-            (.identifier("abc"),                         makeLocation(line: 2, column: 7)),
-            (.whitespace(" "),                           makeLocation(line: 2, column: 10)),
-            (.digits("123"),                             makeLocation(line: 2, column: 11)),
-            (.whitespace(" "),                           makeLocation(line: 2, column: 14)),
-            (.string(.tripleQuote(#""""\#nabc\#n""""#)), makeLocation(line: 2, column: 15)),
-            (.whitespace(" "),                           makeLocation(line: 4, column: 4)),
-            (.identifier("a"),                           makeLocation(line: 4, column: 5)),
-            (.whitespace(" "),                           makeLocation(line: 4, column: 6)),
-            (.ellipsis,                                  makeLocation(line: 4, column: 7)),
-            (.whitespace(" "),                           makeLocation(line: 4, column: 10)),
-            (.period,                                    makeLocation(line: 4, column: 11)),
-            (.whitespace(" "),                           makeLocation(line: 4, column: 12)),
-            (.period,                                    makeLocation(line: 4, column: 13)),
-            (.period,                                    makeLocation(line: 4, column: 14)),
-            (.whitespace(" "),                           makeLocation(line: 4, column: 15)),
-            (.ellipsis,                                  makeLocation(line: 4, column: 16)),
-            (.period,                                    makeLocation(line: 4, column: 19)),
+            (.string(.doubleQuote(#""a""#,
+                                 lengthInSource: 3)),   makeLocation(line: 1, column: 1)),
+            (.whitespace("  "),                         makeLocation(line: 1, column: 4)),
+            (.string(.singleQuote(#"'b'"#,
+                                  lengthInSource: 3)),  makeLocation(line: 1, column: 6)),
+            (.whitespace(" "),                          makeLocation(line: 1, column: 9)),
+            (.semicolon,                                makeLocation(line: 1, column: 10)),
+            (.whitespace(" \n"),                        makeLocation(line: 1, column: 11)),
+            (.dollarSign,                               makeLocation(line: 2, column: 1)),
+            (.whitespace(" "),                          makeLocation(line: 2, column: 2)),
+            (.leftSquare,                               makeLocation(line: 2, column: 3)),
+            (.whitespace(" "),                          makeLocation(line: 2, column: 4)),
+            (.rightSquare,                              makeLocation(line: 2, column: 5)),
+            (.whitespace(" "),                          makeLocation(line: 2, column: 6)),
+            (.identifier("abc"),                        makeLocation(line: 2, column: 7)),
+            (.whitespace(" "),                          makeLocation(line: 2, column: 10)),
+            (.digits("123"),                            makeLocation(line: 2, column: 11)),
+            (.whitespace(" "),                          makeLocation(line: 2, column: 14)),
+            (.string(.tripleQuote(#""""\#nabc\#n""""#,
+                                  lengthInSource: 11)), makeLocation(line: 2, column: 15)),
+            (.whitespace(" "),                          makeLocation(line: 4, column: 4)),
+            (.identifier("a"),                          makeLocation(line: 4, column: 5)),
+            (.whitespace(" "),                          makeLocation(line: 4, column: 6)),
+            (.ellipsis,                                 makeLocation(line: 4, column: 7)),
+            (.whitespace(" "),                          makeLocation(line: 4, column: 10)),
+            (.period,                                   makeLocation(line: 4, column: 11)),
+            (.whitespace(" "),                          makeLocation(line: 4, column: 12)),
+            (.period,                                   makeLocation(line: 4, column: 13)),
+            (.period,                                   makeLocation(line: 4, column: 14)),
+            (.whitespace(" "),                          makeLocation(line: 4, column: 15)),
+            (.ellipsis,                                 makeLocation(line: 4, column: 16)),
+            (.period,                                   makeLocation(line: 4, column: 19)),
         ])
     }
 
@@ -64,6 +67,17 @@ class GrammarRawTokenizerTests: XCTestCase {
             (.identifier("b"),      makeLocation(line: 2, column: 8)),
             (.whitespace(" "),      makeLocation(line: 2, column: 9)),
             (.semicolon,            makeLocation(line: 2, column: 10)),
+        ])
+    }
+
+    func testStringEscapeSequences() throws {
+        let sut = makeSut(#"""
+        'a\nb\'c\\'
+        """#)
+
+        try assertTokensAndLocations(sut, [
+            (.string(.singleQuote("'a\nb\'c\\'",
+                                  lengthInSource: 11)), makeLocation(line: 1, column: 1)),
         ])
     }
 

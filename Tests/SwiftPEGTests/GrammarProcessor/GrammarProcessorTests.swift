@@ -183,7 +183,7 @@ private func makeIdent(_ ident: String) -> SwiftPEGGrammar.Token {
 }
 
 private func makeString(_ string: String) -> SwiftPEGGrammar.Token {
-    .string(.doubleQuote(Substring(#""\#(string)""#)))
+    .string(.doubleQuote(#""\#(string)""#, lengthInSource: string.count))
 }
 
 private func parseGrammar(

@@ -4,11 +4,22 @@ enum StringEscaping {
     /// string surrounded by quotes, fit for printing as a string literal.
     @usableFromInline
     static func escapeAsStringLiteral<S: StringProtocol>(_ string: S) -> String {
-        let replaced = string
+        return #""\#(escape(string))""#
+    }
+
+    /// Attempts to escape the contents of a given string.
+    @usableFromInline
+    static func escape<S: StringProtocol>(_ string: S) -> String {
+        escape(string, terminator: "\"")
+    }
+
+    /// Attempts to escape the contents of a given string, with a given terminator
+    /// to find and escape.
+    @usableFromInline
+    static func escape<S: StringProtocol>(_ string: S, terminator: String) -> String {
+        string
             .replacingOccurrences(of: "\\", with: #"\\"#)
-            .replacingOccurrences(of: "\"", with: #"\""#)
+            .replacingOccurrences(of: terminator, with: #"\\#(terminator)"#)
             .replacingOccurrences(of: "\n", with: #"\n"#)
-        
-        return #""\#(replaced)""#
     }
 }

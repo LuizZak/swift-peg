@@ -1,7 +1,7 @@
 /// Base class for producing C-style code string buffers during code generation.
 public class CodeStringBuffer {
     var indentationMode: IndentationMode = .spaces(4)
-    
+
     /// Current indentation level.
     var indentation: Int = 0
 
@@ -22,7 +22,7 @@ public class CodeStringBuffer {
 
     /// Performs end-of-production changes to the buffer, like removing redundant
     /// line feeds from the end of the buffer.
-    /// 
+    ///
     /// Returns the contents of the buffer.
     public func finishBuffer() -> String {
         while buffer.hasSuffix("\n") {
@@ -72,16 +72,16 @@ public class CodeStringBuffer {
     }
 
     /// Emits the given text into the buffer as-is.
-    public func emitRaw(_ text: String) {
+    public func emitRaw(_ text: some StringProtocol) {
         buffer += text
     }
 
     /// Emits the given text into the buffer, automatically indenting text if
     /// the current line is empty and the incoming text is not prefixed by a newline
     /// of its own.
-    /// 
+    ///
     /// Does not emit a newline at the end.
-    public func emit(_ text: String) {
+    public func emit(_ text: some StringProtocol) {
         if !text.hasPrefix("\n") {
             ensureIndentation()
         }
@@ -89,14 +89,14 @@ public class CodeStringBuffer {
         emitRaw(text)
     }
 
-    /// Emits a line feed (\n) into the buffer.
+    /// Emits a line feed (`\n`) into the buffer.
     public func emitNewline() {
         emitRaw("\n")
     }
 
     /// Emits the given text on the current line and pushes a new line onto the
     /// buffer.
-    public func emitLine(_ text: String) {
+    public func emitLine(_ text: some StringProtocol) {
         emit(text)
         emitNewline()
     }
@@ -110,28 +110,28 @@ public class CodeStringBuffer {
     /// Emits a line comment in the buffer.
     /// The comment is automatically prefixed with '// ', and a line feed is also
     /// added to the end of the line.
-    public func emitComment(_ line: String) {
+    public func emitComment(_ line: some StringProtocol) {
         emitLine("// \(line)")
     }
 
     /// Emits a block comment with the given contents. Automatically prefixes and
     /// suffixes the comment with the comment delimiters '/*' and '*/' and a line
     /// feed at the end.
-    public func emitCommentBlock(_ lines: String) {
+    public func emitCommentBlock(_ lines: some StringProtocol) {
         emitLine("/* \(lines) */")
     }
 
     /// Emits a doc comment line in the buffer.
     /// The comment is automatically prefixed with '/// ', and a line feed is also
     /// added to the end of the line.
-    public func emitDocComment(_ line: String) {
+    public func emitDocComment(_ line: some StringProtocol) {
         emitLine("/// \(line)")
     }
 
     /// Emits a doc block comment with the given contents. Automatically prefixes
     /// and suffixes the comment with the comment delimiters '/**' and '*/' and
     /// a line feed at the end.
-    public func emitDocCommentBlock(_ lines: String) {
+    public func emitDocCommentBlock(_ lines: some StringProtocol) {
         emitLine("/** \(lines) */")
     }
 
@@ -168,8 +168,34 @@ public class CodeStringBuffer {
                 emitNewline()
             }
         }
-        
+
         try block()
+    }
+
+    /// Emits contents from a given sequence of string items by calling `self.emit()`
+    /// on each element, automatically separating elements that appear in between
+    /// with `separator`.
+    ///
+    /// Can be used to generate comma-separated list of syntax elements.
+    public func emitWithSeparators(
+        _ items: some Sequence<some StringProtocol>,
+        separator: some StringProtocol
+    ) {
+
+        var iterator = items.makeIterator()
+
+        // Emit first item as-is
+        guard let first = iterator.next() else {
+            return
+        }
+
+        emit(first)
+
+        // Subsequent items require a separator
+        while let next = iterator.next() {
+            emit(separator)
+            emit(next)
+        }
     }
 
     /// Emits contents from a given sequence of items by passing them through a
@@ -179,7 +205,7 @@ public class CodeStringBuffer {
     /// Can be used to generate comma-separated list of syntax elements.
     public func emitWithSeparators<S: Sequence>(
         _ items: S,
-        separator: String,
+        separator: some StringProtocol,
         _ producer: (S.Element) throws -> Void
     ) rethrows {
 
@@ -223,12 +249,12 @@ public class CodeStringBuffer {
             emitSpaceSeparator()
         }
     }
-    
+
     /// Ensures an empty line sits in the end of the buffer.
     /// If the buffer is empty, no change is made.
     public func ensureEmptyLine() {
         guard !buffer.isEmpty else { return }
-        
+
         ensureDoubleNewline()
     }
 
@@ -254,7 +280,7 @@ public class CodeStringBuffer {
         }
     }
 
-    /// Queues a given prefix to the appended to the next non-empty line 
+    /// Queues a given prefix to the appended to the next non-empty line
     public func queuePrefix(_ prefix: PendingPrefix) {
         pendingPrefix.append(prefix)
     }
@@ -285,7 +311,7 @@ public class CodeStringBuffer {
         /// Conditionally executes a given block if the buffer has been changed
         /// since this object was created, or since the last time it emitted
         /// something.
-        /// 
+        ///
         /// This call counts as emitting, even if the buffer has not been modified.
         public func conditional(_ block: (CodeStringBuffer) throws -> Void) rethrows {
             if _hasChanged() {
@@ -349,6 +375,26 @@ public extension CodeStringBuffer {
         try block()
     }
 
+    /// Emits `lead`, a space if `lead` does not end with one, then a left brace,
+    /// a newline, indents by one, invokes `block` and finally unindents before
+    /// emitting a right brace on a separate line:
+    ///
+    /// ```
+    /// <current line's contents><lead> {
+    ///     <block()>
+    /// }
+    /// ```
+    func emitBlock(_ lead: some StringProtocol, _ block: () throws -> Void) rethrows {
+        emit(lead)
+        ensureSpaceSeparator()
+        emitLine("{")
+        defer {
+            ensureNewline()
+            emitLine("}")
+        }
+        try indented(block)
+    }
+
     /// Emits a left brace, a newline, indents by one, invokes `block` and
     /// finally unindent before emitting a right brace on a separate line:
     ///
@@ -375,7 +421,7 @@ public extension CodeStringBuffer {
     ///     <block()>
     /// }
     /// ```
-    /// 
+    ///
     /// Used to generate type member blocks that may generated newlines after
     /// each member.
     func emitMembersBlock(_ block: () throws -> Void) rethrows {
@@ -396,7 +442,7 @@ public extension CodeStringBuffer {
     ///     <block()>
     /// }
     /// ```
-    /// 
+    ///
     /// Used to generate blocks within expressions or function calls.
     func emitInlinedBlock(_ block: () throws -> Void) rethrows {
         emitLine("{")

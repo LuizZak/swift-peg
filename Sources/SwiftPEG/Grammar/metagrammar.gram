@@ -148,26 +148,33 @@ tokenDefinition[SwiftPEGGrammar.TokenDefinition]:
     ;
 
 tokenSyntax[CommonAbstract.TokenSyntax]:
-    | '|'? '|'.tokenSyntaxAlt+                  { .init(alts: tokenSyntaxAlt) }
+    | '|'? '|'.tokenSyntaxAlt+                      { .init(alts: tokenSyntaxAlt) }
     ;
 
 tokenSyntaxAlt[CommonAbstract.TokenAlt]:
-    | tokenSyntaxAtom+                          { .init(atoms: tokenSyntaxAtom) }
+    | tokenSyntaxItem+                              { .init(items: tokenSyntaxItem) }
+    ;
+
+tokenSyntaxItem[CommonAbstract.TokenItem]:
+    | '(' '|'.tokenSyntaxAtom+ ')' '*'              { .zeroOrMore(tokenSyntaxAtom) }
+    | '(' '|'.tokenSyntaxAtom+ ')' '+'              { .oneOrMore(tokenSyntaxAtom) }
+    | '(' '|'.tokenSyntaxAtom+ ')'                  { .group(tokenSyntaxAtom) }
+    | tokenSyntaxAtom                               { .atom(tokenSyntaxAtom) }
     ;
 
 tokenSyntaxAtom[CommonAbstract.TokenAtom]:
-    | '(' '|'.tokenSyntaxTerminal+ ')' '*'      { .zeroOrMore(tokenSyntaxTerminal) }
-    | '(' '|'.tokenSyntaxTerminal+ ')' '+'      { .oneOrMore(tokenSyntaxTerminal) }
-    | '(' '|'.tokenSyntaxTerminal+ ')'          { .group(tokenSyntaxTerminal) }
-    | tokenSyntaxTerminal                       { .terminal(tokenSyntaxTerminal) }
+    | tokenSyntaxExclusion* tokenSyntaxTerminal     { .init(excluded: tokenSyntaxExclusion, terminal: tokenSyntaxTerminal) }
+    ;
+
+tokenSyntaxExclusion[CommonAbstract.TokenExclusion]:
+    | '!' STRING                                    { .string("\(string)") }
+    | '!' IDENTIFIER                                { .identifier("\(identifier)") }
     ;
 
 tokenSyntaxTerminal[CommonAbstract.TokenTerminal]:
-    | IDENTIFIER action                         { .characterPredicate("\(identifier)", "\(action.description)") }
-    | '!' STRING tokenSyntaxTerminal            { .excludingLiteral("\(string)", tokenSyntaxTerminal) }
-    | '!' IDENTIFIER tokenSyntaxTerminal        { .excludingIdentifier("\(identifier)", tokenSyntaxTerminal) }
-    | start=STRING '...' end=STRING             { .rangeLiteral("\(start)", "\(end)") }
-    | STRING                                    { .literal("\(string)") }
-    | IDENTIFIER                                { .identifier("\(identifier)") }
-    | '.'                                       { .any }
+    | IDENTIFIER action                             { .characterPredicate("\(identifier)", "\(action.description)") }
+    | start=STRING '...' end=STRING                 { .rangeLiteral("\(start)", "\(end)") }
+    | STRING                                        { .literal("\(string)") }
+    | IDENTIFIER                                    { .identifier("\(identifier)") }
+    | '.'                                           { .any }
     ;
