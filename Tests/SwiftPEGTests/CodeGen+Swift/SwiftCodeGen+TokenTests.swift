@@ -90,6 +90,114 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         """#).diff(sut.buffer.finishBuffer())
     }
 
+    func testGenerateTokenParser_identifierToken() throws {
+        let tokens = try parseTokenDefinitions(#"""
+        $syntax:
+            | 'a' (b | 'c')+
+            ;
+        """#)
+
+        let sut = makeSut(tokens)
+
+        try sut.generateTokenParser(tokens[0])
+
+        diffTest(expected: #"""
+        /// ```
+        /// syntax:
+        ///     | "a" (b | "c")+
+        ///     ;
+        /// ```
+        func consume_syntax<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+            guard !stream.isEof else { return false }
+            let state = stream.save()
+
+            alt:
+            do {
+                guard stream.isNext("a") else {
+                    break alt
+                }
+                stream.advance()
+
+                if consume_b(stream: &stream) {
+                } else if stream.isNext("c") {
+                    stream.advance()
+                } else {
+                    break alt
+                }
+                while !stream.isEof {
+                    if consume_b(stream: &stream) {
+                    } else if stream.isNext("c") {
+                        stream.advance()
+                    } else {
+                        break
+                    }
+                }
+
+                return true
+            }
+
+            stream.restore(state)
+
+            return false
+        }
+        """#).diff(sut.buffer.finishBuffer())
+    }
+
+    func testGenerateTokenParser_identifierExclusion() throws {
+        let tokens = try parseTokenDefinitions(#"""
+        $syntax:
+            | 'a' (!b 'c' | 'd')+
+            ;
+        """#)
+
+        let sut = makeSut(tokens)
+
+        try sut.generateTokenParser(tokens[0])
+
+        diffTest(expected: #"""
+        /// ```
+        /// syntax:
+        ///     | "a" (!b "c" | "d")+
+        ///     ;
+        /// ```
+        func consume_syntax<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+            guard !stream.isEof else { return false }
+            let state = stream.save()
+
+            alt:
+            do {
+                guard stream.isNext("a") else {
+                    break alt
+                }
+                stream.advance()
+
+                if stream.negativeLookahead(consume_b(stream:)), stream.isNext("c") {
+                    stream.advance()
+                } else if stream.isNext("d") {
+                    stream.advance()
+                } else {
+                    break alt
+                }
+                while !stream.isEof {
+                    if stream.negativeLookahead(consume_b(stream:)), stream.isNext("c") {
+                        stream.advance()
+                    } else if stream.isNext("d") {
+                        stream.advance()
+                    } else {
+                        break
+                    }
+                }
+
+                return true
+            }
+
+            stream.restore(state)
+
+            return false
+        }
+        """#).diff(sut.buffer.finishBuffer())
+    }
+
     func testGenerateTokenParser_mergeAtoms() throws {
         let tokens = try parseTokenDefinitions(#"""
         $identifier:

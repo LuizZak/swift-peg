@@ -81,7 +81,10 @@ public class CodeStringBuffer {
     /// of its own.
     ///
     /// Does not emit a newline at the end.
+    ///
+    /// If `text` is empty, no change to the buffer is made.
     public func emit(_ text: some StringProtocol) {
+        if text.isEmpty { return }
         if !text.hasPrefix("\n") {
             ensureIndentation()
         }

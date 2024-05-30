@@ -477,7 +477,7 @@ extension SwiftCodeGen {
             return "stream.isNext(\(tok_escapeLiteral(literal)))"
 
         case .identifier(let ident):
-            return ident // TODO: Handle identifiers better
+            return  "\(parseMethodName(for: ident))(stream: &stream)"
 
         case .any:
             return "!stream.isEof"
@@ -490,7 +490,7 @@ extension SwiftCodeGen {
             return "!stream.isNext(\(tok_escapeLiteral(literal)))"
 
         case .identifier(let ident):
-            return "!\(ident)" // TODO: Handle identifiers better
+            return "stream.negativeLookahead(\(parseMethodName(for: ident))(stream:))"
         }
     }
 
@@ -498,6 +498,9 @@ extension SwiftCodeGen {
     /// stream forward by the given atom's required length.
     private func tok_advanceExpr(for term: CommonAbstract.TokenAtom) throws -> String {
         let length = tok_length(for: term)
+        if length == 0 {
+            return ""
+        }
         if length == 1 {
             return "stream.advance()"
         }
@@ -524,7 +527,8 @@ extension SwiftCodeGen {
             return literal.count
 
         case .identifier:
-            return 1 // TODO: Handle identifiers better
+            // Sub-syntaxes automatically advance the stream forward
+            return 0
 
         case .any:
             return 1
@@ -596,7 +600,11 @@ extension SwiftCodeGen {
     }
 
     private func parseMethodName(for token: InternalGrammar.TokenDefinition) -> String {
-        return "consume_\(token.name)"
+        return parseMethodName(for: token.name)
+    }
+
+    private func parseMethodName(for identifier: String) -> String {
+        return "consume_\(identifier)"
     }
 
     /// Returns the input set of tokens, sorted so that tokens that compute as
