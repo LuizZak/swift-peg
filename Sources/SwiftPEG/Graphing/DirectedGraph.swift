@@ -5,7 +5,7 @@ protocol DirectedGraph {
 
     /// Convenience typealias for a visit for visit methods in this directed graph.
     typealias VisitElement = DirectedGraphVisitElement<Edge, Node>
-    
+
     /// Gets a list of all nodes in this directed graph
     var nodes: [Node] { get }
     /// Gets a list of all edges in this directed graph
@@ -21,32 +21,32 @@ protocol DirectedGraph {
     /// in this graph.
     @inlinable
     func areNodesEqual(_ node1: Node, _ node2: Node) -> Bool
-    
+
     /// Returns `true` iff two edges are equivalent (i.e. have the same start/end
     /// nodes).
     @inlinable
     func areEdgesEqual(_ edge1: Edge, _ edge2: Edge) -> Bool
-    
+
     /// Returns the starting edge for a given node on this graph.
     @inlinable
     func startNode(for edge: Edge) -> Node
-    
+
     /// Returns the ending edge for a given node on this graph.
     @inlinable
     func endNode(for edge: Edge) -> Node
-    
+
     /// Returns all ingoing and outgoing edges for a given directed graph node.
     @inlinable
     func allEdges(for node: Node) -> [Edge]
-    
+
     /// Returns all outgoing edges for a given directed graph node.
     @inlinable
     func edges(from node: Node) -> [Edge]
-    
+
     /// Returns all ingoing edges for a given directed graph node.
     @inlinable
     func edges(towards node: Node) -> [Edge]
-    
+
     /// Returns an existing edge between two nodes, or `nil`, if no edges between
     /// them currently exist.
     @inlinable
@@ -54,17 +54,17 @@ protocol DirectedGraph {
 
     /// Returns `true` if the two given nodes are connected with an edge.
     func areConnected(start: Node, end: Node) -> Bool
-    
+
     /// Returns all graph nodes that are connected from a given directed graph
     /// node.
     @inlinable
     func nodesConnected(from node: Node) -> [Node]
-    
+
     /// Returns all graph nodes that are connected towards a given directed graph
     /// node.
     @inlinable
     func nodesConnected(towards node: Node) -> [Node]
-    
+
     /// Returns all graph nodes that are connected towards and from the given
     /// graph node.
     @inlinable
@@ -82,7 +82,7 @@ protocol DirectedGraph {
     /// direction, `nil` is returned.
     @inlinable
     func shortestDistance(from start: Node, to end: Node) -> Int?
-    
+
     /// Returns any of the shortest paths found between two nodes.
     ///
     /// If `start == end`, `[start]` is returned.
@@ -91,14 +91,14 @@ protocol DirectedGraph {
     /// direction, `nil` is returned.
     @inlinable
     func shortestPath(from start: Node, to end: Node) -> [Node]?
-    
+
     /// Performs a depth-first visiting of this directed graph, finishing once
     /// all nodes are visited, or when `visitor` returns false.
     ///
     /// In case a cycle is found, the previously-visited nodes are skipped.
     @inlinable
     func depthFirstVisit(start: Node, _ visitor: (VisitElement) -> Bool)
-    
+
     /// Performs a breadth-first visiting of this directed graph, finishing once
     /// all nodes are visited, or when `visitor` returns false.
     ///
@@ -149,7 +149,7 @@ protocol DirectedGraph {
 enum DirectedGraphVisitElement<E: DirectedGraphEdge, N: DirectedGraphNode>: Hashable {
     case start(N)
     indirect case edge(E, from: Self, towards: N)
-    
+
     /// Gets the node at the end of this visit element.
     public var node: N {
         switch self {
@@ -211,7 +211,7 @@ extension DirectedGraph {
         areNodesEqual(startNode(for: edge1), startNode(for: edge2))
             && areNodesEqual(endNode(for: edge1), endNode(for: edge2))
     }
-    
+
     @inlinable
     func allEdges(for node: Node) -> [Edge] {
         edges(towards: node) + edges(from: node)
@@ -221,17 +221,17 @@ extension DirectedGraph {
     func areConnected(start: Node, end: Node) -> Bool {
         edge(from: start, to: end) != nil
     }
-    
+
     @inlinable
     func nodesConnected(from node: Node) -> [Node] {
         edges(from: node).map(self.endNode(for:))
     }
-    
+
     @inlinable
     func nodesConnected(towards node: Node) -> [Node] {
         edges(towards: node).map(self.startNode(for:))
     }
-    
+
     @inlinable
     func allNodesConnected(to node: Node) -> [Node] {
         nodesConnected(towards: node) + nodesConnected(from: node)
@@ -269,10 +269,10 @@ extension DirectedGraph {
             if visit.node == end {
                 paths.append(visit)
             }
-            
+
             return true
         }
-        
+
         if paths.isEmpty {
             return nil
         }
@@ -284,22 +284,22 @@ extension DirectedGraph {
     func depthFirstVisit(start: Node, _ visitor: (VisitElement) -> Bool) {
         var visited: Set<Node> = []
         var queue: [VisitElement] = []
-        
+
         queue.append(.start(start))
-        
+
         while let next = queue.popLast() {
             visited.insert(next.node)
-            
+
             if !visitor(next) {
                 return
             }
-            
+
             for nextEdge in edges(from: next.node).reversed() {
                 let node = endNode(for: nextEdge)
                 if visited.contains(node) {
                     continue
                 }
-                
+
                 queue.append(.edge(nextEdge, from: next, towards: node))
             }
         }
@@ -309,23 +309,23 @@ extension DirectedGraph {
     func breadthFirstVisit(start: Node, _ visitor: (VisitElement) -> Bool) {
         var visited: Set<Node> = []
         var queue: [VisitElement] = []
-        
+
         queue.append(.start(start))
-        
+
         while !queue.isEmpty {
             let next = queue.removeFirst()
             visited.insert(next.node)
-            
+
             if !visitor(next) {
                 return
             }
-            
+
             for nextEdge in edges(from: next.node) {
                 let node = endNode(for: nextEdge)
                 if visited.contains(node) {
                     continue
                 }
-                
+
                 queue.append(.edge(nextEdge, from: next, towards: node))
             }
         }
@@ -410,7 +410,7 @@ extension DirectedGraph {
 
     @inlinable
     func findCycles(from start: Node) -> [[Node]] {
-        assert(nodes.contains(start), "!component.contains(start)")
+        assert(nodes.contains(start), "!nodes.contains(start)")
 
         var result: [[Node]] = []
 
@@ -425,6 +425,8 @@ extension DirectedGraph {
                 inner(node: next, path: path)
             }
         }
+
+        inner(node: start, path: [])
 
         return result
     }
@@ -443,10 +445,10 @@ extension DirectedGraph {
     func topologicalSorted() -> [Node]? {
         var permanentMark: Set<Node> = []
         var temporaryMark: Set<Node> = []
-        
+
         var unmarkedNodes: [Node] = nodes
         var list: [Node] = []
-        
+
         func visit(_ node: Node) -> Bool {
             if permanentMark.contains(node) {
                 return true
@@ -464,32 +466,32 @@ extension DirectedGraph {
             list.insert(node, at: 0)
             return true
         }
-        
+
         while let node = unmarkedNodes.popLast() {
             if !visit(node) {
                 return nil
             }
         }
-        
+
         return list
     }
 }
 
 /// A protocol for representing a directed graph's edge
 protocol DirectedGraphEdge: Hashable {
-    
+
 }
 
 /// A protocol for representing a directed graph's node
 protocol DirectedGraphNode: Hashable {
-    
+
 }
 
 extension DirectedGraphEdge where Self: AnyObject {
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs === rhs
     }
-    
+
     func hash(into hasher: inout Hasher) {
         hasher.combine(ObjectIdentifier(self))
     }
@@ -499,7 +501,7 @@ extension DirectedGraphNode where Self: AnyObject {
     static func == (lhs: Self, rhs: Self) -> Bool {
         lhs === rhs
     }
-    
+
     func hash(into hasher: inout Hasher) {
         hasher.combine(ObjectIdentifier(self))
     }

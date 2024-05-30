@@ -220,6 +220,23 @@ extension CommonAbstract {
         /// `tokenSyntaxAtom`
         case atom(TokenAtom)
 
+        /// Fetches all atoms contained within this token item.
+        var atoms: [TokenAtom] {
+            switch self {
+            case .oneOrMore(let atoms):
+                return atoms
+
+            case .zeroOrMore(let atoms):
+                return atoms
+
+            case .group(let atoms):
+                return atoms
+
+            case .atom(let atom):
+                return [atom]
+            }
+        }
+
         public var description: String {
             switch self {
             case .oneOrMore(let atoms):

@@ -29,7 +29,7 @@ func assertUnwrap<T>(
 }
 
 /// Asserts that a value of type `T` can be dynamically cast to `U`, throwing if
-/// it is not. 
+/// it is not.
 func assertCast<T, U>(
     _ value: T,
     to type: U.Type = U.self,
@@ -110,6 +110,25 @@ func assertEqual<T>(
     XCTAssertEqual(lhs, rhs, message(), file: file, line: line)
 }
 
+/// Asserts an equatable value is equal to one of the provided array of values.
+/// Uses debug description of the values in error message.
+func assertEqualsOneOf<T>(
+    _ lhs: T,
+    _ rhs: T...,
+    message: @autoclosure () -> String = "",
+    file: StaticString = #file,
+    line: UInt = #line
+) where T: Equatable {
+
+    if !rhs.contains(lhs) {
+        fail(
+            "Expected \(lhs) to be contained in one of: \(rhs)",
+            file: file,
+            line: line
+        )
+    }
+}
+
 /// Asserts two equatable values are the same. Uses debug description of the values
 /// in error message.
 func assertEqual<T>(
@@ -179,6 +198,36 @@ func assertThrows<T>(
     } catch {
         success()
     }
+}
+
+/// Asserts a block throws an error, and the error is of a given type.
+/// Returns the error, if successfully typecast.
+@discardableResult
+func assertThrows<T, E: Error>(
+    errorType: E.Type,
+    _ block: () throws -> T,
+    message: @autoclosure () -> String = "",
+    file: StaticString = #file,
+    line: UInt = #line
+) -> E? {
+    do {
+        _=try block()
+        fail(
+            "Expected error to be thrown \(_formatMessage(message()))",
+            file: file,
+            line: line
+        )
+    } catch let error as E {
+        return error
+    } catch {
+        fail(
+            "Expected thrown error to be of type \(E.self), found \(type(of: error)) \(_formatMessage(message()))",
+            file: file,
+            line: line
+        )
+    }
+
+    return nil
 }
 
 /// Asserts a `Result<T, any Error>` value is a `.failure()` case.
@@ -274,7 +323,7 @@ func assertSuccessEqual<T>(
 /// Asserts that for to sequence of `Result` values with equatable Success values,
 /// two results at the same index are `.success(value)` cases and that `value`
 /// are equal across both.
-/// 
+///
 /// Fails if the sequences are of different lengths.
 func assertSuccessesEqual<T>(
     _ lhs: some Sequence<Result<T?, any Error>>,
@@ -401,7 +450,7 @@ func assertEqualUnordered<T>(
 
 enum TestError: Error, CustomStringConvertible {
     case unexpectedThrow(String)
-    
+
     var description: String {
         switch self {
         case .unexpectedThrow(let message):

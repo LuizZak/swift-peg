@@ -63,7 +63,7 @@ public class GrammarProcessor {
 
     /// Processes the given grammar object, optionally providing a custom entry
     /// rule.
-    /// 
+    ///
     /// If no custom entry rule name is provided, defaults to `"start"`.
     public func process(
         _ grammar: SwiftPEGGrammar.Grammar,
@@ -82,15 +82,18 @@ public class GrammarProcessor {
 
         let knownRules = try validateRuleNames(in: grammar)
         let tokensFile = try loadTokensFile(from: grammar)
-        let tokens = try validateTokenReferences(in: grammar, tokensFile: tokensFile)
-        try validateReferences(in: grammar, tokens: tokens)
+        let processedTokens = try validateTokenSyntaxes(tokensFile)
+
+        let tokenNames = try collectTokenNames(in: grammar, tokensFile: tokensFile)
+        try validateReferences(in: grammar, tokens: tokenNames)
+
         diagnoseAltOrder(in: grammar)
         try computeNullables(in: grammar, knownRules)
         try diagnoseUnreachableRules(in: grammar, knownRules, entryRuleName: entryRuleName)
 
         return ProcessedGrammar(
             grammar: .from(grammar),
-            tokens: tokensFile.map(InternalGrammar.TokenDefinition.from)
+            tokens: processedTokens
         )
     }
 
@@ -138,18 +141,18 @@ public class GrammarProcessor {
         guard let tokensFileName = tokensMeta.value.stringValue else {
             return []
         }
-        
+
         guard let fileContents = try delegate?.grammarProcessor(self, loadTokensFileNamed: tokensFileName, ofGrammar: grammar) else {
             throw recordAndReturn(GrammarProcessorError.failedToLoadTokensFile(tokensMeta.node))
         }
 
         let parser = GrammarParser(raw: GrammarRawTokenizer(source: fileContents))
-        
+
         do {
             guard let tokens = try parser.tokensFile(), parser.tokenizer.isEOF else {
                 throw recordAndReturn(GrammarProcessorError.tokensFileSyntaxError(tokensMeta.node, parser.makeSyntaxError()))
             }
-            
+
             return tokens
         } catch let error as ParserError {
             throw recordAndReturn(GrammarProcessorError.tokensFileSyntaxError(tokensMeta.node, error))
@@ -158,7 +161,8 @@ public class GrammarProcessor {
         }
     }
 
-    func validateTokenReferences(
+    /// Collects all the names of known token definitions.
+    func collectTokenNames(
         in grammar: SwiftPEGGrammar.Grammar,
         tokensFile: [SwiftPEGGrammar.TokenDefinition]
     ) throws -> Set<String> {
@@ -181,6 +185,8 @@ public class GrammarProcessor {
         return Set(metaTokens).union(tokensFromFile)
     }
 
+    /// Validates that all identifier references in a given grammar are either
+    /// rules within the grammar itself or a token name from the provided set.
     func validateReferences(
         in grammar: SwiftPEGGrammar.Grammar,
         tokens: Set<String>
@@ -289,6 +295,15 @@ public class GrammarProcessor {
         /// rule or token name.
         case unknownReference(SwiftPEGGrammar.IdentAtom, SwiftPEGGrammar.Rule, tokensFileName: String? = nil)
 
+        /// Tokens found sharing the same name.
+        case repeatedTokenName(String, SwiftPEGGrammar.TokenDefinition, prior: SwiftPEGGrammar.TokenDefinition)
+        /// An identifier was found in a token syntax that could not be resolved
+        /// to another token syntax.
+        case unknownReferenceInToken(String, SwiftPEGGrammar.TokenDefinition)
+
+        /// A recursion was found in a sequence of tokens.
+        case recursivityInTokens([SwiftPEGGrammar.TokenDefinition])
+
         /// An attempt at resolving a left recursion and find a leader rule from
         /// a set of rules has failed.
         case unresolvedLeftRecursion(ruleNames: [String])
@@ -309,6 +324,9 @@ public class GrammarProcessor {
             case .repeatedRuleName(let name, let rule, let prior):
                 return "Rule '\(name)' re-declared @ \(rule.location). Original declaration @ \(prior.location)."
 
+            case .repeatedTokenName(let name, let token, let prior):
+                return "Token '\(name)' re-declared @ \(token.location). Original declaration @ \(prior.location)."
+
             case .invalidRuleName(let desc, let rule):
                 return "Rule name '\(rule.name.name.string)' @ \(rule.location) is not valid: \(desc)"
 
@@ -320,6 +338,12 @@ public class GrammarProcessor {
                 Reference to unknown identifier '\(atom.name)' @ \(atom.location) in rule '\(rule.name.shortDebugDescription)'. \
                 Did you forget to forward-declare a token with '@token \(atom.name);' or define it in '@tokensFile \"\(tokensFileName ?? "<file.tokens>")\"'?
                 """
+
+            case .unknownReferenceInToken(let identifier, let token):
+                return "Reference to unknown identifier '\(identifier)' in token '\(token.name)' @ \(token.location)."
+
+            case .recursivityInTokens(let tokens):
+                return "Recursivity in token definitions is not supported; recursive cycle: \(tokens.map(\.name.processedString).joined(separator: " -> ")) starting @ \(tokens[0].location)"
 
             case .unresolvedLeftRecursion(let ruleNames):
                 return "Could not resolve left recursion with a lead rule in the set \(ruleNames)"
@@ -364,10 +388,10 @@ public class GrammarProcessor {
                     before \(describe(formerInt)) @ \(former.location) can be tried \
                     in rule \(rule.name.name.processedString) @ \(rule.location).
                     """
-            
+
             case .unreachableRule(let rule, let startRuleName):
                 return "Rule '\(rule.name.name.processedString)' @ \(rule.location) is not reachable from the set start rule '\(startRuleName)'."
-            
+
             case .metaPropertyDiagnostic(_, let message):
                 return message
             }
@@ -440,6 +464,6 @@ extension SwiftPEGGrammar.Grammar {
     }
 
     func meta(named name: String) -> SwiftPEGGrammar.Meta? {
-        metas.first(where: { $0.name.string == name }) 
+        metas.first(where: { $0.name.string == name })
     }
 }
