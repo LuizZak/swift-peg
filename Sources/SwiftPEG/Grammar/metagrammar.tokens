@@ -1,4 +1,6 @@
-$WHITESPACE[".whitespace"]: " " | "\t" | "\n" | "\r" ;
+$WHITESPACE[".whitespace"]:
+    | (" " | "\t" | "\n" | "\r")+
+    ;
 
 $IDENTIFIER[".identifier"]:
     | ("a"..."z" | "A"..."Z" | "_") ("0"..."9" | "a"..."z" | "A"..."Z" | "_")*

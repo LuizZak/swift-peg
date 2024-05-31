@@ -453,9 +453,27 @@ public class SwiftCodeGen {
     /// Settings that can be specified during token type code generation.
     public struct TokenTypeGenSettings {
         /// Gets the static default settings configuration.
-        public static let `default`: Self = Self()
+        public static let `default`: Self = Self(
+            emitInlinable: false,
+            accessLevel: nil
+        )
 
-        public init() {
+        /// Whether to emit tokenization methods as @inlinable declarations.
+        public var emitInlinable: Bool
+
+        /// The access level to emit the declarations as. If `nil`, declarations
+        /// have no access level specified.
+        ///
+        /// Providing an access level different than `"internal"` or `nil` also
+        /// generates an initializer for struct declarations.
+        public var accessLevel: String?
+
+        public init(
+            emitInlinable: Bool,
+            accessLevel: String?
+        ) {
+            self.emitInlinable = emitInlinable
+            self.accessLevel = accessLevel
         }
 
         /// Returns a copy of `self` with a given keypath modified to be `value`.

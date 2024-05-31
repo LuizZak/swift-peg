@@ -25,6 +25,15 @@ public enum CommonAbstract {
             }
         }
 
+        public var asStringLiteral: String {
+            switch self {
+            case .fromSource(_, let original):
+                return original
+            case .fromCode(let contents):
+                return StringEscaping.escapeAsStringLiteral(contents)
+            }
+        }
+
         public init(stringLiteral value: String) {
             self = .fromCode(contents: value)
         }
@@ -183,11 +192,17 @@ extension CommonAbstract {
         /// of each other (non-strict prefix).
         public func isPrefix(of other: TokenSyntax) -> Bool {
             if self == other { return true }
-            guard alts.count == 1, other.alts.count == 1 else {
-                return false
+            if alts.isEmpty || other.alts.isEmpty { return false }
+
+            for alt in alts {
+                for otherAlt in other.alts {
+                    if !alt.isPrefix(of: otherAlt) {
+                        return false
+                    }
+                }
             }
 
-            return alts[0].isPrefix(of: other.alts[0])
+            return true
         }
     }
 
@@ -219,11 +234,23 @@ extension CommonAbstract {
         /// other (non-strict prefix).
         public func isPrefix(of other: TokenAlt) -> Bool {
             if self == other { return true }
-            guard items.count == 1, other.items.count == 1 else {
+
+            // Attempt to ignore leading identical items
+            let itemEqualities = zip(self.items, other.items).map(==)
+            let firstChangeIndex = itemEqualities.firstIndex(of: false) ?? itemEqualities.count
+
+            guard firstChangeIndex < items.count else {
+                // Items are equivalent?
+                return true
+            }
+            guard firstChangeIndex < other.items.count else {
+                // TODO: Validate this assumption
+                // If `self` has more items, it will most likely be a longer match
+                // than `other`.
                 return false
             }
 
-            return items[0].isPrefix(of: other.items[0])
+            return items[firstChangeIndex].isPrefix(of: other.items[firstChangeIndex])
         }
     }
 
@@ -543,7 +570,7 @@ extension CommonAbstract {
         public var description: String {
             switch self {
             case .string(let string):
-                return #"!"\#(string)""#
+                return "!\(string.asStringLiteral)"
 
             case .identifier(let ident):
                 return "!\(ident)"
@@ -598,10 +625,10 @@ extension CommonAbstract {
                 return "\(bind) {\(action)}"
 
             case .rangeLiteral(let start, let end):
-                return #""\#(start)"..."\#(end)""#
+                return "\(start.asStringLiteral)...\(end.asStringLiteral)"
 
             case .literal(let string):
-                return #""\#(string)""#
+                return "\(string.asStringLiteral)"
 
             case .identifier(let ident):
                 return ident

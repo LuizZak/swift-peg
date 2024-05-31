@@ -7,10 +7,9 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         let tokens = try parseTokenDefinitions(#"""
         $leftSquare: '[' ;
         """#)
-
         let sut = makeSut(tokens)
 
-        try sut.generateTokenParser(tokens[0], modifiers: ["private", "static"])
+        try sut.generateTokenParser(tokens[0], settings: .default, modifiers: ["private", "static"])
 
         diffTest(expected: #"""
         /// ```
@@ -28,10 +27,9 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         let tokens = try parseTokenDefinitions(#"""
         $leftSquare: '[' ;
         """#)
-
         let sut = makeSut(tokens)
 
-        try sut.generateTokenParser(tokens[0])
+        try sut.generateTokenParser(tokens[0], settings: .default)
 
         diffTest(expected: #"""
         /// ```
@@ -51,10 +49,9 @@ class SwiftCodeGen_TokenTests: XCTestCase {
             | '[' (']' | .)
             ;
         """#)
-
         let sut = makeSut(tokens)
 
-        try sut.generateTokenParser(tokens[0])
+        try sut.generateTokenParser(tokens[0], settings: .default)
 
         diffTest(expected: #"""
         /// ```
@@ -96,10 +93,9 @@ class SwiftCodeGen_TokenTests: XCTestCase {
             | 'a' (b | 'c')+
             ;
         """#)
-
         let sut = makeSut(tokens)
 
-        try sut.generateTokenParser(tokens[0])
+        try sut.generateTokenParser(tokens[0], settings: .default)
 
         diffTest(expected: #"""
         /// ```
@@ -149,10 +145,9 @@ class SwiftCodeGen_TokenTests: XCTestCase {
             | 'a' (!b 'c' | 'd')+
             ;
         """#)
-
         let sut = makeSut(tokens)
 
-        try sut.generateTokenParser(tokens[0])
+        try sut.generateTokenParser(tokens[0], settings: .default)
 
         diffTest(expected: #"""
         /// ```
@@ -204,10 +199,9 @@ class SwiftCodeGen_TokenTests: XCTestCase {
             | ('a'...'j' | '_' | 'j'...'p' | 'p' | 'p'...'z')
             ;
         """#)
-
         let sut = makeSut(tokens)
 
-        try sut.generateTokenParser(tokens[0])
+        try sut.generateTokenParser(tokens[0], settings: .default)
 
         diffTest(expected: #"""
         /// ```
@@ -244,10 +238,9 @@ class SwiftCodeGen_TokenTests: XCTestCase {
             | ('A'...'Z' | 'a'...'z' | '_') ('0'...'9' | 'A'...'Z' | 'a'...'z' | '_')*
             ;
         """#)
-
         let sut = makeSut(tokens)
 
-        try sut.generateTokenParser(tokens[0])
+        try sut.generateTokenParser(tokens[0], settings: .default)
 
         diffTest(expected: #"""
         /// ```
@@ -293,10 +286,9 @@ class SwiftCodeGen_TokenTests: XCTestCase {
             | c { c.isLetter || c == "_" } (c { c.isLetter || c.isWholeNumber || c == "_" })*
             ;
         """#)
-
         let sut = makeSut(tokens)
 
-        try sut.generateTokenParser(tokens[0])
+        try sut.generateTokenParser(tokens[0], settings: .default)
 
         diffTest(expected: #"""
         /// ```
@@ -340,10 +332,9 @@ class SwiftCodeGen_TokenTests: XCTestCase {
             | c { c.isLetter || c == "_" } ("_" | "A"..."Z" | c { c.isLetter || c.isWholeNumber || c == "_" } | "0"..."9")*
             ;
         """#)
-
         let sut = makeSut(tokens)
 
-        try sut.generateTokenParser(tokens[0])
+        try sut.generateTokenParser(tokens[0], settings: .default)
 
         diffTest(expected: #"""
         /// ```
@@ -398,7 +389,7 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         """#)
         let sut = makeSut(tokens)
 
-        try sut.generateTokenParser(tokens[0])
+        try sut.generateTokenParser(tokens[0], settings: .default)
 
         diffTest(expected: #"""
         /// ```
@@ -504,7 +495,6 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         $TOKEN2["A.tokenName2"]: 'b';
         $TOKEN3["tokenName3"]: 'c';
         """#)
-
         let sut = makeSut(tokens)
 
         let result = try sut.generateTokenType()
@@ -580,6 +570,179 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         """#).diff(result)
     }
 
+    func testGenerateTokenType_emitInlinable() throws {
+        let tokens = try parseTokenDefinitions(#"""
+        $tok: 'abc' ;
+        """#)
+        let sut = makeSut(tokens)
+        let settings: SwiftCodeGen.TokenTypeGenSettings =
+            .default.with(\.emitInlinable, value: true)
+
+        let result = try sut.generateTokenType(settings: settings)
+
+        diffTest(expected: #"""
+        struct ParserToken: TokenType {
+            var kind: TokenKind
+            var string: Substring
+
+            @inlinable
+            var length: Int {
+                string.count
+            }
+
+            @inlinable
+            static func produceDummy(_ kind: TokenKind) -> Self {
+                .init(kind: kind, string: "<dummy>")
+            }
+
+            @inlinable
+            static func from<StringType>(stream: inout StringStream<StringType>) -> Self? where StringType.SubSequence == Substring {
+                guard !stream.isEof else { return nil }
+                stream.markSubstringStart()
+
+                if consume_tok(stream: &stream) {
+                    return .init(kind: .tok, string: stream.substring)
+                }
+
+                return nil
+            }
+
+            enum TokenKind: TokenKindType {
+                /// `"abc"`
+                case tok
+            }
+
+            /// ```
+            /// tok:
+            ///     | "abc"
+            ///     ;
+            /// ```
+            @inlinable
+            static func consume_tok<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+                stream.advanceIfNext("abc")
+            }
+        }
+        """#).diff(result)
+    }
+
+    func testGenerateTokenType_accessLevel() throws {
+        let tokens = try parseTokenDefinitions(#"""
+        $tok: 'abc' ;
+        """#)
+        let sut = makeSut(tokens)
+        let settings: SwiftCodeGen.TokenTypeGenSettings =
+            .default.with(\.accessLevel, value: "public")
+
+        let result = try sut.generateTokenType(settings: settings)
+
+        diffTest(expected: #"""
+        public struct ParserToken: TokenType {
+            public var kind: TokenKind
+            public var string: Substring
+
+            public var length: Int {
+                string.count
+            }
+
+            public init(kind: TokenKind, string: Substring) {
+                self.kind = kind
+                self.string = string
+            }
+
+            public static func produceDummy(_ kind: TokenKind) -> Self {
+                .init(kind: kind, string: "<dummy>")
+            }
+
+            public static func from<StringType>(stream: inout StringStream<StringType>) -> Self? where StringType.SubSequence == Substring {
+                guard !stream.isEof else { return nil }
+                stream.markSubstringStart()
+
+                if consume_tok(stream: &stream) {
+                    return .init(kind: .tok, string: stream.substring)
+                }
+
+                return nil
+            }
+
+            public enum TokenKind: TokenKindType {
+                /// `"abc"`
+                case tok
+            }
+
+            /// ```
+            /// tok:
+            ///     | "abc"
+            ///     ;
+            /// ```
+            public static func consume_tok<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+                stream.advanceIfNext("abc")
+            }
+        }
+        """#).diff(result)
+    }
+
+    func testGenerateTokenType_emitInlinable_accessLevel() throws {
+        let tokens = try parseTokenDefinitions(#"""
+        $tok: 'abc' ;
+        """#)
+        let sut = makeSut(tokens)
+        let settings: SwiftCodeGen.TokenTypeGenSettings =
+            .default.with(\.accessLevel, value: "public")
+                .with(\.emitInlinable, value: true)
+
+        let result = try sut.generateTokenType(settings: settings)
+
+        diffTest(expected: #"""
+        public struct ParserToken: TokenType {
+            public var kind: TokenKind
+            public var string: Substring
+
+            @inlinable
+            public var length: Int {
+                string.count
+            }
+
+            @inlinable
+            public init(kind: TokenKind, string: Substring) {
+                self.kind = kind
+                self.string = string
+            }
+
+            @inlinable
+            public static func produceDummy(_ kind: TokenKind) -> Self {
+                .init(kind: kind, string: "<dummy>")
+            }
+
+            @inlinable
+            public static func from<StringType>(stream: inout StringStream<StringType>) -> Self? where StringType.SubSequence == Substring {
+                guard !stream.isEof else { return nil }
+                stream.markSubstringStart()
+
+                if consume_tok(stream: &stream) {
+                    return .init(kind: .tok, string: stream.substring)
+                }
+
+                return nil
+            }
+
+            public enum TokenKind: TokenKindType {
+                /// `"abc"`
+                case tok
+            }
+
+            /// ```
+            /// tok:
+            ///     | "abc"
+            ///     ;
+            /// ```
+            @inlinable
+            public static func consume_tok<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+                stream.advanceIfNext("abc")
+            }
+        }
+        """#).diff(result)
+    }
+
     func testGenerateTokenType() throws {
         let tokens = try parseTokenDefinitions(#"""
         $leftSquare: '[' ;
@@ -591,7 +754,6 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         $equals: '==' ;
         $notEquals: '!=' ;
         """#)
-
         let sut = makeSut(tokens)
 
         let result = try sut.generateTokenType()

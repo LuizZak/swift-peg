@@ -2,7 +2,7 @@ import XCTest
 
 @testable import SwiftPEG
 
-class CommonAbstract_TokenItemTets: XCTestCase {
+class CommonAbstract_TokenItemTests: XCTestCase {
     // Ensure all atoms are prefixes of the 'any' terminal
     func testIsPrefix_any() throws {
         let sut = makeSut(zeroOrMore: [makeAtom(.any)])
@@ -76,6 +76,7 @@ class CommonAbstract_TokenItemTets: XCTestCase {
 }
 
 // MARK: - Test internals
+private typealias Sut = CommonAbstract.TokenItem
 
 private func makeSut(zeroOrMore items: [CommonAbstract.TokenAtom]) -> CommonAbstract.TokenItem {
     .zeroOrMore(items)
@@ -102,8 +103,8 @@ private func makeAtom(_ terminal: CommonAbstract.TokenTerminal) -> CommonAbstrac
 }
 
 private func assertIsPrefix(
-    _ lhs: CommonAbstract.TokenItem,
-    _ rhs: CommonAbstract.TokenItem,
+    _ lhs: Sut,
+    _ rhs: Sut,
     file: StaticString = #file,
     line: UInt = #line
 ) {
@@ -115,8 +116,8 @@ private func assertIsPrefix(
 }
 
 private func assertIsNotPrefix(
-    _ lhs: CommonAbstract.TokenItem,
-    _ rhs: CommonAbstract.TokenItem,
+    _ lhs: Sut,
+    _ rhs: Sut,
     file: StaticString = #file,
     line: UInt = #line
 ) {
@@ -129,7 +130,7 @@ private func assertIsNotPrefix(
 
 private func assertIsPrefix(
     parsing lhs: String,
-    _ rhs: CommonAbstract.TokenItem,
+    _ rhs: Sut,
     file: StaticString = #file,
     line: UInt = #line
 ) throws {
@@ -140,7 +141,7 @@ private func assertIsPrefix(
 }
 
 private func assertIsPrefix(
-    _ lhs: CommonAbstract.TokenItem,
+    _ lhs: Sut,
     parsing rhs: String,
     file: StaticString = #file,
     line: UInt = #line
@@ -165,7 +166,7 @@ private func assertIsPrefix(
 }
 
 private func assertIsNotPrefix(
-    _ lhs: CommonAbstract.TokenItem,
+    _ lhs: Sut,
     parsing rhs: String,
     file: StaticString = #file,
     line: UInt = #line
@@ -189,7 +190,7 @@ private func assertIsNotPrefix(
     assertIsNotPrefix(lhs, rhs, file: file, line: line)
 }
 
-private func parseTokenItem(_ string: String) throws -> CommonAbstract.TokenItem {
+private func parseTokenItem(_ string: String) throws -> Sut {
     let tokenizer = GrammarRawTokenizer(source: string)
     let parser = GrammarParser(raw: tokenizer)
 

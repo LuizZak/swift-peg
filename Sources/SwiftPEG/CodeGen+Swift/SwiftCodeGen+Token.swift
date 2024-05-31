@@ -11,36 +11,66 @@ extension SwiftCodeGen {
 
         let tokenName = "\(parserName)Token"
 
+        generateAccessLevel(settings: settings)
         try buffer.emitBlock("struct \(tokenName): TokenType") {
-            try generateTokenTypeMembers()
+            try generateTokenTypeMembers(settings: settings)
         }
 
         return buffer.finishBuffer()
     }
 
-    func generateTokenTypeMembers() throws {
+    func generateTokenTypeMembers(settings: TokenTypeGenSettings) throws {
+        generateAccessLevel(settings: settings)
         buffer.emitLine("var kind: TokenKind")
+
+        generateAccessLevel(settings: settings)
         buffer.emitLine("var string: Substring")
+
         buffer.ensureDoubleNewline()
+        generateInlinableAttribute(settings: settings)
+        generateAccessLevel(settings: settings)
         buffer.emitBlock("var length: Int") {
             buffer.emitLine("string.count")
         }
+
         buffer.ensureDoubleNewline()
+        try generateTokenTypeInitializer(settings: settings)
+
+        buffer.ensureDoubleNewline()
+        generateInlinableAttribute(settings: settings)
+        generateAccessLevel(settings: settings)
         buffer.emitBlock("static func produceDummy(_ kind: TokenKind) -> Self") {
             buffer.emitLine(#".init(kind: kind, string: "<dummy>")"#)
         }
 
         buffer.ensureDoubleNewline()
-        try generateTokenTypeParser(modifiers: ["static"])
+        try generateTokenTypeParser(settings: settings, modifiers: ["static"])
 
         buffer.ensureDoubleNewline()
-        try generateTokenKindEnum()
+        try generateTokenKindEnum(settings: settings)
 
         buffer.ensureDoubleNewline()
-        try generateTokenParsers()
+        try generateTokenParsers(settings: settings)
     }
 
-    func generateTokenTypeParser(modifiers: [String] = []) throws {
+    func generateTokenTypeInitializer(settings: TokenTypeGenSettings) throws {
+        // If access level is not `nil` or "internal", produce an initializer
+        // for the token type
+        guard settings.accessLevel != nil && settings.accessLevel != "internal" else {
+            return
+        }
+
+        generateInlinableAttribute(settings: settings)
+        generateAccessLevel(settings: settings)
+        buffer.emitBlock("init(kind: TokenKind, string: Substring)") {
+            buffer.emitLine("self.kind = kind")
+            buffer.emitLine("self.string = string")
+        }
+    }
+
+    func generateTokenTypeParser(settings: TokenTypeGenSettings, modifiers: [String] = []) throws {
+        generateInlinableAttribute(settings: settings)
+        generateAccessLevel(settings: settings)
         buffer.emitWithSeparators(modifiers + ["func"], separator: " ")
         try buffer.emitBlock(" from<StringType>(stream: inout StringStream<StringType>) -> Self? where StringType.SubSequence == Substring") {
             try testGenerateTokenTypeParserBody()
@@ -71,7 +101,8 @@ extension SwiftCodeGen {
         buffer.emitLine("return nil")
     }
 
-    func generateTokenKindEnum() throws {
+    func generateTokenKindEnum(settings: TokenTypeGenSettings) throws {
+        generateAccessLevel(settings: settings)
         try buffer.emitBlock("enum TokenKind: TokenKindType") {
             let emitter = buffer.startConditionalEmitter()
 
@@ -95,10 +126,10 @@ extension SwiftCodeGen {
         buffer.emitLine("case \(escapeIdentifier(tokenName))")
     }
 
-    func generateTokenParsers() throws {
+    func generateTokenParsers(settings: TokenTypeGenSettings) throws {
         for token in tokenDefinitions {
             buffer.ensureDoubleNewline()
-            try generateTokenParser(token, modifiers: ["static"])
+            try generateTokenParser(token, settings: settings, modifiers: ["static"])
         }
     }
 
@@ -106,6 +137,7 @@ extension SwiftCodeGen {
 
     func generateTokenParser(
         _ token: InternalGrammar.TokenDefinition,
+        settings: TokenTypeGenSettings,
         modifiers: [String] = []
     ) throws {
         guard let tokenSyntax = token.tokenSyntax else {
@@ -114,6 +146,8 @@ extension SwiftCodeGen {
 
         generateTokenDocComment(token, tokenSyntax)
 
+        generateInlinableAttribute(settings: settings)
+        generateAccessLevel(settings: settings)
         buffer.emitWithSeparators(modifiers + ["func"], separator: " ")
         buffer.emit(" \(parseMethodName(for: token))<StringType>(from stream: inout StringStream<StringType>) -> Bool ")
         try buffer.emitBlock {
@@ -457,6 +491,20 @@ extension SwiftCodeGen {
         }
 
         return true
+    }
+
+    // MARK: - Conditional emissions
+
+    private func generateInlinableAttribute(settings: TokenTypeGenSettings) {
+        if settings.emitInlinable {
+            buffer.emitLine("@inlinable")
+        }
+    }
+
+    private func generateAccessLevel(settings: TokenTypeGenSettings) {
+        if let accessLevel = settings.accessLevel {
+            buffer.emit("\(accessLevel) ")
+        }
     }
 
     // MARK: - Static token transformations
