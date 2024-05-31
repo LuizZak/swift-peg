@@ -107,7 +107,9 @@ class GrammarParsingSample {
             let codeKind: String
 
             if emitTokenType {
-                code = try swiftCodeGen.generateTokenType()
+                code = try swiftCodeGen.generateTokenType(
+                    settings: .init(emitInlinable: true, accessLevel: "public")
+                )
                 codeKind = "token type"
             } else {
                 code = try swiftCodeGen.generateParser()

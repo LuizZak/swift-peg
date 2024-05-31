@@ -114,14 +114,14 @@ class SwiftCodeGen_TokenTests: XCTestCase {
                 }
                 stream.advance()
 
-                if consume_b(stream: &stream) {
+                if consume_b(from: &stream) {
                 } else if stream.isNext("c") {
                     stream.advance()
                 } else {
                     break alt
                 }
                 while !stream.isEof {
-                    if consume_b(stream: &stream) {
+                    if consume_b(from: &stream) {
                     } else if stream.isNext("c") {
                         stream.advance()
                     } else {
@@ -166,7 +166,7 @@ class SwiftCodeGen_TokenTests: XCTestCase {
                 }
                 stream.advance()
 
-                if stream.negativeLookahead(consume_b(stream:)), stream.isNext("c") {
+                if stream.negativeLookahead(consume_b(from:)), stream.isNext("c") {
                     stream.advance()
                 } else if stream.isNext("d") {
                     stream.advance()
@@ -174,7 +174,7 @@ class SwiftCodeGen_TokenTests: XCTestCase {
                     break alt
                 }
                 while !stream.isEof {
-                    if stream.negativeLookahead(consume_b(stream:)), stream.isNext("c") {
+                    if stream.negativeLookahead(consume_b(from:)), stream.isNext("c") {
                         stream.advance()
                     } else if stream.isNext("d") {
                         stream.advance()
@@ -516,13 +516,13 @@ class SwiftCodeGen_TokenTests: XCTestCase {
                 guard !stream.isEof else { return nil }
                 stream.markSubstringStart()
 
-                if consume_TOKEN(stream: &stream) {
+                if consume_TOKEN(from: &stream) {
                     return .init(kind: .tokenName, string: stream.substring)
                 }
-                if consume_TOKEN2(stream: &stream) {
+                if consume_TOKEN2(from: &stream) {
                     return .init(kind: .TOKEN2, string: stream.substring)
                 }
-                if consume_TOKEN3(stream: &stream) {
+                if consume_TOKEN3(from: &stream) {
                     return .init(kind: .tokenName3, string: stream.substring)
                 }
 
@@ -538,6 +538,14 @@ class SwiftCodeGen_TokenTests: XCTestCase {
 
                 /// `"c"`
                 case tokenName3
+
+                var description: String {
+                    switch self {
+                    case .tokenName: "a"
+                    case .TOKEN2: "b"
+                    case .tokenName3: "c"
+                    }
+                }
             }
 
             /// ```
@@ -600,7 +608,7 @@ class SwiftCodeGen_TokenTests: XCTestCase {
                 guard !stream.isEof else { return nil }
                 stream.markSubstringStart()
 
-                if consume_tok(stream: &stream) {
+                if consume_tok(from: &stream) {
                     return .init(kind: .tok, string: stream.substring)
                 }
 
@@ -610,6 +618,13 @@ class SwiftCodeGen_TokenTests: XCTestCase {
             enum TokenKind: TokenKindType {
                 /// `"abc"`
                 case tok
+
+                @inlinable
+                var description: String {
+                    switch self {
+                    case .tok: "abc"
+                    }
+                }
             }
 
             /// ```
@@ -657,7 +672,7 @@ class SwiftCodeGen_TokenTests: XCTestCase {
                 guard !stream.isEof else { return nil }
                 stream.markSubstringStart()
 
-                if consume_tok(stream: &stream) {
+                if consume_tok(from: &stream) {
                     return .init(kind: .tok, string: stream.substring)
                 }
 
@@ -667,6 +682,12 @@ class SwiftCodeGen_TokenTests: XCTestCase {
             public enum TokenKind: TokenKindType {
                 /// `"abc"`
                 case tok
+
+                public var description: String {
+                    switch self {
+                    case .tok: "abc"
+                    }
+                }
             }
 
             /// ```
@@ -718,7 +739,7 @@ class SwiftCodeGen_TokenTests: XCTestCase {
                 guard !stream.isEof else { return nil }
                 stream.markSubstringStart()
 
-                if consume_tok(stream: &stream) {
+                if consume_tok(from: &stream) {
                     return .init(kind: .tok, string: stream.substring)
                 }
 
@@ -728,6 +749,13 @@ class SwiftCodeGen_TokenTests: XCTestCase {
             public enum TokenKind: TokenKindType {
                 /// `"abc"`
                 case tok
+
+                @inlinable
+                public var description: String {
+                    switch self {
+                    case .tok: "abc"
+                    }
+                }
             }
 
             /// ```
@@ -753,6 +781,7 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         $notIdentical: '!==' ;
         $equals: '==' ;
         $notEquals: '!=' ;
+        $string: '"' (!'"' .)+ '"' ;
         """#)
         let sut = makeSut(tokens)
 
@@ -775,29 +804,32 @@ class SwiftCodeGen_TokenTests: XCTestCase {
                 guard !stream.isEof else { return nil }
                 stream.markSubstringStart()
 
-                if consume_leftSquare(stream: &stream) {
+                if consume_leftSquare(from: &stream) {
                     return .init(kind: .leftSquare, string: stream.substring)
                 }
-                if consume_rightSquare(stream: &stream) {
+                if consume_rightSquare(from: &stream) {
                     return .init(kind: .rightSquare, string: stream.substring)
                 }
-                if consume_identical(stream: &stream) {
+                if consume_identical(from: &stream) {
                     return .init(kind: .identical, string: stream.substring)
                 }
-                if consume_notIdentical(stream: &stream) {
+                if consume_notIdentical(from: &stream) {
                     return .init(kind: .notIdentical, string: stream.substring)
                 }
-                if consume_equals(stream: &stream) {
+                if consume_equals(from: &stream) {
                     return .init(kind: .equals, string: stream.substring)
                 }
-                if consume_assign(stream: &stream) {
+                if consume_assign(from: &stream) {
                     return .init(kind: .assign, string: stream.substring)
                 }
-                if consume_notEquals(stream: &stream) {
+                if consume_notEquals(from: &stream) {
                     return .init(kind: .notEquals, string: stream.substring)
                 }
-                if consume_logicalNot(stream: &stream) {
+                if consume_logicalNot(from: &stream) {
                     return .init(kind: .logicalNot, string: stream.substring)
+                }
+                if consume_string(from: &stream) {
+                    return .init(kind: .string, string: stream.substring)
                 }
 
                 return nil
@@ -827,6 +859,23 @@ class SwiftCodeGen_TokenTests: XCTestCase {
 
                 /// `"!="`
                 case notEquals
+
+                /// `"\"" (!"\"" .)+ "\""`
+                case string
+
+                var description: String {
+                    switch self {
+                    case .leftSquare: "["
+                    case .rightSquare: "]"
+                    case .assign: "="
+                    case .logicalNot: "!"
+                    case .identical: "==="
+                    case .notIdentical: "!=="
+                    case .equals: "=="
+                    case .notEquals: "!="
+                    case .string: "string"
+                    }
+                }
             }
 
             /// ```
@@ -899,6 +948,48 @@ class SwiftCodeGen_TokenTests: XCTestCase {
             /// ```
             static func consume_notEquals<StringType>(from stream: inout StringStream<StringType>) -> Bool {
                 stream.advanceIfNext("!=")
+            }
+
+            /// ```
+            /// string:
+            ///     | "\"" (!"\"" .)+ "\""
+            ///     ;
+            /// ```
+            static func consume_string<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+                guard !stream.isEof else { return false }
+                let state = stream.save()
+
+                alt:
+                do {
+                    guard stream.isNext("\"") else {
+                        break alt
+                    }
+                    stream.advance()
+
+                    if !stream.isNext("\""), !stream.isEof {
+                        stream.advance()
+                    } else {
+                        break alt
+                    }
+                    while !stream.isEof {
+                        if !stream.isNext("\""), !stream.isEof {
+                            stream.advance()
+                        } else {
+                            break
+                        }
+                    }
+
+                    guard stream.isNext("\"") else {
+                        break alt
+                    }
+                    stream.advance()
+
+                    return true
+                }
+
+                stream.restore(state)
+
+                return false
             }
         }
         """#).diff(result)

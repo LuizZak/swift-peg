@@ -164,7 +164,8 @@ extension CommonAbstract {
         }
 
         /// Returns `true` if this token syntax represents a static token, i.e.
-        /// a token syntax that always matches the exact same input.
+        /// a token syntax that matches against a single literal terminal with
+        /// no repetitions or alts.
         public func isStatic() -> Bool {
             guard let alt = self.alts.first, self.alts.count == 1 else {
                 return false
@@ -180,6 +181,27 @@ extension CommonAbstract {
             }
 
             return true
+        }
+
+        /// If this token syntax represents a static token, returns the terminal
+        /// associated with that static token from within the syntax.
+        ///
+        /// - seealso: ``TokenSyntax.isStatic()``
+        public func staticTerminal() -> DualString? {
+            guard let alt = self.alts.first, self.alts.count == 1 else {
+                return nil
+            }
+            guard let item = alt.items.first, alt.items.count == 1 else {
+                return nil
+            }
+            guard case .atom(let atom) = item else {
+                return nil
+            }
+            guard case .literal(let literal) = atom.terminal else {
+                return nil
+            }
+
+            return literal
         }
 
         /// Returns `true` if this token syntax can be considered a prefix of

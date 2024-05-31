@@ -90,7 +90,7 @@ extension SwiftCodeGen {
         for token in sorted {
             let tokenName = caseName(for: token)
             let method = parseMethodName(for: token)
-            let parseInvocation = "\(method)(stream: &stream)"
+            let parseInvocation = "\(method)(from: &stream)"
 
             buffer.emitBlock("if \(parseInvocation)") {
                 buffer.emitLine("return .init(kind: .\(tokenName), string: stream.substring)")
@@ -101,6 +101,8 @@ extension SwiftCodeGen {
         buffer.emitLine("return nil")
     }
 
+    // MARK: TokenKind generation
+
     func generateTokenKindEnum(settings: TokenTypeGenSettings) throws {
         generateAccessLevel(settings: settings)
         try buffer.emitBlock("enum TokenKind: TokenKindType") {
@@ -109,6 +111,9 @@ extension SwiftCodeGen {
             for token in tokenDefinitions {
                 try generateTokenKindEnumCase(token, prevCaseSeparator: emitter)
             }
+
+            buffer.ensureDoubleNewline()
+            try generateTokenKindDescription(settings: settings)
         }
     }
 
@@ -126,14 +131,40 @@ extension SwiftCodeGen {
         buffer.emitLine("case \(escapeIdentifier(tokenName))")
     }
 
+    func generateTokenKindDescription(
+        settings: TokenTypeGenSettings
+    ) throws {
+
+        generateInlinableAttribute(settings: settings)
+        generateAccessLevel(settings: settings)
+        buffer.emitBlock("var description: String") {
+            buffer.emitLine("switch self {")
+
+            for token in tokenDefinitions {
+                guard let syntax = token.tokenSyntax else {
+                    continue
+                }
+                let name = caseName(for: token)
+
+                if let literal = syntax.staticTerminal() {
+                    buffer.emitLine("case .\(name): \(tok_escapeLiteral(literal))")
+                } else {
+                    buffer.emitLine(#"case .\#(name): "\#(token.name)""#)
+                }
+            }
+
+            buffer.emitLine("}")
+        }
+    }
+
+    // MARK: - consume_ method generation
+
     func generateTokenParsers(settings: TokenTypeGenSettings) throws {
         for token in tokenDefinitions {
             buffer.ensureDoubleNewline()
             try generateTokenParser(token, settings: settings, modifiers: ["static"])
         }
     }
-
-    // MARK: - consume_ method generation
 
     func generateTokenParser(
         _ token: InternalGrammar.TokenDefinition,
@@ -184,11 +215,7 @@ extension SwiftCodeGen {
     func generateTokenParserBody(_ tokenSyntax: CommonAbstract.TokenSyntax) throws {
         // Simplify token definitions that consist of a single literal
         if
-            tokenSyntax.alts.count == 1,
-            tokenSyntax.alts[0].items.count == 1,
-            case .atom(let atom) = tokenSyntax.alts[0].items[0],
-            atom.excluded.isEmpty,
-            case .literal(let literal) = atom.terminal
+            let literal = tokenSyntax.staticTerminal()
         {
             buffer.emitLine("stream.advanceIfNext(\(tok_escapeLiteral(literal)))")
             return
@@ -531,7 +558,7 @@ extension SwiftCodeGen {
             return "stream.isNext(\(tok_escapeLiteral(literal)))"
 
         case .identifier(let ident):
-            return  "\(parseMethodName(for: ident))(stream: &stream)"
+            return  "\(parseMethodName(for: ident))(from: &stream)"
 
         case .any:
             return "!stream.isEof"
@@ -544,7 +571,7 @@ extension SwiftCodeGen {
             return "!stream.isNext(\(tok_escapeLiteral(literal)))"
 
         case .identifier(let ident):
-            return "stream.negativeLookahead(\(parseMethodName(for: ident))(stream:))"
+            return "stream.negativeLookahead(\(parseMethodName(for: ident))(from:))"
         }
     }
 
