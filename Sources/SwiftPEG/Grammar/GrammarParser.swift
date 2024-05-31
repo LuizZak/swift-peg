@@ -2,7 +2,7 @@
 
 /// A parser for SwiftPEG grammar files.
 public final class GrammarParser<RawTokenizer: RawTokenizerType>: PEGParser<RawTokenizer>
-    where RawTokenizer.Token == GrammarParserToken, RawTokenizer.Location == FileSourceLocation
+    where RawTokenizer.Token == SwiftPEGGrammar.Token, RawTokenizer.Location == FileSourceLocation
 { }
 
 extension GrammarParser {
@@ -79,7 +79,7 @@ extension GrammarParser {
     /// ```
     /// metaValue[SwiftPEGGrammar.MetaValue]:
     ///     | ident=IDENTIFIER { self.setLocation(SwiftPEGGrammar.MetaIdentifierValue(identifier: ident.token), at: mark) }
-    ///     | string=STRING { self.setLocation(SwiftPEGGrammar.MetaStringValue(string: string.token), at: mark) }
+    ///     | string { self.setLocation(SwiftPEGGrammar.MetaStringValue(string: string), at: mark) }
     ///     ;
     /// ```
     @memoized("metaValue")
@@ -440,7 +440,7 @@ extension GrammarParser {
     /// atom[SwiftPEGGrammar.Atom]:
     ///     | '(' ~ alts ')' { self.setLocation(SwiftPEGGrammar.GroupAtom(alts: alts), at: mark) }
     ///     | IDENTIFIER { self.setLocation(SwiftPEGGrammar.IdentAtom(identifier: identifier.token, identity: .unresolved), at: mark) }
-    ///     | STRING { self.setLocation(SwiftPEGGrammar.StringAtom(string: string.token), at: mark) }
+    ///     | string { self.setLocation(SwiftPEGGrammar.StringAtom(string: string), at: mark) }
     ///     ;
     /// ```
     @memoized("atom")
@@ -664,9 +664,10 @@ extension GrammarParser {
         }
         return nil
     }
+
     /// ```
     /// balancedTokens[SwiftPEGGrammar.TokenSequence]:
-    ///     | balancedToken+ {  .from(balancedToken)  }
+    ///     | balancedToken+ { .from(balancedToken) }
     ///     ;
     /// ```
     @memoized("balancedTokens")
@@ -679,7 +680,7 @@ extension GrammarParser {
                 try self.balancedToken()
             })
         {
-            return  .from(balancedToken)
+            return .from(balancedToken)
         }
 
         self.restore(mark)
@@ -689,15 +690,11 @@ extension GrammarParser {
     /// ```
     /// balancedToken[SwiftPEGGrammar.TokenSequence]:
     ///     | token=WHITESPACE { .from(token) }
-    ///     | l='{' balancedTokens r='}' { .from(l).appending(balancedTokens).appending(.from(r)) }
-    ///     | l='[' balancedTokens r=']' { .from(l).appending(balancedTokens).appending(.from(r)) }
-    ///     | l='<' balancedTokens r='>' { .from(l).appending(balancedTokens).appending(.from(r)) }
-    ///     | l='(' balancedTokens r=')' { .from(l).appending(balancedTokens).appending(.from(r)) }
-    ///     | l='[' ~ r=']' { .from(l).appending(.from(r)) }
-    ///     | l='{' ~ r='}' { .from(l).appending(.from(r)) }
-    ///     | l='<' ~ r='>' { .from(l).appending(.from(r)) }
-    ///     | l='(' ~ r=')' { .from(l).appending(.from(r)) }
-    ///     | token=balancedTokenAtom { .from(balancedTokenAtom) }
+    ///     | l='{' ~ balancedToken* r='}' { .from(l).appending(contentsOf: balancedToken).appending(.from(r)) }
+    ///     | l='[' ~ balancedToken* r=']' { .from(l).appending(contentsOf: balancedToken).appending(.from(r)) }
+    ///     | l='<' ~ balancedToken* r='>' { .from(l).appending(contentsOf: balancedToken).appending(.from(r)) }
+    ///     | l='(' ~ balancedToken* r=')' { .from(l).appending(contentsOf: balancedToken).appending(.from(r)) }
+    ///     | token=balancedTokenAtom { token }
     ///     ;
     /// ```
     @memoized("balancedToken")
@@ -709,65 +706,20 @@ extension GrammarParser {
         if
             let token = try self.expect(kind: .whitespace)
         {
-            return  .from(token)
+            return .from(token)
         }
 
         self.restore(mark)
 
         if
             let l = try self.expect(kind: .leftBrace),
+            cut.toggleOn(),
             let balancedToken = try self.repeatZeroOrMore({
                 try self.balancedToken()
             }),
             let r = try self.expect(kind: .rightBrace)
         {
-            return  .from(l).appending(contentsOf: balancedToken).appending(.from(r))
-        }
-
-        self.restore(mark)
-
-        if
-            let l = try self.expect(kind: .leftSquare),
-            let balancedToken = try self.repeatZeroOrMore({
-                try self.balancedToken()
-            }),
-            let r = try self.expect(kind: .rightSquare)
-        {
-            return  .from(l).appending(contentsOf: balancedToken).appending(.from(r))
-        }
-
-        self.restore(mark)
-
-        if
-            let l = try self.expect(kind: .leftAngle),
-            let balancedToken = try self.repeatZeroOrMore({
-                try self.balancedToken()
-            }),
-            let r = try self.expect(kind: .rightAngle)
-        {
-            return  .from(l).appending(contentsOf: balancedToken).appending(.from(r))
-        }
-
-        self.restore(mark)
-
-        if
-            let l = try self.expect(kind: .leftParen),
-            let balancedToken = try self.repeatZeroOrMore({
-                try self.balancedToken()
-            }),
-            let r = try self.expect(kind: .rightParen)
-        {
-            return  .from(l).appending(contentsOf: balancedToken).appending(.from(r))
-        }
-
-        self.restore(mark)
-
-        if
-            let l = try self.expect(kind: .leftSquare),
-            cut.toggleOn(),
-            let r = try self.expect(kind: .rightSquare)
-        {
-            return  .from(l).appending(.from(r))
+            return .from(l).appending(contentsOf: balancedToken).appending(.from(r))
         }
 
         self.restore(mark)
@@ -777,11 +729,14 @@ extension GrammarParser {
         }
 
         if
-            let l = try self.expect(kind: .leftBrace),
+            let l = try self.expect(kind: .leftSquare),
             cut.toggleOn(),
-            let r = try self.expect(kind: .rightBrace)
+            let balancedToken = try self.repeatZeroOrMore({
+                try self.balancedToken()
+            }),
+            let r = try self.expect(kind: .rightSquare)
         {
-            return  .from(l).appending(.from(r))
+            return .from(l).appending(contentsOf: balancedToken).appending(.from(r))
         }
 
         self.restore(mark)
@@ -793,9 +748,12 @@ extension GrammarParser {
         if
             let l = try self.expect(kind: .leftAngle),
             cut.toggleOn(),
+            let balancedToken = try self.repeatZeroOrMore({
+                try self.balancedToken()
+            }),
             let r = try self.expect(kind: .rightAngle)
         {
-            return  .from(l).appending(.from(r))
+            return .from(l).appending(contentsOf: balancedToken).appending(.from(r))
         }
 
         self.restore(mark)
@@ -807,9 +765,12 @@ extension GrammarParser {
         if
             let l = try self.expect(kind: .leftParen),
             cut.toggleOn(),
+            let balancedToken = try self.repeatZeroOrMore({
+                try self.balancedToken()
+            }),
             let r = try self.expect(kind: .rightParen)
         {
-            return  .from(l).appending(.from(r))
+            return .from(l).appending(contentsOf: balancedToken).appending(.from(r))
         }
 
         self.restore(mark)
@@ -830,8 +791,8 @@ extension GrammarParser {
 
     /// ```
     /// balancedTokenAtom[SwiftPEGGrammar.TokenSequence]:
-    ///     | string {  .from(string)  }
-    ///     | !"[" !"]" !"{" !"}" !"(" !")" token=ANY {  .from(token)  }
+    ///     | string { .from(string) }
+    ///     | !"[" !"]" !"{" !"}" !"(" !")" token=ANY { .from(token) }
     ///     ;
     /// ```
     @memoized("balancedTokenAtom")
@@ -842,7 +803,7 @@ extension GrammarParser {
         if
             let string = try self.string()
         {
-            return  .from(string)
+            return .from(string)
         }
 
         self.restore(mark)
@@ -868,7 +829,7 @@ extension GrammarParser {
             }),
             let token = try self.nextToken()
         {
-            return  .from(token)
+            return .from(token)
         }
 
         self.restore(mark)
@@ -877,9 +838,7 @@ extension GrammarParser {
 
     /// ```
     /// string[SwiftPEGGrammar.GrammarString]:
-    ///     | '"""' tripleQuoteSegment* '"""' {  tripleQuoteSegment.tripleQuoted()  }
-    ///     | '"' doubleQuoteSegment* '"' {  doubleQuoteSegment.doubleQuoted()  }
-    ///     | "'" singleQuoteSegment* "'" {  singleQuoteSegment.singleQuoted()  }
+    ///     | token=STRING { try .fromStringToken(token) }
     ///     ;
     /// ```
     @memoized("string")
@@ -921,8 +880,8 @@ extension GrammarParser {
 
     /// ```
     /// tokenDefinition[SwiftPEGGrammar.TokenDefinition]:
-    ///     | '$' name=IDENTIFIER '[' staticToken=string ']' ':' ~ tokenSyntax ';' { self.setLocation(.init(name: name.token, staticToken: staticToken.token, tokenSyntax: tokenSyntax), at: mark) }
-    ///     | '$' name=IDENTIFIER '[' staticToken=string ']' ';' { self.setLocation(.init(name: name.token, staticToken: staticToken.token, tokenSyntax: nil), at: mark) }
+    ///     | '$' name=IDENTIFIER '[' staticToken=string ']' ':' ~ tokenSyntax ';' { self.setLocation(.init(name: name.token, staticToken: staticToken, tokenSyntax: tokenSyntax), at: mark) }
+    ///     | '$' name=IDENTIFIER '[' staticToken=string ']' ';' { self.setLocation(.init(name: name.token, staticToken: staticToken, tokenSyntax: nil), at: mark) }
     ///     | '$' name=IDENTIFIER ':' ~ tokenSyntax ';' { self.setLocation(.init(name: name.token, staticToken: nil, tokenSyntax: tokenSyntax), at: mark) }
     ///     | '$' name=IDENTIFIER ';' { self.setLocation(.init(name: name.token, staticToken: nil, tokenSyntax: nil), at: mark) }
     ///     ;
@@ -1136,7 +1095,7 @@ extension GrammarParser {
 
     /// ```
     /// tokenSyntaxExclusion[CommonAbstract.TokenExclusion]:
-    ///     | '!' string { .string("\(string)") }
+    ///     | '!' string { .string(.from(string)) }
     ///     | '!' IDENTIFIER { .identifier("\(identifier)") }
     ///     ;
     /// ```
@@ -1167,9 +1126,9 @@ extension GrammarParser {
 
     /// ```
     /// tokenSyntaxTerminal[CommonAbstract.TokenTerminal]:
-    ///     | IDENTIFIER action { .characterPredicate("\(identifier)", "\(action.description)") }
-    ///     | start=STRING '...' end=STRING { .rangeLiteral("\(start)", "\(end)") }
-    ///     | STRING { .literal("\(string)") }
+    ///     | IDENTIFIER action { .characterPredicate("\(identifier)", action.rawAction) }
+    ///     | start=string '...' end=string { .rangeLiteral(.from(start), .from(end)) }
+    ///     | string { .literal(.from(string)) }
     ///     | IDENTIFIER { .identifier("\(identifier)") }
     ///     | '.' { .any }
     ///     ;

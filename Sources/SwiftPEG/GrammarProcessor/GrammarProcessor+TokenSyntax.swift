@@ -11,6 +11,8 @@ extension GrammarProcessor {
         let byName = try validateTokenNames(tokens)
         try ensureTokenSyntaxesAreNonReentrant(tokens, byName: byName)
 
+        diagnoseAltOrder(tokens)
+
         return tokens.map(InternalGrammar.TokenDefinition.from)
     }
 
@@ -35,6 +37,31 @@ extension GrammarProcessor {
         }
 
         return byName
+    }
+
+    // TODO: Implement alt/atom order diagnostics for tokens
+    /// Diagnoses alt order issues in token syntaxes
+    func diagnoseAltOrder(_ tokens: [SwiftPEGGrammar.TokenDefinition]) {
+#if false
+        func inspect(token: SwiftPEGGrammar.TokenDefinition, _ alts: [CommonAbstract.TokenAlt]) {
+
+        }
+        func inspect(token: SwiftPEGGrammar.TokenDefinition, _ atoms: [CommonAbstract.TokenAtom]) {
+
+        }
+
+        for token in tokens {
+            let collector = TokenAltCollector()
+            collector.visit(token)
+
+            for alts in collector.alts {
+                inspect(token: token, alts)
+            }
+            for atoms in collector.grouped {
+                inspect(token: token, atoms)
+            }
+        }
+#endif
     }
 
     /// Token syntaxes do not support reentrance; they cannot be recursive on
@@ -91,9 +118,7 @@ extension GrammarProcessor {
         }
     }
 
-    private class TokenSyntaxIdentifierCollector {
-        var identifiers: Set<String> = []
-
+    private class TokenSyntaxVisitor {
         func visit(_ node: SwiftPEGGrammar.TokenDefinition) {
             if let syntax = node.tokenSyntax {
                 visit(syntax)
@@ -118,6 +143,40 @@ extension GrammarProcessor {
         }
 
         func visit(_ node: CommonAbstract.TokenExclusion) {
+        }
+
+        func visit(_ node: CommonAbstract.TokenTerminal) {
+        }
+    }
+
+    private class TokenAltCollector: TokenSyntaxVisitor {
+        var alts: [[CommonAbstract.TokenAlt]] = []
+        var grouped: [[CommonAbstract.TokenAtom]] = []
+
+        override func visit(_ node: CommonAbstract.TokenSyntax) {
+            super.visit(node)
+
+            alts.append(node.alts)
+        }
+
+        override func visit(_ node: CommonAbstract.TokenItem) {
+            super.visit(node)
+
+            switch node {
+            case .group(let atoms), .oneOrMore(let atoms), .zeroOrMore(let atoms):
+                if atoms.count > 1 {
+                    grouped.append(atoms)
+                }
+            default:
+                break
+            }
+        }
+    }
+
+    private class TokenSyntaxIdentifierCollector: TokenSyntaxVisitor {
+        var identifiers: Set<String> = []
+
+        override func visit(_ node: CommonAbstract.TokenExclusion) {
             switch node {
             case .identifier(let identifier):
                 identifiers.insert(identifier)
@@ -126,7 +185,7 @@ extension GrammarProcessor {
             }
         }
 
-        func visit(_ node: CommonAbstract.TokenTerminal) {
+        override func visit(_ node: CommonAbstract.TokenTerminal) {
             switch node {
             case .identifier(let identifier):
                 identifiers.insert(identifier)

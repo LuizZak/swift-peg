@@ -7,7 +7,7 @@
 
 /// A parser for SwiftPEG grammar files.
 public final class GrammarParser<RawTokenizer: RawTokenizerType>: PEGParser<RawTokenizer>
-    where RawTokenizer.Token == SwiftPEGGrammar.GrammarToken, RawTokenizer.Location == FileSourceLocation
+    where RawTokenizer.Token == SwiftPEGGrammar.Token, RawTokenizer.Location == FileSourceLocation
 { }
 """ ;
 
@@ -136,7 +136,7 @@ string[SwiftPEGGrammar.GrammarString]:
 
 # Tokens file grammar
 
-tokensFile[[SwiftPEGGrammar.TokenFileDeclaration]]:
+tokensFile[[SwiftPEGGrammar.TokenDefinition]]:
     | tokens=tokenDefinition*
     ;
 
@@ -158,8 +158,8 @@ tokensFile[[SwiftPEGGrammar.TokenFileDeclaration]]:
 #       Usually this can be simplified to a `.tokenReference` for TokenType/TokenType.TokenKind types that provide statically-accessible token declarations,
 #       but may be any Swift expression that resolves to the desired token when paired with an appropriate tokenizer's token type.
 tokenDefinition[SwiftPEGGrammar.TokenDefinition]:
-    | '$' name=IDENTIFIER '[' staticToken=string ']' ':' ~ tokenSyntax ';'    { self.setLocation(.init(name: name.token, staticToken: string, tokenSyntax: tokenSyntax), at: mark) }
-    | '$' name=IDENTIFIER '[' staticToken=string ']' ';'                      { self.setLocation(.init(name: name.token, staticToken: string, tokenSyntax: nil), at: mark) }
+    | '$' name=IDENTIFIER '[' staticToken=string ']' ':' ~ tokenSyntax ';'    { self.setLocation(.init(name: name.token, staticToken: staticToken, tokenSyntax: tokenSyntax), at: mark) }
+    | '$' name=IDENTIFIER '[' staticToken=string ']' ';'                      { self.setLocation(.init(name: name.token, staticToken: staticToken, tokenSyntax: nil), at: mark) }
     | '$' name=IDENTIFIER ':' ~ tokenSyntax ';'                               { self.setLocation(.init(name: name.token, staticToken: nil, tokenSyntax: tokenSyntax), at: mark) }
     | '$' name=IDENTIFIER ';'                                                 { self.setLocation(.init(name: name.token, staticToken: nil, tokenSyntax: nil), at: mark) }
     ;
@@ -184,12 +184,12 @@ tokenSyntaxAtom[CommonAbstract.TokenAtom]:
     ;
 
 tokenSyntaxExclusion[CommonAbstract.TokenExclusion]:
-    | '!' string                                    { .string(from(string)) }
+    | '!' string                                    { .string(.from(string)) }
     | '!' IDENTIFIER                                { .identifier("\(identifier)") }
     ;
 
 tokenSyntaxTerminal[CommonAbstract.TokenTerminal]:
-    | IDENTIFIER action                             { .characterPredicate("\(identifier)", action.balancedTokens?.rawContents() ?? "") }
+    | IDENTIFIER action                             { .characterPredicate("\(identifier)", action.rawAction) }
     | start=string '...' end=string                 { .rangeLiteral(.from(start), .from(end)) }
     | string                                        { .literal(.from(string)) }
     | IDENTIFIER                                    { .identifier("\(identifier)") }

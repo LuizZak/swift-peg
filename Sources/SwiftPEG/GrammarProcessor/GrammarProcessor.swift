@@ -373,7 +373,27 @@ public class GrammarProcessor {
     public enum GrammarProcessorDiagnostic {
         /// An alt that executes before another, if it succeeds, will always
         /// prevent the other alt from being attempted.
-        case altOrderIssue(rule: SwiftPEGGrammar.Rule, SwiftPEGGrammar.Alt, alwaysSucceedsBefore: SwiftPEGGrammar.Alt)
+        case altOrderIssue(
+            rule: SwiftPEGGrammar.Rule,
+            SwiftPEGGrammar.Alt,
+            alwaysSucceedsBefore: SwiftPEGGrammar.Alt
+        )
+
+        /// An alt of a token that executes before another, if it succeeds, will
+        /// always prevent the other alt from being attempted.
+        case tokenAltOrderIssue(
+            token: SwiftPEGGrammar.TokenDefinition,
+            CommonAbstract.TokenAlt,
+            alwaysSucceedsBefore: CommonAbstract.TokenAlt
+        )
+
+        /// An atom of a token that executes before another, if it succeeds, will
+        /// always prevent the other atom from being attempted.
+        case tokenAtomOrderIssue(
+            token: SwiftPEGGrammar.TokenDefinition,
+            CommonAbstract.TokenAtom,
+            alwaysSucceedsBefore: CommonAbstract.TokenAtom
+        )
 
         /// A rule is not reachable from the set start rule.
         case unreachableRule(SwiftPEGGrammar.Rule, startRuleName: String)
@@ -396,6 +416,28 @@ public class GrammarProcessor {
                     Alt \(describe(priorInt)) @ \(prior.location) always succeeds \
                     before \(describe(formerInt)) @ \(former.location) can be tried \
                     in rule \(rule.name.name.string) @ \(rule.location).
+                    """
+
+            case .tokenAltOrderIssue(let token, let prior, let former):
+                func describe(_ alt: CommonAbstract.TokenAlt) -> String {
+                    return #""\#(alt)""#
+                }
+
+                return """
+                    Alt \(describe(prior)) always succeeds \
+                    before \(describe(former)) can be tried \
+                    in token definition \(token.name.string) @ \(token.location).
+                    """
+
+            case .tokenAtomOrderIssue(let token, let prior, let former):
+                func describe(_ atom: CommonAbstract.TokenAtom) -> String {
+                    return #""\#(atom)""#
+                }
+
+                return """
+                    Grouped atom \(describe(prior)) always succeeds \
+                    before \(describe(former)) can be tried \
+                    in token definition \(token.name.string) @ \(token.location).
                     """
 
             case .unreachableRule(let rule, let startRuleName):
