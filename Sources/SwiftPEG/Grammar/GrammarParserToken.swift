@@ -135,14 +135,14 @@ public struct GrammarParserToken: TokenType, CustomStringConvertible {
         /// `("a"..."z" | "A"..."Z" | "_") ("0"..."9" | "a"..."z" | "A"..."Z" | "_")*`
         case identifier
 
-        /// `"0"..."9"`
+        /// `("0"..."9")+`
         case digits
 
         /// ```
         /// STRING[".string"]:
-        ///     | "\"\"\"" ("\\" | "\\\"\"\"" | !"\"\"\"" .)* "\"\"\""
-        ///     | "\"" ("\\" | "\\\"" | !"\"" !"\n" .)* "\""
-        ///     | "'" ("\\" | "\\'" | !"'" !"\n" .)* "'"
+        ///     | "\"\"\"" ("\\\"\"\"" | "\\\\" | "\\" | !"\"\"\"" .)* "\"\"\""
+        ///     | "\"" ("\\\"" | "\\\\" | "\\" | !"\"" !"\n" .)* "\""
+        ///     | "'" ("\\'" | "\\\\" | "\\" | !"'" !"\n" .)* "'"
         ///     ;
         /// ```
         case string
@@ -356,10 +356,12 @@ public struct GrammarParserToken: TokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard !stream.isEof, ("0"..."9").contains(stream.peek()) else {
+            switch stream.peek() {
+            case "0"..."9":
+                stream.advance()
+            default:
                 break alt
             }
-            stream.advance()
 
             loop:
             while !stream.isEof {
@@ -381,9 +383,9 @@ public struct GrammarParserToken: TokenType, CustomStringConvertible {
 
     /// ```
     /// STRING[".string"]:
-    ///     | "\"\"\"" ("\\" | "\\\"\"\"" | !"\"\"\"" .)* "\"\"\""
-    ///     | "\"" ("\\" | "\\\"" | !"\"" !"\n" .)* "\""
-    ///     | "'" ("\\" | "\\'" | !"'" !"\n" .)* "'"
+    ///     | "\"\"\"" ("\\\"\"\"" | "\\\\" | "\\" | !"\"\"\"" .)* "\"\"\""
+    ///     | "\"" ("\\\"" | "\\\\" | "\\" | !"\"" !"\n" .)* "\""
+    ///     | "'" ("\\'" | "\\\\" | "\\" | !"'" !"\n" .)* "'"
     ///     ;
     /// ```
     @inlinable
