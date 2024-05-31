@@ -44,5 +44,6 @@ $ELLIPSIS[".ellipsis"]: "..." ;
 $BACKTICK[".backtick"]: "`" ;
 $AT[".at"]: "@" ;
 $DOLLAR[".dollarSign"]: "$" ;
+$PERCENT[".percent"]: "%" ;
 $FORWARDSLASH[".forwardSlash"]: "/" ;
 $BACKSLASH[".backslash"]: "\\" ;

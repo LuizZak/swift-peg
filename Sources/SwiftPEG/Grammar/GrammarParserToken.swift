@@ -118,6 +118,9 @@ public struct GrammarParserToken: TokenType, CustomStringConvertible {
         if consume_DOLLAR(from: &stream) {
             return .init(kind: .dollarSign, string: stream.substring)
         }
+        if consume_PERCENT(from: &stream) {
+            return .init(kind: .percent, string: stream.substring)
+        }
         if consume_FORWARDSLASH(from: &stream) {
             return .init(kind: .forwardSlash, string: stream.substring)
         }
@@ -225,6 +228,9 @@ public struct GrammarParserToken: TokenType, CustomStringConvertible {
         /// `"$"`
         case dollarSign
 
+        /// `"%"`
+        case percent
+
         /// `"/"`
         case forwardSlash
 
@@ -264,6 +270,7 @@ public struct GrammarParserToken: TokenType, CustomStringConvertible {
             case .backtick: "`"
             case .at: "@"
             case .dollarSign: "$"
+            case .percent: "%"
             case .forwardSlash: "/"
             case .backslash: "\\"
             }
@@ -750,6 +757,16 @@ public struct GrammarParserToken: TokenType, CustomStringConvertible {
     @inlinable
     public static func consume_DOLLAR<StringType>(from stream: inout StringStream<StringType>) -> Bool {
         stream.advanceIfNext("$")
+    }
+
+    /// ```
+    /// PERCENT[".percent"]:
+    ///     | "%"
+    ///     ;
+    /// ```
+    @inlinable
+    public static func consume_PERCENT<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("%")
     }
 
     /// ```
