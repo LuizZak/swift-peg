@@ -158,10 +158,15 @@ tokensFile[[SwiftPEGGrammar.TokenDefinition]]:
 #       Usually this can be simplified to a `.tokenReference` for TokenType/TokenType.TokenKind types that provide statically-accessible token declarations,
 #       but may be any Swift expression that resolves to the desired token when paired with an appropriate tokenizer's token type.
 tokenDefinition[SwiftPEGGrammar.TokenDefinition]:
-    | '$' name=IDENTIFIER '[' staticToken=string ']' ':' ~ tokenSyntax ';'    { self.setLocation(.init(name: name.token, staticToken: staticToken, tokenSyntax: tokenSyntax), at: mark) }
-    | '$' name=IDENTIFIER '[' staticToken=string ']' ';'                      { self.setLocation(.init(name: name.token, staticToken: staticToken, tokenSyntax: nil), at: mark) }
-    | '$' name=IDENTIFIER ':' ~ tokenSyntax ';'                               { self.setLocation(.init(name: name.token, staticToken: nil, tokenSyntax: tokenSyntax), at: mark) }
-    | '$' name=IDENTIFIER ';'                                                 { self.setLocation(.init(name: name.token, staticToken: nil, tokenSyntax: nil), at: mark) }
+    | spec=tokenOrFragmentSpecifier name=IDENTIFIER '[' staticToken=string ']' ':' ~ tokenSyntax ';'    { self.setLocation(.init(name: name.token, isFragment: spec.kind == .percent, staticToken: staticToken, tokenSyntax: tokenSyntax), at: mark) }
+    | spec=tokenOrFragmentSpecifier name=IDENTIFIER '[' staticToken=string ']' ';'                      { self.setLocation(.init(name: name.token, isFragment: spec.kind == .percent, staticToken: staticToken, tokenSyntax: nil), at: mark) }
+    | spec=tokenOrFragmentSpecifier name=IDENTIFIER ':' ~ tokenSyntax ';'                               { self.setLocation(.init(name: name.token, isFragment: spec.kind == .percent, staticToken: nil, tokenSyntax: tokenSyntax), at: mark) }
+    | spec=tokenOrFragmentSpecifier name=IDENTIFIER ';'                                                 { self.setLocation(.init(name: name.token, isFragment: spec.kind == .percent, staticToken: nil, tokenSyntax: nil), at: mark) }
+    ;
+
+tokenOrFragmentSpecifier[Token]:
+    | token='$'   { token.token }
+    | token='%'   { token.token }
     ;
 
 tokenSyntax[CommonAbstract.TokenSyntax]:

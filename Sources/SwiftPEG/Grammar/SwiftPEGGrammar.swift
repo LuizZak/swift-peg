@@ -910,10 +910,15 @@ extension SwiftPEGGrammar {
     /// Represents the construct:
     /// ```
     /// tokenDefinition:
-    ///     | '$' name=IDENTIFIER '[' staticToken=STRING ']' ':' ~ tokenSyntax ';'
-    ///     | '$' name=IDENTIFIER '[' staticToken=STRING ']' ';'
-    ///     | '$' name=IDENTIFIER ':' ~ tokenSyntax ';'
-    ///     | '$' name=IDENTIFIER ';'
+    ///     | tokenOrFragmentSpecifier name=IDENTIFIER '[' staticToken=STRING ']' ':' ~ tokenSyntax ';'
+    ///     | tokenOrFragmentSpecifier name=IDENTIFIER '[' staticToken=STRING ']' ';'
+    ///     | tokenOrFragmentSpecifier name=IDENTIFIER ':' ~ tokenSyntax ';'
+    ///     | tokenOrFragmentSpecifier name=IDENTIFIER ';'
+    ///     ;
+    ///
+    /// tokenOrFragmentSpecifier:
+    ///     | '$'
+    ///     | '%'
     ///     ;
     /// ```
     @GeneratedNodeType<Node>
@@ -921,6 +926,9 @@ extension SwiftPEGGrammar {
         /// The identifier for the token.
         @NodeRequired
         public var name: Token
+
+        @NodeRequired
+        public var isFragment: Bool
 
         /// The statically-resolvable reference to the token definition.
         /// Is expected to resolve to a valid token/token kind when paired with

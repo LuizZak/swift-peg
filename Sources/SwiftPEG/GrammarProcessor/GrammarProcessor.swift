@@ -84,8 +84,8 @@ public class GrammarProcessor {
         let tokensFile = try loadTokensFile(from: grammar)
         let processedTokens = try validateTokenSyntaxes(tokensFile)
 
-        let tokenNames = try collectTokenNames(in: grammar, tokensFile: tokensFile)
-        try validateReferences(in: grammar, tokens: tokenNames)
+        let (tokenNames, fragments) = try collectTokenNames(in: grammar, tokensFile: tokensFile)
+        try validateReferences(in: grammar, tokens: tokenNames, fragments: fragments)
 
         diagnoseAltOrder(in: grammar)
         try computeNullables(in: grammar, knownRules)
@@ -167,7 +167,7 @@ public class GrammarProcessor {
     func collectTokenNames(
         in grammar: SwiftPEGGrammar.Grammar,
         tokensFile: [SwiftPEGGrammar.TokenDefinition]
-    ) throws -> Set<String> {
+    ) throws -> (tokens: Set<String>, fragments: Set<String>) {
         var metaTokens: Set<String> = []
 
         for token in tokenMetaProperties(in: grammar) {
@@ -180,18 +180,31 @@ public class GrammarProcessor {
         }
 
         var tokensFromFile: Set<String> = []
+        var fragments: Set<String> = []
         for token in tokensFile {
-            tokensFromFile.insert(String(token.name.string))
+            let tokenName = String(token.name.string)
+
+            if token.isFragment {
+                if token.staticToken != nil {
+                    diagnostics.append(.fragmentSpecifiesStaticToken(token: token))
+                }
+
+                fragments.insert(tokenName)
+            } else {
+                tokensFromFile.insert(tokenName)
+            }
         }
 
-        return Set(metaTokens).union(tokensFromFile)
+        let tokens = Set(metaTokens).union(tokensFromFile)
+        return (tokens, fragments)
     }
 
     /// Validates that all identifier references in a given grammar are either
     /// rules within the grammar itself or a token name from the provided set.
     func validateReferences(
         in grammar: SwiftPEGGrammar.Grammar,
-        tokens: Set<String>
+        tokens: Set<String>,
+        fragments: Set<String>
     ) throws {
         // Populate references
         var knownNames: [(String, SwiftPEGGrammar.IdentAtom.Identity)]
@@ -230,11 +243,21 @@ public class GrammarProcessor {
                 fatalError("Found atom \(ref.name) @ \(ref.location) that has no Rule parent?")
             }
 
-            let error = recordAndReturn(
-                GrammarProcessorError.unknownReference(
-                    ref, rule, tokensFileName: tokensFile
+            let error: GrammarProcessorError
+
+            if fragments.contains(String(ref.name)) {
+                error = recordAndReturn(
+                    GrammarProcessorError.referencedFragmentInParser(
+                        ref, rule
+                    )
                 )
-            )
+            } else {
+                error = recordAndReturn(
+                    GrammarProcessorError.unknownReference(
+                        ref, rule, tokensFileName: tokensFile
+                    )
+                )
+            }
 
             firstError = firstError ?? error
         }
@@ -287,6 +310,8 @@ public class GrammarProcessor {
     /// An error that can be raised by `GrammarProcessor` during grammar analysis and parser
     /// generation.
     public enum GrammarProcessorError: Error, CustomStringConvertible {
+        // MARK: - Grammar file errors
+
         /// Rules found sharing the same name.
         case repeatedRuleName(String, SwiftPEGGrammar.Rule, prior: SwiftPEGGrammar.Rule)
         /// Rule found that has an invalid name.
@@ -296,6 +321,14 @@ public class GrammarProcessor {
         /// An identifier was found in a rule that could not be resolved to a
         /// rule or token name.
         case unknownReference(SwiftPEGGrammar.IdentAtom, SwiftPEGGrammar.Rule, tokensFileName: String? = nil)
+        /// An identifier was found in a rule that refers to token fragments,
+        /// which are not queryable by the parser.
+        case referencedFragmentInParser(SwiftPEGGrammar.IdentAtom, SwiftPEGGrammar.Rule)
+        /// An attempt at resolving a left recursion and find a leader rule from
+        /// a set of rules has failed.
+        case unresolvedLeftRecursion(ruleNames: [String])
+
+        // MARK: - Tokens file errors
 
         /// Tokens found sharing the same name.
         case repeatedTokenName(String, SwiftPEGGrammar.TokenDefinition, prior: SwiftPEGGrammar.TokenDefinition)
@@ -305,10 +338,6 @@ public class GrammarProcessor {
 
         /// A recursion was found in a sequence of tokens.
         case recursivityInTokens([SwiftPEGGrammar.TokenDefinition])
-
-        /// An attempt at resolving a left recursion and find a leader rule from
-        /// a set of rules has failed.
-        case unresolvedLeftRecursion(ruleNames: [String])
 
         /// A '@tokensFile' meta-property references a file that could not be
         /// loaded.
@@ -321,6 +350,8 @@ public class GrammarProcessor {
         /// A '@tokensFile' meta-property references a tokens file that contains
         /// tokenizer errors.
         case tokensFileTokenizerError(SwiftPEGGrammar.Meta, TokenizerError)
+
+        // MARK: -
 
         /// A generic error with an attached message.
         case message(String)
@@ -343,6 +374,12 @@ public class GrammarProcessor {
                 return """
                 Reference to unknown identifier '\(atom.name)' @ \(atom.location) in rule '\(rule.name.shortDebugDescription)'. \
                 Did you forget to forward-declare a token with '@token \(atom.name);' or define it in '@tokensFile \"\(tokensFileName ?? "<file.tokens>")\"'?
+                """
+
+            case .referencedFragmentInParser(let atom, let rule):
+                return """
+                Reference to token fragment '\(atom.name)' @ \(atom.location) found in parser in rule '\(rule.name.shortDebugDescription)'. \
+                Token fragments cannot be referred by the parser, and can only be used as part of definition of tokens.
                 """
 
             case .unknownReferenceInToken(let identifier, let token):
@@ -379,6 +416,18 @@ public class GrammarProcessor {
             alwaysSucceedsBefore: SwiftPEGGrammar.Alt
         )
 
+        /// A rule is not reachable from the set start rule.
+        case unreachableRule(SwiftPEGGrammar.Rule, startRuleName: String)
+
+        /// Diagnostic reported by meta-property manager.
+        case metaPropertyDiagnostic(SwiftPEGGrammar.Meta, String)
+
+        /// A fragment token definition specifies a static token, which is not
+        /// used.
+        case fragmentSpecifiesStaticToken(
+            token: SwiftPEGGrammar.TokenDefinition
+        )
+
         /// An alt of a token that executes before another, if it succeeds, will
         /// always prevent the other alt from being attempted.
         case tokenAltOrderIssue(
@@ -395,12 +444,6 @@ public class GrammarProcessor {
             alwaysSucceedsBefore: CommonAbstract.TokenAtom
         )
 
-        /// A rule is not reachable from the set start rule.
-        case unreachableRule(SwiftPEGGrammar.Rule, startRuleName: String)
-
-        /// Diagnostic reported by meta-property manager.
-        case metaPropertyDiagnostic(SwiftPEGGrammar.Meta, String)
-
         public var description: String {
             switch self {
             case .altOrderIssue(let rule, let prior, let former):
@@ -416,6 +459,13 @@ public class GrammarProcessor {
                     Alt \(describe(priorInt)) @ \(prior.location) always succeeds \
                     before \(describe(formerInt)) @ \(former.location) can be tried \
                     in rule \(rule.name.name.string) @ \(rule.location).
+                    """
+
+            case .fragmentSpecifiesStaticToken(let token):
+                return """
+                    Token fragment %\(token.name) @ \(token.location) specifies \
+                    a static token value, which is not relevant for fragments and \
+                    will be ignored.
                     """
 
             case .tokenAltOrderIssue(let token, let prior, let former):

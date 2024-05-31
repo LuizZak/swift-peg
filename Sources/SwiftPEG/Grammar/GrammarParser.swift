@@ -880,10 +880,10 @@ extension GrammarParser {
 
     /// ```
     /// tokenDefinition[SwiftPEGGrammar.TokenDefinition]:
-    ///     | '$' name=IDENTIFIER '[' staticToken=string ']' ':' ~ tokenSyntax ';' { self.setLocation(.init(name: name.token, staticToken: staticToken, tokenSyntax: tokenSyntax), at: mark) }
-    ///     | '$' name=IDENTIFIER '[' staticToken=string ']' ';' { self.setLocation(.init(name: name.token, staticToken: staticToken, tokenSyntax: nil), at: mark) }
-    ///     | '$' name=IDENTIFIER ':' ~ tokenSyntax ';' { self.setLocation(.init(name: name.token, staticToken: nil, tokenSyntax: tokenSyntax), at: mark) }
-    ///     | '$' name=IDENTIFIER ';' { self.setLocation(.init(name: name.token, staticToken: nil, tokenSyntax: nil), at: mark) }
+    ///     | spec=tokenOrFragmentSpecifier name=IDENTIFIER '[' staticToken=string ']' ':' ~ tokenSyntax ';' { self.setLocation(.init(name: name.token, isFragment: spec.kind == .percent, staticToken: staticToken, tokenSyntax: tokenSyntax), at: mark) }
+    ///     | spec=tokenOrFragmentSpecifier name=IDENTIFIER '[' staticToken=string ']' ';' { self.setLocation(.init(name: name.token, isFragment: spec.kind == .percent, staticToken: staticToken, tokenSyntax: nil), at: mark) }
+    ///     | spec=tokenOrFragmentSpecifier name=IDENTIFIER ':' ~ tokenSyntax ';' { self.setLocation(.init(name: name.token, isFragment: spec.kind == .percent, staticToken: nil, tokenSyntax: tokenSyntax), at: mark) }
+    ///     | spec=tokenOrFragmentSpecifier name=IDENTIFIER ';' { self.setLocation(.init(name: name.token, isFragment: spec.kind == .percent, staticToken: nil, tokenSyntax: nil), at: mark) }
     ///     ;
     /// ```
     @memoized("tokenDefinition")
@@ -893,7 +893,7 @@ extension GrammarParser {
         var cut = CutFlag()
 
         if
-            let _ = try self.expect(kind: .dollarSign),
+            let spec = try self.tokenOrFragmentSpecifier(),
             let name = try self.expect(kind: .identifier),
             let _ = try self.expect(kind: .leftSquare),
             let staticToken = try self.string(),
@@ -903,7 +903,7 @@ extension GrammarParser {
             let tokenSyntax = try self.tokenSyntax(),
             let _ = try self.expect(kind: .semicolon)
         {
-            return self.setLocation(.init(name: name.token, staticToken: staticToken, tokenSyntax: tokenSyntax), at: mark)
+            return self.setLocation(.init(name: name.token, isFragment: spec.kind == .percent, staticToken: staticToken, tokenSyntax: tokenSyntax), at: mark)
         }
 
         self.restore(mark)
@@ -913,27 +913,27 @@ extension GrammarParser {
         }
 
         if
-            let _ = try self.expect(kind: .dollarSign),
+            let spec = try self.tokenOrFragmentSpecifier(),
             let name = try self.expect(kind: .identifier),
             let _ = try self.expect(kind: .leftSquare),
             let staticToken = try self.string(),
             let _ = try self.expect(kind: .rightSquare),
             let _ = try self.expect(kind: .semicolon)
         {
-            return self.setLocation(.init(name: name.token, staticToken: staticToken, tokenSyntax: nil), at: mark)
+            return self.setLocation(.init(name: name.token, isFragment: spec.kind == .percent, staticToken: staticToken, tokenSyntax: nil), at: mark)
         }
 
         self.restore(mark)
 
         if
-            let _ = try self.expect(kind: .dollarSign),
+            let spec = try self.tokenOrFragmentSpecifier(),
             let name = try self.expect(kind: .identifier),
             let _ = try self.expect(kind: .colon),
             cut.toggleOn(),
             let tokenSyntax = try self.tokenSyntax(),
             let _ = try self.expect(kind: .semicolon)
         {
-            return self.setLocation(.init(name: name.token, staticToken: nil, tokenSyntax: tokenSyntax), at: mark)
+            return self.setLocation(.init(name: name.token, isFragment: spec.kind == .percent, staticToken: nil, tokenSyntax: tokenSyntax), at: mark)
         }
 
         self.restore(mark)
@@ -943,11 +943,40 @@ extension GrammarParser {
         }
 
         if
-            let _ = try self.expect(kind: .dollarSign),
+            let spec = try self.tokenOrFragmentSpecifier(),
             let name = try self.expect(kind: .identifier),
             let _ = try self.expect(kind: .semicolon)
         {
-            return self.setLocation(.init(name: name.token, staticToken: nil, tokenSyntax: nil), at: mark)
+            return self.setLocation(.init(name: name.token, isFragment: spec.kind == .percent, staticToken: nil, tokenSyntax: nil), at: mark)
+        }
+
+        self.restore(mark)
+        return nil
+    }
+
+    /// ```
+    /// tokenOrFragmentSpecifier[Token]:
+    ///     | token='$' { token.token }
+    ///     | token='%' { token.token }
+    ///     ;
+    /// ```
+    @memoized("tokenOrFragmentSpecifier")
+    @inlinable
+    public func __tokenOrFragmentSpecifier() throws -> Token? {
+        let mark = self.mark()
+
+        if
+            let token = try self.expect(kind: .dollarSign)
+        {
+            return token.token
+        }
+
+        self.restore(mark)
+
+        if
+            let token = try self.expect(kind: .percent)
+        {
+            return token.token
         }
 
         self.restore(mark)

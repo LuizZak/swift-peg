@@ -3,6 +3,74 @@ import XCTest
 @testable import SwiftPEG
 
 class GrammarProcessorTests: XCTestCase {
+    func testUnknownReferenceError() throws {
+        let start = makeRule(name: "start", [
+            makeAlt([ makeNamedItem("a") ]),
+        ])
+        let grammar = makeGrammar(
+            metas: [],
+            [start]
+        )
+        let sut = makeSut()
+
+        assertThrows({ try sut.process(grammar) })
+
+        assertCount(sut.errors, 1)
+        assertEqual(sut.test_errorMessages(), """
+            Reference to unknown identifier 'a' @ 0 in rule 'start'. \
+            Did you forget to forward-declare a token with '@token a;' or define \
+            it in '@tokensFile "<file.tokens>"'?
+            """)
+    }
+
+    func testFragmentReferenceInParserError() throws {
+        let delegate = stubDelegate(tokensFile: """
+        %a: 'a' ;
+        """)
+        let start = makeRule(name: "start", [
+            makeAlt([ makeNamedItem("a") ]),
+        ])
+        let grammar = makeGrammar(
+            metas: [
+                makeMeta(name: "tokensFile", string: "")
+            ],
+            [start]
+        )
+        let sut = makeSut(delegate)
+
+        assertThrows({ try sut.process(grammar) })
+
+        assertCount(sut.errors, 1)
+        assertEqual(sut.test_errorMessages(), """
+            Reference to token fragment 'a' @ 0 found in parser in rule 'start'. \
+            Token fragments cannot be referred by the parser, and can only be used as part of definition of tokens.
+            """)
+    }
+
+    func testFragmentSpecifiesStaticTokenDiagnostic() throws {
+        let delegate = stubDelegate(tokensFile: """
+        $a: 'a' ;
+        %b[".b"]: 'b' ;
+        """)
+        let start = makeRule(name: "start", [
+            makeAlt([ makeNamedItem("a") ]),
+        ])
+        let grammar = makeGrammar(
+            metas: [
+                makeMeta(name: "tokensFile", string: "")
+            ],
+            [start]
+        )
+        let sut = makeSut(delegate)
+
+        _=try assertNoThrow({ try sut.process(grammar) })
+
+        assertCount(sut.diagnostics, 1)
+        assertEqual(sut.test_diagnosticMessages(), """
+            Token fragment %b @ line 2 column 1 specifies a static token value, which is not relevant for fragments and will be ignored.
+            """)
+    }
+
     func testAnyToken() throws {
         let atom = makeAtom(ident: "ANY", identity: .unresolved)
         let start = makeRule(name: "start", [
@@ -106,6 +174,15 @@ class GrammarProcessorTests: XCTestCase {
 }
 
 // MARK: - Test internals
+
+private func stubDelegate(tokensFile: String) -> TestGrammarProcessorDelegate {
+    let delegate = TestGrammarProcessorDelegate()
+    delegate.grammarProcessor_loadTokensFileNamed_stub = { (_, _, _) in
+        return tokensFile
+    }
+
+    return delegate
+}
 
 private func makeSut(_ delegate: GrammarProcessor.Delegate? = nil) -> GrammarProcessor {
     return GrammarProcessor(delegate: delegate)

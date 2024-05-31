@@ -19,4 +19,8 @@ extension GrammarProcessor {
     func test_diagnosticMessages() -> String {
         diagnostics.map(\.description).joined(separator: "\n")
     }
+
+    func test_errorMessages() -> String {
+        errors.map(\.description).joined(separator: "\n")
+    }
 }

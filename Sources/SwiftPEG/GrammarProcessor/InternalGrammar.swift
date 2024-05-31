@@ -1,14 +1,25 @@
 public enum InternalGrammar {
     /// ```
     /// tokenDefinition:
-    ///     | '$' name=IDENTIFIER '[' staticToken=STRING ']' ':' ~ tokenSyntax ';'
-    ///     | '$' name=IDENTIFIER '[' staticToken=STRING ']' ';'
-    ///     | '$' name=IDENTIFIER ':' ~ tokenSyntax ';'
-    ///     | '$' name=IDENTIFIER ';'
+    ///     | tokenOrFragmentSpecifier name=IDENTIFIER '[' staticToken=STRING ']' ':' ~ tokenSyntax ';'
+    ///     | tokenOrFragmentSpecifier name=IDENTIFIER '[' staticToken=STRING ']' ';'
+    ///     | tokenOrFragmentSpecifier name=IDENTIFIER ':' ~ tokenSyntax ';'
+    ///     | tokenOrFragmentSpecifier name=IDENTIFIER ';'
+    ///     ;
+    ///
+    /// tokenOrFragmentSpecifier:
+    ///     | '$'
+    ///     | '%'
     ///     ;
     /// ```
     public struct TokenDefinition: CustomStringConvertible {
         public var name: String
+
+        /// Whether this token is a fragment, or a part of another token's syntax
+        /// without being exposed to the parser as a token kind or lexed on its
+        /// own in a token's lexing function.
+        public var isFragment: Bool
+
         public var staticToken: String?
 
         /// The syntax definition of this token.
@@ -53,15 +64,17 @@ public enum InternalGrammar {
         }
 
         public var description: String {
+            let prefix = isFragment ? "%" : "$"
+
             switch (staticToken, string) {
             case (let staticToken?, let string?):
-                return #"$\#(name)["\#(staticToken)"]: "\#(string)" ;"#
+                return #"\#(prefix)\#(name)["\#(staticToken)"]: "\#(string)" ;"#
             case (let staticToken?, nil):
-                return #"$\#(name)["\#(staticToken)"] ;"#
+                return #"\#(prefix)\#(name)["\#(staticToken)"] ;"#
             case (nil, let string?):
-                return #"$\#(name) : "\#(string)" ;"#
+                return #"\#(prefix)\#(name) : "\#(string)" ;"#
             case (nil, nil):
-                return #"$\#(name) ;"#
+                return #"\#(prefix)\#(name) ;"#
             }
         }
 
@@ -77,6 +90,7 @@ public enum InternalGrammar {
 
             .init(
                 name: String(node.name.string),
+                isFragment: node.isFragment,
                 staticToken: node.staticToken.map({ $0.rawContents() }),
                 tokenSyntax: node.tokenSyntax
             )

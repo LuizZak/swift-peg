@@ -1814,11 +1814,12 @@ private func makeTokenDefs(
 
 private func makeTokenDef(
     name: String,
+    isFragment: Bool = false,
     staticToken: String? = nil,
     literal: String
 ) -> InternalGrammar.TokenDefinition {
 
-    .init(name: name, staticToken: staticToken, tokenSyntax: .init(stringLiteral: literal))
+    .init(name: name, isFragment: isFragment, staticToken: staticToken, tokenSyntax: .init(stringLiteral: literal))
 }
 
 private func parseGrammar(

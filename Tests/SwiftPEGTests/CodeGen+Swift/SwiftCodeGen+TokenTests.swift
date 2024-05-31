@@ -591,6 +591,95 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         """#).diff(sut.buffer.finishBuffer())
     }
 
+    func testGenerateTokenType_ignoreTokenFragmentsInTokenKindAndLexerFunction() throws {
+        let tokens = try parseTokenDefinitions(#"""
+        $tok: 'a' frag ;
+        %frag: 'bcd' ;
+        """#)
+        let sut = makeSut(tokens)
+
+        let result = try sut.generateTokenType()
+
+        diffTest(expected: #"""
+        struct ParserToken: TokenType, CustomStringConvertible {
+            var kind: TokenKind
+            var string: Substring
+
+            var length: Int {
+                string.count
+            }
+
+            var description: String {
+                String(string)
+            }
+
+            static func produceDummy(_ kind: TokenKind) -> Self {
+                .init(kind: kind, string: "<dummy>")
+            }
+
+            static func from<StringType>(stream: inout StringStream<StringType>) -> Self? where StringType.SubSequence == Substring {
+                guard !stream.isEof else { return nil }
+                stream.markSubstringStart()
+
+                if consume_tok(from: &stream) {
+                    return .init(kind: .tok, string: stream.substring)
+                }
+
+                return nil
+            }
+
+            enum TokenKind: TokenKindType {
+                /// `"a" frag`
+                case tok
+
+                var description: String {
+                    switch self {
+                    case .tok: "tok"
+                    }
+                }
+            }
+
+            /// ```
+            /// tok:
+            ///     | "a" frag
+            ///     ;
+            /// ```
+            static func consume_tok<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+                guard !stream.isEof else { return false }
+                let state = stream.save()
+
+                alt:
+                do {
+                    guard stream.isNext("a") else {
+                        break alt
+                    }
+                    stream.advance()
+
+                    guard consume_frag(from: &stream) else {
+                        break alt
+                    }
+
+
+                    return true
+                }
+
+                stream.restore(state)
+
+                return false
+            }
+
+            /// ```
+            /// frag:
+            ///     | "bcd"
+            ///     ;
+            /// ```
+            static func consume_frag<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+                stream.advanceIfNext("bcd")
+            }
+        }
+        """#).diff(result)
+    }
+
     func testGenerateTokenType_usesStaticTokenDefinition() throws {
         let tokens = try parseTokenDefinitions(#"""
         $TOKEN[".tokenName"]: 'a' ;

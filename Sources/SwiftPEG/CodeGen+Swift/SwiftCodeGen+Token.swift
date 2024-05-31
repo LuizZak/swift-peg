@@ -118,7 +118,8 @@ extension SwiftCodeGen {
         // TODO: Attempt to generate a switch over the first peeked character
         // TODO: like in SwiftPEGGrammar's Token parser?
 
-        let sorted = self.sortedTokens(tokenDefinitions)
+        let tokensToEmit = tokenDefinitions.filter(showEmitInTokenParser)
+        let sorted = self.sortedTokens(tokensToEmit)
 
         for token in sorted {
             let tokenName = caseName(for: token)
@@ -141,7 +142,7 @@ extension SwiftCodeGen {
         try buffer.emitBlock("enum TokenKind: TokenKindType") {
             let emitter = buffer.startConditionalEmitter()
 
-            for token in tokenDefinitions {
+            for token in tokenDefinitions where showEmitInTokenType(token) {
                 try generateTokenKindEnumCase(token, prevCaseSeparator: emitter)
             }
 
@@ -173,7 +174,7 @@ extension SwiftCodeGen {
         buffer.emitBlock("var description: String") {
             buffer.emitLine("switch self {")
 
-            for token in tokenDefinitions {
+            for token in tokenDefinitions where showEmitInTokenType(token) {
                 guard let syntax = token.tokenSyntax else {
                     continue
                 }
@@ -574,6 +575,16 @@ extension SwiftCodeGen {
         }
 
         return true
+    }
+
+    // MARK: - Conditional checkers
+
+    private func showEmitInTokenType(_ token: InternalGrammar.TokenDefinition) -> Bool {
+        !token.isFragment
+    }
+
+    private func showEmitInTokenParser(_ token: InternalGrammar.TokenDefinition) -> Bool {
+        !token.isFragment
     }
 
     // MARK: - Conditional emissions
