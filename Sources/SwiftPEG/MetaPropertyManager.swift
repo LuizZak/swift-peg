@@ -241,7 +241,7 @@ class MetaPropertyManager {
         static func from(_ node: SwiftPEGGrammar.Meta) -> Self {
             return .init(
                 node: node,
-                name: String(node.name.processedString),
+                name: String(node.name.string),
                 value: .from(node.value)
             )
         }
@@ -272,7 +272,7 @@ class MetaPropertyManager {
                 case let node as SwiftPEGGrammar.MetaStringValue:
                     return .string(node.string.rawContents())
                 case let node as SwiftPEGGrammar.MetaIdentifierValue:
-                    return .identifier(String(node.identifier.processedString))
+                    return .identifier(String(node.identifier.string))
                 default:
                     return .none
                 }

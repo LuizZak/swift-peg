@@ -349,7 +349,7 @@ public class GrammarProcessor {
                 return "Reference to unknown identifier '\(identifier)' in token '\(token.name)' @ \(token.location)."
 
             case .recursivityInTokens(let tokens):
-                return "Recursivity in token definitions is not supported; recursive cycle: \(tokens.map(\.name.processedString).joined(separator: " -> ")) starting @ \(tokens[0].location)"
+                return "Recursivity in token definitions is not supported; recursive cycle: \(tokens.map(\.name.string).joined(separator: " -> ")) starting @ \(tokens[0].location)"
 
             case .unresolvedLeftRecursion(let ruleNames):
                 return "Could not resolve left recursion with a lead rule in the set \(ruleNames)"
@@ -395,11 +395,11 @@ public class GrammarProcessor {
                 return """
                     Alt \(describe(priorInt)) @ \(prior.location) always succeeds \
                     before \(describe(formerInt)) @ \(former.location) can be tried \
-                    in rule \(rule.name.name.processedString) @ \(rule.location).
+                    in rule \(rule.name.name.string) @ \(rule.location).
                     """
 
             case .unreachableRule(let rule, let startRuleName):
-                return "Rule '\(rule.name.name.processedString)' @ \(rule.location) is not reachable from the set start rule '\(startRuleName)'."
+                return "Rule '\(rule.name.name.string)' @ \(rule.location) is not reachable from the set start rule '\(startRuleName)'."
 
             case .metaPropertyDiagnostic(_, let message):
                 return message

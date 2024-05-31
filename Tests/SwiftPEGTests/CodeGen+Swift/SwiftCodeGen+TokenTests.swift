@@ -120,12 +120,14 @@ class SwiftCodeGen_TokenTests: XCTestCase {
                 } else {
                     break alt
                 }
+
+                loop:
                 while !stream.isEof {
                     if consume_b(from: &stream) {
                     } else if stream.isNext("c") {
                         stream.advance()
                     } else {
-                        break
+                        break loop
                     }
                 }
 
@@ -173,13 +175,15 @@ class SwiftCodeGen_TokenTests: XCTestCase {
                 } else {
                     break alt
                 }
+
+                loop:
                 while !stream.isEof {
                     if stream.negativeLookahead(consume_b(from:)), stream.isNext("c") {
                         stream.advance()
                     } else if stream.isNext("d") {
                         stream.advance()
                     } else {
-                        break
+                        break loop
                     }
                 }
 
@@ -261,12 +265,13 @@ class SwiftCodeGen_TokenTests: XCTestCase {
                     break alt
                 }
 
+                loop:
                 while !stream.isEof {
                     switch stream.peek() {
                     case "0"..."9", "A"..."Z", "a"..."z", "_":
                         stream.advance()
                     default:
-                        break
+                        break loop
                     }
                 }
 
@@ -307,12 +312,13 @@ class SwiftCodeGen_TokenTests: XCTestCase {
                 }
                 stream.advance()
 
+                loop:
                 while !stream.isEof {
                     switch stream.peek() {
                     case let c where c.isLetter || c.isWholeNumber || c == "_":
                         stream.advance()
                     default:
-                        break
+                        break loop
                     }
                 }
 
@@ -353,6 +359,7 @@ class SwiftCodeGen_TokenTests: XCTestCase {
                 }
                 stream.advance()
 
+                loop:
                 while !stream.isEof {
                     switch stream.peek() {
                     case "_", "A"..."Z":
@@ -362,7 +369,7 @@ class SwiftCodeGen_TokenTests: XCTestCase {
                     case "0"..."9":
                         stream.advance()
                     default:
-                        break
+                        break loop
                     }
                 }
 
@@ -410,13 +417,14 @@ class SwiftCodeGen_TokenTests: XCTestCase {
                 }
                 stream.advance(3)
 
+                loop:
                 while !stream.isEof {
                     if !stream.isNext("\"\"\""), !stream.isEof {
                         stream.advance()
                     } else if stream.isNext("\\\"\"\"") {
                         stream.advance(4)
                     } else {
-                        break
+                        break loop
                     }
                 }
 
@@ -437,13 +445,14 @@ class SwiftCodeGen_TokenTests: XCTestCase {
                 }
                 stream.advance()
 
+                loop:
                 while !stream.isEof {
                     if !stream.isNext("'"), !stream.isNext("\n"), !stream.isEof {
                         stream.advance()
                     } else if stream.isNext("\\'") {
                         stream.advance(2)
                     } else {
-                        break
+                        break loop
                     }
                 }
 
@@ -464,13 +473,14 @@ class SwiftCodeGen_TokenTests: XCTestCase {
                 }
                 stream.advance()
 
+                loop:
                 while !stream.isEof {
                     if !stream.isNext("\""), !stream.isNext("\n"), !stream.isEof {
                         stream.advance()
                     } else if stream.isNext("\\\"") {
                         stream.advance(2)
                     } else {
-                        break
+                        break loop
                     }
                 }
 
@@ -500,12 +510,16 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         let result = try sut.generateTokenType()
 
         diffTest(expected: #"""
-        struct ParserToken: TokenType {
+        struct ParserToken: TokenType, CustomStringConvertible {
             var kind: TokenKind
             var string: Substring
 
             var length: Int {
                 string.count
+            }
+
+            var description: String {
+                String(string)
             }
 
             static func produceDummy(_ kind: TokenKind) -> Self {
@@ -589,13 +603,18 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         let result = try sut.generateTokenType(settings: settings)
 
         diffTest(expected: #"""
-        struct ParserToken: TokenType {
+        struct ParserToken: TokenType, CustomStringConvertible {
             var kind: TokenKind
             var string: Substring
 
             @inlinable
             var length: Int {
                 string.count
+            }
+
+            @inlinable
+            var description: String {
+                String(string)
             }
 
             @inlinable
@@ -651,12 +670,16 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         let result = try sut.generateTokenType(settings: settings)
 
         diffTest(expected: #"""
-        public struct ParserToken: TokenType {
+        public struct ParserToken: TokenType, CustomStringConvertible {
             public var kind: TokenKind
             public var string: Substring
 
             public var length: Int {
                 string.count
+            }
+
+            public var description: String {
+                String(string)
             }
 
             public init(kind: TokenKind, string: Substring) {
@@ -714,13 +737,18 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         let result = try sut.generateTokenType(settings: settings)
 
         diffTest(expected: #"""
-        public struct ParserToken: TokenType {
+        public struct ParserToken: TokenType, CustomStringConvertible {
             public var kind: TokenKind
             public var string: Substring
 
             @inlinable
             public var length: Int {
                 string.count
+            }
+
+            @inlinable
+            public var description: String {
+                String(string)
             }
 
             @inlinable
@@ -788,12 +816,16 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         let result = try sut.generateTokenType()
 
         diffTest(expected: #"""
-        struct ParserToken: TokenType {
+        struct ParserToken: TokenType, CustomStringConvertible {
             var kind: TokenKind
             var string: Substring
 
             var length: Int {
                 string.count
+            }
+
+            var description: String {
+                String(string)
             }
 
             static func produceDummy(_ kind: TokenKind) -> Self {
@@ -971,11 +1003,13 @@ class SwiftCodeGen_TokenTests: XCTestCase {
                     } else {
                         break alt
                     }
+
+                    loop:
                     while !stream.isEof {
                         if !stream.isNext("\""), !stream.isEof {
                             stream.advance()
                         } else {
-                            break
+                            break loop
                         }
                     }
 

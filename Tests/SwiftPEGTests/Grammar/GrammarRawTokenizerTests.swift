@@ -113,7 +113,7 @@ private func makeLocation(line: Int, column: Int) -> FileSourceLocation {
 
 private func assertTokens(
     _ sut: GrammarRawTokenizer,
-    _ tokens: [SwiftPEGGrammar.GrammarToken],
+    _ tokens: [SwiftPEGGrammar.Token],
     file: StaticString = #file,
     line: UInt = #line
 ) throws {
@@ -144,7 +144,7 @@ private func assertTokens(
 
 private func assertTokensAndLocations(
     _ sut: GrammarRawTokenizer,
-    _ values: [(SwiftPEGGrammar.GrammarToken, FileSourceLocation)],
+    _ values: [(SwiftPEGGrammar.Token, FileSourceLocation)],
     file: StaticString = #file,
     line: UInt = #line
 ) throws {

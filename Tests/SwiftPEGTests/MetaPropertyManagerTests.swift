@@ -248,7 +248,7 @@ private func assertDidNotDiagnoseMeta(
 
     if !diagnostics.isEmpty {
         fail(
-            "Expected no diagnostics for meta @\(meta.name.processedString) but found \(diagnostics). All diagnostics: \(sut.diagnostics)",
+            "Expected no diagnostics for meta @\(meta.name.string) but found \(diagnostics). All diagnostics: \(sut.diagnostics)",
             file: file,
             line: line
         )
@@ -275,7 +275,7 @@ private func assertDiagnosedMeta(
     if let count {
         if count != diagnostics.count {
             fail(
-                "Expected \(count) diagnostics for meta @\(meta.name.processedString) but found \(diagnostics.count). All diagnostics: \(sut.diagnostics)",
+                "Expected \(count) diagnostics for meta @\(meta.name.string) but found \(diagnostics.count). All diagnostics: \(sut.diagnostics)",
                 file: file,
                 line: line
             )
@@ -285,7 +285,7 @@ private func assertDiagnosedMeta(
 
     if diagnostics.isEmpty {
         fail(
-            "Expected diagnostics for meta @\(meta.name.processedString) but found none. All diagnostics: \(sut.diagnostics)",
+            "Expected diagnostics for meta @\(meta.name.string) but found none. All diagnostics: \(sut.diagnostics)",
             file: file,
             line: line
         )

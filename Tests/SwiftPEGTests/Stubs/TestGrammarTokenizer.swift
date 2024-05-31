@@ -1,13 +1,13 @@
 import SwiftPEG
 
 class TestGrammarTokenizer {
-    let tokens: [SwiftPEGGrammar.GrammarToken]
+    let tokens: [GrammarParserToken]
     var index: Int = 0
 
     /// Lists errors to serve at specific indices instead of tokens.
     var errorIndices: [Int: Error] = [:]
 
-    init(tokens: [SwiftPEGGrammar.GrammarToken]) {
+    init(tokens: [GrammarParserToken]) {
         self.tokens = tokens
     }
 
@@ -15,10 +15,10 @@ class TestGrammarTokenizer {
         errorIndices[index] = error
     }
 
-    var next_calls: [Result<SwiftPEGGrammar.GrammarToken?, Error>] = []
+    var next_calls: [Result<GrammarParserToken?, Error>] = []
     var next_callCount: Int = 0
 
-    func next() throws -> (token: SwiftPEGGrammar.GrammarToken, location: FileSourceLocation)? {
+    func next() throws -> (token: GrammarParserToken, location: FileSourceLocation)? {
         next_callCount += 1
 
         guard !isEOF else {
@@ -41,7 +41,7 @@ class TestGrammarTokenizer {
 }
 
 extension TestGrammarTokenizer: RawTokenizerType {
-    typealias Token = SwiftPEGGrammar.GrammarToken
+    typealias Token = GrammarParserToken
     typealias Location = FileSourceLocation
 
     var isEOF: Bool { index >= tokens.count }

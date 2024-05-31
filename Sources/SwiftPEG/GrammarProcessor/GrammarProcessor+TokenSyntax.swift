@@ -22,7 +22,7 @@ extension GrammarProcessor {
         var byName: [String: SwiftPEGGrammar.TokenDefinition] = [:]
 
         for token in tokens {
-            let name = String(token.name.processedString)
+            let name = String(token.name.string)
             if let prior = byName[name] {
                 throw recordAndReturn(GrammarProcessorError.repeatedTokenName(
                     name,
@@ -49,7 +49,7 @@ extension GrammarProcessor {
         var nodesByName: [String: Graph.Node] = [:]
 
         for token in tokens {
-            let name = String(token.name.processedString)
+            let name = String(token.name.string)
             nodesByName[name] = graph.addNode(token)
         }
 

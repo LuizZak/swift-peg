@@ -89,8 +89,8 @@ class GrammarParserTests: XCTestCase {
     }
 
     func testGrammar_largeGrammar_returnsGrammar() throws {
-        var tokens: [SwiftPEGGrammar.GrammarToken] = []
-        let tokensToCopy: [SwiftPEGGrammar.GrammarToken] = [
+        var tokens: [SwiftPEGGrammar.Token] = []
+        let tokensToCopy: [SwiftPEGGrammar.Token] = [
             "ruleA", ":",
                 "|", "'a'",
                 "|", "'b'",
@@ -217,7 +217,7 @@ private func makeSut<Raw: RawTokenizerType>(_ tokenizer: Raw) -> GrammarParser<R
     return GrammarParser(raw: tokenizer)
 }
 
-private func stubTestTokenizer(_ tokens: [SwiftPEGGrammar.GrammarToken]) -> TestGrammarTokenizer {
+private func stubTestTokenizer(_ tokens: [GrammarParserToken]) -> TestGrammarTokenizer {
     return TestGrammarTokenizer(tokens: tokens)
 }
 

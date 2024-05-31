@@ -2,7 +2,7 @@
 
 /// A parser for SwiftPEG grammar files.
 public final class GrammarParser<RawTokenizer: RawTokenizerType>: PEGParser<RawTokenizer>
-    where RawTokenizer.Token == SwiftPEGGrammar.GrammarToken, RawTokenizer.Location == FileSourceLocation
+    where RawTokenizer.Token == GrammarParserToken, RawTokenizer.Location == FileSourceLocation
 { }
 
 extension GrammarParser {

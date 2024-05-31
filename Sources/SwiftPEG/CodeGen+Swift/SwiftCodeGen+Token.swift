@@ -12,7 +12,7 @@ extension SwiftCodeGen {
         let tokenName = "\(parserName)Token"
 
         generateAccessLevel(settings: settings)
-        try buffer.emitBlock("struct \(tokenName): TokenType") {
+        try buffer.emitBlock("struct \(tokenName): TokenType, CustomStringConvertible") {
             try generateTokenTypeMembers(settings: settings)
         }
 
@@ -26,33 +26,56 @@ extension SwiftCodeGen {
         generateAccessLevel(settings: settings)
         buffer.emitLine("var string: Substring")
 
+        // var length: Int
         buffer.ensureDoubleNewline()
+        try generateTokenTypeLength(settings: settings)
+
+        // var description: String
+        buffer.ensureDoubleNewline()
+        try generateTokenTypeDescription(settings: settings)
+
+        // init(kind: TokenKind, string: Substring)
+        buffer.ensureDoubleNewline()
+        try generateTokenTypeInitializer(settings: settings)
+
+        // static func produceDummy(_ kind: TokenKind) -> Self
+        buffer.ensureDoubleNewline()
+        generateTokenTypeProduceDummy(settings: settings)
+
+        // func from<StringType>(stream: inout StringStream<StringType>) -> Self? where StringType.SubSequence == Substring
+        buffer.ensureDoubleNewline()
+        try generateTokenTypeParser(settings: settings, modifiers: ["static"])
+
+        // enum TokenKind
+        buffer.ensureDoubleNewline()
+        try generateTokenKindEnum(settings: settings)
+
+        // func consume_<TOKEN1>
+        // func consume_<TOKEN2>
+        //   ...
+        buffer.ensureDoubleNewline()
+        try generateTokenParsers(settings: settings)
+    }
+
+    /// `var length: Int`
+    func generateTokenTypeLength(settings: TokenTypeGenSettings) throws {
         generateInlinableAttribute(settings: settings)
         generateAccessLevel(settings: settings)
         buffer.emitBlock("var length: Int") {
             buffer.emitLine("string.count")
         }
-
-        buffer.ensureDoubleNewline()
-        try generateTokenTypeInitializer(settings: settings)
-
-        buffer.ensureDoubleNewline()
-        generateInlinableAttribute(settings: settings)
-        generateAccessLevel(settings: settings)
-        buffer.emitBlock("static func produceDummy(_ kind: TokenKind) -> Self") {
-            buffer.emitLine(#".init(kind: kind, string: "<dummy>")"#)
-        }
-
-        buffer.ensureDoubleNewline()
-        try generateTokenTypeParser(settings: settings, modifiers: ["static"])
-
-        buffer.ensureDoubleNewline()
-        try generateTokenKindEnum(settings: settings)
-
-        buffer.ensureDoubleNewline()
-        try generateTokenParsers(settings: settings)
     }
 
+    /// `var description: String`
+    func generateTokenTypeDescription(settings: TokenTypeGenSettings) throws {
+        generateInlinableAttribute(settings: settings)
+        generateAccessLevel(settings: settings)
+        buffer.emitBlock("var description: String") {
+            buffer.emitLine("String(string)")
+        }
+    }
+
+    /// `init(kind: TokenKind, string: Substring)`
     func generateTokenTypeInitializer(settings: TokenTypeGenSettings) throws {
         // If access level is not `nil` or "internal", produce an initializer
         // for the token type
@@ -68,16 +91,26 @@ extension SwiftCodeGen {
         }
     }
 
+    /// `static func produceDummy(_ kind: TokenKind) -> Self`
+    func generateTokenTypeProduceDummy(settings: TokenTypeGenSettings) {
+        generateInlinableAttribute(settings: settings)
+        generateAccessLevel(settings: settings)
+        buffer.emitBlock("static func produceDummy(_ kind: TokenKind) -> Self") {
+            buffer.emitLine(#".init(kind: kind, string: "<dummy>")"#)
+        }
+    }
+
+    /// `func from<StringType>(stream: inout StringStream<StringType>) -> Self? where StringType.SubSequence == Substring`
     func generateTokenTypeParser(settings: TokenTypeGenSettings, modifiers: [String] = []) throws {
         generateInlinableAttribute(settings: settings)
         generateAccessLevel(settings: settings)
         buffer.emitWithSeparators(modifiers + ["func"], separator: " ")
         try buffer.emitBlock(" from<StringType>(stream: inout StringStream<StringType>) -> Self? where StringType.SubSequence == Substring") {
-            try testGenerateTokenTypeParserBody()
+            try generateTokenTypeParserBody()
         }
     }
 
-    func testGenerateTokenTypeParserBody() throws {
+    func generateTokenTypeParserBody() throws {
         buffer.emitLine("guard !stream.isEof else { return nil }")
         buffer.emitLine("stream.markSubstringStart()")
         buffer.ensureDoubleNewline()
@@ -308,9 +341,11 @@ extension SwiftCodeGen {
     /// Generates a `while` loop that continually consumes the first matched
     /// atom in the provided list, returning
     func generateAtomLoop(_ alts: [CommonAbstract.TokenAtom]) throws {
+        buffer.ensureDoubleNewline()
+        buffer.emitLine("loop:")
         buffer.emit("while !stream.isEof ")
         try buffer.emitBlock {
-            try generateAtomAlts(alts, bailStatement: .break())
+            try generateAtomAlts(alts, bailStatement: .break(label: "loop"))
         }
     }
 

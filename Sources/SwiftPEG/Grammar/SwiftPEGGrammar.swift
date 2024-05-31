@@ -6,7 +6,7 @@ public enum SwiftPEGGrammar {}
 #if true
 
 extension SwiftPEGGrammar {
-    public typealias Token = SwiftPEGGrammar.GrammarToken
+    public typealias Token = GrammarParserToken
 
     /// Base class for grammar nodes.
     public class GrammarNode: Node {
@@ -905,52 +905,6 @@ extension SwiftPEGGrammar {
         }
     }
 
-    /// A collection of balanced tokens for use in an action.
-    ///
-    /// Represents the construct:
-    /// ```
-    /// balancedTokens:
-    ///     | balancedToken balancedTokens
-    ///     | balancedToken
-    ///     ;
-    ///
-    /// balancedToken:
-    ///     | token=WHITESPACE
-    ///     | '{' balancedTokens '}'
-    ///     | '[' balancedTokens ']'
-    ///     | '<' balancedTokens '>'
-    ///     | '(' balancedTokens ')'
-    ///     | '[' ~ ']'
-    ///     | '{' ~ '}'
-    ///     | '<' ~ '>'
-    ///     | '(' ~ ')'
-    ///     | token=balancedTokenAtom
-    ///     ;
-    ///
-    /// balancedTokenAtom:
-    ///     | !"[" !"]" !"{" !"}" !"(" !")" token=ANY
-    ///     ;
-    /// ```
-    @GeneratedNodeType<Node>
-    public final class BalancedTokens: GrammarNode, CustomStringConvertible {
-        /// A list of tokens contained within this balanced token set.
-        @NodeRequired
-        public var tokens: [TokenNode<GrammarToken, GrammarRawTokenizer.Location>]
-
-        public override var shortDebugDescription: String { "[\(tokens.map { #""\#($0.token)""# }.joined(separator: ", "))]" }
-
-        /// Returns the combination of all tokens joined with no spaces and no
-        /// extra characters.
-        public var description: String {
-            tokens.map(\.token.processedString).joined()
-        }
-
-        /// Accepts a given grammar-node visitor into this node.
-        public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: GrammarNodeVisitorType {
-            try visitor.visit(self)
-        }
-    }
-
     /// Represents a token definition collected from a tokens file.
     ///
     /// Represents the construct:
@@ -1043,9 +997,6 @@ extension SwiftPEGGrammar {
 
         /// Visits an Action node.
         func visit(_ node: Action) throws -> NodeVisitChildrenResult
-
-        /// Visits a Balanced Tokens node.
-        func visit(_ node: BalancedTokens) throws -> NodeVisitChildrenResult
     }
 }
 
@@ -1071,7 +1022,6 @@ public extension SwiftPEGGrammar.GrammarNodeVisitorType {
     func visit(_ node: SwiftPEGGrammar.StringAtom) throws -> NodeVisitChildrenResult { .visitChildren }
     func visit(_ node: SwiftPEGGrammar.IdentAtom) throws -> NodeVisitChildrenResult { .visitChildren }
     func visit(_ node: SwiftPEGGrammar.Action) throws -> NodeVisitChildrenResult { .visitChildren }
-    func visit(_ node: SwiftPEGGrammar.BalancedTokens) throws -> NodeVisitChildrenResult { .visitChildren }
 }
 
 #endif

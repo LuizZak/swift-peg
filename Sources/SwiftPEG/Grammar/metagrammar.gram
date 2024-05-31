@@ -114,10 +114,10 @@ balancedTokens[SwiftPEGGrammar.TokenSequence]:
 balancedToken[SwiftPEGGrammar.TokenSequence]:
       # Explicitly consume whitespace prior to other token kinds since whitespace gets skipped automatically, if it's not explicitly being checked for
     | token=WHITESPACE                          { .from(token) }
-    | l='{' ~ balancedToken* r='}'                { .from(l).appending(contentsOf: balancedToken).appending(.from(r)) }
-    | l='[' ~ balancedToken* r=']'                { .from(l).appending(contentsOf: balancedToken).appending(.from(r)) }
-    | l='<' ~ balancedToken* r='>'                { .from(l).appending(contentsOf: balancedToken).appending(.from(r)) }
-    | l='(' ~ balancedToken* r=')'                { .from(l).appending(contentsOf: balancedToken).appending(.from(r)) }
+    | l='{' ~ balancedToken* r='}'              { .from(l).appending(contentsOf: balancedToken).appending(.from(r)) }
+    | l='[' ~ balancedToken* r=']'              { .from(l).appending(contentsOf: balancedToken).appending(.from(r)) }
+    | l='<' ~ balancedToken* r='>'              { .from(l).appending(contentsOf: balancedToken).appending(.from(r)) }
+    | l='(' ~ balancedToken* r=')'              { .from(l).appending(contentsOf: balancedToken).appending(.from(r)) }
     | token=balancedTokenAtom                   { token }
     ;
 

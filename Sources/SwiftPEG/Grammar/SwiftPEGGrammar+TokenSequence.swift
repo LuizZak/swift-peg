@@ -22,7 +22,7 @@ extension SwiftPEGGrammar {
         }
 
         public static func from(_ token: SwiftPEGGrammar.Token) -> Self {
-            .init(pieces: [.token(String(token.processedString))])
+            .init(pieces: [.token(String(token.string))])
         }
 
         public static func from(_ string: SwiftPEGGrammar.GrammarString) -> Self {

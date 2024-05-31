@@ -4,7 +4,7 @@ class PerformanceTest {
     var useStringBuffer: Bool = false
 
     func run() throws {
-        let tokensToCopy: [SwiftPEGGrammar.GrammarToken] = [
+        let tokensToCopy: [String] = [
             "ruleA", "[", "Some", ".", "SwiftType", "<", "Int", ">", "]", ":",
                 "|", "'a'",
                 "|", "'b'",
@@ -15,7 +15,7 @@ class PerformanceTest {
         let copies = 10_000
 
         if useStringBuffer {
-            let tokenString = tokensToCopy.map(\.string).joined(separator: " ")
+            let tokenString = tokensToCopy.joined(separator: " ")
             var buffer: String = ""
             for _ in 0..<copies {
                 buffer.append(tokenString)
@@ -30,7 +30,7 @@ class PerformanceTest {
 
             print("Parsing sample with \(tokenCount) tokens...")
 
-            var tokens: [SwiftPEGGrammar.GrammarToken] = []
+            var tokens: [String] = []
             for _ in 0..<copies {
                 tokens.append(contentsOf: tokensToCopy)
             }
@@ -53,7 +53,7 @@ class PerformanceTest {
         let duration = stopwatch.stop()
         print("Success! Parsed in \(String(format: "%.2lf", duration))s")
     }
-    
+
     private func makeParser<Raw: RawTokenizerType>(_ tokenizer: Raw) -> GrammarParser<Raw> {
         return GrammarParser(raw: tokenizer)
     }
@@ -62,7 +62,14 @@ class PerformanceTest {
         return GrammarRawTokenizer(source: source)
     }
 
-    private func arrayRawTokenizer(_ tokens: [SwiftPEGGrammar.GrammarToken]) -> ArrayRawTokenizer<SwiftPEGGrammar.GrammarToken> {
+    private func arrayRawTokenizer(_ tokens: [String]) -> ArrayRawTokenizer<GrammarParserToken> {
+        return ArrayRawTokenizer(tokens: tokens.map({ string in
+            var stream = StringStream(source: string)
+            return .from(stream: &stream)!
+        }))
+    }
+
+    private func arrayRawTokenizer(_ tokens: [GrammarParserToken]) -> ArrayRawTokenizer<GrammarParserToken> {
         return ArrayRawTokenizer(tokens: tokens)
     }
 }
