@@ -65,7 +65,7 @@ class GrammarParsingSample {
 
             print("Remaining tokens:", to: &standardError)
 
-            var tokens: [SwiftPEGGrammar.GrammarToken.TokenString] = []
+            var tokens: [Substring] = []
             while let next = try tokenizer.next() {
                 tokens.append(next.token.string)
             }
