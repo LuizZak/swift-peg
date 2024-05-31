@@ -46,6 +46,24 @@ func assertCast<T, U>(
     )
 }
 
+/// Asserts that an optional value of type `T` can be dynamically cast to `U`,
+/// throwing if it is not.
+func assertCast<T, U>(
+    _ value: T?,
+    to type: U.Type = U.self,
+    message: @autoclosure () -> String = "",
+    file: StaticString = #file,
+    line: UInt = #line
+) throws -> U {
+
+    try assertUnwrap(
+        value as? U,
+        message: "\(#function) failure: \(String(describing: value)) cannot be cast to \(U.self) \(message())",
+        file: file,
+        line: line
+    )
+}
+
 /// Asserts a given Optional is not nil.
 func assertNotNil<T>(
     _ value: T?,

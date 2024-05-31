@@ -30,7 +30,7 @@ meta[SwiftPEGGrammar.Meta]:
 
 metaValue[SwiftPEGGrammar.MetaValue]:
     | ident=IDENTIFIER  { self.setLocation(SwiftPEGGrammar.MetaIdentifierValue(identifier: ident.token), at: mark) }
-    | string=STRING     { self.setLocation(SwiftPEGGrammar.MetaStringValue(string: string.token), at: mark) }
+    | string            { self.setLocation(SwiftPEGGrammar.MetaStringValue(string: string), at: mark) }
     ;
 
 rule[SwiftPEGGrammar.Rule]:
@@ -79,7 +79,7 @@ item[SwiftPEGGrammar.Item]:
 atom[SwiftPEGGrammar.Atom]:
     | '(' ~ alts ')'    { self.setLocation(SwiftPEGGrammar.GroupAtom(alts: alts), at: mark) }
     | IDENTIFIER        { self.setLocation(SwiftPEGGrammar.IdentAtom(identifier: identifier.token, identity: .unresolved), at: mark) }
-    | STRING            { self.setLocation(SwiftPEGGrammar.StringAtom(string: string.token), at: mark) }
+    | string            { self.setLocation(SwiftPEGGrammar.StringAtom(string: string), at: mark) }
     ;
 
 swiftType[CommonAbstract.SwiftType]:
@@ -107,42 +107,59 @@ failAction[SwiftPEGGrammar.Action]:
     | "!!" "{" ~ balancedTokens "}"             { self.setLocation(.init(balancedTokens: balancedTokens), at: mark) }
     ;
 
-balancedTokens[SwiftPEGGrammar.BalancedTokens]:
-    | balancedToken balancedTokens              { self.setLocation(.init(tokens: balancedToken.tokens + balancedTokens.tokens), at: mark) }
-    | balancedToken                             { balancedToken }
+balancedTokens[SwiftPEGGrammar.TokenSequence]:
+    | balancedToken+                            { .from(balancedToken) }
     ;
 
-balancedToken[SwiftPEGGrammar.BalancedTokens]:
+balancedToken[SwiftPEGGrammar.TokenSequence]:
       # Explicitly consume whitespace prior to other token kinds since whitespace gets skipped automatically, if it's not explicitly being checked for
-    | token=WHITESPACE                          { self.setLocation(.init(tokens: [.init(token)]), at: mark) }
-    | l='{' balancedTokens r='}'                { self.setLocation(.init(tokens: [.init(l)] + balancedTokens.tokens + [.init(r)]), at: mark) }
-    | l='[' balancedTokens r=']'                { self.setLocation(.init(tokens: [.init(l)] + balancedTokens.tokens + [.init(r)]), at: mark) }
-    | l='<' balancedTokens r='>'                { self.setLocation(.init(tokens: [.init(l)] + balancedTokens.tokens + [.init(r)]), at: mark) }
-    | l='(' balancedTokens r=')'                { self.setLocation(.init(tokens: [.init(l)] + balancedTokens.tokens + [.init(r)]), at: mark) }
-    | l='[' ~ r=']'                             { self.setLocation(.init(tokens: [.init(l), .init(r)]), at: mark) }
-    | l='{' ~ r='}'                             { self.setLocation(.init(tokens: [.init(l), .init(r)]), at: mark) }
-    | l='<' ~ r='>'                             { self.setLocation(.init(tokens: [.init(l), .init(r)]), at: mark) }
-    | l='(' ~ r=')'                             { self.setLocation(.init(tokens: [.init(l), .init(r)]), at: mark) }
-    | token=balancedTokenAtom                   { .init(tokens: [token]) }
+    | token=WHITESPACE                          { .from(token) }
+    | l='{' ~ balancedToken* r='}'                { .from(l).appending(contentsOf: balancedToken).appending(.from(r)) }
+    | l='[' ~ balancedToken* r=']'                { .from(l).appending(contentsOf: balancedToken).appending(.from(r)) }
+    | l='<' ~ balancedToken* r='>'                { .from(l).appending(contentsOf: balancedToken).appending(.from(r)) }
+    | l='(' ~ balancedToken* r=')'                { .from(l).appending(contentsOf: balancedToken).appending(.from(r)) }
+    | token=balancedTokenAtom                   { token }
     ;
 
-balancedTokenAtom[TokenNode<RawTokenizer.Token, RawTokenizer.Location>]:
-    | !"[" !"]" !"{" !"}" !"(" !")" token=ANY   { .init(token) }
+balancedTokenAtom[SwiftPEGGrammar.TokenSequence]:
+    | string                                    { .from(string) }
+    | !"[" !"]" !"{" !"}" !"(" !")" token=ANY   { .from(token) }
+    ;
+
+
+# Strings
+
+string[SwiftPEGGrammar.GrammarString]:
+    | token=STRING                     { try .fromStringToken(token) }
     ;
 
 
 # Tokens file grammar
 
-tokensFile[[SwiftPEGGrammar.TokenDefinition]]:
+tokensFile[[SwiftPEGGrammar.TokenFileDeclaration]]:
     | tokens=tokenDefinition*
     ;
+
+# TODO: Consider implementing lexer channels if needs be?
+# tokensFile[[SwiftPEGGrammar.TokenFileDeclaration]]:
+#     | tokensFileDeclaration*
+#     ;
+# 
+# tokensFileDeclaration[[SwiftPEGGrammar.TokenFileDeclaration]]:
+#     | tokenDefinition
+#     | tokenChannelDeclaration
+#     ;
+# 
+# tokenChannelDeclaration[[SwiftPEGGrammar.TokenChannel]]:
+#     | '@' IDENTIFIER                            { "\(identifier)" == "channel" ? self.setLocation(.init(identifier: identifier), at: mark) : nil }
+#     ;
 
 # Note: staticToken must resolve statically to a token reference when PEGParser.expect()/PEGParser.expect(kind:) uses it as its argument.
 #       Usually this can be simplified to a `.tokenReference` for TokenType/TokenType.TokenKind types that provide statically-accessible token declarations,
 #       but may be any Swift expression that resolves to the desired token when paired with an appropriate tokenizer's token type.
 tokenDefinition[SwiftPEGGrammar.TokenDefinition]:
-    | '$' name=IDENTIFIER '[' staticToken=STRING ']' ':' ~ tokenSyntax ';'    { self.setLocation(.init(name: name.token, staticToken: staticToken.token, tokenSyntax: tokenSyntax), at: mark) }
-    | '$' name=IDENTIFIER '[' staticToken=STRING ']' ';'                      { self.setLocation(.init(name: name.token, staticToken: staticToken.token, tokenSyntax: nil), at: mark) }
+    | '$' name=IDENTIFIER '[' staticToken=string ']' ':' ~ tokenSyntax ';'    { self.setLocation(.init(name: name.token, staticToken: string, tokenSyntax: tokenSyntax), at: mark) }
+    | '$' name=IDENTIFIER '[' staticToken=string ']' ';'                      { self.setLocation(.init(name: name.token, staticToken: string, tokenSyntax: nil), at: mark) }
     | '$' name=IDENTIFIER ':' ~ tokenSyntax ';'                               { self.setLocation(.init(name: name.token, staticToken: nil, tokenSyntax: tokenSyntax), at: mark) }
     | '$' name=IDENTIFIER ';'                                                 { self.setLocation(.init(name: name.token, staticToken: nil, tokenSyntax: nil), at: mark) }
     ;
@@ -167,14 +184,14 @@ tokenSyntaxAtom[CommonAbstract.TokenAtom]:
     ;
 
 tokenSyntaxExclusion[CommonAbstract.TokenExclusion]:
-    | '!' STRING                                    { .string("\(string)") }
+    | '!' string                                    { .string(from(string)) }
     | '!' IDENTIFIER                                { .identifier("\(identifier)") }
     ;
 
 tokenSyntaxTerminal[CommonAbstract.TokenTerminal]:
-    | IDENTIFIER action                             { .characterPredicate("\(identifier)", "\(action.description)") }
-    | start=STRING '...' end=STRING                 { .rangeLiteral("\(start)", "\(end)") }
-    | STRING                                        { .literal("\(string)") }
+    | IDENTIFIER action                             { .characterPredicate("\(identifier)", action.balancedTokens?.rawContents() ?? "") }
+    | start=string '...' end=string                 { .rangeLiteral(.from(start), .from(end)) }
+    | string                                        { .literal(.from(string)) }
     | IDENTIFIER                                    { .identifier("\(identifier)") }
     | '.'                                           { .any }
     ;

@@ -24,11 +24,11 @@ extension GrammarProcessor {
         for token in tokens {
             let name = String(token.name.processedString)
             if let prior = byName[name] {
-                throw GrammarProcessorError.repeatedTokenName(
+                throw recordAndReturn(GrammarProcessorError.repeatedTokenName(
                     name,
                     token,
                     prior: prior
-                )
+                ))
             }
 
             byName[name] = token
@@ -63,10 +63,10 @@ extension GrammarProcessor {
 
             for identifier in collector.identifiers {
                 guard let referenceNode = nodesByName[identifier] else {
-                    throw GrammarProcessorError.unknownReferenceInToken(
+                    throw recordAndReturn(GrammarProcessorError.unknownReferenceInToken(
                         identifier,
                         token
-                    )
+                    ))
                 }
 
                 graph.addEdge(from: tokenNode, to: referenceNode)
@@ -83,7 +83,9 @@ extension GrammarProcessor {
                     }
 
                     let diagnoseCycle = cycle[nodeBack...]
-                    throw GrammarProcessorError.recursivityInTokens(diagnoseCycle.map(\.value))
+                    throw recordAndReturn(
+                        GrammarProcessorError.recursivityInTokens(diagnoseCycle.map(\.value))
+                    )
                 }
             }
         }

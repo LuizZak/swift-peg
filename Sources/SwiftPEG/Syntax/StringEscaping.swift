@@ -21,5 +21,13 @@ enum StringEscaping {
             .replacingOccurrences(of: "\\", with: #"\\"#)
             .replacingOccurrences(of: terminator, with: #"\\#(terminator)"#)
             .replacingOccurrences(of: "\n", with: #"\n"#)
+            .replacingOccurrences(of: "\t", with: #"\t"#)
+            .replacingOccurrences(of: "\r", with: #"\r"#)
+    }
+
+    /// Attempts to escape terminators from a given string.
+    @usableFromInline
+    static func escapeTerminators<S: StringProtocol>(_ string: S, terminator: String) -> String {
+        string.replacingOccurrences(of: terminator, with: #"\\#(terminator)"#)
     }
 }

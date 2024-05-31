@@ -498,8 +498,89 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         """#).diff(sut.buffer.finishBuffer())
     }
 
-    func testGenerateTokenType() throws {
+    func testGenerateTokenType_usesStaticTokenDefinition() throws {
+        let tokens = try parseTokenDefinitions(#"""
+        $TOKEN[".tokenName"]: 'a' ;
+        $TOKEN2["A.tokenName2"]: 'b';
+        $TOKEN3["tokenName3"]: 'c';
+        """#)
 
+        let sut = makeSut(tokens)
+
+        let result = try sut.generateTokenType()
+
+        diffTest(expected: #"""
+        struct ParserToken: TokenType {
+            var kind: TokenKind
+            var string: Substring
+
+            var length: Int {
+                string.count
+            }
+
+            static func produceDummy(_ kind: TokenKind) -> Self {
+                .init(kind: kind, string: "<dummy>")
+            }
+
+            static func from<StringType>(stream: inout StringStream<StringType>) -> Self? where StringType.SubSequence == Substring {
+                guard !stream.isEof else { return nil }
+                stream.markSubstringStart()
+
+                if consume_TOKEN(stream: &stream) {
+                    return .init(kind: .tokenName, string: stream.substring)
+                }
+                if consume_TOKEN2(stream: &stream) {
+                    return .init(kind: .TOKEN2, string: stream.substring)
+                }
+                if consume_TOKEN3(stream: &stream) {
+                    return .init(kind: .tokenName3, string: stream.substring)
+                }
+
+                return nil
+            }
+
+            enum TokenKind: TokenKindType {
+                /// `"a"`
+                case tokenName
+
+                /// `"b"`
+                case TOKEN2
+
+                /// `"c"`
+                case tokenName3
+            }
+
+            /// ```
+            /// TOKEN[".tokenName"]:
+            ///     | "a"
+            ///     ;
+            /// ```
+            static func consume_TOKEN<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+                stream.advanceIfNext("a")
+            }
+
+            /// ```
+            /// TOKEN2["A.tokenName2"]:
+            ///     | "b"
+            ///     ;
+            /// ```
+            static func consume_TOKEN2<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+                stream.advanceIfNext("b")
+            }
+
+            /// ```
+            /// TOKEN3["tokenName3"]:
+            ///     | "c"
+            ///     ;
+            /// ```
+            static func consume_TOKEN3<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+                stream.advanceIfNext("c")
+            }
+        }
+        """#).diff(result)
+    }
+
+    func testGenerateTokenType() throws {
         let tokens = try parseTokenDefinitions(#"""
         $leftSquare: '[' ;
         $rightSquare: ']' ;

@@ -6,6 +6,7 @@ private let _hardcodedPath = #file
 class GrammarParsingSample {
     var verbose: Bool = false
     var useBuiltInFiles: Bool = false
+    var emitTokenType: Bool = false
 
     func run() throws {
         try parse()
@@ -102,13 +103,22 @@ class GrammarParsingSample {
 
             let swiftCodeGen = SwiftCodeGen(from: result)
 
-            let parser = try swiftCodeGen.generateParser()
+            let code: String
+            let codeKind: String
+
+            if emitTokenType {
+                code = try swiftCodeGen.generateTokenType()
+                codeKind = "token type"
+            } else {
+                code = try swiftCodeGen.generateParser()
+                codeKind = "parser"
+            }
 
             if verbose {
-                print("Generated parser code:")
+                print("Generated \(codeKind) code:")
                 print("-------------------------------------------------")
             }
-            print(parser)
+            print(code)
         }
     }
 }

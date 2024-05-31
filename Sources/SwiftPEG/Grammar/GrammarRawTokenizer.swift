@@ -35,10 +35,11 @@ public class GrammarRawTokenizer: RawTokenizerType {
         let state = _stream.save()
 
         guard
-            let token = Token.from(stream: &_stream),
+            let token = try Token.from(stream: &_stream),
             token.length > 0
         else {
-            throw Error.unknownToken(index: _stream.index, _stream.peek())
+            _stream.restore(state)
+            throw Error.unknownToken(_location, _stream.peek())
         }
 
         defer {
@@ -91,12 +92,12 @@ public class GrammarRawTokenizer: RawTokenizerType {
     }
 
     public enum Error: TokenizerError {
-        case unknownToken(index: String.Index, Character)
+        case unknownToken(FileSourceLocation, Character)
 
         public var description: String {
             switch self {
-            case .unknownToken(_, let tok):
-                return "Unknown token \(tok)"
+            case .unknownToken(let location, let tok):
+                return "\(location): Unknown token: \(tok)"
             }
         }
     }

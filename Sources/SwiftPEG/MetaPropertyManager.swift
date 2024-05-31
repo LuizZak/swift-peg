@@ -149,7 +149,7 @@ class MetaPropertyManager {
 
     private func validateDistinctValues(_ properties: [MetaProperty]) {
         var metaDict: [MetaProperty.Value: MetaProperty] = [:]
-        
+
         for property in properties {
             if let original = metaDict[property.value] {
                 diagnoseRepeatedValue(original: original, property)
@@ -270,7 +270,7 @@ class MetaPropertyManager {
             static func from(_ node: SwiftPEGGrammar.MetaValue?) -> Self {
                 switch node {
                 case let node as SwiftPEGGrammar.MetaStringValue:
-                    return .string(String(node.string.processedString))
+                    return .string(node.string.rawContents())
                 case let node as SwiftPEGGrammar.MetaIdentifierValue:
                     return .identifier(String(node.identifier.processedString))
                 default:
@@ -291,7 +291,7 @@ class MetaPropertyManager {
 
         /// A typed confirmation of the meta property's accepted values,
         /// including descriptions, if available.
-        /// 
+        ///
         /// If the array is empty, it equates to `AcceptedValue.none`.
         var acceptedValues: [AcceptedValue]
 
@@ -324,17 +324,17 @@ class MetaPropertyManager {
                     .string(description: description),
                     .identifier(description: description)
                 ]
-            } 
+            }
 
             /// No value, i.e. `@metaPropertyName ;`.
             case none
 
             /// A string literal value.
             case string(description: String? = nil)
-            
+
             /// An identifier value.
             case identifier(description: String? = nil)
-            
+
             /// A special case of an identifier that resolves to `true` or `false`.
             case boolean(description: String? = nil)
 
@@ -345,7 +345,7 @@ class MetaPropertyManager {
 
                 case .boolean(let description):
                     return "Identifiers or strings 'true' or 'false'. \(description ?? "")"
-                
+
                 case .string(let description):
                     return "A single, double, or triple-quoted string. \(description ?? "")"
 
@@ -364,7 +364,7 @@ class MetaPropertyManager {
                         || value == .identifier("false")
                         || value == .string("true")
                         || value == .string("false")
-                
+
                 case .string:
                     switch value {
                     case .string: return true

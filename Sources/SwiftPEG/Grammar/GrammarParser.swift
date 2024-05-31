@@ -96,9 +96,9 @@ extension GrammarParser {
         self.restore(mark)
 
         if
-            let string = try self.expect(kind: .string)
+            let string = try self.string()
         {
-            return self.setLocation(SwiftPEGGrammar.MetaStringValue(string: string.token), at: mark)
+            return self.setLocation(SwiftPEGGrammar.MetaStringValue(string: string), at: mark)
         }
 
         self.restore(mark)
@@ -473,9 +473,9 @@ extension GrammarParser {
         self.restore(mark)
 
         if
-            let string = try self.expect(kind: .string)
+            let string = try self.string()
         {
-            return self.setLocation(SwiftPEGGrammar.StringAtom(string: string.token), at: mark)
+            return self.setLocation(SwiftPEGGrammar.StringAtom(string: string), at: mark)
         }
 
         self.restore(mark)
@@ -664,31 +664,22 @@ extension GrammarParser {
         }
         return nil
     }
-
     /// ```
-    /// balancedTokens[SwiftPEGGrammar.BalancedTokens]:
-    ///     | balancedToken balancedTokens { self.setLocation(.init(tokens: balancedToken.tokens + balancedTokens.tokens), at: mark) }
-    ///     | balancedToken { balancedToken }
+    /// balancedTokens[SwiftPEGGrammar.TokenSequence]:
+    ///     | balancedToken+ {  .from(balancedToken)  }
     ///     ;
     /// ```
     @memoized("balancedTokens")
     @inlinable
-    public func __balancedTokens() throws -> SwiftPEGGrammar.BalancedTokens? {
+    public func __balancedTokens() throws -> SwiftPEGGrammar.TokenSequence? {
         let mark = self.mark()
 
         if
-            let balancedToken = try self.balancedToken(),
-            let balancedTokens = try self.balancedTokens()
+            let balancedToken = try self.repeatOneOrMore({
+                try self.balancedToken()
+            })
         {
-            return self.setLocation(.init(tokens: balancedToken.tokens + balancedTokens.tokens), at: mark)
-        }
-
-        self.restore(mark)
-
-        if
-            let balancedToken = try self.balancedToken()
-        {
-            return balancedToken
+            return  .from(balancedToken)
         }
 
         self.restore(mark)
@@ -696,69 +687,77 @@ extension GrammarParser {
     }
 
     /// ```
-    /// balancedToken[SwiftPEGGrammar.BalancedTokens]:
-    ///     | token=WHITESPACE { self.setLocation(.init(tokens: [.init(token)]), at: mark) }
-    ///     | l='{' balancedTokens r='}' { self.setLocation(.init(tokens: [.init(l)] + balancedTokens.tokens + [.init(r)]), at: mark) }
-    ///     | l='[' balancedTokens r=']' { self.setLocation(.init(tokens: [.init(l)] + balancedTokens.tokens + [.init(r)]), at: mark) }
-    ///     | l='<' balancedTokens r='>' { self.setLocation(.init(tokens: [.init(l)] + balancedTokens.tokens + [.init(r)]), at: mark) }
-    ///     | l='(' balancedTokens r=')' { self.setLocation(.init(tokens: [.init(l)] + balancedTokens.tokens + [.init(r)]), at: mark) }
-    ///     | l='[' ~ r=']' { self.setLocation(.init(tokens: [.init(l), .init(r)]), at: mark) }
-    ///     | l='{' ~ r='}' { self.setLocation(.init(tokens: [.init(l), .init(r)]), at: mark) }
-    ///     | l='<' ~ r='>' { self.setLocation(.init(tokens: [.init(l), .init(r)]), at: mark) }
-    ///     | l='(' ~ r=')' { self.setLocation(.init(tokens: [.init(l), .init(r)]), at: mark) }
-    ///     | token=balancedTokenAtom { .init(tokens: [token]) }
+    /// balancedToken[SwiftPEGGrammar.TokenSequence]:
+    ///     | token=WHITESPACE { .from(token) }
+    ///     | l='{' balancedTokens r='}' { .from(l).appending(balancedTokens).appending(.from(r)) }
+    ///     | l='[' balancedTokens r=']' { .from(l).appending(balancedTokens).appending(.from(r)) }
+    ///     | l='<' balancedTokens r='>' { .from(l).appending(balancedTokens).appending(.from(r)) }
+    ///     | l='(' balancedTokens r=')' { .from(l).appending(balancedTokens).appending(.from(r)) }
+    ///     | l='[' ~ r=']' { .from(l).appending(.from(r)) }
+    ///     | l='{' ~ r='}' { .from(l).appending(.from(r)) }
+    ///     | l='<' ~ r='>' { .from(l).appending(.from(r)) }
+    ///     | l='(' ~ r=')' { .from(l).appending(.from(r)) }
+    ///     | token=balancedTokenAtom { .from(balancedTokenAtom) }
     ///     ;
     /// ```
     @memoized("balancedToken")
     @inlinable
-    public func __balancedToken() throws -> SwiftPEGGrammar.BalancedTokens? {
+    public func __balancedToken() throws -> SwiftPEGGrammar.TokenSequence? {
         let mark = self.mark()
         var cut = CutFlag()
 
         if
             let token = try self.expect(kind: .whitespace)
         {
-            return self.setLocation(.init(tokens: [.init(token)]), at: mark)
+            return  .from(token)
         }
 
         self.restore(mark)
 
         if
             let l = try self.expect(kind: .leftBrace),
-            let balancedTokens = try self.balancedTokens(),
+            let balancedToken = try self.repeatZeroOrMore({
+                try self.balancedToken()
+            }),
             let r = try self.expect(kind: .rightBrace)
         {
-            return self.setLocation(.init(tokens: [.init(l)] + balancedTokens.tokens + [.init(r)]), at: mark)
+            return  .from(l).appending(contentsOf: balancedToken).appending(.from(r))
         }
 
         self.restore(mark)
 
         if
             let l = try self.expect(kind: .leftSquare),
-            let balancedTokens = try self.balancedTokens(),
+            let balancedToken = try self.repeatZeroOrMore({
+                try self.balancedToken()
+            }),
             let r = try self.expect(kind: .rightSquare)
         {
-            return self.setLocation(.init(tokens: [.init(l)] + balancedTokens.tokens + [.init(r)]), at: mark)
+            return  .from(l).appending(contentsOf: balancedToken).appending(.from(r))
         }
 
         self.restore(mark)
 
         if
             let l = try self.expect(kind: .leftAngle),
-            let balancedTokens = try self.balancedTokens(),
+            let balancedToken = try self.repeatZeroOrMore({
+                try self.balancedToken()
+            }),
             let r = try self.expect(kind: .rightAngle)
         {
-            return self.setLocation(.init(tokens: [.init(l)] + balancedTokens.tokens + [.init(r)]), at: mark)
+            return  .from(l).appending(contentsOf: balancedToken).appending(.from(r))
         }
 
         self.restore(mark)
 
         if
             let l = try self.expect(kind: .leftParen),
-            let balancedTokens = try self.balancedTokens(),
+            let balancedToken = try self.repeatZeroOrMore({
+                try self.balancedToken()
+            }),
             let r = try self.expect(kind: .rightParen)
         {
-            return self.setLocation(.init(tokens: [.init(l)] + balancedTokens.tokens + [.init(r)]), at: mark)
+            return  .from(l).appending(contentsOf: balancedToken).appending(.from(r))
         }
 
         self.restore(mark)
@@ -768,7 +767,7 @@ extension GrammarParser {
             cut.toggleOn(),
             let r = try self.expect(kind: .rightSquare)
         {
-            return self.setLocation(.init(tokens: [.init(l), .init(r)]), at: mark)
+            return  .from(l).appending(.from(r))
         }
 
         self.restore(mark)
@@ -782,7 +781,7 @@ extension GrammarParser {
             cut.toggleOn(),
             let r = try self.expect(kind: .rightBrace)
         {
-            return self.setLocation(.init(tokens: [.init(l), .init(r)]), at: mark)
+            return  .from(l).appending(.from(r))
         }
 
         self.restore(mark)
@@ -796,7 +795,7 @@ extension GrammarParser {
             cut.toggleOn(),
             let r = try self.expect(kind: .rightAngle)
         {
-            return self.setLocation(.init(tokens: [.init(l), .init(r)]), at: mark)
+            return  .from(l).appending(.from(r))
         }
 
         self.restore(mark)
@@ -810,7 +809,7 @@ extension GrammarParser {
             cut.toggleOn(),
             let r = try self.expect(kind: .rightParen)
         {
-            return self.setLocation(.init(tokens: [.init(l), .init(r)]), at: mark)
+            return  .from(l).appending(.from(r))
         }
 
         self.restore(mark)
@@ -822,7 +821,7 @@ extension GrammarParser {
         if
             let token = try self.balancedTokenAtom()
         {
-            return .init(tokens: [token])
+            return token
         }
 
         self.restore(mark)
@@ -830,14 +829,23 @@ extension GrammarParser {
     }
 
     /// ```
-    /// balancedTokenAtom[TokenNode<RawTokenizer.Token, RawTokenizer.Location>]:
-    ///     | !"[" !"]" !"{" !"}" !"(" !")" token=ANY { .init(token) }
+    /// balancedTokenAtom[SwiftPEGGrammar.TokenSequence]:
+    ///     | string {  .from(string)  }
+    ///     | !"[" !"]" !"{" !"}" !"(" !")" token=ANY {  .from(token)  }
     ///     ;
     /// ```
     @memoized("balancedTokenAtom")
     @inlinable
-    public func __balancedTokenAtom() throws -> TokenNode<RawTokenizer.Token, RawTokenizer.Location>? {
+    public func __balancedTokenAtom() throws -> SwiftPEGGrammar.TokenSequence? {
         let mark = self.mark()
+
+        if
+            let string = try self.string()
+        {
+            return  .from(string)
+        }
+
+        self.restore(mark)
 
         if
             try self.negativeLookahead({
@@ -860,7 +868,29 @@ extension GrammarParser {
             }),
             let token = try self.nextToken()
         {
-            return .init(token)
+            return  .from(token)
+        }
+
+        self.restore(mark)
+        return nil
+    }
+
+    /// ```
+    /// string[SwiftPEGGrammar.GrammarString]:
+    ///     | '"""' tripleQuoteSegment* '"""' {  tripleQuoteSegment.tripleQuoted()  }
+    ///     | '"' doubleQuoteSegment* '"' {  doubleQuoteSegment.doubleQuoted()  }
+    ///     | "'" singleQuoteSegment* "'" {  singleQuoteSegment.singleQuoted()  }
+    ///     ;
+    /// ```
+    @memoized("string")
+    @inlinable
+    public func __string() throws -> SwiftPEGGrammar.GrammarString? {
+        let mark = self.mark()
+
+        if
+            let token = try self.expect(kind: .string)
+        {
+            return try .fromStringToken(token)
         }
 
         self.restore(mark)
@@ -891,8 +921,8 @@ extension GrammarParser {
 
     /// ```
     /// tokenDefinition[SwiftPEGGrammar.TokenDefinition]:
-    ///     | '$' name=IDENTIFIER '[' staticToken=STRING ']' ':' ~ tokenSyntax ';' { self.setLocation(.init(name: name.token, staticToken: staticToken.token, tokenSyntax: tokenSyntax), at: mark) }
-    ///     | '$' name=IDENTIFIER '[' staticToken=STRING ']' ';' { self.setLocation(.init(name: name.token, staticToken: staticToken.token, tokenSyntax: nil), at: mark) }
+    ///     | '$' name=IDENTIFIER '[' staticToken=string ']' ':' ~ tokenSyntax ';' { self.setLocation(.init(name: name.token, staticToken: staticToken.token, tokenSyntax: tokenSyntax), at: mark) }
+    ///     | '$' name=IDENTIFIER '[' staticToken=string ']' ';' { self.setLocation(.init(name: name.token, staticToken: staticToken.token, tokenSyntax: nil), at: mark) }
     ///     | '$' name=IDENTIFIER ':' ~ tokenSyntax ';' { self.setLocation(.init(name: name.token, staticToken: nil, tokenSyntax: tokenSyntax), at: mark) }
     ///     | '$' name=IDENTIFIER ';' { self.setLocation(.init(name: name.token, staticToken: nil, tokenSyntax: nil), at: mark) }
     ///     ;
@@ -907,14 +937,14 @@ extension GrammarParser {
             let _ = try self.expect(kind: .dollarSign),
             let name = try self.expect(kind: .identifier),
             let _ = try self.expect(kind: .leftSquare),
-            let staticToken = try self.expect(kind: .string),
+            let staticToken = try self.string(),
             let _ = try self.expect(kind: .rightSquare),
             let _ = try self.expect(kind: .colon),
             cut.toggleOn(),
             let tokenSyntax = try self.tokenSyntax(),
             let _ = try self.expect(kind: .semicolon)
         {
-            return self.setLocation(.init(name: name.token, staticToken: staticToken.token, tokenSyntax: tokenSyntax), at: mark)
+            return self.setLocation(.init(name: name.token, staticToken: staticToken, tokenSyntax: tokenSyntax), at: mark)
         }
 
         self.restore(mark)
@@ -927,11 +957,11 @@ extension GrammarParser {
             let _ = try self.expect(kind: .dollarSign),
             let name = try self.expect(kind: .identifier),
             let _ = try self.expect(kind: .leftSquare),
-            let staticToken = try self.expect(kind: .string),
+            let staticToken = try self.string(),
             let _ = try self.expect(kind: .rightSquare),
             let _ = try self.expect(kind: .semicolon)
         {
-            return self.setLocation(.init(name: name.token, staticToken: staticToken.token, tokenSyntax: nil), at: mark)
+            return self.setLocation(.init(name: name.token, staticToken: staticToken, tokenSyntax: nil), at: mark)
         }
 
         self.restore(mark)
@@ -1106,7 +1136,7 @@ extension GrammarParser {
 
     /// ```
     /// tokenSyntaxExclusion[CommonAbstract.TokenExclusion]:
-    ///     | '!' STRING { .string("\(string)") }
+    ///     | '!' string { .string("\(string)") }
     ///     | '!' IDENTIFIER { .identifier("\(identifier)") }
     ///     ;
     /// ```
@@ -1117,9 +1147,9 @@ extension GrammarParser {
 
         if
             let _ = try self.expect(kind: .exclamationMark),
-            let string = try self.expect(kind: .string)
+            let string = try self.string()
         {
-            return .string("\(string)")
+            return .string(.from(string))
         }
 
         self.restore(mark)
@@ -1153,25 +1183,25 @@ extension GrammarParser {
             let identifier = try self.expect(kind: .identifier),
             let action = try self.action()
         {
-            return .characterPredicate("\(identifier)", "\(action.description)")
+            return .characterPredicate("\(identifier)", action.rawAction)
         }
 
         self.restore(mark)
 
         if
-            let start = try self.expect(kind: .string),
+            let start = try self.string(),
             let _ = try self.expect(kind: .ellipsis),
-            let end = try self.expect(kind: .string)
+            let end = try self.string()
         {
-            return .rangeLiteral("\(start)", "\(end)")
+            return .rangeLiteral(.from(start), .from(end))
         }
 
         self.restore(mark)
 
         if
-            let string = try self.expect(kind: .string)
+            let string = try self.string()
         {
-            return .literal("\(string)")
+            return .literal(.from(string))
         }
 
         self.restore(mark)

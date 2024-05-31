@@ -156,6 +156,8 @@ public class GrammarProcessor {
             return tokens
         } catch let error as ParserError {
             throw recordAndReturn(GrammarProcessorError.tokensFileSyntaxError(tokensMeta.node, error))
+        } catch let error as TokenizerError {
+            throw recordAndReturn(GrammarProcessorError.tokensFileTokenizerError(tokensMeta.node, error))
         } catch {
             throw error
         }
@@ -316,6 +318,10 @@ public class GrammarProcessor {
         /// syntax errors.
         case tokensFileSyntaxError(SwiftPEGGrammar.Meta, ParserError)
 
+        /// A '@tokensFile' meta-property references a tokens file that contains
+        /// tokenizer errors.
+        case tokensFileTokenizerError(SwiftPEGGrammar.Meta, TokenizerError)
+
         /// A generic error with an attached message.
         case message(String)
 
@@ -349,10 +355,13 @@ public class GrammarProcessor {
                 return "Could not resolve left recursion with a lead rule in the set \(ruleNames)"
 
             case .failedToLoadTokensFile(let meta):
-                return "@tokenFile @ \(meta.location) references a file that could not be loaded."
+                return "\(meta.shortDebugDescription) (\(meta.location)) references a file that could not be loaded."
 
             case .tokensFileSyntaxError(let meta, let error):
-                return "@tokenFile @ \(meta.location) failed to parse due to syntax errors: \(error)"
+                return "\(meta.shortDebugDescription) (\(meta.location)) failed to parse due to syntax errors: \(error)"
+
+            case .tokensFileTokenizerError(let meta, let error):
+                return "\(meta.shortDebugDescription) (\(meta.location)) failed to parse due to tokenizer errors: \(error)"
 
             case .message(let message):
                 return message

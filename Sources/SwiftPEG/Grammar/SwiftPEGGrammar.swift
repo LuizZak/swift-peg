@@ -26,7 +26,7 @@ extension SwiftPEGGrammar {
     }
 
     /// A grammar file.
-    /// 
+    ///
     /// Represents the construct:
     /// ```
     /// grammar
@@ -50,7 +50,7 @@ extension SwiftPEGGrammar {
     }
 
     /// A grammar meta-property.
-    /// 
+    ///
     /// Represents the construct:
     /// ```
     /// meta:
@@ -66,6 +66,10 @@ extension SwiftPEGGrammar {
         /// The value associated with this meta-property.
         @NodeProperty
         var _value: MetaValue?
+
+        public override var shortDebugDescription: String {
+            "@\(name.string) \(value?.shortDebugDescription ?? "")"
+        }
 
         /// Accepts a given grammar-node visitor into this node.
         public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: GrammarNodeVisitorType {
@@ -90,7 +94,7 @@ extension SwiftPEGGrammar {
     }
 
     /// A value of a meta-property that is an identifier.
-    /// 
+    ///
     /// Represents the construct:
     /// ```
     /// metaValueIdent: IDENT ;
@@ -110,7 +114,7 @@ extension SwiftPEGGrammar {
     }
 
     /// A value of a meta-property that is a string.
-    /// 
+    ///
     /// Represents the construct:
     /// ```
     /// metaValueString: STRING ;
@@ -119,9 +123,9 @@ extension SwiftPEGGrammar {
     public final class MetaStringValue: MetaValue {
         /// The associated string value.
         @NodeRequired
-        public var string: Token
+        public var string: GrammarString
 
-        public override var shortDebugDescription: String { String(string.string) }
+        public override var shortDebugDescription: String { string.asStringLiteral() }
 
         /// Accepts a given grammar-node visitor into this node.
         public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: GrammarNodeVisitorType {
@@ -130,7 +134,7 @@ extension SwiftPEGGrammar {
     }
 
     /// A grammar rule.
-    /// 
+    ///
     /// Represents the construct:
     /// ```
     /// rule:
@@ -197,7 +201,7 @@ extension SwiftPEGGrammar {
     }
 
     /// A grammar rule's name.
-    /// 
+    ///
     /// Represents the construct:
     /// ```
     /// ruleName:
@@ -225,7 +229,7 @@ extension SwiftPEGGrammar {
 
     /// An alternative, or a sequence of items that must succeed sequentially
     /// for the alt to succeed.
-    /// 
+    ///
     /// Represents the construct:
     /// ```
     /// alt:
@@ -282,7 +286,7 @@ extension SwiftPEGGrammar {
     }
 
     /// An item, or segment of an alt, for which a name can be attributed.
-    /// 
+    ///
     /// Represents the construct:
     /// ```
     /// namedItem:
@@ -348,7 +352,7 @@ extension SwiftPEGGrammar {
 
     /// Base class for a node that represents either a positive/negative lookahead,
     /// or a cut node.
-    /// 
+    ///
     /// Represents the construct:
     /// ```
     /// lookahead:
@@ -375,12 +379,12 @@ extension SwiftPEGGrammar {
     }
 
     /// A positive lookahead.
-    /// 
+    ///
     /// Positive lookaheads are required to match the associated atom in order
     /// to match, but do not consume the atom in the process.
-    /// 
+    ///
     /// Represents the construct:
-    /// 
+    ///
     /// ```
     /// '&' atom ;
     /// ```
@@ -403,10 +407,10 @@ extension SwiftPEGGrammar {
     }
 
     /// A negative lookahead.
-    /// 
+    ///
     /// Positive lookaheads are required to _not_ match the associated atom in
     /// order to match, but do not consume the atom in the process.
-    /// 
+    ///
     /// Represents the construct:
     /// ```
     /// '!' atom ;
@@ -430,11 +434,11 @@ extension SwiftPEGGrammar {
     }
 
     /// A cut ('~') node.
-    /// 
+    ///
     /// Cuts insert forced failure points in sequences of items in an alt, such
     /// that if the parsing fails, the parsing does not proceed further into
     /// other alts of the same rule.
-    /// 
+    ///
     /// Represents the construct:
     /// ```
     /// '~' ;
@@ -450,7 +454,7 @@ extension SwiftPEGGrammar {
 
     /// Base class for items; an atom or similar single-value construct that is
     /// part of an alt.
-    /// 
+    ///
     /// Represents the construct:
     /// ```
     /// item:
@@ -484,10 +488,10 @@ extension SwiftPEGGrammar {
     }
 
     /// An optional set of items.
-    /// 
+    ///
     /// Optional items are consumed if present but are not required in order to
     /// match.
-    /// 
+    ///
     /// Represents the construct:
     /// ```
     /// '[' ~ alts ']' ;
@@ -520,15 +524,15 @@ extension SwiftPEGGrammar {
     }
 
     /// An optional item attached to a single atom.
-    /// 
+    ///
     /// Optional items are consumed if present but are not required in order to
     /// match.
-    /// 
+    ///
     /// Represents the construct:
     /// ```
     /// atom '?' ;
     /// ```
-    /// 
+    ///
     /// This is a short-form of the more general `OptionalItems` node:
     /// ```
     /// '[' ~ alts ']' ;
@@ -561,10 +565,10 @@ extension SwiftPEGGrammar {
     }
 
     /// An item that must match its associated atom zero or more times to succeed.
-    /// 
+    ///
     /// Optional items are consumed for as long as they match, but are not
     /// required in order to match.
-    /// 
+    ///
     /// Represents the construct:
     /// ```
     /// atom '*' ;
@@ -597,10 +601,10 @@ extension SwiftPEGGrammar {
     }
 
     /// An item that must match its associated atom one or more times to succeed.
-    /// 
+    ///
     /// The first item is always required to match, with remaining optional items
     /// being consumed for as long as they match.
-    /// 
+    ///
     /// Represents the construct:
     /// ```
     /// atom '+' ;
@@ -633,17 +637,17 @@ extension SwiftPEGGrammar {
     }
 
     /// A gather match, or a sequence of atoms that are separated by another atom.
-    /// 
+    ///
     /// Represents the construct:
     /// ```
     /// sep=atom '.' node=atom '+' ;
     /// ```
-    /// 
+    ///
     /// It is a shorthand form of the more general compound construct:
     /// ```
     /// node0=atom (sep=atom node1=atom)+ ;
     /// ```
-    /// 
+    ///
     /// Gathers are preferred over the above construct due to only binding two
     /// atoms, instead of three, including the same atom at different positions,
     /// which is cumbersome to handle in code.
@@ -677,7 +681,7 @@ extension SwiftPEGGrammar {
     }
 
     /// An item consisting of an atom.
-    /// 
+    ///
     /// Represents the construct:
     /// ```
     /// atom ;
@@ -714,7 +718,7 @@ extension SwiftPEGGrammar {
     /// atom:
     ///     | '(' ~ alts ')'
     ///     | IDENT
-    ///     | STRING
+    ///     | string
     ///     ;
     /// ```
     public class Atom: GrammarNode {
@@ -738,7 +742,7 @@ extension SwiftPEGGrammar {
     }
 
     /// A group atom with a sequence of alts in parenthesis.
-    /// 
+    ///
     /// Represents the construct:
     /// ```
     /// '(' ~ alts ')' ;
@@ -773,26 +777,28 @@ extension SwiftPEGGrammar {
     }
 
     /// A string literal atom.
-    /// 
+    ///
     /// Represents the construct:
     /// ```
-    /// STRING ;
+    /// string ;
     /// ```
     @GeneratedNodeType<Node>(overrideDeepCopyType: "Atom")
     public final class StringAtom: Atom {
         /// The string associated with this atom.
-        /// 
+        ///
         /// - note: Includes the quotes.
         @NodeRequired
-        public var string: Token
+        public var string: GrammarString
 
         /// Returns the value of `self.value` with any surrounding string quotes
         /// stripped.
-        /// 
+        ///
         /// Convenience for `self.string.valueTrimmingQuotes`.
-        public var valueTrimmingQuotes: Substring {
-            string.processedString
+        public var valueTrimmingQuotes: String {
+            string.rawContents()
         }
+
+        public override var shortDebugDescription: String { string.asStringLiteral() }
 
         /// Accepts a given grammar-node visitor into this node.
         public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: GrammarNodeVisitorType {
@@ -805,7 +811,7 @@ extension SwiftPEGGrammar {
     }
 
     /// An identifier atom.
-    /// 
+    ///
     /// Represents the construct:
     /// ```
     /// atom: IDENT ;
@@ -866,7 +872,7 @@ extension SwiftPEGGrammar {
     /// An action of an alt. Represents a segment of code that is inserted on
     /// the generated code for when the alt associated with an action is matched
     /// or not.
-    /// 
+    ///
     /// Represents the constructs:
     /// ```
     /// action: '{' ~ balancedTokens? '}' ;
@@ -876,24 +882,21 @@ extension SwiftPEGGrammar {
     /// failAction: '!!' '{' ~ balancedTokens? '}' ;
     /// ```
     @GeneratedNodeType<Node>
-    public final class Action: GrammarNode, CustomStringConvertible {
+    public final class Action: GrammarNode {
         /// Balanced tokens contained within this action.
-        @NodeProperty
-        var _balancedTokens: BalancedTokens?
+        @NodeRequired
+        public var balancedTokens: TokenSequence?
 
         public override var shortDebugDescription: String {
             guard let balancedTokens = balancedTokens else {
                 return ""
             }
 
-            return "{ \(balancedTokens.tokens.map(\.token.string).joined()) }"
+            return "{\(balancedTokens)}"
         }
 
-        /// Returns the combination of all tokens within, with no surrounding
-        /// curly braces. Results in the action string being emitted as it was
-        /// laid out in the grammar.
-        public var description: String {
-            balancedTokens?.tokens.map(\.token.string).joined() ?? ""
+        public var rawAction: String {
+            balancedTokens?.raw() ?? ""
         }
 
         /// Accepts a given grammar-node visitor into this node.
@@ -929,12 +932,18 @@ extension SwiftPEGGrammar {
     ///     ;
     /// ```
     @GeneratedNodeType<Node>
-    public final class BalancedTokens: GrammarNode {
+    public final class BalancedTokens: GrammarNode, CustomStringConvertible {
         /// A list of tokens contained within this balanced token set.
         @NodeRequired
         public var tokens: [TokenNode<GrammarToken, GrammarRawTokenizer.Location>]
 
         public override var shortDebugDescription: String { "[\(tokens.map { #""\#($0.token)""# }.joined(separator: ", "))]" }
+
+        /// Returns the combination of all tokens joined with no spaces and no
+        /// extra characters.
+        public var description: String {
+            tokens.map(\.token.processedString).joined()
+        }
 
         /// Accepts a given grammar-node visitor into this node.
         public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: GrammarNodeVisitorType {
@@ -947,7 +956,7 @@ extension SwiftPEGGrammar {
     /// Represents the construct:
     /// ```
     /// tokenDefinition:
-    ///     | '$' name=IDENTIFIER '[' staticToken=STRING ']' ':' ~ tokenSyntax ';' 
+    ///     | '$' name=IDENTIFIER '[' staticToken=STRING ']' ':' ~ tokenSyntax ';'
     ///     | '$' name=IDENTIFIER '[' staticToken=STRING ']' ';'
     ///     | '$' name=IDENTIFIER ':' ~ tokenSyntax ';'
     ///     | '$' name=IDENTIFIER ';'
@@ -963,7 +972,7 @@ extension SwiftPEGGrammar {
         /// Is expected to resolve to a valid token/token kind when paired with
         /// a parser's `PEGParser.expect(_:)`/`PEGParser.expect(kind:)` calls.
         @NodeRequired
-        public var staticToken: Token?
+        public var staticToken: GrammarString?
 
         /// The syntax of the token.
         @NodeRequired

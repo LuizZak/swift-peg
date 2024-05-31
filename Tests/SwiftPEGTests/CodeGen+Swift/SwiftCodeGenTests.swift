@@ -365,7 +365,7 @@ class SwiftCodeGenTests: XCTestCase {
             .init(name: "a", type: "Any", alts: [
                 .init(items: [
                     .item("'+'"),
-                ], action: "anAction"),
+                ], action: " anAction "),
             ]),
         ], metas: [
             .init(name: "implicitReturns", value: .string("false")),
@@ -405,7 +405,7 @@ class SwiftCodeGenTests: XCTestCase {
             .init(name: "a", type: "Any", alts: [
                 .init(items: [
                     .item("'+'"),
-                ], action: "anAction"),
+                ], action: " anAction "),
             ]),
         ], metas: [
             .init(name: "implicitReturns", value: .string("true")),
@@ -745,7 +745,7 @@ class SwiftCodeGenTests: XCTestCase {
     func testGenerateParser_altAction() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
-                .init(items: ["b"], action: "CustomAction()")
+                .init(items: ["b"], action: " CustomAction() ")
             ])
         ])
         let sut = makeSut(grammar)
@@ -781,8 +781,8 @@ class SwiftCodeGenTests: XCTestCase {
     func testGenerateParser_altFailAction() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
-                .init(items: ["b"], failAction: "CustomAction()"),
-                .init(items: ["c"], failAction: "OtherCustomAction()"),
+                .init(items: ["b"], failAction: " CustomAction() "),
+                .init(items: ["c"], failAction: " OtherCustomAction() "),
             ])
         ])
         let sut = makeSut(grammar)
@@ -1092,7 +1092,7 @@ class SwiftCodeGenTests: XCTestCase {
                             "'+'",
                             .item(name: "nameInner", #"'\'"#),
                             "'-'",
-                        ], action: "nameInner"),
+                        ], action: " nameInner "),
                     ])),
                 ]),
             ]),
@@ -1588,18 +1588,18 @@ class SwiftCodeGenTests: XCTestCase {
             | expr '-' term { .sub(expr, term) }
             | term { .term(term) }
             ;
-        
+
         term[TestGrammarAST.Term]:
             | term '*' factor { .mul(term, factor) }
             | term '/' factor { .div(term, factor) }
             | factor { .factor(factor) }
             ;
-        
+
         factor[TestGrammarAST.Factor]:
             | '(' expr ')' { .expr(expr) }
             | atom { .atom(atom) }
             ;
-        
+
         atom[TestGrammarAST.Atom]:
             | NAME { .name(name) }
             | NUMBER { .number(number) }
@@ -1780,7 +1780,7 @@ class SwiftCodeGenTests: XCTestCase {
                     return nil
                 }
             }
-            """).diff(result)
+            """, highlightLineInEditor: false).diff(result)
     }
 }
 

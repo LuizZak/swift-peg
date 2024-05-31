@@ -1,5 +1,8 @@
 extension SwiftCodeGen {
-    func generateTokenType() throws -> String {
+    /// Generates Swift code defining the Token type of the grammar.
+    public func generateTokenType(
+        settings: TokenTypeGenSettings = .default
+    ) throws -> String {
         buffer.resetState()
 
         if let missingSyntax = tokenDefinitions.first(where: { $0.tokenSyntax == nil }) {
@@ -55,7 +58,7 @@ extension SwiftCodeGen {
         let sorted = self.sortedTokens(tokenDefinitions)
 
         for token in sorted {
-            let tokenName = token.name
+            let tokenName = caseName(for: token)
             let method = parseMethodName(for: token)
             let parseInvocation = "\(method)(stream: &stream)"
 
@@ -88,7 +91,8 @@ extension SwiftCodeGen {
             generateTokenDocComment(token, syntax, short: true)
         }
 
-        buffer.emitLine("case \(escapeIdentifier(token.name))")
+        let tokenName = caseName(for: token)
+        buffer.emitLine("case \(escapeIdentifier(tokenName))")
     }
 
     func generateTokenParsers() throws {
@@ -328,17 +332,17 @@ extension SwiftCodeGen {
             switch (lhs.terminal, rhs.terminal) {
             // Merge range literals
             case (.rangeLiteral(let lhsLow, let lhsHigh), .rangeLiteral(let rhsLow, let rhsHigh))
-                where lhsHigh == rhsLow:
+                where lhsHigh.contents == rhsLow.contents:
 
                 return [.init(terminal: .rangeLiteral(lhsLow, rhsHigh))]
 
             // Merge literal into ranged literals that it is contained within
             case (.literal(let lhsLiteral), .rangeLiteral(let rhsLow, let rhsHigh))
-                where (rhsLow...rhsHigh).contains(lhsLiteral):
+                where (rhsLow.contents...rhsHigh.contents).contains(lhsLiteral.contents):
 
                 return [rhs]
             case (.rangeLiteral(let lhsLow, let lhsHigh), .literal(let rhsLiteral))
-                where (lhsLow...lhsHigh).contains(rhsLiteral):
+                where (lhsLow.contents...lhsHigh.contents).contains(rhsLiteral.contents):
 
                 return [lhs]
 
@@ -455,6 +459,8 @@ extension SwiftCodeGen {
         return true
     }
 
+    // MARK: - Static token transformations
+
     /// Returns the conditional statement that matches the current stream index
     /// of a StringStreamer called `stream` to a given atom.
     private func tok_conditional(for atom: CommonAbstract.TokenAtom) throws -> String {
@@ -524,7 +530,7 @@ extension SwiftCodeGen {
             return 1
 
         case .literal(let literal):
-            return literal.count
+            return literal.contents.count
 
         case .identifier:
             // Sub-syntaxes automatically advance the stream forward
@@ -535,8 +541,29 @@ extension SwiftCodeGen {
         }
     }
 
+    /// Escapes a given `DualString` into a Swift string literal expression.
+    private func tok_escapeLiteral(_ string: CommonAbstract.DualString) -> String {
+        switch string {
+        case .fromSource(_, let original):
+            // Convert single-quote into double-quote
+            guard original.hasPrefix("'") else {
+                return original
+            }
+
+            let terminator = "\""
+
+            return terminator + StringEscaping.escapeTerminators(
+                original.dropFirst().dropLast(),
+                terminator: terminator
+            ) + terminator
+
+        case .fromCode(let contents):
+            return tok_escapeLiteral(contents)
+        }
+    }
+
     /// Escapes a given string into a Swift string literal expression.
-    private func tok_escapeLiteral(_ literal: String) -> String {
+    private func tok_escapeLiteral(_ literal: some StringProtocol) -> String {
         StringEscaping.escapeAsStringLiteral(literal)
     }
 
@@ -596,6 +623,32 @@ extension SwiftCodeGen {
 
         case .any:
             return "."
+        }
+    }
+
+    /// Derives an identifier to use as an enumeration case label for a given
+    /// token.
+    ///
+    /// If the token has a static token string that matches `<someIdentifier>`
+    /// or `.<someIdentifier>`, returns `<someIdentifier>`, otherwise returns
+    /// the token's name.
+    private func caseName(for token: InternalGrammar.TokenDefinition) -> String {
+        guard let staticToken = token.staticToken else {
+            return token.name
+        }
+        if staticToken.hasPrefix(".") {
+            let suffix = staticToken.dropFirst()
+            guard SwiftSyntaxExt.isIdentifier(suffix) else {
+                return token.name
+            }
+
+            return String(suffix)
+        } else {
+            guard SwiftSyntaxExt.isIdentifier(staticToken) else {
+                return token.name
+            }
+
+            return String(staticToken)
         }
     }
 

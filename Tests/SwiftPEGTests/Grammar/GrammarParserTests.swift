@@ -5,6 +5,22 @@ import XCTest
 class GrammarParserTests: XCTestCase {
     typealias Sut = GrammarParser<TestGrammarTokenizer>
 
+    func testStringEscaping() throws {
+        let tokenizer = rawTokenizer(#"""
+        @meta "a\nb\"" ;
+        start: a ;
+        """#)
+        let sut = makeSut(tokenizer)
+
+        let result = try assertUnwrap(try sut.grammar())
+
+        let meta = try assertUnwrap(result.metas.first)
+        let value = try assertCast(meta.value, to: SwiftPEGGrammar.MetaStringValue.self)
+
+        assertEqual(value.string.asStringLiteral(), #""a\nb\"""#)
+        assertEqual(value.string.rawContents(), "a\nb\"")
+    }
+
     func testGrammar_emptyGrammar_returnsNil() throws {
         let stubTokenizer = stubTestTokenizer([
         ])
@@ -135,10 +151,8 @@ class GrammarParserTests: XCTestCase {
         let result = try assertUnwrap(sut.alt())
 
         assertNotNil(result.action)
-        assertNotNil(result.action?.balancedTokens)
-        assertEqual(result.action?.balancedTokens?.tokens.map(\.token.string), [
-            ".", ",",
-        ])
+        assertNotNil(result.action?.rawAction)
+        assertEqual(result.action?.rawAction, ".,")
     }
 
     func testAlt_withAction_whitespaceIsPreserved() throws {
@@ -152,10 +166,8 @@ class GrammarParserTests: XCTestCase {
         let result = try assertUnwrap(sut.alt())
 
         assertNotNil(result.action)
-        assertNotNil(result.action?.balancedTokens)
-        assertEqual(result.action?.balancedTokens?.tokens.map(\.token.string), [
-            " ", ".", "\t", "[", "\n", ",", "]", "   ",
-        ])
+        assertNotNil(result.action?.rawAction)
+        assertEqual(result.action?.rawAction, " .\t[\n,]   ")
     }
 
     func testAlt_withFailAction_filledAction_returnsAlt() throws {
@@ -167,10 +179,8 @@ class GrammarParserTests: XCTestCase {
         let result = try assertUnwrap(sut.alt())
 
         assertNotNil(result.failAction)
-        assertNotNil(result.failAction?.balancedTokens)
-        assertEqual(result.failAction?.balancedTokens?.tokens.map(\.token.string), [
-            ".", ",",
-        ])
+        assertNotNil(result.failAction?.rawAction)
+        assertEqual(result.failAction?.rawAction, ".,")
     }
 
     func testAlt_withActionAndFailAction_filledAction_returnsAlt() throws {
@@ -182,15 +192,22 @@ class GrammarParserTests: XCTestCase {
         let result = try assertUnwrap(sut.alt())
 
         assertNotNil(result.action)
-        assertNotNil(result.action?.balancedTokens)
-        assertEqual(result.action?.balancedTokens?.tokens.map(\.token.string), [
-            "+", "-",
-        ])
+        assertNotNil(result.action?.rawAction)
+        assertEqual(result.action?.rawAction, "+-")
         assertNotNil(result.failAction)
-        assertNotNil(result.failAction?.balancedTokens)
-        assertEqual(result.failAction?.balancedTokens?.tokens.map(\.token.string), [
-            ".", ",",
-        ])
+        assertNotNil(result.failAction?.rawAction)
+        assertEqual(result.failAction?.rawAction, ".,")
+    }
+
+    func testAlt_action_consumesWhitespace() throws {
+        let tokenizer = rawTokenizer("""
+        a { b.c() }
+        """)
+        let sut = makeSut(tokenizer)
+
+        let result = try assertUnwrap(sut.alt())
+
+        assertEqual(result.action?.rawAction, " b.c() ")
     }
 }
 
@@ -202,4 +219,8 @@ private func makeSut<Raw: RawTokenizerType>(_ tokenizer: Raw) -> GrammarParser<R
 
 private func stubTestTokenizer(_ tokens: [SwiftPEGGrammar.GrammarToken]) -> TestGrammarTokenizer {
     return TestGrammarTokenizer(tokens: tokens)
+}
+
+private func rawTokenizer(_ source: String) -> GrammarRawTokenizer {
+    return GrammarRawTokenizer(source: source)
 }

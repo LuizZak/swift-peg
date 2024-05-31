@@ -1,16 +1,16 @@
 extension SwiftPEGGrammar {
     /// A token in a grammar.
-    public enum GrammarToken: TokenType, ExpressibleByStringLiteral, CustomStringConvertible {
+    public enum GrammarToken: TokenType, ExpressibleByStringLiteral, CustomStringConvertible, CustomDebugStringConvertible {
         public typealias TokenKind = GrammarTokenKind
         public typealias TokenString = Substring
 
         /// `*`
-        /// 
+        ///
         /// Alias for `Self.star`
         public static let asterisk = Self.star
 
         /// `.`
-        /// 
+        ///
         /// Alias for `Self.period`
         public static let dot = Self.period
 
@@ -26,7 +26,7 @@ extension SwiftPEGGrammar {
 
         /// A string literal token.
         /// Includes the quotes.
-        case string(StringLiteral)
+        case string(Substring)
 
         /// `(`
         case leftParen
@@ -89,6 +89,14 @@ extension SwiftPEGGrammar {
         case forwardSlash
         /// `\`
         case backslash
+        /// `'`
+        case singleQuote
+        /// `"`
+        case doubleQuote
+        /// `"""`
+        case tripleQuote
+        /// `
+        case backtick
 
         @inlinable
         public var kind: GrammarTokenKind {
@@ -124,6 +132,10 @@ extension SwiftPEGGrammar {
             case .dollarSign: return .dollarSign
             case .forwardSlash: return .forwardSlash
             case .backslash: return .backslash
+            case .singleQuote: return .singleQuote
+            case .doubleQuote: return .doubleQuote
+            case .tripleQuote: return .tripleQuote
+            case .backtick: return .backtick
             }
         }
 
@@ -133,7 +145,7 @@ extension SwiftPEGGrammar {
             case .whitespace(let value): return value
             case .identifier(let value): return value
             case .digits(let value): return value
-            case .string(let value): return value.quotedContents[...]
+            case .string(let value): return value
             case .leftParen: return "("
             case .rightParen: return ")"
             case .leftBrace: return "{"
@@ -161,6 +173,10 @@ extension SwiftPEGGrammar {
             case .dollarSign: return "$"
             case .forwardSlash: return "/"
             case .backslash: return "\\"
+            case .singleQuote: return "'"
+            case .doubleQuote: return "\""
+            case .tripleQuote: return "\"\"\""
+            case .backtick: return "`"
             }
         }
 
@@ -172,7 +188,7 @@ extension SwiftPEGGrammar {
             case .whitespace(let value): return value
             case .identifier(let value): return value
             case .digits(let value): return value
-            case .string(let value): return value.contents
+            case .string(let value): return value
             case .leftParen: return "("
             case .rightParen: return ")"
             case .leftBrace: return "{"
@@ -200,6 +216,10 @@ extension SwiftPEGGrammar {
             case .dollarSign: return "$"
             case .forwardSlash: return "/"
             case .backslash: return "\\"
+            case .singleQuote: return "'"
+            case .doubleQuote: return "\""
+            case .tripleQuote: return "\"\"\""
+            case .backtick: return "`"
             }
         }
 
@@ -222,9 +242,9 @@ extension SwiftPEGGrammar {
                 return value.count
 
             case .string(let value):
-                return value.length
-            
-            case .ellipsis:
+                return value.count
+
+            case .ellipsis, .tripleQuote:
                 return 3
 
             case .doubleExclamationMark:
@@ -235,7 +255,7 @@ extension SwiftPEGGrammar {
                 .rightSquare, .leftAngle, .rightAngle,.colon, .semicolon, .bar,
                 .equals, .tilde, .star, .plus, .minus, .questionMark, .exclamationMark,
                 .ampersand, .comma, .period, .at, .dollarSign, .forwardSlash,
-                .backslash:
+                .backslash, .singleQuote, .doubleQuote, .backtick:
                 return 1
             }
         }
@@ -245,6 +265,46 @@ extension SwiftPEGGrammar {
             return String(processedString)
         }
 
+        public var debugDescription: String {
+            switch self {
+            case .whitespace(let value): return ".whitespace(\(value.debugDescription))"
+            case .identifier(let value): return ".identifier(\(value.debugDescription))"
+            case .digits(let value): return ".digits(\(value.debugDescription))"
+            case .string(let value): return ".string(\(value.debugDescription))"
+            case .leftParen: return ".leftParen"
+            case .rightParen: return ".rightParen"
+            case .leftBrace: return ".leftBrace"
+            case .rightBrace: return ".rightBrace"
+            case .leftSquare: return ".leftSquare"
+            case .rightSquare: return ".rightSquare"
+            case .leftAngle: return ".leftAngle"
+            case .rightAngle: return ".rightAngle"
+            case .colon: return ".colon"
+            case .semicolon: return ".semicolon"
+            case .bar: return ".bar"
+            case .equals: return ".equals"
+            case .tilde: return ".tilde"
+            case .star: return ".star"
+            case .plus: return ".plus"
+            case .minus: return ".minus"
+            case .questionMark: return ".questionMark"
+            case .exclamationMark: return ".exclamationMark"
+            case .doubleExclamationMark: return ".doubleExclamationMark"
+            case .ampersand: return ".ampersand"
+            case .comma: return ".comma"
+            case .period: return ".period"
+            case .ellipsis: return ".ellipsis"
+            case .at: return ".at"
+            case .dollarSign: return ".dollarSign"
+            case .forwardSlash: return ".forwardSlash"
+            case .backslash: return ".backslash"
+            case .singleQuote: return ".singleQuote"
+            case .doubleQuote: return ".doubleQuote"
+            case .tripleQuote: return ".tripleQuote"
+            case .backtick: return ".backtick"
+            }
+        }
+
         /// Attempts to construct a token from a given string literal value.
         ///
         /// - Note: If the construction fails, an assertion is raised, and should
@@ -252,7 +312,7 @@ extension SwiftPEGGrammar {
         @inlinable
         public init(stringLiteral value: String) {
             var stream = StringStream(source: value)
-            guard let token = Self.from(stream: &stream) else {
+            guard let token = try! Self.from(stream: &stream) else {
                 fatalError("\(Self.self): Unknown token literal '\(value)'")
             }
 
@@ -265,7 +325,7 @@ extension SwiftPEGGrammar {
             case .whitespace: return .whitespace(" ")
             case .identifier: return .identifier("<dummy>")
             case .digits: return .digits("<dummy>")
-            case .string: return .string(.singleQuote("<dummy>", lengthInSource: 1))
+            case .string: return .string("<dummy>")
             case .leftParen: return .leftParen
             case .rightParen: return .rightParen
             case .leftBrace: return .leftBrace
@@ -293,13 +353,17 @@ extension SwiftPEGGrammar {
             case .dollarSign: return .dollarSign
             case .forwardSlash: return .forwardSlash
             case .backslash: return .backslash
+            case .singleQuote: return .singleQuote
+            case .doubleQuote: return .doubleQuote
+            case .tripleQuote: return .tripleQuote
+            case .backtick: return .backtick
             }
         }
 
         /// Returns a parsed token from the given string stream.
         /// If the token is not recognized, `nil` is returned, instead.
         @inlinable
-        public static func from<S>(stream: inout StringStream<S>) -> Self? where S.SubSequence == Substring {
+        public static func from<S>(stream: inout StringStream<S>) throws -> Self? where S.SubSequence == Substring {
             if stream.isEof { return nil }
 
             switch stream.peek() {
@@ -336,12 +400,14 @@ extension SwiftPEGGrammar {
             case "@": return .at
             case "$": return .dollarSign
             case "/": return .forwardSlash
-            case "\\": return .backslash
+            case "\\":
+                return .backslash
             // String
             case "'", "\"":
-                if let string = StringLiteral.from(stream: &stream) {
-                    return .string(string)
+                if consume_STRING(from: &stream) {
+                    return .string(stream.substring)
                 }
+
                 return nil
             // Whitespace
             case let c where c.isWhitespace:
@@ -440,176 +506,142 @@ extension SwiftPEGGrammar {
             return stream.substring
         }
 
-        /// Specifies a variant of a string literal.
-        /// 
-        /// Associated values represent the string's contents, including the
-        /// quotes.
-        public enum StringLiteral: Hashable, CustomStringConvertible {
-            /// `'<...>'`
-            /// 
-            /// Includes quotes.
-            case singleQuote(String, lengthInSource: Int)
-            
-            /// `"<...>"`
-            /// 
-            /// Includes quotes.
-            case doubleQuote(String, lengthInSource: Int)
+        /// ```
+        /// STRING[".string"]:
+        ///     | "\"\"\"" ("\\\"\"\"" | !"\"\"\"" .)* "\"\"\""
+        ///     | "\"" ("\\\"" | !"\"" .)* "\""
+        ///     | "'" ("\\'" | !"'" .)* "'"
+        ///     ;
+        /// ```
+        @inlinable
+        static func consume_STRING<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+            guard !stream.isEof else { return false }
+            let state = stream.save()
 
-            /// `"""<...>"""`
-            /// 
-            /// Supports newlines within.
-            /// Includes quotes.
-            case tripleQuote(String, lengthInSource: Int)
-
-            /// Returns contents of the string, with any escape sequence expanded,
-            /// without surrounding quotes.
-            @inlinable
-            public var contents: Substring {
-                switch self {
-                case .singleQuote(let string, _):
-                    return string.dropFirst().dropLast()
-
-                case .doubleQuote(let string, _):
-                    return string.dropFirst().dropLast()
-
-                case .tripleQuote(let string, _):
-                    return string.dropFirst(
-                        string.hasPrefix("\"\"\"\n") ? 4 : 3 // Ignore first newline past triple quote
-                    ).dropLast(3)
+            alt:
+            do {
+                guard stream.isNext("\"\"\"") else {
+                    break alt
                 }
-            }
+                stream.advance(3)
 
-            /// Returns the full representation of this literal, including quotes.
-            @inlinable
-            public var quotedContents: String {
-                switch self {
-                case .singleQuote(let string, _),
-                    .doubleQuote(let string, _),
-                    .tripleQuote(let string, _):
-                    return string
-                }
-            }
-
-            /// Returns the length of this string in grapheme clusters, i.e.
-            /// Swift's `String.count`.
-            @inlinable
-            public var length: Int {
-                switch self {
-                case .singleQuote(_, let length),
-                    .doubleQuote(_, let length),
-                    .tripleQuote(_, let length):
-                    return length
-                }
-            }
-
-            /// Returns the full representation of this literal, including quotes.
-            @inlinable
-            public var description: String {
-                String(quotedContents)
-            }
-
-            /// Returns a parsed string literal from the given substring.
-            /// If no string literal is recognized, `nil` is returned, instead.
-            @inlinable
-            public static func from<S>(stream: inout StringStream<S>) -> Self? where S.SubSequence == Substring {
-                guard !stream.isEof else { return nil }
-
-                let terminator: String
-                let multiline: Bool
-
-                let start = stream.index
-
-                if stream.advanceIfNext("\"\"\"") {
-                    terminator = "\"\"\""
-                    multiline = true
-                } else if stream.advanceIfNext("\"") {
-                    terminator = "\""
-                    multiline = false
-                } else if stream.advanceIfNext("'") {
-                    terminator = "'"
-                    multiline = false
-                } else {
-                    return nil
-                }
-
-                var contents = terminator
-
-                var expectsEscapeSequence = false
                 while !stream.isEof {
-                    if expectsEscapeSequence {
-                        // Handle escape sequences
-
-                        expectsEscapeSequence = false
-                        // Escaped string terminator
-                        if stream.advanceIfNext(terminator) {
-                            contents += terminator
-                            continue
-                        }
-                        // Cr+lf
-                        if stream.advanceIfNext("r\\n") {
-                            contents.append("\r\n" as Character)
-                            continue
-                        }
-
-                        switch stream.next() {
-                        // Whitespace
-                        case "n": contents += "\n"
-                        case "t": contents += "\t"
-                        case #"\"#: contents += #"\"#
-                        default:
-                            return nil // Unknown escape sequence?
-                        }
+                    if stream.isNext("\\") {
+                        stream.advance(2)
+                    } else if stream.isNext("\\\"\"\"") {
+                        stream.advance(4)
+                    } else if !stream.isNext("\"\"\""), !stream.isEof {
+                        stream.advance()
                     } else {
-                        if stream.advanceIfNext(terminator) {
-                            contents += terminator
-
-                            // Calculate how much of the input stream we just
-                            // consumed to report back to the raw tokenizer
-                            let distance = stream.source.distance(from: start, to: stream.index)
-
-                            if terminator == "\"\"\"" {
-                                return .tripleQuote(contents, lengthInSource: distance)
-                            } else if terminator == "\"" {
-                                return .doubleQuote(contents, lengthInSource: distance)
-                            } else if terminator == "'" {
-                                return .singleQuote(contents, lengthInSource: distance)
-                            }
-                        }
-
-                        let next = stream.next()
-
-                        // Newlines are only allowed in triple-quoted strings
-                        if next == "\n" {
-                            if !multiline {
-                                return nil
-                            }
-
-                            contents.append(next)
-                        }
-                        // Check escape sequence
-                        else if next == "\\" {
-                            expectsEscapeSequence = true
-                        } else {
-                            contents.append(next)
-                        }
+                        break
                     }
                 }
 
-                // Missing terminator?
-                return nil
+                guard stream.isNext("\"\"\"") else {
+                    break alt
+                }
+                stream.advance(3)
+
+                return true
             }
+
+            stream.restore(state)
+
+            alt:
+            do {
+                guard stream.isNext("\"") else {
+                    break alt
+                }
+                stream.advance()
+
+                while !stream.isEof {
+                    if stream.isNext("\\") {
+                        stream.advance(2)
+                    } else if stream.isNext("\\\"") {
+                        stream.advance(2)
+                    } else if !stream.isNext("\""), !stream.isEof {
+                        stream.advance()
+                    } else {
+                        break
+                    }
+                }
+
+                guard stream.isNext("\"") else {
+                    break alt
+                }
+                stream.advance()
+
+                return true
+            }
+
+            stream.restore(state)
+
+            alt:
+            do {
+                guard stream.isNext("'") else {
+                    break alt
+                }
+                stream.advance()
+
+                while !stream.isEof {
+                    if stream.isNext("\\") {
+                        stream.advance(2)
+                    } else if stream.isNext("\\'") {
+                        stream.advance(2)
+                    } else if !stream.isNext("'"), !stream.isEof {
+                        stream.advance()
+                    } else {
+                        break
+                    }
+                }
+
+                guard stream.isNext("'") else {
+                    break alt
+                }
+                stream.advance()
+
+                return true
+            }
+
+            stream.restore(state)
+
+            return false
+        }
+
+        @inlinable
+        static func _stringSegment<S: StringProtocol>(_ stream: inout StringStream<S>) -> Substring? where S.SubSequence == Substring {
+            guard !stream.isEof else { return nil }
+
+            switch stream.peek() {
+            case "\\", "'", "\"":
+                return nil
+            default:
+                stream.advance()
+            }
+
+            loop:
+            while !stream.isEof {
+                switch stream.peek() {
+                case "\\", "'", "\"":
+                    break loop
+                default:
+                    stream.advance()
+                }
+            }
+
+            return stream.substring
         }
     }
 
     /// Specifies kinds for grammar tokens.
     public enum GrammarTokenKind: String, TokenKindType, CaseIterable, ExpressibleByStringLiteral {
         /// `*`
-        /// 
+        ///
         /// Alias for `Self.star`
         public static let asterisk = Self.star
 
         /// `.`
-        /// 
+        ///
         /// Alias for `Self.period`
         public static let dot = Self.period
 
@@ -688,6 +720,15 @@ extension SwiftPEGGrammar {
         /// `\`
         case backslash = "\\"
 
+        /// `'`
+        case singleQuote = "'"
+        /// `"`
+        case doubleQuote = "\""
+        /// `"""`
+        case tripleQuote = "\"\"\""
+        /// `
+        case backtick = "`"
+
         @inlinable
         public var description: String {
             self.rawValue
@@ -700,6 +741,21 @@ extension SwiftPEGGrammar {
             }
 
             self = value
+        }
+    }
+
+    /// A generic error produced by a token during lexing of an input string.
+    public enum LexingError: TokenizerError {
+        case message(String, String.Index)
+        case missingTerminator(terminator: String, start: String.Index)
+
+        public var description: String {
+            switch self {
+            case .message(let message, let offset):
+                return "Lexer error @ \(offset): \(message)"
+            case .missingTerminator(let terminator, let start):
+                return "Missing terminator '\(terminator)' to match @ \(start)"
+            }
         }
     }
 }

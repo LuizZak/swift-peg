@@ -37,7 +37,7 @@ public class SwiftCodeGen {
     let buffer: CodeStringBuffer
     var declContext: DeclarationsContext
 
-    var latestSettings: Settings = .default
+    var latestSettings: ParserGenSettings = .default
     var tokenCallKind: TokenCallKind = .expect
     var remaining: [InternalGrammar.Rule] = []
     var ruleAliases: [String: String] = [:]
@@ -72,7 +72,7 @@ public class SwiftCodeGen {
 
     /// Generates Swift parser code.
     public func generateParser(
-        settings: Settings = .default
+        settings: ParserGenSettings = .default
     ) throws -> String {
 
         self.latestSettings = settings
@@ -196,7 +196,7 @@ public class SwiftCodeGen {
 
         // Generate fail action, if present
         if let failAction = alt.failAction {
-            buffer.emitLine(failAction.string)
+            buffer.emitLine(failAction.string.trimmingWhitespace())
         }
 
         if hasCut(alt) {
@@ -222,7 +222,7 @@ public class SwiftCodeGen {
         }
 
         if let action = alt.action {
-            buffer.emitLine(action.string)
+            buffer.emitLine(action.string.trimmingWhitespace())
             return
         }
 
@@ -427,8 +427,8 @@ public class SwiftCodeGen {
         }
     }
 
-    /// Settings that can be specified during code generation.
-    public struct Settings {
+    /// Settings that can be specified during parser code generation.
+    public struct ParserGenSettings {
         /// Gets the static default settings configuration.
         public static let `default`: Self = Self(
             omitUnreachable: false
@@ -440,6 +440,22 @@ public class SwiftCodeGen {
 
         public init(omitUnreachable: Bool) {
             self.omitUnreachable = omitUnreachable
+        }
+
+        /// Returns a copy of `self` with a given keypath modified to be `value`.
+        public func with<T>(_ keyPath: WritableKeyPath<Self, T>, value: T) -> Self {
+            var copy = self
+            copy[keyPath: keyPath] = value
+            return copy
+        }
+    }
+
+    /// Settings that can be specified during token type code generation.
+    public struct TokenTypeGenSettings {
+        /// Gets the static default settings configuration.
+        public static let `default`: Self = Self()
+
+        public init() {
         }
 
         /// Returns a copy of `self` with a given keypath modified to be `value`.

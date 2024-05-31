@@ -1,7 +1,19 @@
-$WHITESPACE[".whitespace"] ;
-$IDENTIFIER[".identifier"] ;
-$DIGITS[".digits"] ;
-$STRING[".string"] ;
+$WHITESPACE[".whitespace"]: " " | "\t" | "\n" | "\r" ;
+
+$IDENTIFIER[".identifier"]:
+    | ("a"..."z" | "A"..."Z" | "_") ("0"..."9" | "a"..."z" | "A"..."Z" | "_")*
+    ;
+
+$DIGITS[".digits"]:
+    | "0"..."9"
+    ;
+
+$STRING[".string"]:
+    | '"""' ('\\' | '\\"""' | !'"""' .)* '"""'
+    | '"' ('\\' | '\\"' | !'"' !'\n' .)* '"'
+    | "'" ('\\' | "\\'" | !"'" !'\n' .)* "'"
+    ;
+
 $LEFTPAREN[".leftParen"]: "(" ;
 $RIGHTPAREN[".rightParen"]: ")" ;
 $LEFTBRACE[".leftBrace"]: "{" ;

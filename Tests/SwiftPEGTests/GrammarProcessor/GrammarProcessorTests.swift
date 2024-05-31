@@ -76,7 +76,7 @@ class GrammarProcessorTests: XCTestCase {
         let grammarString = """
         @token a ;
         @token b ;
-        
+
         @token a ;
         @token a ;
         @token b ;
@@ -182,8 +182,8 @@ private func makeIdent(_ ident: String) -> SwiftPEGGrammar.Token {
     .identifier(Substring(ident))
 }
 
-private func makeString(_ string: String) -> SwiftPEGGrammar.Token {
-    .string(.doubleQuote(#""\#(string)""#, lengthInSource: string.count))
+private func makeString(_ string: String) -> SwiftPEGGrammar.GrammarString {
+    .init(pieces: [.literal(string)], quote: .doubleQuote)
 }
 
 private func parseGrammar(

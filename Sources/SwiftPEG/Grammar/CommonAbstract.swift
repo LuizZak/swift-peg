@@ -4,6 +4,36 @@
 ///
 /// Namespaced to keep type pollution to a minimum.
 public enum CommonAbstract {
+    /// A dual String representation that has carries a literal version and a
+    /// as-per-source version containing the original escape sequences and quotes.
+    public enum DualString: Hashable, ExpressibleByStringLiteral {
+        /// A dual string that originated from parsing a SwiftPEG grammar file,
+        /// with both the parsed contents and the original string, with quotes,
+        /// as found in the source code.
+        case fromSource(contents: String, original: String)
+
+        /// A dual string that contains only a raw representation, and was generated
+        /// by code.
+        case fromCode(contents: String)
+
+        // Convenience members
+
+        public var contents: String {
+            switch self {
+            case .fromSource(let contents, _), .fromCode(let contents):
+                return contents
+            }
+        }
+
+        public init(stringLiteral value: String) {
+            self = .fromCode(contents: value)
+        }
+
+        public static func from(_ string: SwiftPEGGrammar.GrammarString) -> Self {
+            return .fromSource(contents: string.rawContents(), original: string.asStringLiteral())
+        }
+    }
+
     /// Describes the type of a grammar production, as a Swift type.
     ///
     /// Represents the construct:
@@ -474,8 +504,8 @@ extension CommonAbstract {
             case .literal(let literal):
                 if
                     excludes.contains(where: {
-                        $0.asString.map(literal.hasPrefix) == true ||
-                        $0.asString.map { $0.hasPrefix(literal) } == true
+                        $0.asString.map(literal.contents.hasPrefix) == true ||
+                        $0.asString.map { $0.hasPrefix(literal.contents) } == true
                     })
                 {
                     return true
@@ -498,13 +528,13 @@ extension CommonAbstract {
     /// ```
     @GeneratedCaseChecks(accessLevel: "public")
     public enum TokenExclusion: Hashable, CustomStringConvertible {
-        case string(String)
+        case string(DualString)
         case identifier(String)
 
         var asString: String? {
             switch self {
             case .string(let value):
-                return value
+                return value.contents
             default:
                 return nil
             }
@@ -526,8 +556,8 @@ extension CommonAbstract {
     /// ```
     /// tokenSyntaxTerminal:
     ///     | IDENTIFIER action
-    ///     | STRING '...' STRING
-    ///     | STRING
+    ///     | string '...' string
+    ///     | string
     ///     | IDENTIFIER
     ///     | '.'
     ///     ;
@@ -536,11 +566,11 @@ extension CommonAbstract {
         /// `IDENTIFIER action`
         case characterPredicate(String, String)
 
-        /// `STRING '...' STRING`
-        case rangeLiteral(String, String)
+        /// `string '...' string`
+        case rangeLiteral(DualString, DualString)
 
-        /// `STRING`
-        case literal(String)
+        /// `string`
+        case literal(DualString)
 
         /// IDENTIFIER
         case identifier(String)
@@ -552,7 +582,7 @@ extension CommonAbstract {
         fileprivate var _range: ClosedRange<Character>? {
             switch self {
             case .rangeLiteral(let lower, let upper):
-                guard let lower = lower.first, let upper = upper.first else {
+                guard let lower = lower.contents.first, let upper = upper.contents.first else {
                     return nil
                 }
 
@@ -617,7 +647,7 @@ extension CommonAbstract {
                 return lhs.lowerBound >= rhs.lowerBound && lhs.upperBound <= rhs.upperBound
 
             case (.literal(let lit), .rangeLiteral):
-                guard let char = lit.first, let range = other._range, lit.count == 1 else {
+                guard let char = lit.contents.first, let range = other._range, lit.contents.count == 1 else {
                     return false
                 }
 
@@ -648,19 +678,19 @@ extension CommonAbstract {
 
             switch (self, other) {
             case (.literal(let literal), .any)
-                where literal.count == 1:
+                where literal.contents.count == 1:
                 return true
 
             case (.rangeLiteral(let low, let high), .any)
-                where low.count == 1 && high.count == 1:
+                where low.contents.count == 1 && high.contents.count == 1:
                 return true
 
             case (.literal(let lhs), .literal(let rhs)):
-                return rhs.hasPrefix(lhs)
+                return rhs.contents.hasPrefix(lhs.contents)
 
             case (.literal(let lhs), .rangeLiteral(let low, let high))
-                where lhs.count <= low.count:
-                return (low...high).contains(lhs)
+                where lhs.contents.count <= low.contents.count:
+                return (low.contents...high.contents).contains(lhs.contents)
 
             default:
                 return false

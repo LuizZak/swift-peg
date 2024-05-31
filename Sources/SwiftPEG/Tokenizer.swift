@@ -70,7 +70,7 @@ open class Tokenizer<Raw: RawTokenizerType> {
 
     /// Returns the next token's location in the token sequence, as reported by
     /// the underlying raw tokenizer.
-    /// 
+    ///
     /// Returns `nil` if at EOF.
     @inlinable
     open func location() throws -> Raw.Location? {
@@ -138,7 +138,7 @@ open class Tokenizer<Raw: RawTokenizerType> {
 
     /// Returns a marker for the current tokenizer's position so that it can be
     /// rolled back at a later point.
-    /// 
+    ///
     /// - note: Markers from different tokenizer instances are not exchangeable.
     @inlinable
     open func mark() -> Mark {

@@ -5,7 +5,7 @@ extension CommonAbstract.TokenSyntax: ExpressibleByStringLiteral {
         self.init(alts: [
             .init(items: [
                 .atom(
-                    .init(excluded: [], terminal: .literal(value))
+                    .init(excluded: [], terminal: .literal(.fromCode(contents: value)))
                 )
             ])
         ])
@@ -14,12 +14,12 @@ extension CommonAbstract.TokenSyntax: ExpressibleByStringLiteral {
 
 extension CommonAbstract.TokenAtom: ExpressibleByStringLiteral {
     public init(stringLiteral value: String) {
-        self.init(excluded: [], terminal: .literal(value))
+        self.init(excluded: [], terminal: .literal(.fromCode(contents: value)))
     }
 }
 
 func ... (lhs: String, rhs: String) -> CommonAbstract.TokenTerminal {
-    .rangeLiteral(lhs, rhs)
+    .rangeLiteral(.fromCode(contents: lhs), .fromCode(contents: rhs))
 }
 
 func ... (lhs: String, rhs: String) -> CommonAbstract.TokenAtom {

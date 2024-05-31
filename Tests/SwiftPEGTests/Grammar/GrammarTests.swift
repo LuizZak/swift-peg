@@ -3,79 +3,94 @@ import XCTest
 @testable import SwiftPEG
 
 class GrammarTests: XCTestCase {
-    func testOperatorTokens() {
-        runTokenTest(literal: "(", kind: .leftParen)
-        runTokenTest(literal: ")", kind: .rightParen)
-        runTokenTest(literal: "{", kind: .leftBrace)
-        runTokenTest(literal: "}", kind: .rightBrace)
-        runTokenTest(literal: "[", kind: .leftSquare)
-        runTokenTest(literal: "]", kind: .rightSquare)
-        runTokenTest(literal: "<", kind: .leftAngle)
-        runTokenTest(literal: ">", kind: .rightAngle)
-        runTokenTest(literal: ":", kind: .colon)
-        runTokenTest(literal: ";", kind: .semicolon)
-        runTokenTest(literal: "|", kind: .bar)
-        runTokenTest(literal: "=", kind: .equals)
-        runTokenTest(literal: "~", kind: .tilde)
-        runTokenTest(literal: "*", kind: .star)
-        runTokenTest(literal: "+", kind: .plus)
-        runTokenTest(literal: "-", kind: .minus)
-        runTokenTest(literal: "?", kind: .questionMark)
-        runTokenTest(literal: "!", kind: .exclamationMark)
-        runTokenTest(literal: "&", kind: .ampersand)
-        runTokenTest(literal: ",", kind: .comma)
-        runTokenTest(literal: ".", kind: .period)
-        runTokenTest(literal: "@", kind: .at)
-        runTokenTest(literal: "$", kind: .dollarSign)
-        runTokenTest(literal: "/", kind: .forwardSlash)
-        runTokenTest(literal: "\\", kind: .backslash)
+    func testOperatorTokens() throws {
+        try runTokenTest(literal: "(", kind: .leftParen)
+        try runTokenTest(literal: ")", kind: .rightParen)
+        try runTokenTest(literal: "{", kind: .leftBrace)
+        try runTokenTest(literal: "}", kind: .rightBrace)
+        try runTokenTest(literal: "[", kind: .leftSquare)
+        try runTokenTest(literal: "]", kind: .rightSquare)
+        try runTokenTest(literal: "<", kind: .leftAngle)
+        try runTokenTest(literal: ">", kind: .rightAngle)
+        try runTokenTest(literal: ":", kind: .colon)
+        try runTokenTest(literal: ";", kind: .semicolon)
+        try runTokenTest(literal: "|", kind: .bar)
+        try runTokenTest(literal: "=", kind: .equals)
+        try runTokenTest(literal: "~", kind: .tilde)
+        try runTokenTest(literal: "*", kind: .star)
+        try runTokenTest(literal: "+", kind: .plus)
+        try runTokenTest(literal: "-", kind: .minus)
+        try runTokenTest(literal: "?", kind: .questionMark)
+        try runTokenTest(literal: "!", kind: .exclamationMark)
+        try runTokenTest(literal: "&", kind: .ampersand)
+        try runTokenTest(literal: ",", kind: .comma)
+        try runTokenTest(literal: ".", kind: .period)
+        try runTokenTest(literal: "@", kind: .at)
+        try runTokenTest(literal: "$", kind: .dollarSign)
+        try runTokenTest(literal: "/", kind: .forwardSlash)
+        try runTokenTest(literal: "\\", kind: .backslash)
     }
 
-    func testWhitespaceToken() {
-        runTokenTest(literal: " ", kind: .whitespace)
-        runTokenTest(literal: "\n", kind: .whitespace)
-        runTokenTest(literal: "\t", kind: .whitespace)
-        runTokenTest(literal: "\r", kind: .whitespace)
-        runTokenTest(literal: " \n", kind: .whitespace)
-        runTokenTest(literal: "\r \r\n", kind: .whitespace)
-        runTokenTest(literal: "\r \r\na", kind: .whitespace, expectedLength: 3)
-        runTokenTest(literal: "    +", kind: .whitespace, expectedLength: 4)
+    func testWhitespaceToken() throws {
+        try runTokenTest(literal: " ", kind: .whitespace)
+        try runTokenTest(literal: "\n", kind: .whitespace)
+        try runTokenTest(literal: "\t", kind: .whitespace)
+        try runTokenTest(literal: "\r", kind: .whitespace)
+        try runTokenTest(literal: " \n", kind: .whitespace)
+        try runTokenTest(literal: "\r \r\n", kind: .whitespace)
+        try runTokenTest(literal: "\r \r\na", kind: .whitespace, expectedLength: 3)
+        try runTokenTest(literal: "    +", kind: .whitespace, expectedLength: 4)
     }
 
-    func testIdentifierToken() {
-        runTokenTest(literal: "anIdent", kind: .identifier)
-        runTokenTest(literal: "_anIdent", kind: .identifier)
-        runTokenTest(literal: "AnIdent", kind: .identifier)
-        runTokenTest(literal: "a123", kind: .identifier)
-        runTokenTest(literal: "a123_", kind: .identifier)
-        runTokenTest(literal: "a123_ ", kind: .identifier, expectedLength: 5)
+    func testIdentifierToken() throws {
+        try runTokenTest(literal: "anIdent", kind: .identifier)
+        try runTokenTest(literal: "_anIdent", kind: .identifier)
+        try runTokenTest(literal: "AnIdent", kind: .identifier)
+        try runTokenTest(literal: "a123", kind: .identifier)
+        try runTokenTest(literal: "a123_", kind: .identifier)
+        try runTokenTest(literal: "a123_ ", kind: .identifier, expectedLength: 5)
     }
 
-    func testDigitsToken() {
-        runTokenTest(literal: "0123", kind: .digits)
-        runTokenTest(literal: "0123a", kind: .digits, expectedLength: 4)
+    func testDigitsToken() throws {
+        try runTokenTest(literal: "0123", kind: .digits)
+        try runTokenTest(literal: "0123a", kind: .digits, expectedLength: 4)
     }
 
-    func testStringLiteralToken() {
-        runTokenTest(literal: "'t'", kind: .string)
-        runTokenTest(literal: #""a""#, kind: .string)
-        runTokenTest(literal: #"'\' b' c"#, kind: .string, expectedLength: 6)
-        runTokenTest(literal: #"'\\' b' c"#, kind: .string, expectedLength: 4)
+    func testStringLiteralToken() throws {
+        try runTokenTest(literal: "'t'", kind: .string)
+        try runTokenTest(literal: #""a""#, kind: .string)
+        try runTokenTest(literal: #"'\' b' c"#, kind: .string, expectedLength: 6)
+        try runTokenTest(literal: #"'\\' b' c"#, kind: .string, expectedLength: 4)
     }
 
     func testStringLiteralToken_tripleQuote() throws {
         let terminator = "\"\"\""
 
-        runTokenTest(literal: "\(terminator)a\(terminator)", kind: .string)
-        runTokenTest(literal: "\(terminator)a\nb\(terminator)", kind: .string)
-        runTokenTest(literal: "\(terminator)\na\nb\(terminator)", kind: .string)
-        
+        try runTokenTest(literal: "\(terminator)a\(terminator)", kind: .string)
+        try runTokenTest(literal: "\(terminator)a\nb\(terminator)", kind: .string)
+        try runTokenTest(literal: "\(terminator)\na\nb\(terminator)", kind: .string)
+
         var stream = StringStream(source: "\(terminator)\na\nb\n\(terminator)")
         let tok = try assertUnwrap(SwiftPEGGrammar.GrammarToken
             .from(stream: &stream)
         )
 
-        assertEqual(tok.processedString, "a\nb\n")
+        assertEqual(tok.processedString, "\(terminator)\na\nb\n\(terminator)")
+    }
+
+    func testStringLiteralToken_interpolatedString() throws {
+        try runTokenTest(literal: #""ab\(some code)cd""#, kind: .string)
+        try runTokenTest(literal: #""ab\(some "co\(d)e")cd""#, kind: .string, expectedLength: 11)
+        try runTokenTest(
+            literal: #""ab\(some "co\\(d)e")cd""#,
+            kind: .string,
+            expectedLength: 11
+        )
+        try runTokenTest(
+            literal: #""ab\(some "co\\(de")cd""#,
+            kind: .string,
+            expectedLength: 11
+        )
     }
 }
 
@@ -87,9 +102,9 @@ private func runTokenTest(
     expectedLength: Int? = nil,
     file: StaticString = #file,
     line: UInt = #line
-) {
+) throws {
     var stream = StringStream(source: literal)
-    guard let token = SwiftPEGGrammar.GrammarToken.from(stream: &stream) else {
+    guard let token = try SwiftPEGGrammar.GrammarToken.from(stream: &stream) else {
         fail("Token literal '\(literal)' was not recognized by \(SwiftPEGGrammar.GrammarToken.self)", file: file, line: line)
         return
     }
