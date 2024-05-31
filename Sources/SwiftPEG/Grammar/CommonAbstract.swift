@@ -282,19 +282,27 @@ extension CommonAbstract {
     /// tokenSyntaxItem:
     ///     | '(' '|'.tokenSyntaxAtom+ ')' '*'
     ///     | '(' '|'.tokenSyntaxAtom+ ')' '+'
+    ///     | '(' '|'.tokenSyntaxAtom+ ')' '?'
     ///     | '(' '|'.tokenSyntaxAtom+ ')'
+    ///     | tokenSyntaxAtom '?'
     ///     | tokenSyntaxAtom
     ///     ;
     /// ```
     public enum TokenItem: Equatable, CustomStringConvertible {
-        /// '(' '|'.tokenSyntaxAtom+ ')' '*'
+        /// `'(' '|'.tokenSyntaxAtom+ ')' '*'`
         case zeroOrMore([TokenAtom])
 
-        /// '(' '|'.tokenSyntaxAtom+ ')' '+'
+        /// `'(' '|'.tokenSyntaxAtom+ ')' '+'`
         case oneOrMore([TokenAtom])
 
-        /// '(' '|'.tokenSyntaxAtom+ ')'
+        /// `'(' '|'.tokenSyntaxAtom+ ')' '?'`
+        case optionalGroup([TokenAtom])
+
+        /// `'(' '|'.tokenSyntaxAtom+ ')'`
         case group([TokenAtom])
+
+        /// `tokenSyntaxAtom '?'`
+        case optionalAtom(TokenAtom)
 
         /// `tokenSyntaxAtom`
         case atom(TokenAtom)
@@ -302,16 +310,11 @@ extension CommonAbstract {
         /// Fetches all atoms contained within this token item.
         var atoms: [TokenAtom] {
             switch self {
-            case .oneOrMore(let atoms):
+            case .oneOrMore(let atoms), .zeroOrMore(let atoms),
+                .optionalGroup(let atoms), .group(let atoms):
                 return atoms
 
-            case .zeroOrMore(let atoms):
-                return atoms
-
-            case .group(let atoms):
-                return atoms
-
-            case .atom(let atom):
+            case .optionalAtom(let atom), .atom(let atom):
                 return [atom]
             }
         }
@@ -324,8 +327,14 @@ extension CommonAbstract {
             case .zeroOrMore(let atoms):
                 return "(\(atoms.map(\.description).joined(separator: " | ")))*"
 
+            case .optionalGroup(let atoms):
+                return "(\(atoms.map(\.description).joined(separator: " | ")))?"
+
             case .group(let atoms):
                 return "(\(atoms.map(\.description).joined(separator: " | ")))"
+
+            case .optionalAtom(let atom):
+                return "\(atom)?"
 
             case .atom(let atom):
                 return atom.description
@@ -333,10 +342,9 @@ extension CommonAbstract {
         }
 
         /// Returns `true` if this item can be considered a prefix of another,
-        /// i.e. `other` always matches on the same inputs as `self` (but not
-        /// necessarily the other way around), and matches on an input by this
-        /// item have a length that are always less than or equal to the length
-        /// of the match on the same input in `other`.
+        /// i.e. if `self` matching a token guarantees `other` does too (but not
+        /// necessarily the other way around), those simultaneous matches are
+        /// always of equal length or shorter in `self` than in `other`.
         ///
         /// Two items that are identical are considered to be prefixes of each
         /// other (non-strict prefix).
@@ -363,7 +371,7 @@ extension CommonAbstract {
             /// Returns `true` iff `lhs` is a prefix of `rhs`, or `rhs` is capable
             /// of matching all characters that `lhs` matches.
             func _isPrefix(_ lhs: some Collection<TokenAtom>, _ rhs: some Collection<TokenAtom>) -> Bool {
-                // lhs is a subset of rhs only if every atom in lhs is a subset
+                // lhs is a prefix of rhs only if every atom in lhs is a prefix
                 // of some atom in rhs
                 for lhs in lhs {
                     if !rhs.contains(where: { lhs.isPrefix(of: $0) }) {
@@ -375,6 +383,11 @@ extension CommonAbstract {
             }
 
             switch (self, other) {
+            case (.optionalGroup, _), (.optionalAtom, _):
+                // Optionals are prefix of all other items they are not optionally
+                // prefixes to
+                return _isPrefix(atoms, other.atoms)
+
             // Zero or more
             case (.zeroOrMore(let lhs), .zeroOrMore(let rhs)):
                 return _isSubset(lhs, rhs)
@@ -382,10 +395,10 @@ extension CommonAbstract {
             case (.zeroOrMore(let lhs), .oneOrMore(let rhs)):
                 return _isSubset(lhs, rhs)
 
-            case (.zeroOrMore, .group):
+            case (.zeroOrMore, .group), (.zeroOrMore, .optionalGroup):
                 return false
 
-            case (.zeroOrMore, .atom):
+            case (.zeroOrMore, .atom), (.zeroOrMore, .optionalAtom):
                 return false
 
             // One or more
@@ -395,10 +408,10 @@ extension CommonAbstract {
             case (.oneOrMore(let lhs), .zeroOrMore(let rhs)):
                 return _isSubset(lhs, rhs)
 
-            case (.oneOrMore, .group):
+            case (.oneOrMore, .group), (.oneOrMore, .optionalGroup):
                 return false
 
-            case (.oneOrMore, .atom):
+            case (.oneOrMore, .atom), (.oneOrMore, .optionalAtom):
                 return false
 
             // Group
@@ -411,6 +424,12 @@ extension CommonAbstract {
             case (.group(let lhs), .group(let rhs)):
                 return _isPrefix(lhs, rhs)
 
+            case (.group(let lhs), .optionalGroup(let rhs)):
+                return _isPrefix(lhs, rhs)
+
+            case (.group(let lhs), .optionalAtom(let rhs)):
+                return _isPrefix(lhs, [rhs])
+
             case (.group(let lhs), .atom(let rhs)):
                 return _isPrefix(lhs, [rhs])
 
@@ -421,8 +440,14 @@ extension CommonAbstract {
             case (.atom(let lhs), .oneOrMore(let rhs)):
                 return _isSubset([lhs], rhs) || _isPrefix([lhs], rhs)
 
+            case (.atom(let lhs), .optionalGroup(let rhs)):
+                return _isPrefix([lhs], rhs)
+
             case (.atom(let lhs), .group(let rhs)):
                 return _isPrefix([lhs], rhs)
+
+            case (.atom(let lhs), .optionalAtom(let rhs)):
+                return lhs.isPrefix(of: rhs)
 
             case (.atom(let lhs), .atom(let rhs)):
                 return lhs.isPrefix(of: rhs)
@@ -491,8 +516,8 @@ extension CommonAbstract {
         }
 
         /// Returns `true` if this atom can be considered a subset of another,
-        /// i.e. if this atom matching a token guarantees the other atom
-        /// also does, but no necessarily the other way around.
+        /// i.e. if this atom matching a token guarantees the other atom also
+        /// does, but no necessarily the other way around.
         ///
         /// Subset relationship is defined in the following ways:
         ///

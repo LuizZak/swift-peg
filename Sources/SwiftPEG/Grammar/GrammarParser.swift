@@ -1007,7 +1007,9 @@ extension GrammarParser {
     /// tokenSyntaxItem[CommonAbstract.TokenItem]:
     ///     | '(' '|'.tokenSyntaxAtom+ ')' '*' { .zeroOrMore(tokenSyntaxAtom) }
     ///     | '(' '|'.tokenSyntaxAtom+ ')' '+' { .oneOrMore(tokenSyntaxAtom) }
+    ///     | '(' '|'.tokenSyntaxAtom+ ')' '?' { .optionalGroup(tokenSyntaxAtom) }
     ///     | '(' '|'.tokenSyntaxAtom+ ')' { .group(tokenSyntaxAtom) }
+    ///     | tokenSyntaxAtom '?' { .optionalAtom(tokenSyntaxAtom) }
     ///     | tokenSyntaxAtom { .atom(tokenSyntaxAtom) }
     ///     ;
     /// ```
@@ -1053,9 +1055,33 @@ extension GrammarParser {
             }, item: {
                 try self.tokenSyntaxAtom()
             }),
+            let _ = try self.expect(kind: .rightParen),
+            let _ = try self.expect(kind: .questionMark)
+        {
+            return .optionalGroup(tokenSyntaxAtom)
+        }
+
+        self.restore(mark)
+
+        if
+            let _ = try self.expect(kind: .leftParen),
+            let tokenSyntaxAtom = try self.gather(separator: {
+                try self.expect(kind: .bar)
+            }, item: {
+                try self.tokenSyntaxAtom()
+            }),
             let _ = try self.expect(kind: .rightParen)
         {
             return .group(tokenSyntaxAtom)
+        }
+
+        self.restore(mark)
+
+        if
+            let tokenSyntaxAtom = try self.tokenSyntaxAtom(),
+            let _ = try self.expect(kind: .questionMark)
+        {
+            return .optionalAtom(tokenSyntaxAtom)
         }
 
         self.restore(mark)

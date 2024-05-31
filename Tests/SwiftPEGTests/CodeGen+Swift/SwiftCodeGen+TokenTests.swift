@@ -43,6 +43,98 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         """#).diff(sut.buffer.finishBuffer())
     }
 
+    func testGenerateTokenParser_optionalGroup() throws {
+        let tokens = try parseTokenDefinitions(#"""
+        $syntax: '[' ('0'...'9' | '_')? ']' ;
+        """#)
+        let sut = makeSut(tokens)
+
+        try sut.generateTokenParser(tokens[0], settings: .default)
+
+        diffTest(expected: #"""
+        /// ```
+        /// syntax:
+        ///     | "[" ("0"..."9" | "_")? "]"
+        ///     ;
+        /// ```
+        func consume_syntax<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+            guard !stream.isEof else { return false }
+            let state = stream.save()
+
+            alt:
+            do {
+                guard stream.isNext("[") else {
+                    break alt
+                }
+                stream.advance()
+
+                switch stream.peek() {
+                case "0"..."9", "_":
+                    stream.advance()
+                default:
+                    _=()
+                }
+
+                guard stream.isNext("]") else {
+                    break alt
+                }
+                stream.advance()
+
+                return true
+            }
+
+            stream.restore(state)
+
+            return false
+        }
+        """#).diff(sut.buffer.finishBuffer())
+    }
+
+    func testGenerateTokenParser_optionalAtom() throws {
+        let tokens = try parseTokenDefinitions(#"""
+        $syntax: '[' !'5' '0'...'9'? ']' ;
+        """#)
+        let sut = makeSut(tokens)
+
+        try sut.generateTokenParser(tokens[0], settings: .default)
+
+        diffTest(expected: #"""
+        /// ```
+        /// syntax:
+        ///     | "[" !"5" "0"..."9"? "]"
+        ///     ;
+        /// ```
+        func consume_syntax<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+            guard !stream.isEof else { return false }
+            let state = stream.save()
+
+            alt:
+            do {
+                guard stream.isNext("[") else {
+                    break alt
+                }
+                stream.advance()
+
+                if !stream.isNext("5"), !stream.isEof, ("0"..."9").contains(stream.peek()) {
+                    stream.advance()
+                }
+
+                guard stream.isNext("]") else {
+                    break alt
+                }
+                stream.advance()
+
+                return true
+            }
+
+            stream.restore(state)
+
+            return false
+        }
+        """#).diff(sut.buffer.finishBuffer())
+    }
+
+
     func testGenerateTokenParser_anyPattern() throws {
         let tokens = try parseTokenDefinitions(#"""
         $syntax:

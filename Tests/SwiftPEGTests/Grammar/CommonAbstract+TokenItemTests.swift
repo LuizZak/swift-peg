@@ -43,6 +43,29 @@ class CommonAbstract_TokenItemTests: XCTestCase {
         assertIsNotPrefix(sut, makeSut(atom: "abc"))
     }
 
+    func testIsPrefix_optionalGroup() throws {
+        try assertIsPrefix(parsing: #"('abc')?"#, parsing: #"'abc'"#)
+        try assertIsPrefix(parsing: #"('abc')?"#, parsing: #"('abc')"#)
+        try assertIsPrefix(parsing: #"('abc')?"#, parsing: #"('abc')+"#)
+        try assertIsPrefix(parsing: #"('abc')?"#, parsing: #"('abc')*"#)
+        try assertIsPrefix(parsing: #"('abc')?"#, parsing: #"('abc')?"#)
+        try assertIsPrefix(parsing: #"('abc')?"#, parsing: #"'abcd'"#)
+        try assertIsPrefix(parsing: #"('abc')?"#, parsing: #"('abcd')"#)
+        try assertIsPrefix(parsing: #"('abc')?"#, parsing: #"('abcd')+"#)
+        try assertIsPrefix(parsing: #"('abc')?"#, parsing: #"('abcd')*"#)
+        try assertIsPrefix(parsing: #"('abc')?"#, parsing: #"('abcd')?"#)
+        try assertIsPrefix(parsing: #"('ab' | 'bc')?"#, parsing: #"('abcd' | 'bcde')"#)
+        try assertIsPrefix(parsing: #"('ab' | 'bc')?"#, parsing: #"('abcd' | 'bcde')+"#)
+        try assertIsPrefix(parsing: #"('ab' | 'bc')?"#, parsing: #"('abcd' | 'bcde')*"#)
+        try assertIsPrefix(parsing: #"('ab' | 'bc')?"#, parsing: #"('abcd' | 'bcde')?"#)
+        try assertIsNotPrefix(parsing: #"('abcd')?"#, parsing: #"'abc'"#)
+        try assertIsNotPrefix(parsing: #"('abcd')?"#, parsing: #"'abc'?"#)
+        try assertIsNotPrefix(parsing: #"('abcd')?"#, parsing: #"('abc')?"#)
+        try assertIsNotPrefix(parsing: #"('abcd')?"#, parsing: #"('abc')*"#)
+        try assertIsNotPrefix(parsing: #"('abcd')?"#, parsing: #"('abc')+"#)
+        try assertIsNotPrefix(parsing: #"('ab' | 'bc')?"#, parsing: #"'abcd'"#)
+    }
+
     func testIsPrefix_group() throws {
         let sut = makeSut(group: ["a", "b", "c"])
 
@@ -56,6 +79,15 @@ class CommonAbstract_TokenItemTests: XCTestCase {
         assertIsNotPrefix(sut, makeSut(oneOrMore: [.init(excluded: [.string("b")], terminal: "a"..."c")]))
     }
 
+    func testIsPrefix_optionalAtom() throws {
+        try assertIsPrefix(parsing: #"'a'?"#, parsing: #"'a'"#)
+        try assertIsPrefix(parsing: #"'a'?"#, parsing: #"('a')"#)
+        try assertIsPrefix(parsing: #"'abc'?"#, parsing: #"'abcd'"#)
+        try assertIsPrefix(parsing: #"'abc'?"#, parsing: #"('abcd')"#)
+        try assertIsNotPrefix(parsing: #"'abc'?"#, parsing: #"'ab'"#)
+        try assertIsNotPrefix(parsing: #"'abc'?"#, parsing: #"('ab')"#)
+    }
+
     func testIsPrefix_atom() throws {
         let sut = makeSut(atom: "abc")
 
@@ -64,6 +96,7 @@ class CommonAbstract_TokenItemTests: XCTestCase {
         assertIsPrefix(sut, makeSut(zeroOrMore: ["abcd"]))
         assertIsPrefix(sut, makeSut(oneOrMore: ["abcd"]))
         assertIsPrefix(sut, makeSut(oneOrMore: [.init(terminal: .any)]))
+        try assertIsPrefix(sut, parsing: #"'abcd'?"#)
         assertIsNotPrefix(sut, makeSut(oneOrMore: [.init(excluded: [.string("a")], terminal: .any)]))
         assertIsNotPrefix(sut, makeSut(oneOrMore: [.init(excluded: [.string("abcd")], terminal: .any)]))
         assertIsNotPrefix(sut, makeSut(group: ["a", "b", "c", "d"]))

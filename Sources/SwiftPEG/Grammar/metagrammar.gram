@@ -175,7 +175,9 @@ tokenSyntaxAlt[CommonAbstract.TokenAlt]:
 tokenSyntaxItem[CommonAbstract.TokenItem]:
     | '(' '|'.tokenSyntaxAtom+ ')' '*'              { .zeroOrMore(tokenSyntaxAtom) }
     | '(' '|'.tokenSyntaxAtom+ ')' '+'              { .oneOrMore(tokenSyntaxAtom) }
+    | '(' '|'.tokenSyntaxAtom+ ')' '?'              { .optionalGroup(tokenSyntaxAtom) }
     | '(' '|'.tokenSyntaxAtom+ ')'                  { .group(tokenSyntaxAtom) }
+    | tokenSyntaxAtom '?'                           { .optionalAtom(tokenSyntaxAtom) }
     | tokenSyntaxAtom                               { .atom(tokenSyntaxAtom) }
     ;
 

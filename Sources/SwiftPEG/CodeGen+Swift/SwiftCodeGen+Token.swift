@@ -311,9 +311,16 @@ extension SwiftCodeGen {
             // Generate loop
             try generateAtomLoop(alts)
 
+        case .optionalGroup(let alts):
+            try generateAtomAlts(alts, bailStatement: .none)
+
         case .group(let alts):
             // Like a one-or-more, but without a loop
             try generateAtomAlts(alts, bailStatement: bailStatement)
+
+        case .optionalAtom(let atom):
+            try generateIfAtom(atom, bailStatement: .custom(tok_advanceExpr(for: atom)))
+            buffer.emitNewline()
 
         case .atom(let atom):
             try generateGuardAtom(atom, bailStatement: bailStatement)
@@ -325,14 +332,28 @@ extension SwiftCodeGen {
     /// Generates a guard statement that checks that a given atom matches
     /// on the string stream before proceeding.
     ///
-    /// Within the body of the guard, a break statement, optionally labeled with
-    /// a given label, is issued.
+    /// Within the body of the guard, the provided a bail statement is issued.
     func generateGuardAtom(
         _ atom: CommonAbstract.TokenAtom,
         bailStatement: BailStatement
     ) throws {
 
         buffer.emit("guard \(try tok_conditional(for: atom)) else ")
+        buffer.emitBlock {
+            bailStatement.emit(into: buffer)
+        }
+    }
+
+    /// Generates an if- statement that checks that a given atom matches
+    /// on the string stream before bailing.
+    ///
+    /// Within the body of the if, the provided a bail statement is issued.
+    func generateIfAtom(
+        _ atom: CommonAbstract.TokenAtom,
+        bailStatement: BailStatement
+    ) throws {
+
+        buffer.emit("if \(try tok_conditional(for: atom)) ")
         buffer.emitBlock {
             bailStatement.emit(into: buffer)
         }
@@ -691,8 +712,14 @@ extension SwiftCodeGen {
         case .oneOrMore(let terms):
             return "(\(terms.map({ tok_describe($0) }).joined(separator: " | ")))+"
 
+        case .optionalGroup(let terms):
+            return "(\(terms.map({ tok_describe($0) }).joined(separator: " | ")))?"
+
         case .group(let terms):
             return "(\(terms.map({ tok_describe($0) }).joined(separator: " | ")))"
+
+        case .optionalAtom(let term):
+            return "\(tok_describe(term))?"
 
         case .atom(let term):
             return tok_describe(term)
@@ -808,6 +835,13 @@ extension SwiftCodeGen {
     }
 
     enum BailStatement {
+        /// Indicates that the bail statement should expand to a no-op, non
+        /// control-flow-altering statement.
+        case none
+
+        /// Provides a custom expansion for the bail statement.
+        case custom(String)
+
         /// Indicates that the bail statement should expand to:
         /// ```
         /// break [label]
@@ -823,6 +857,12 @@ extension SwiftCodeGen {
 
         func emit(into buffer: CodeStringBuffer) {
             switch self {
+            case .none:
+                buffer.emitLine("_=()")
+
+            case .custom(let line):
+                buffer.emitLine(line)
+
             case .break(nil):
                 buffer.emitLine("break")
 
