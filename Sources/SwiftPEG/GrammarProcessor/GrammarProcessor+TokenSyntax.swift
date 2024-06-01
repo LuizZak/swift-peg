@@ -24,10 +24,33 @@ extension GrammarProcessor {
 
         diagnoseAltOrder(sorted)
 
-        let inlined = try applyFragmentInlining(
+        var inlined = try applyFragmentInlining(
             sorted.reversed(),
             fragmentReferenceCount: fragmentReferenceCount
         )
+
+        // Apply light sorting to favor static terminal tokens before attempting
+        // dynamic tokens
+        inlined.sort { (tok1, tok2) in
+            switch (tok1.tokenSyntax?.staticTerminal(), tok2.tokenSyntax?.staticTerminal()) {
+            case (let lhs?, let rhs?):
+                if lhs.contents.hasPrefix(rhs.contents) {
+                    return true
+                }
+                if rhs.contents.hasPrefix(lhs.contents) {
+                    return false
+                }
+                return tok1.name < tok2.name
+            case (_?, _):
+                return true
+            case (_, _?):
+                return false
+            case (nil, nil):
+                return tok1.name < tok2.name
+            default:
+                return false
+            }
+        }
 
         return inlined
     }

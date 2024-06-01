@@ -146,7 +146,9 @@ extension SwiftCodeGen {
         try buffer.emitBlock("enum TokenKind: TokenKindType") {
             let emitter = buffer.startConditionalEmitter()
 
-            for token in tokenDefinitions where showEmitInTokenType(token) {
+            let tokensToEmit = self.tokenDefinitions.filter(self.showEmitInTokenType)
+            let sorted = self.sortedTokens(tokensToEmit)
+            for token in sorted {
                 try generateTokenKindEnumCase(token, prevCaseSeparator: emitter)
             }
 
@@ -837,13 +839,27 @@ extension SwiftCodeGen {
 
                 if tokenSyntax.isPrefix(of: otherSyntax) && !otherSyntax.isPrefix(of: tokenSyntax) {
                     graph.addEdge(from: otherNode, to: tokenNode)
+                } else if
+                    tokenSyntax.isStatic(),
+                    !otherSyntax.isStatic(),
+                    !graph.hasPath(from: otherNode, to: tokenNode)
+                {
+                    // Add a synthetic dependency that forces static tokens to be
+                    // emitted before dynamic tokens
+                    graph.addEdge(from: tokenNode, to: otherNode)
                 }
             }
         }
 
-        guard let sorted = graph.topologicalSorted() else {
+        guard var sorted = graph.topologicalSorted() else {
             // TODO: Apply some fallback strategy
             return tokens
+        }
+
+        // Favor whitespace token to be first
+        if let index = sorted.firstIndex(where: \.value.isWhitespace) {
+            let token = sorted.remove(at: index)
+            sorted.insert(token, at: 0)
         }
 
         return sorted.map(\.value)
@@ -889,5 +905,11 @@ extension SwiftCodeGen {
                 buffer.emitLine("return false")
             }
         }
+    }
+}
+
+private extension InternalGrammar.TokenDefinition {
+    var isWhitespace: Bool {
+        self.staticToken == ".whitespace" || self.staticToken == "whitespace" || self.name == "whitespace"
     }
 }

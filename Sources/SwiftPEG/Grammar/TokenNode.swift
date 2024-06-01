@@ -1,7 +1,6 @@
 import SwiftPEGMacros
 
 /// A terminal Token node.
-/// Must be subclassed by specific grammars to wrap the tokens read by the tokenizer.
 open class TokenNode<Token, Location>: Node where Token: TokenType, Location: Hashable & Comparable {
     /// The immutable token value associated with this node.
     public let token: Token
@@ -10,7 +9,7 @@ open class TokenNode<Token, Location>: Node where Token: TokenType, Location: Ha
 
     public init(token: Token, location: Location) {
         self.token = token
-        
+
         super.init()
 
         self.location = location

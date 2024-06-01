@@ -183,6 +183,48 @@ class GrammarProcessor_TokenSyntaxTests: XCTestCase {
 
         assertEqualUnordered(processed.tokens, expected)
     }
+
+    func testSortTokens() throws {
+        let delegate = stubDelegate(tokensFile: #"""
+        $a: 'a'+ ;
+        $b: 'b' ;
+        $c: 'c'+ ;
+        $d: 'd' ;
+        """#)
+        let expected = try parseTokenDefinitions(#"""
+        $b: 'b' ;
+        $d: 'd' ;
+        $a: 'a'+ ;
+        $c: 'c'+ ;
+        """#)
+        let grammar = makeGrammar()
+        let sut = makeSut(delegate)
+
+        let processed = try sut.process(grammar)
+
+        assertEqual(processed.tokens, expected)
+    }
+
+    func testSortTokens_staticTerminals_preferPrefixesLast() throws {
+        let delegate = stubDelegate(tokensFile: #"""
+        $a: 'abc'+ ;
+        $b: 'a' ;
+        $c: 'abcd'+ ;
+        $d: 'ab' ;
+        """#)
+        let expected = try parseTokenDefinitions(#"""
+        $d: 'ab' ;
+        $b: 'a' ;
+        $a: 'abc'+ ;
+        $c: 'abcd'+ ;
+        """#)
+        let grammar = makeGrammar()
+        let sut = makeSut(delegate)
+
+        let processed = try sut.process(grammar)
+
+        assertEqual(processed.tokens, expected)
+    }
 }
 
 // MARK: - Test internals

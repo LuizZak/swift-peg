@@ -1125,12 +1125,6 @@ class SwiftCodeGen_TokenTests: XCTestCase {
                 /// `"]"`
                 case rightSquare
 
-                /// `"="`
-                case assign
-
-                /// `"!"`
-                case logicalNot
-
                 /// `"==="`
                 case identical
 
@@ -1140,8 +1134,14 @@ class SwiftCodeGen_TokenTests: XCTestCase {
                 /// `"=="`
                 case equals
 
+                /// `"="`
+                case assign
+
                 /// `"!="`
                 case notEquals
+
+                /// `"!"`
+                case logicalNot
 
                 /// `"\"" (!"\"" .)+ "\""`
                 case string
@@ -1268,6 +1268,246 @@ class SwiftCodeGen_TokenTests: XCTestCase {
                         break alt
                     }
                     stream.advance()
+
+                    return true
+                }
+
+                stream.restore(state)
+
+                return false
+            }
+        }
+        """#).diff(result)
+    }
+
+    func testGenerateTokenType_alwaysEmitsWhitespaceFirst() throws {
+        let tokens = try parseTokenDefinitions(#"""
+        $leftSquare: '[' ;
+        $rightSquare: ']' ;
+        $assign: '=' ;
+        $logicalNot: '!' ;
+        $equals: '==' ;
+        $notEquals: '!=' ;
+        $string: '"' (!'"' .)+ '"' ;
+        $whitespace: (' ' | '\n')+ ;
+        """#)
+        let sut = makeSut(tokens)
+
+        let result = try sut.generateTokenType()
+
+        diffTest(expected: #"""
+        struct ParserToken: TokenType, CustomStringConvertible {
+            var kind: TokenKind
+            var string: Substring
+
+            var length: Int {
+                string.count
+            }
+
+            var description: String {
+                String(string)
+            }
+
+            static func produceDummy(_ kind: TokenKind) -> Self {
+                .init(kind: kind, string: "<dummy>")
+            }
+
+            static func from<StringType>(stream: inout StringStream<StringType>) -> Self? where StringType.SubSequence == Substring {
+                guard !stream.isEof else { return nil }
+                stream.markSubstringStart()
+
+                if consume_whitespace(from: &stream) {
+                    return .init(kind: .whitespace, string: stream.substring)
+                }
+                if consume_leftSquare(from: &stream) {
+                    return .init(kind: .leftSquare, string: stream.substring)
+                }
+                if consume_rightSquare(from: &stream) {
+                    return .init(kind: .rightSquare, string: stream.substring)
+                }
+                if consume_equals(from: &stream) {
+                    return .init(kind: .equals, string: stream.substring)
+                }
+                if consume_assign(from: &stream) {
+                    return .init(kind: .assign, string: stream.substring)
+                }
+                if consume_notEquals(from: &stream) {
+                    return .init(kind: .notEquals, string: stream.substring)
+                }
+                if consume_logicalNot(from: &stream) {
+                    return .init(kind: .logicalNot, string: stream.substring)
+                }
+                if consume_string(from: &stream) {
+                    return .init(kind: .string, string: stream.substring)
+                }
+
+                return nil
+            }
+
+            enum TokenKind: TokenKindType {
+                /// `(" " | "\n")+`
+                case whitespace
+
+                /// `"["`
+                case leftSquare
+
+                /// `"]"`
+                case rightSquare
+
+                /// `"=="`
+                case equals
+
+                /// `"="`
+                case assign
+
+                /// `"!="`
+                case notEquals
+
+                /// `"!"`
+                case logicalNot
+
+                /// `"\"" (!"\"" .)+ "\""`
+                case string
+
+                var description: String {
+                    switch self {
+                    case .leftSquare: "["
+                    case .rightSquare: "]"
+                    case .assign: "="
+                    case .logicalNot: "!"
+                    case .equals: "=="
+                    case .notEquals: "!="
+                    case .string: "string"
+                    case .whitespace: "whitespace"
+                    }
+                }
+            }
+
+            /// ```
+            /// leftSquare:
+            ///     | "["
+            ///     ;
+            /// ```
+            static func consume_leftSquare<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+                stream.advanceIfNext("[")
+            }
+
+            /// ```
+            /// rightSquare:
+            ///     | "]"
+            ///     ;
+            /// ```
+            static func consume_rightSquare<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+                stream.advanceIfNext("]")
+            }
+
+            /// ```
+            /// assign:
+            ///     | "="
+            ///     ;
+            /// ```
+            static func consume_assign<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+                stream.advanceIfNext("=")
+            }
+
+            /// ```
+            /// logicalNot:
+            ///     | "!"
+            ///     ;
+            /// ```
+            static func consume_logicalNot<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+                stream.advanceIfNext("!")
+            }
+
+            /// ```
+            /// equals:
+            ///     | "=="
+            ///     ;
+            /// ```
+            static func consume_equals<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+                stream.advanceIfNext("==")
+            }
+
+            /// ```
+            /// notEquals:
+            ///     | "!="
+            ///     ;
+            /// ```
+            static func consume_notEquals<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+                stream.advanceIfNext("!=")
+            }
+
+            /// ```
+            /// string:
+            ///     | "\"" (!"\"" .)+ "\""
+            ///     ;
+            /// ```
+            static func consume_string<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+                guard !stream.isEof else { return false }
+                let state = stream.save()
+
+                alt:
+                do {
+                    guard stream.isNext("\"") else {
+                        break alt
+                    }
+                    stream.advance()
+
+                    if !stream.isNext("\""), !stream.isEof {
+                        stream.advance()
+                    } else {
+                        break alt
+                    }
+
+                    loop:
+                    while !stream.isEof {
+                        if !stream.isNext("\""), !stream.isEof {
+                            stream.advance()
+                        } else {
+                            break loop
+                        }
+                    }
+
+                    guard stream.isNext("\"") else {
+                        break alt
+                    }
+                    stream.advance()
+
+                    return true
+                }
+
+                stream.restore(state)
+
+                return false
+            }
+
+            /// ```
+            /// whitespace:
+            ///     | (" " | "\n")+
+            ///     ;
+            /// ```
+            static func consume_whitespace<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+                guard !stream.isEof else { return false }
+                let state = stream.save()
+
+                alt:
+                do {
+                    switch stream.peek() {
+                    case " ", "\n":
+                        stream.advance()
+                    default:
+                        break alt
+                    }
+
+                    loop:
+                    while !stream.isEof {
+                        switch stream.peek() {
+                        case " ", "\n":
+                            stream.advance()
+                        default:
+                            break loop
+                        }
+                    }
 
                     return true
                 }

@@ -31,101 +31,101 @@ public struct GrammarParserToken: TokenType, CustomStringConvertible {
         if consume_WHITESPACE(from: &stream) {
             return .init(kind: .whitespace, string: stream.substring)
         }
-        if consume_IDENTIFIER(from: &stream) {
-            return .init(kind: .identifier, string: stream.substring)
-        }
-        if consume_DIGITS(from: &stream) {
-            return .init(kind: .digits, string: stream.substring)
-        }
-        if consume_STRING(from: &stream) {
-            return .init(kind: .string, string: stream.substring)
-        }
-        if consume_LEFTPAREN(from: &stream) {
-            return .init(kind: .leftParen, string: stream.substring)
-        }
-        if consume_RIGHTPAREN(from: &stream) {
-            return .init(kind: .rightParen, string: stream.substring)
-        }
-        if consume_LEFTBRACE(from: &stream) {
-            return .init(kind: .leftBrace, string: stream.substring)
-        }
-        if consume_RIGHTBRACE(from: &stream) {
-            return .init(kind: .rightBrace, string: stream.substring)
-        }
-        if consume_LEFTSQUARE(from: &stream) {
-            return .init(kind: .leftSquare, string: stream.substring)
-        }
-        if consume_RIGHTSQUARE(from: &stream) {
-            return .init(kind: .rightSquare, string: stream.substring)
-        }
-        if consume_LEFTANGLE(from: &stream) {
-            return .init(kind: .leftAngle, string: stream.substring)
-        }
-        if consume_RIGHTANGLE(from: &stream) {
-            return .init(kind: .rightAngle, string: stream.substring)
-        }
-        if consume_COLON(from: &stream) {
-            return .init(kind: .colon, string: stream.substring)
-        }
-        if consume_SEMICOLON(from: &stream) {
-            return .init(kind: .semicolon, string: stream.substring)
-        }
-        if consume_BAR(from: &stream) {
-            return .init(kind: .bar, string: stream.substring)
-        }
-        if consume_EQUALS(from: &stream) {
-            return .init(kind: .equals, string: stream.substring)
-        }
-        if consume_TILDE(from: &stream) {
-            return .init(kind: .tilde, string: stream.substring)
-        }
-        if consume_STAR(from: &stream) {
-            return .init(kind: .star, string: stream.substring)
-        }
-        if consume_PLUS(from: &stream) {
-            return .init(kind: .plus, string: stream.substring)
-        }
-        if consume_MINUS(from: &stream) {
-            return .init(kind: .minus, string: stream.substring)
-        }
-        if consume_QUESTIONMARK(from: &stream) {
-            return .init(kind: .questionMark, string: stream.substring)
-        }
-        if consume_DOUBLEEXCLAMATIONMARK(from: &stream) {
-            return .init(kind: .doubleExclamationMark, string: stream.substring)
-        }
-        if consume_EXCLAMATIONMARK(from: &stream) {
-            return .init(kind: .exclamationMark, string: stream.substring)
-        }
         if consume_AMPERSAND(from: &stream) {
             return .init(kind: .ampersand, string: stream.substring)
-        }
-        if consume_COMMA(from: &stream) {
-            return .init(kind: .comma, string: stream.substring)
-        }
-        if consume_ELLIPSIS(from: &stream) {
-            return .init(kind: .ellipsis, string: stream.substring)
-        }
-        if consume_PERIOD(from: &stream) {
-            return .init(kind: .period, string: stream.substring)
-        }
-        if consume_BACKTICK(from: &stream) {
-            return .init(kind: .backtick, string: stream.substring)
         }
         if consume_AT(from: &stream) {
             return .init(kind: .at, string: stream.substring)
         }
+        if consume_BACKSLASH(from: &stream) {
+            return .init(kind: .backslash, string: stream.substring)
+        }
+        if consume_BACKTICK(from: &stream) {
+            return .init(kind: .backtick, string: stream.substring)
+        }
+        if consume_BAR(from: &stream) {
+            return .init(kind: .bar, string: stream.substring)
+        }
+        if consume_COLON(from: &stream) {
+            return .init(kind: .colon, string: stream.substring)
+        }
+        if consume_COMMA(from: &stream) {
+            return .init(kind: .comma, string: stream.substring)
+        }
         if consume_DOLLAR(from: &stream) {
             return .init(kind: .dollarSign, string: stream.substring)
         }
-        if consume_PERCENT(from: &stream) {
-            return .init(kind: .percent, string: stream.substring)
+        if consume_DOUBLEEXCLAMATIONMARK(from: &stream) {
+            return .init(kind: .doubleExclamationMark, string: stream.substring)
+        }
+        if consume_ELLIPSIS(from: &stream) {
+            return .init(kind: .ellipsis, string: stream.substring)
+        }
+        if consume_EQUALS(from: &stream) {
+            return .init(kind: .equals, string: stream.substring)
+        }
+        if consume_EXCLAMATIONMARK(from: &stream) {
+            return .init(kind: .exclamationMark, string: stream.substring)
         }
         if consume_FORWARDSLASH(from: &stream) {
             return .init(kind: .forwardSlash, string: stream.substring)
         }
-        if consume_BACKSLASH(from: &stream) {
-            return .init(kind: .backslash, string: stream.substring)
+        if consume_LEFTANGLE(from: &stream) {
+            return .init(kind: .leftAngle, string: stream.substring)
+        }
+        if consume_LEFTBRACE(from: &stream) {
+            return .init(kind: .leftBrace, string: stream.substring)
+        }
+        if consume_LEFTPAREN(from: &stream) {
+            return .init(kind: .leftParen, string: stream.substring)
+        }
+        if consume_LEFTSQUARE(from: &stream) {
+            return .init(kind: .leftSquare, string: stream.substring)
+        }
+        if consume_MINUS(from: &stream) {
+            return .init(kind: .minus, string: stream.substring)
+        }
+        if consume_PERCENT(from: &stream) {
+            return .init(kind: .percent, string: stream.substring)
+        }
+        if consume_PERIOD(from: &stream) {
+            return .init(kind: .period, string: stream.substring)
+        }
+        if consume_PLUS(from: &stream) {
+            return .init(kind: .plus, string: stream.substring)
+        }
+        if consume_QUESTIONMARK(from: &stream) {
+            return .init(kind: .questionMark, string: stream.substring)
+        }
+        if consume_RIGHTANGLE(from: &stream) {
+            return .init(kind: .rightAngle, string: stream.substring)
+        }
+        if consume_RIGHTBRACE(from: &stream) {
+            return .init(kind: .rightBrace, string: stream.substring)
+        }
+        if consume_RIGHTPAREN(from: &stream) {
+            return .init(kind: .rightParen, string: stream.substring)
+        }
+        if consume_RIGHTSQUARE(from: &stream) {
+            return .init(kind: .rightSquare, string: stream.substring)
+        }
+        if consume_SEMICOLON(from: &stream) {
+            return .init(kind: .semicolon, string: stream.substring)
+        }
+        if consume_STAR(from: &stream) {
+            return .init(kind: .star, string: stream.substring)
+        }
+        if consume_TILDE(from: &stream) {
+            return .init(kind: .tilde, string: stream.substring)
+        }
+        if consume_DIGITS(from: &stream) {
+            return .init(kind: .digits, string: stream.substring)
+        }
+        if consume_IDENTIFIER(from: &stream) {
+            return .init(kind: .identifier, string: stream.substring)
+        }
+        if consume_STRING(from: &stream) {
+            return .init(kind: .string, string: stream.substring)
         }
 
         return nil
@@ -135,11 +135,98 @@ public struct GrammarParserToken: TokenType, CustomStringConvertible {
         /// `(" " | "\t" | "\n" | "\r")+`
         case whitespace
 
-        /// `("a"..."z" | "A"..."Z" | "_") ("0"..."9" | "a"..."z" | "A"..."Z" | "_")*`
-        case identifier
+        /// `"&"`
+        case ampersand
+
+        /// `"@"`
+        case at
+
+        /// `"\\"`
+        case backslash
+
+        /// `"`"`
+        case backtick
+
+        /// `"|"`
+        case bar
+
+        /// `":"`
+        case colon
+
+        /// `","`
+        case comma
+
+        /// `"$"`
+        case dollarSign
+
+        /// `"!!"`
+        case doubleExclamationMark
+
+        /// `"..."`
+        case ellipsis
+
+        /// `"="`
+        case equals
+
+        /// `"!"`
+        case exclamationMark
+
+        /// `"/"`
+        case forwardSlash
+
+        /// `"<"`
+        case leftAngle
+
+        /// `"{"`
+        case leftBrace
+
+        /// `"("`
+        case leftParen
+
+        /// `"["`
+        case leftSquare
+
+        /// `"-"`
+        case minus
+
+        /// `"%"`
+        case percent
+
+        /// `"."`
+        case period
+
+        /// `"+"`
+        case plus
+
+        /// `"?"`
+        case questionMark
+
+        /// `">"`
+        case rightAngle
+
+        /// `"}"`
+        case rightBrace
+
+        /// `")"`
+        case rightParen
+
+        /// `"]"`
+        case rightSquare
+
+        /// `";"`
+        case semicolon
+
+        /// `"*"`
+        case star
+
+        /// `"~"`
+        case tilde
 
         /// `("0"..."9")+`
         case digits
+
+        /// `("a"..."z" | "A"..."Z" | "_") ("0"..."9" | "a"..."z" | "A"..."Z" | "_")*`
+        case identifier
 
         /// ```
         /// STRING[".string"]:
@@ -150,147 +237,350 @@ public struct GrammarParserToken: TokenType, CustomStringConvertible {
         /// ```
         case string
 
-        /// `"("`
-        case leftParen
-
-        /// `")"`
-        case rightParen
-
-        /// `"{"`
-        case leftBrace
-
-        /// `"}"`
-        case rightBrace
-
-        /// `"["`
-        case leftSquare
-
-        /// `"]"`
-        case rightSquare
-
-        /// `"<"`
-        case leftAngle
-
-        /// `">"`
-        case rightAngle
-
-        /// `":"`
-        case colon
-
-        /// `";"`
-        case semicolon
-
-        /// `"|"`
-        case bar
-
-        /// `"="`
-        case equals
-
-        /// `"~"`
-        case tilde
-
-        /// `"*"`
-        case star
-
-        /// `"+"`
-        case plus
-
-        /// `"-"`
-        case minus
-
-        /// `"?"`
-        case questionMark
-
-        /// `"!"`
-        case exclamationMark
-
-        /// `"!!"`
-        case doubleExclamationMark
-
-        /// `"&"`
-        case ampersand
-
-        /// `","`
-        case comma
-
-        /// `"."`
-        case period
-
-        /// `"..."`
-        case ellipsis
-
-        /// `"`"`
-        case backtick
-
-        /// `"@"`
-        case at
-
-        /// `"$"`
-        case dollarSign
-
-        /// `"%"`
-        case percent
-
-        /// `"/"`
-        case forwardSlash
-
-        /// `"\\"`
-        case backslash
-
         @inlinable
         public var description: String {
             switch self {
-            case .whitespace: "WHITESPACE"
-            case .identifier: "IDENTIFIER"
-            case .digits: "DIGITS"
-            case .string: "STRING"
-            case .leftParen: "("
-            case .rightParen: ")"
-            case .leftBrace: "{"
-            case .rightBrace: "}"
-            case .leftSquare: "["
-            case .rightSquare: "]"
-            case .leftAngle: "<"
-            case .rightAngle: ">"
-            case .colon: ":"
-            case .semicolon: ";"
-            case .bar: "|"
-            case .equals: "="
-            case .tilde: "~"
-            case .star: "*"
-            case .plus: "+"
-            case .minus: "-"
-            case .questionMark: "?"
-            case .exclamationMark: "!"
-            case .doubleExclamationMark: "!!"
             case .ampersand: "&"
-            case .comma: ","
-            case .period: "."
-            case .ellipsis: "..."
-            case .backtick: "`"
             case .at: "@"
-            case .dollarSign: "$"
-            case .percent: "%"
-            case .forwardSlash: "/"
             case .backslash: "\\"
+            case .backtick: "`"
+            case .bar: "|"
+            case .colon: ":"
+            case .comma: ","
+            case .dollarSign: "$"
+            case .doubleExclamationMark: "!!"
+            case .ellipsis: "..."
+            case .equals: "="
+            case .exclamationMark: "!"
+            case .forwardSlash: "/"
+            case .leftAngle: "<"
+            case .leftBrace: "{"
+            case .leftParen: "("
+            case .leftSquare: "["
+            case .minus: "-"
+            case .percent: "%"
+            case .period: "."
+            case .plus: "+"
+            case .questionMark: "?"
+            case .rightAngle: ">"
+            case .rightBrace: "}"
+            case .rightParen: ")"
+            case .rightSquare: "]"
+            case .semicolon: ";"
+            case .star: "*"
+            case .tilde: "~"
+            case .digits: "DIGITS"
+            case .identifier: "IDENTIFIER"
+            case .string: "STRING"
+            case .whitespace: "WHITESPACE"
             }
         }
     }
 
     /// ```
-    /// WHITESPACE[".whitespace"]:
-    ///     | (" " | "\t" | "\n" | "\r")+
+    /// AMPERSAND[".ampersand"]:
+    ///     | "&"
     ///     ;
     /// ```
     @inlinable
-    public static func consume_WHITESPACE<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+    public static func consume_AMPERSAND<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("&")
+    }
+
+    /// ```
+    /// AT[".at"]:
+    ///     | "@"
+    ///     ;
+    /// ```
+    @inlinable
+    public static func consume_AT<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("@")
+    }
+
+    /// ```
+    /// BACKSLASH[".backslash"]:
+    ///     | "\\"
+    ///     ;
+    /// ```
+    @inlinable
+    public static func consume_BACKSLASH<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("\\")
+    }
+
+    /// ```
+    /// BACKTICK[".backtick"]:
+    ///     | "`"
+    ///     ;
+    /// ```
+    @inlinable
+    public static func consume_BACKTICK<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("`")
+    }
+
+    /// ```
+    /// BAR[".bar"]:
+    ///     | "|"
+    ///     ;
+    /// ```
+    @inlinable
+    public static func consume_BAR<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("|")
+    }
+
+    /// ```
+    /// COLON[".colon"]:
+    ///     | ":"
+    ///     ;
+    /// ```
+    @inlinable
+    public static func consume_COLON<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext(":")
+    }
+
+    /// ```
+    /// COMMA[".comma"]:
+    ///     | ","
+    ///     ;
+    /// ```
+    @inlinable
+    public static func consume_COMMA<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext(",")
+    }
+
+    /// ```
+    /// DOLLAR[".dollarSign"]:
+    ///     | "$"
+    ///     ;
+    /// ```
+    @inlinable
+    public static func consume_DOLLAR<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("$")
+    }
+
+    /// ```
+    /// DOUBLEEXCLAMATIONMARK[".doubleExclamationMark"]:
+    ///     | "!!"
+    ///     ;
+    /// ```
+    @inlinable
+    public static func consume_DOUBLEEXCLAMATIONMARK<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("!!")
+    }
+
+    /// ```
+    /// ELLIPSIS[".ellipsis"]:
+    ///     | "..."
+    ///     ;
+    /// ```
+    @inlinable
+    public static func consume_ELLIPSIS<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("...")
+    }
+
+    /// ```
+    /// EQUALS[".equals"]:
+    ///     | "="
+    ///     ;
+    /// ```
+    @inlinable
+    public static func consume_EQUALS<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("=")
+    }
+
+    /// ```
+    /// EXCLAMATIONMARK[".exclamationMark"]:
+    ///     | "!"
+    ///     ;
+    /// ```
+    @inlinable
+    public static func consume_EXCLAMATIONMARK<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("!")
+    }
+
+    /// ```
+    /// FORWARDSLASH[".forwardSlash"]:
+    ///     | "/"
+    ///     ;
+    /// ```
+    @inlinable
+    public static func consume_FORWARDSLASH<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("/")
+    }
+
+    /// ```
+    /// LEFTANGLE[".leftAngle"]:
+    ///     | "<"
+    ///     ;
+    /// ```
+    @inlinable
+    public static func consume_LEFTANGLE<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("<")
+    }
+
+    /// ```
+    /// LEFTBRACE[".leftBrace"]:
+    ///     | "{"
+    ///     ;
+    /// ```
+    @inlinable
+    public static func consume_LEFTBRACE<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("{")
+    }
+
+    /// ```
+    /// LEFTPAREN[".leftParen"]:
+    ///     | "("
+    ///     ;
+    /// ```
+    @inlinable
+    public static func consume_LEFTPAREN<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("(")
+    }
+
+    /// ```
+    /// LEFTSQUARE[".leftSquare"]:
+    ///     | "["
+    ///     ;
+    /// ```
+    @inlinable
+    public static func consume_LEFTSQUARE<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("[")
+    }
+
+    /// ```
+    /// MINUS[".minus"]:
+    ///     | "-"
+    ///     ;
+    /// ```
+    @inlinable
+    public static func consume_MINUS<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("-")
+    }
+
+    /// ```
+    /// PERCENT[".percent"]:
+    ///     | "%"
+    ///     ;
+    /// ```
+    @inlinable
+    public static func consume_PERCENT<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("%")
+    }
+
+    /// ```
+    /// PERIOD[".period"]:
+    ///     | "."
+    ///     ;
+    /// ```
+    @inlinable
+    public static func consume_PERIOD<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext(".")
+    }
+
+    /// ```
+    /// PLUS[".plus"]:
+    ///     | "+"
+    ///     ;
+    /// ```
+    @inlinable
+    public static func consume_PLUS<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("+")
+    }
+
+    /// ```
+    /// QUESTIONMARK[".questionMark"]:
+    ///     | "?"
+    ///     ;
+    /// ```
+    @inlinable
+    public static func consume_QUESTIONMARK<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("?")
+    }
+
+    /// ```
+    /// RIGHTANGLE[".rightAngle"]:
+    ///     | ">"
+    ///     ;
+    /// ```
+    @inlinable
+    public static func consume_RIGHTANGLE<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext(">")
+    }
+
+    /// ```
+    /// RIGHTBRACE[".rightBrace"]:
+    ///     | "}"
+    ///     ;
+    /// ```
+    @inlinable
+    public static func consume_RIGHTBRACE<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("}")
+    }
+
+    /// ```
+    /// RIGHTPAREN[".rightParen"]:
+    ///     | ")"
+    ///     ;
+    /// ```
+    @inlinable
+    public static func consume_RIGHTPAREN<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext(")")
+    }
+
+    /// ```
+    /// RIGHTSQUARE[".rightSquare"]:
+    ///     | "]"
+    ///     ;
+    /// ```
+    @inlinable
+    public static func consume_RIGHTSQUARE<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("]")
+    }
+
+    /// ```
+    /// SEMICOLON[".semicolon"]:
+    ///     | ";"
+    ///     ;
+    /// ```
+    @inlinable
+    public static func consume_SEMICOLON<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext(";")
+    }
+
+    /// ```
+    /// STAR[".star"]:
+    ///     | "*"
+    ///     ;
+    /// ```
+    @inlinable
+    public static func consume_STAR<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("*")
+    }
+
+    /// ```
+    /// TILDE[".tilde"]:
+    ///     | "~"
+    ///     ;
+    /// ```
+    @inlinable
+    public static func consume_TILDE<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("~")
+    }
+
+    /// ```
+    /// DIGITS[".digits"]:
+    ///     | ("0"..."9")+
+    ///     ;
+    /// ```
+    @inlinable
+    public static func consume_DIGITS<StringType>(from stream: inout StringStream<StringType>) -> Bool {
         guard !stream.isEof else { return false }
         let state = stream.save()
 
         alt:
         do {
             switch stream.peek() {
-            case " ", "\t", "\n", "\r":
+            case "0"..."9":
                 stream.advance()
             default:
                 break alt
@@ -299,7 +589,7 @@ public struct GrammarParserToken: TokenType, CustomStringConvertible {
             loop:
             while !stream.isEof {
                 switch stream.peek() {
-                case " ", "\t", "\n", "\r":
+                case "0"..."9":
                     stream.advance()
                 default:
                     break loop
@@ -337,43 +627,6 @@ public struct GrammarParserToken: TokenType, CustomStringConvertible {
             while !stream.isEof {
                 switch stream.peek() {
                 case "0"..."9", "a"..."z", "A"..."Z", "_":
-                    stream.advance()
-                default:
-                    break loop
-                }
-            }
-
-            return true
-        }
-
-        stream.restore(state)
-
-        return false
-    }
-
-    /// ```
-    /// DIGITS[".digits"]:
-    ///     | ("0"..."9")+
-    ///     ;
-    /// ```
-    @inlinable
-    public static func consume_DIGITS<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
-
-        alt:
-        do {
-            switch stream.peek() {
-            case "0"..."9":
-                stream.advance()
-            default:
-                break alt
-            }
-
-            loop:
-            while !stream.isEof {
-                switch stream.peek() {
-                case "0"..."9":
                     stream.advance()
                 default:
                     break loop
@@ -500,292 +753,39 @@ public struct GrammarParserToken: TokenType, CustomStringConvertible {
     }
 
     /// ```
-    /// LEFTPAREN[".leftParen"]:
-    ///     | "("
+    /// WHITESPACE[".whitespace"]:
+    ///     | (" " | "\t" | "\n" | "\r")+
     ///     ;
     /// ```
     @inlinable
-    public static func consume_LEFTPAREN<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        stream.advanceIfNext("(")
-    }
+    public static func consume_WHITESPACE<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+        let state = stream.save()
 
-    /// ```
-    /// RIGHTPAREN[".rightParen"]:
-    ///     | ")"
-    ///     ;
-    /// ```
-    @inlinable
-    public static func consume_RIGHTPAREN<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        stream.advanceIfNext(")")
-    }
+        alt:
+        do {
+            switch stream.peek() {
+            case " ", "\t", "\n", "\r":
+                stream.advance()
+            default:
+                break alt
+            }
 
-    /// ```
-    /// LEFTBRACE[".leftBrace"]:
-    ///     | "{"
-    ///     ;
-    /// ```
-    @inlinable
-    public static func consume_LEFTBRACE<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        stream.advanceIfNext("{")
-    }
+            loop:
+            while !stream.isEof {
+                switch stream.peek() {
+                case " ", "\t", "\n", "\r":
+                    stream.advance()
+                default:
+                    break loop
+                }
+            }
 
-    /// ```
-    /// RIGHTBRACE[".rightBrace"]:
-    ///     | "}"
-    ///     ;
-    /// ```
-    @inlinable
-    public static func consume_RIGHTBRACE<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        stream.advanceIfNext("}")
-    }
+            return true
+        }
 
-    /// ```
-    /// LEFTSQUARE[".leftSquare"]:
-    ///     | "["
-    ///     ;
-    /// ```
-    @inlinable
-    public static func consume_LEFTSQUARE<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        stream.advanceIfNext("[")
-    }
+        stream.restore(state)
 
-    /// ```
-    /// RIGHTSQUARE[".rightSquare"]:
-    ///     | "]"
-    ///     ;
-    /// ```
-    @inlinable
-    public static func consume_RIGHTSQUARE<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        stream.advanceIfNext("]")
-    }
-
-    /// ```
-    /// LEFTANGLE[".leftAngle"]:
-    ///     | "<"
-    ///     ;
-    /// ```
-    @inlinable
-    public static func consume_LEFTANGLE<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        stream.advanceIfNext("<")
-    }
-
-    /// ```
-    /// RIGHTANGLE[".rightAngle"]:
-    ///     | ">"
-    ///     ;
-    /// ```
-    @inlinable
-    public static func consume_RIGHTANGLE<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        stream.advanceIfNext(">")
-    }
-
-    /// ```
-    /// COLON[".colon"]:
-    ///     | ":"
-    ///     ;
-    /// ```
-    @inlinable
-    public static func consume_COLON<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        stream.advanceIfNext(":")
-    }
-
-    /// ```
-    /// SEMICOLON[".semicolon"]:
-    ///     | ";"
-    ///     ;
-    /// ```
-    @inlinable
-    public static func consume_SEMICOLON<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        stream.advanceIfNext(";")
-    }
-
-    /// ```
-    /// BAR[".bar"]:
-    ///     | "|"
-    ///     ;
-    /// ```
-    @inlinable
-    public static func consume_BAR<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        stream.advanceIfNext("|")
-    }
-
-    /// ```
-    /// EQUALS[".equals"]:
-    ///     | "="
-    ///     ;
-    /// ```
-    @inlinable
-    public static func consume_EQUALS<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        stream.advanceIfNext("=")
-    }
-
-    /// ```
-    /// TILDE[".tilde"]:
-    ///     | "~"
-    ///     ;
-    /// ```
-    @inlinable
-    public static func consume_TILDE<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        stream.advanceIfNext("~")
-    }
-
-    /// ```
-    /// STAR[".star"]:
-    ///     | "*"
-    ///     ;
-    /// ```
-    @inlinable
-    public static func consume_STAR<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        stream.advanceIfNext("*")
-    }
-
-    /// ```
-    /// PLUS[".plus"]:
-    ///     | "+"
-    ///     ;
-    /// ```
-    @inlinable
-    public static func consume_PLUS<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        stream.advanceIfNext("+")
-    }
-
-    /// ```
-    /// MINUS[".minus"]:
-    ///     | "-"
-    ///     ;
-    /// ```
-    @inlinable
-    public static func consume_MINUS<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        stream.advanceIfNext("-")
-    }
-
-    /// ```
-    /// QUESTIONMARK[".questionMark"]:
-    ///     | "?"
-    ///     ;
-    /// ```
-    @inlinable
-    public static func consume_QUESTIONMARK<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        stream.advanceIfNext("?")
-    }
-
-    /// ```
-    /// EXCLAMATIONMARK[".exclamationMark"]:
-    ///     | "!"
-    ///     ;
-    /// ```
-    @inlinable
-    public static func consume_EXCLAMATIONMARK<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        stream.advanceIfNext("!")
-    }
-
-    /// ```
-    /// DOUBLEEXCLAMATIONMARK[".doubleExclamationMark"]:
-    ///     | "!!"
-    ///     ;
-    /// ```
-    @inlinable
-    public static func consume_DOUBLEEXCLAMATIONMARK<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        stream.advanceIfNext("!!")
-    }
-
-    /// ```
-    /// AMPERSAND[".ampersand"]:
-    ///     | "&"
-    ///     ;
-    /// ```
-    @inlinable
-    public static func consume_AMPERSAND<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        stream.advanceIfNext("&")
-    }
-
-    /// ```
-    /// COMMA[".comma"]:
-    ///     | ","
-    ///     ;
-    /// ```
-    @inlinable
-    public static func consume_COMMA<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        stream.advanceIfNext(",")
-    }
-
-    /// ```
-    /// PERIOD[".period"]:
-    ///     | "."
-    ///     ;
-    /// ```
-    @inlinable
-    public static func consume_PERIOD<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        stream.advanceIfNext(".")
-    }
-
-    /// ```
-    /// ELLIPSIS[".ellipsis"]:
-    ///     | "..."
-    ///     ;
-    /// ```
-    @inlinable
-    public static func consume_ELLIPSIS<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        stream.advanceIfNext("...")
-    }
-
-    /// ```
-    /// BACKTICK[".backtick"]:
-    ///     | "`"
-    ///     ;
-    /// ```
-    @inlinable
-    public static func consume_BACKTICK<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        stream.advanceIfNext("`")
-    }
-
-    /// ```
-    /// AT[".at"]:
-    ///     | "@"
-    ///     ;
-    /// ```
-    @inlinable
-    public static func consume_AT<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        stream.advanceIfNext("@")
-    }
-
-    /// ```
-    /// DOLLAR[".dollarSign"]:
-    ///     | "$"
-    ///     ;
-    /// ```
-    @inlinable
-    public static func consume_DOLLAR<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        stream.advanceIfNext("$")
-    }
-
-    /// ```
-    /// PERCENT[".percent"]:
-    ///     | "%"
-    ///     ;
-    /// ```
-    @inlinable
-    public static func consume_PERCENT<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        stream.advanceIfNext("%")
-    }
-
-    /// ```
-    /// FORWARDSLASH[".forwardSlash"]:
-    ///     | "/"
-    ///     ;
-    /// ```
-    @inlinable
-    public static func consume_FORWARDSLASH<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        stream.advanceIfNext("/")
-    }
-
-    /// ```
-    /// BACKSLASH[".backslash"]:
-    ///     | "\\"
-    ///     ;
-    /// ```
-    @inlinable
-    public static func consume_BACKSLASH<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        stream.advanceIfNext("\\")
+        return false
     }
 }
