@@ -143,9 +143,12 @@ public class SwiftCodeGen {
         buffer.emitLine("\(linePrefix) ```")
 
         // @memoized/@memoizedLeftRecursive
+        var isMemoized = false
         if rule.isRecursiveLeader {
+            isMemoized = true
             buffer.emitLine(#"@memoizedLeftRecursive("\#(name)")"#)
         } else if !rule.isRecursive {
+            isMemoized = true
             buffer.emitLine(#"@memoized("\#(name)")"#)
         }
 
@@ -153,7 +156,8 @@ public class SwiftCodeGen {
         buffer.emitLine("@inlinable")
 
         // func <rule>() -> <node>
-        buffer.emit("public func __\(name)() throws -> \(type)? ")
+        let fName = isMemoized ? "__\(name)" : name
+        buffer.emit("public func \(fName)() throws -> \(type)? ")
         try buffer.emitBlock {
             declContext.push()
             defer { declContext.pop() }

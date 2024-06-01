@@ -1057,7 +1057,7 @@ class SwiftCodeGenTests: XCTestCase {
                 ///     ;
                 /// ```
                 @inlinable
-                public func __b() throws -> Node? {
+                public func b() throws -> Node? {
                     let mark = self.mark()
 
                     if
