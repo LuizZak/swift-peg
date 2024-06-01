@@ -8,12 +8,26 @@ extension GrammarProcessor {
         _ tokens: [SwiftPEGGrammar.TokenDefinition]
     ) throws -> [InternalGrammar.TokenDefinition] {
 
+        var fragmentReferenceCount: [String: Int] =
+            Dictionary(grouping: tokens.filter(\.isFragment)) {
+                String($0.name.string)
+            }.mapValues { _ in 0 }
+
         let byName = try validateTokenNames(tokens)
-        try ensureTokenSyntaxesAreNonReentrant(tokens, byName: byName)
+        try ensureTokenSyntaxesAreNonReentrant(
+            tokens,
+            byName: byName,
+            fragmentReferenceCount: &fragmentReferenceCount
+        )
 
         diagnoseAltOrder(tokens)
 
-        return tokens.map(InternalGrammar.TokenDefinition.from)
+        let inlined = try applyFragmentInlining(
+            tokens,
+            fragmentReferenceCount: fragmentReferenceCount
+        )
+
+        return inlined
     }
 
     /// Validates that token names are not repeated; returns a dictionary mapping
@@ -68,7 +82,8 @@ extension GrammarProcessor {
     /// any level, either directly or indirectly.
     func ensureTokenSyntaxesAreNonReentrant(
         _ tokens: [SwiftPEGGrammar.TokenDefinition],
-        byName: [String: SwiftPEGGrammar.TokenDefinition]
+        byName: [String: SwiftPEGGrammar.TokenDefinition],
+        fragmentReferenceCount: inout [String: Int]
     ) throws {
         typealias Graph = GenericDirectedGraph<SwiftPEGGrammar.TokenDefinition>
 
@@ -82,7 +97,10 @@ extension GrammarProcessor {
 
         for token in tokens {
             let collector = TokenSyntaxIdentifierCollector()
+            collector.fragmentReferenceCount = fragmentReferenceCount
             collector.visit(token)
+
+            fragmentReferenceCount = collector.fragmentReferenceCount
 
             guard let tokenNode = graph.nodes.first(where: { $0.value === token }) else {
                 break
@@ -118,6 +136,42 @@ extension GrammarProcessor {
         }
     }
 
+    /// Applies inlining of fragments into token definitions wherever they may
+    /// be possible.
+    func applyFragmentInlining(
+        _ tokenDefinitions: [SwiftPEGGrammar.TokenDefinition],
+        fragmentReferenceCount: [String: Int]
+    ) throws -> [InternalGrammar.TokenDefinition] {
+
+        // TODO: This fragment collection step can be performed earlier in validateTokenSyntaxes and reused here
+        let tokens = tokenDefinitions.map(InternalGrammar.TokenDefinition.from)
+        let fragments = tokens.filter(\.isFragment)
+
+        var fragmentsByName: [String: InternalGrammar.TokenDefinition] = [:]
+        for fragment in fragments {
+            // TODO: Throw error on repeated fragment declarations
+            fragmentsByName[fragment.name] = fragment
+        }
+
+        var fragmentReferenceCount = fragmentReferenceCount
+        let rewriter = TokenFragmentInliner(fragments: fragmentsByName) { fragment in
+            fragmentReferenceCount[fragment.name, default: 0] -= 1
+        }
+
+        let inlined = tokens.map(rewriter.visit)
+
+        let fullyInlined = Set(fragmentReferenceCount.filter { $0.value <= 0 }.keys)
+
+        // Remove inlined fragments
+        return inlined.filter { token in
+            if token.isFragment {
+                return !fullyInlined.contains(token.name)
+            }
+
+            return true
+        }
+    }
+
     private class TokenSyntaxVisitor {
         func visit(_ node: SwiftPEGGrammar.TokenDefinition) {
             if let syntax = node.tokenSyntax {
@@ -149,6 +203,274 @@ extension GrammarProcessor {
         }
     }
 
+    private class TokenFragmentInliner {
+        var fragments: [String: InternalGrammar.TokenDefinition]
+        var onInlineFragment: (InternalGrammar.TokenDefinition) -> Void
+
+        init(
+            fragments: [String: InternalGrammar.TokenDefinition],
+            onInlineFragment: @escaping (InternalGrammar.TokenDefinition) -> Void
+        ) {
+            self.fragments = fragments
+            self.onInlineFragment = onInlineFragment
+        }
+
+        // MARK: Inline as group
+
+        private func _inlinedAsGroup(_ node: InternalGrammar.TokenDefinition) -> [CommonAbstract.TokenAtom]? {
+            node.tokenSyntax.flatMap(_inlinedAsGroup)
+        }
+
+        private func _inlinedAsGroup(_ node: CommonAbstract.TokenSyntax) -> [CommonAbstract.TokenAtom]? {
+            var result: [CommonAbstract.TokenAtom] = []
+            for alt in node.alts {
+                guard let asGroup = _inlinedAsGroup(alt) else {
+                    // If one alt cannot be turned into a group, then the syntax
+                    // is not group-able
+                    return nil
+                }
+
+                result.append(contentsOf: asGroup)
+            }
+            return result
+        }
+
+        private func _inlinedAsGroup(_ node: CommonAbstract.TokenAlt) -> [CommonAbstract.TokenAtom]? {
+            var result: [CommonAbstract.TokenAtom] = []
+            for item in node.items {
+                guard let asGroup = _inlinedAsGroup(item) else {
+                    // If one item cannot be turned into a group, then the alt
+                    // is not group-able
+                    return nil
+                }
+
+                result.append(contentsOf: asGroup)
+            }
+            return result
+        }
+
+        private func _inlinedAsGroup(_ node: CommonAbstract.TokenItem) -> [CommonAbstract.TokenAtom]? {
+            switch node {
+            case .group(let group):
+                return group
+            case .atom(let atom):
+                return [atom]
+            default:
+                return nil
+            }
+        }
+
+        // MARK: Inline as alt
+
+        private func _inlinedAsAlts(_ node: InternalGrammar.TokenDefinition) -> [CommonAbstract.TokenAlt]? {
+            node.tokenSyntax.flatMap(_inlinedAsAlts)
+        }
+
+        private func _inlinedAsAlts(_ node: CommonAbstract.TokenSyntax) -> [CommonAbstract.TokenAlt]? {
+            var result: [CommonAbstract.TokenAlt] = []
+            for alt in node.alts {
+                guard let asAlt = _inlinedAsAlts(alt) else {
+                    // If one alt cannot be turned into a alt, then the syntax
+                    // is not alt-able
+                    return nil
+                }
+
+                result.append(contentsOf: asAlt)
+            }
+            return result
+        }
+
+        private func _inlinedAsAlts(_ node: CommonAbstract.TokenAlt) -> [CommonAbstract.TokenAlt]? {
+            var result: [CommonAbstract.TokenAlt] = []
+            for item in node.items {
+                guard let asAlt = _inlinedAsAlts(item) else {
+                    // If one item cannot be turned into an alt, then the alt
+                    // is not alt-able
+                    return nil
+                }
+
+                result.append(contentsOf: asAlt)
+            }
+            return result
+        }
+
+        private func _inlinedAsAlts(_ node: CommonAbstract.TokenItem) -> [CommonAbstract.TokenAlt]? {
+            switch node {
+            case .group(let group):
+                let atoms = group.map(CommonAbstract.TokenItem.atom)
+                return atoms.map {
+                    CommonAbstract.TokenAlt(items: [$0])
+                }
+            case .atom(let atom):
+                return [
+                    CommonAbstract.TokenAlt(items: [.atom(atom)])
+                ]
+            default:
+                return nil
+            }
+        }
+
+        // MARK: -
+
+        func visit(_ node: InternalGrammar.TokenDefinition) -> InternalGrammar.TokenDefinition {
+            var node = node
+            node.tokenSyntax = node.tokenSyntax.map(visit)
+            return node
+        }
+
+        func visit(_ node: CommonAbstract.TokenSyntax) -> CommonAbstract.TokenSyntax {
+            var node = node
+            node.alts = visit(node.alts)
+            return node.flattened()
+        }
+
+        func visit(_ alts: [CommonAbstract.TokenAlt]) -> [CommonAbstract.TokenAlt] {
+            // Strategy: Alts in a token syntax can be expanded by inlining alts
+            // of fragments, if the fragment appears as the sole atom in an alt,
+            // with no exclusions
+            var result: [CommonAbstract.TokenAlt] = []
+            result.reserveCapacity(alts.count)
+
+            for alt in alts {
+                let reducedAlt = visit(alt)
+
+                switch reducedAlt.items.first {
+                case .atom(let atom)
+                    where reducedAlt.items.count == 1
+                        && atom.excluded.isEmpty:
+                    if
+                        case .identifier(let identifier) = atom.terminal,
+                        let fragment = fragments[identifier],
+                        let alts = _inlinedAsAlts(fragment)
+                    {
+                        onInlineFragment(fragment)
+                        result.append(contentsOf: alts)
+                    } else {
+                        result.append(reducedAlt)
+                    }
+                default:
+                    result.append(reducedAlt)
+                }
+            }
+
+            return result
+        }
+
+        func visit(_ node: CommonAbstract.TokenAlt) -> CommonAbstract.TokenAlt {
+            var node = node
+            node.items = node.items.map(visit)
+            return node.flattened()
+        }
+
+        func visit(_ node: CommonAbstract.TokenItem) -> CommonAbstract.TokenItem {
+            switch node {
+            case .zeroOrMore(let atoms):
+                return .zeroOrMore(visit(atoms))
+
+            case .oneOrMore(let atoms):
+                return .oneOrMore(visit(atoms))
+
+            case .optionalGroup(let atoms):
+                return .optionalGroup(visit(atoms))
+
+            case .group(let atoms):
+                return group(visit(atoms))
+
+            case .optionalAtom(let atom):
+                return .optionalAtom(visit(atom))
+
+            case .atom(let atom):
+                return group(visit([atom]))
+            }
+        }
+
+        func group(_ atoms: [CommonAbstract.TokenAtom]) -> CommonAbstract.TokenItem {
+            return .group(atoms).flattened()
+        }
+
+        func visit(_ atoms: [CommonAbstract.TokenAtom]) -> [CommonAbstract.TokenAtom] {
+            // Strategy: Atoms in a group-like item can be expanded by inlining
+            // alts of fragments, if the fragment appears with no exclusions.
+            // The fragment cannot contain structures that are not nestable in an
+            // atom group, such as repetitions or optionals.
+            var result: [CommonAbstract.TokenAtom] = []
+            result.reserveCapacity(atoms.count)
+
+            for atom in atoms {
+                let reducedAtom = visit(atom)
+
+                guard reducedAtom.excluded.isEmpty else {
+                    result.append(reducedAtom)
+                    continue
+                }
+
+                switch reducedAtom.terminal {
+                case .identifier(let identifier):
+                    guard let fragment = fragments[identifier] else {
+                        break
+                    }
+                    guard let inlined = _inlinedAsGroup(fragment) else {
+                        break
+                    }
+
+                    onInlineFragment(fragment)
+
+                    result.append(contentsOf: inlined)
+                    continue
+                default:
+                    break
+                }
+
+                result.append(reducedAtom)
+            }
+
+            return result
+        }
+
+        func visit(_ node: CommonAbstract.TokenAtom) -> CommonAbstract.TokenAtom {
+            var node = node
+            node.excluded = node.excluded.map(visit)
+            node.terminal = visit(node.terminal)
+            return node
+        }
+
+        func visit(_ node: CommonAbstract.TokenExclusion) -> CommonAbstract.TokenExclusion {
+            switch node {
+            case .identifier(let identifier):
+                guard let fragment = fragments[identifier] else {
+                    return node
+                }
+
+                if let staticTerminal = fragment.tokenSyntax?.staticTerminal() {
+                    onInlineFragment(fragment)
+                    return .string(staticTerminal)
+                }
+
+                return node
+            default:
+                return node
+            }
+        }
+
+        func visit(_ node: CommonAbstract.TokenTerminal) -> CommonAbstract.TokenTerminal {
+            switch node {
+            case .identifier(let identifier):
+                guard let fragment = fragments[identifier] else {
+                    return node
+                }
+
+                if let staticTerminal = fragment.tokenSyntax?.staticTerminal() {
+                    onInlineFragment(fragment)
+                    return .literal(staticTerminal)
+                }
+
+                return node
+            default:
+                return node
+            }
+        }
+    }
+
     private class TokenAltCollector: TokenSyntaxVisitor {
         var alts: [[CommonAbstract.TokenAlt]] = []
         var grouped: [[CommonAbstract.TokenAtom]] = []
@@ -175,10 +497,13 @@ extension GrammarProcessor {
 
     private class TokenSyntaxIdentifierCollector: TokenSyntaxVisitor {
         var identifiers: Set<String> = []
+        var fragmentReferenceCount: [String: Int] = [:]
 
         override func visit(_ node: CommonAbstract.TokenExclusion) {
             switch node {
             case .identifier(let identifier):
+                incrementReference(identifier)
+
                 identifiers.insert(identifier)
             case .string:
                 break
@@ -188,6 +513,8 @@ extension GrammarProcessor {
         override func visit(_ node: CommonAbstract.TokenTerminal) {
             switch node {
             case .identifier(let identifier):
+                incrementReference(identifier)
+
                 identifiers.insert(identifier)
             case .literal:
                 break
@@ -197,6 +524,12 @@ extension GrammarProcessor {
                 break
             case .any:
                 break
+            }
+        }
+
+        private func incrementReference(_ identifier: String) {
+            if let count = fragmentReferenceCount[identifier] {
+                fragmentReferenceCount[identifier] = count + 1
             }
         }
     }

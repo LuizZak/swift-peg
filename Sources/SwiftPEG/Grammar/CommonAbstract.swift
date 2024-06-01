@@ -38,8 +38,16 @@ public enum CommonAbstract {
             self = .fromCode(contents: value)
         }
 
+        public func hash(into hasher: inout Hasher) {
+            hasher.combine(contents)
+        }
+
         public static func from(_ string: SwiftPEGGrammar.GrammarString) -> Self {
             return .fromSource(contents: string.rawContents(), original: string.asStringLiteral())
+        }
+
+        public static func == (lhs: Self, rhs: Self) -> Bool {
+            lhs.contents == rhs.contents
         }
     }
 
@@ -226,6 +234,31 @@ extension CommonAbstract {
 
             return true
         }
+
+        /// Flattens nested structures that can be simplified into shallower
+        /// constructions.
+        func flattened() -> Self {
+            var flattenedAlts: [TokenAlt] = []
+            for alt in alts {
+                let flatAlt = alt.flattened()
+                // If the alt is a single group with simple atoms, expand the
+                // group
+                if flatAlt.items.count == 1 && flatAlt.items[0].isGroup {
+                    flattenedAlts.append(contentsOf:
+                        flatAlt.items[0].atoms.map { atom in
+                            TokenAlt(items: [
+                                .atom(atom)
+                            ])
+                        }
+                    )
+                    continue
+                }
+
+                flattenedAlts.append(flatAlt)
+            }
+
+            return Self(alts: flattenedAlts)
+        }
     }
 
     /// A token syntax alternative.
@@ -274,6 +307,12 @@ extension CommonAbstract {
 
             return items[firstChangeIndex].isPrefix(of: other.items[firstChangeIndex])
         }
+
+        /// Flattens nested structures that can be simplified into shallower
+        /// constructions.
+        func flattened() -> Self {
+            Self(items: items.map({ $0.flattened() }))
+        }
     }
 
     /// A token syntax item.
@@ -288,6 +327,7 @@ extension CommonAbstract {
     ///     | tokenSyntaxAtom
     ///     ;
     /// ```
+    @GeneratedCaseChecks(accessLevel: "public")
     public enum TokenItem: Equatable, CustomStringConvertible {
         /// `'(' '|'.tokenSyntaxAtom+ ')' '*'`
         case zeroOrMore([TokenAtom])
@@ -451,6 +491,19 @@ extension CommonAbstract {
 
             case (.atom(let lhs), .atom(let rhs)):
                 return lhs.isPrefix(of: rhs)
+            }
+        }
+
+        /// Flattens nested structures that can be simplified into shallower
+        /// constructions.
+        func flattened() -> Self {
+            switch self {
+            case .group(let atoms) where atoms.count == 1:
+                return .atom(atoms[0])
+            case .optionalGroup(let atoms) where atoms.count == 1:
+                return .optionalAtom(atoms[0])
+            default:
+                return self
             }
         }
     }

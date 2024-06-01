@@ -44,6 +44,89 @@ class GrammarProcessor_TokenSyntaxTests: XCTestCase {
             """
         )
     }
+
+    func testInlineFragments_terminals() throws {
+        let delegate = stubDelegate(tokensFile: """
+        $a: b "c" !d e;
+        $b: "b" ;
+        %d: "d" ;
+        %e: "e" ;
+        """)
+        let expected = try parseTokenDefinitions(#"""
+        $a: b "c" !"d" "e";
+        $b: "b" ;
+        """#)
+        let grammar = makeGrammar()
+        let sut = makeSut(delegate)
+
+        let processed = try sut.process(grammar)
+
+        assertEqualUnordered(processed.tokens, expected)
+    }
+
+    func testInlineFragments_groups() throws {
+        let delegate = stubDelegate(tokensFile: """
+        $a: b ("c" | d);
+        $b: "b" ;
+        %d: "d" | "e";
+        """)
+        let expected = try parseTokenDefinitions(#"""
+        $a: b ("c" | "d" | "e");
+        $b: "b" ;
+        """#)
+        let grammar = makeGrammar()
+        let sut = makeSut(delegate)
+
+        let processed = try sut.process(grammar)
+
+        assertEqualUnordered(processed.tokens, expected)
+    }
+
+    func testInlineFragments_alts() throws {
+        let delegate = stubDelegate(tokensFile: """
+        $a: b | "c" | d;
+        $b: "b" ;
+        %d: "d" | "e";
+        """)
+        let expected = try parseTokenDefinitions(#"""
+        $a: b | "c" | "d" | "e";
+        $b: "b" ;
+        """#)
+        let grammar = makeGrammar()
+        let sut = makeSut(delegate)
+
+        let processed = try sut.process(grammar)
+
+        assertEqualUnordered(processed.tokens, expected)
+    }
+
+    func testInlineFragments_repeatedFragments() throws {
+        let delegate = stubDelegate(tokensFile: #"""
+        $STRING[".string"]:
+            | tripleQuote ('\\"""' | backslashEscape | !tripleQuote .)* tripleQuote
+            | doubleQuote ('\\"' | backslashEscape | !doubleQuote !'\n' .)* doubleQuote
+            | singleQuote ("\\'" | backslashEscape | !singleQuote !'\n' .)* singleQuote
+            ;
+
+        %tripleQuote: '"""' ;
+        %doubleQuote: '"' ;
+        %singleQuote: "'" ;
+        %backslashEscape: '\\\\' | '\\' ;
+        """#)
+        let expected = try parseTokenDefinitions(#"""
+        $STRING[".string"]:
+            | '"""' ('\\"""' | '\\\\' | '\\' | !'"""' .)* '"""'
+            | '"' ('\\"' | '\\\\' | '\\' | !'"' !'\n' .)* '"'
+            | "'" ("\\'" | '\\\\' | '\\' | !"'" !'\n' .)* "'"
+            ;
+        """#)
+        let grammar = makeGrammar()
+        let sut = makeSut(delegate)
+
+        let processed = try sut.process(grammar)
+
+        assertEqualUnordered(processed.tokens, expected)
+    }
 }
 
 // MARK: - Test internals
@@ -94,18 +177,29 @@ private func makeString(_ string: String) -> SwiftPEGGrammar.GrammarString {
     .init(pieces: [.literal(string)], quote: .doubleQuote)
 }
 
-private func parseGrammar(
-    _ grammar: String,
+private func parseTokens(
+    _ tokensFile: String,
     file: StaticString = #file,
     line: UInt = #line
-) throws -> SwiftPEGGrammar.Grammar {
+) throws -> [SwiftPEGGrammar.TokenDefinition] {
 
-    let tokenizer = GrammarRawTokenizer(source: grammar)
+    let tokenizer = GrammarRawTokenizer(source: tokensFile)
     let parser = GrammarParser(raw: tokenizer)
 
-    guard let grammar = try parser.start(), tokenizer.isEOF else {
+    guard let result = try parser.tokensFile(), tokenizer.isEOF else {
         throw parser.makeSyntaxError()
     }
 
-    return grammar
+    return result
+}
+
+private func parseTokenDefinitions(
+    _ tokensFile: String,
+    file: StaticString = #file,
+    line: UInt = #line
+) throws -> [InternalGrammar.TokenDefinition] {
+
+    return
+        try parseTokens(tokensFile, file: file, line: line)
+        .map(InternalGrammar.TokenDefinition.from)
 }

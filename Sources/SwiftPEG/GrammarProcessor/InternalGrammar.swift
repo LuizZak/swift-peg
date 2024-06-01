@@ -12,7 +12,7 @@ public enum InternalGrammar {
     ///     | '%'
     ///     ;
     /// ```
-    public struct TokenDefinition: CustomStringConvertible {
+    public struct TokenDefinition: Equatable, CustomStringConvertible {
         public var name: String
 
         /// Whether this token is a fragment, or a part of another token's syntax
@@ -66,13 +66,13 @@ public enum InternalGrammar {
         public var description: String {
             let prefix = isFragment ? "%" : "$"
 
-            switch (staticToken, string) {
-            case (let staticToken?, let string?):
-                return #"\#(prefix)\#(name)["\#(staticToken)"]: "\#(string)" ;"#
+            switch (staticToken, tokenSyntax) {
+            case (let staticToken?, let tokenSyntax?):
+                return #"\#(prefix)\#(name)["\#(staticToken)"]: \#(tokenSyntax) ;"#
             case (let staticToken?, nil):
                 return #"\#(prefix)\#(name)["\#(staticToken)"] ;"#
-            case (nil, let string?):
-                return #"\#(prefix)\#(name) : "\#(string)" ;"#
+            case (nil, let tokenSyntax?):
+                return #"\#(prefix)\#(name) : \#(tokenSyntax) ;"#
             case (nil, nil):
                 return #"\#(prefix)\#(name) ;"#
             }

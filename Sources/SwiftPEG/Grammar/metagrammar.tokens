@@ -13,10 +13,15 @@ $DIGITS[".digits"]:
     ;
 
 $STRING[".string"]:
-    | '"""' ('\\"""' | '\\\\' | '\\' | !'"""' .)* '"""'
-    | '"' ('\\"' | '\\\\' | '\\' | !'"' !'\n' .)* '"'
-    | "'" ("\\'" | '\\\\' | '\\' | !"'" !'\n' .)* "'"
+    | tripleQuote ( '\\"""' | backslashEscape | !tripleQuote . )* tripleQuote
+    | doubleQuote ( '\\"' | backslashEscape | !doubleQuote !'\n' . )* doubleQuote
+    | singleQuote ( "\\'" | backslashEscape | !singleQuote !'\n' . )* singleQuote
     ;
+
+%tripleQuote: '"""' ;
+%doubleQuote: '"' ;
+%singleQuote: "'" ;
+%backslashEscape: '\\\\' | '\\' ;
 
 $LEFTPAREN[".leftParen"]: "(" ;
 $RIGHTPAREN[".rightParen"]: ")" ;
