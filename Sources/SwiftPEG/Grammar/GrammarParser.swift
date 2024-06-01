@@ -1038,6 +1038,8 @@ extension GrammarParser {
     ///     | '(' '|'.tokenSyntaxAtom+ ')' '+' { .oneOrMore(tokenSyntaxAtom) }
     ///     | '(' '|'.tokenSyntaxAtom+ ')' '?' { .optionalGroup(tokenSyntaxAtom) }
     ///     | '(' '|'.tokenSyntaxAtom+ ')' { .group(tokenSyntaxAtom) }
+    ///     | tokenSyntaxAtom '*' { .zeroOrMore([tokenSyntaxAtom]) }
+    ///     | tokenSyntaxAtom '+' { .oneOrMore([tokenSyntaxAtom]) }
     ///     | tokenSyntaxAtom '?' { .optionalAtom(tokenSyntaxAtom) }
     ///     | tokenSyntaxAtom { .atom(tokenSyntaxAtom) }
     ///     ;
@@ -1102,6 +1104,24 @@ extension GrammarParser {
             let _ = try self.expect(kind: .rightParen)
         {
             return .group(tokenSyntaxAtom)
+        }
+
+        self.restore(mark)
+
+        if
+            let tokenSyntaxAtom = try self.tokenSyntaxAtom(),
+            let _ = try self.expect(kind: .star)
+        {
+            return .zeroOrMore([tokenSyntaxAtom])
+        }
+
+        self.restore(mark)
+
+        if
+            let tokenSyntaxAtom = try self.tokenSyntaxAtom(),
+            let _ = try self.expect(kind: .plus)
+        {
+            return .oneOrMore([tokenSyntaxAtom])
         }
 
         self.restore(mark)

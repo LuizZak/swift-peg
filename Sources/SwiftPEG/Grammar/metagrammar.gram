@@ -182,6 +182,9 @@ tokenSyntaxItem[CommonAbstract.TokenItem]:
     | '(' '|'.tokenSyntaxAtom+ ')' '+'              { .oneOrMore(tokenSyntaxAtom) }
     | '(' '|'.tokenSyntaxAtom+ ')' '?'              { .optionalGroup(tokenSyntaxAtom) }
     | '(' '|'.tokenSyntaxAtom+ ')'                  { .group(tokenSyntaxAtom) }
+    | tokenSyntaxAtom '*'                           { .zeroOrMore([tokenSyntaxAtom]) }
+    | tokenSyntaxAtom '+'                           { .oneOrMore([tokenSyntaxAtom]) }
+    # TODO: Maybe collapse optionalAtom into optionalGroup?
     | tokenSyntaxAtom '?'                           { .optionalAtom(tokenSyntaxAtom) }
     | tokenSyntaxAtom                               { .atom(tokenSyntaxAtom) }
     ;
