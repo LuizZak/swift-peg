@@ -321,6 +321,17 @@ extension GrammarParser {
 
         if
             let _ = try self.expect(kind: .ampersand),
+            let _ = try self.expect(kind: .ampersand),
+            cut.toggleOn(),
+            let atom = try self.atom()
+        {
+            return self.setLocation(SwiftPEGGrammar.Forced(atom: atom), at: mark)
+        }
+
+        self.restore(mark)
+
+        if
+            let _ = try self.expect(kind: .ampersand),
             cut.toggleOn(),
             let atom = try self.atom()
         {

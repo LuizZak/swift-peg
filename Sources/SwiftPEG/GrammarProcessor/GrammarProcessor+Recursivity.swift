@@ -22,6 +22,15 @@ extension GrammarProcessor {
             }
         }
 
+        try computeLeftRecursive(in: grammar, graph, rules)
+    }
+
+    /// Computes left-recursive rules in a given grammar
+    func computeLeftRecursive(
+        in grammar: SwiftPEGGrammar.Grammar,
+        _ graph: InitialGraph,
+        _ rules: [String : SwiftPEGGrammar.Rule]
+    ) throws {
         printIfVerbose("Computing left-recursion...")
 
         for component in graph.stronglyConnectedComponents() {

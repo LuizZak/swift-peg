@@ -1,12 +1,12 @@
 /// Protocol for visitors of `Node` hierarchies.
 public protocol NodeVisitorType {
+    associatedtype VisitResult
+
     /// Called by a node walker to indicate that a node hierarchy will be visited.
     func willVisit(_ node: Node)
 
     /// Called by a generic node to indicate a visit within.
-    /// If result is `NodeVisitChildrenResult.skipChildren`, the node will be
-    /// visited with `visit` but children of the node will not.
-    func visit(_ node: Node) throws -> NodeVisitChildrenResult
+    func visit(_ node: Node) throws -> VisitResult
 
     /// Called by a node walker to indicate that a node hierarchy was fully
     /// visited.
@@ -15,8 +15,13 @@ public protocol NodeVisitorType {
 
 public extension NodeVisitorType {
     func willVisit(_ node: Node) { }
-    func visit(_ node: Node) -> NodeVisitChildrenResult { .visitChildren }
     func didVisit(_ node: Node) { }
+}
+
+public extension NodeVisitorType where VisitResult == NodeVisitChildrenResult {
+    /// If result is `NodeVisitChildrenResult.skipChildren`, the node will be
+    /// visited with `visit` but children of the node will not.
+    func visit(_ node: Node) -> NodeVisitChildrenResult { .visitChildren }
 }
 
 /// Return of `NodeVisitorType.wilVisit` calls; indicates whether children of

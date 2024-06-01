@@ -3,6 +3,31 @@ import XCTest
 @testable import SwiftPEG
 
 class GrammarProcessorTests: XCTestCase {
+    func testAnyToken() throws {
+        let atom = makeAtom(ident: "ANY", identity: .unresolved)
+        let start = makeRule(name: "start", [
+            makeAlt([ makeNamedItem(atom: atom) ]),
+        ])
+        let grammar = makeGrammar(
+            metas: [
+                makeMeta(name: "anyToken", identifier: "ANY"),
+            ],
+            [start]
+        )
+        let sut = makeSut()
+
+        let result = try sut.process(grammar)
+
+        assertEmpty(sut.diagnostics)
+        assertEqual(atom.identity, .anyToken)
+        switch result.grammar.rules[0].alts[0].items[0] {
+        case .item(_, .atom(.anyToken), _):
+            success()
+        default:
+            fail("Expected atom to be identified as InternalGrammar.Atom.anyToken, found \(result.grammar.rules[0].alts[0].items[0])")
+        }
+    }
+
     func testUnknownReferenceError() throws {
         let start = makeRule(name: "start", [
             makeAlt([ makeNamedItem("a") ]),
@@ -69,31 +94,6 @@ class GrammarProcessorTests: XCTestCase {
         assertEqual(sut.test_diagnosticMessages(), """
             Token fragment %b @ line 2 column 1 specifies a static token value, which is not relevant for fragments and will be ignored.
             """)
-    }
-
-    func testAnyToken() throws {
-        let atom = makeAtom(ident: "ANY", identity: .unresolved)
-        let start = makeRule(name: "start", [
-            makeAlt([ makeNamedItem(atom: atom) ]),
-        ])
-        let grammar = makeGrammar(
-            metas: [
-                makeMeta(name: "anyToken", identifier: "ANY"),
-            ],
-            [start]
-        )
-        let sut = makeSut()
-
-        let result = try sut.process(grammar)
-
-        assertEmpty(sut.diagnostics)
-        assertEqual(atom.identity, .anyToken)
-        switch result.grammar.rules[0].alts[0].items[0] {
-        case .item(_, .atom(.anyToken), _):
-            success()
-        default:
-            fail("Expected atom to be identified as InternalGrammar.Atom.anyToken, found \(result.grammar.rules[0].alts[0].items[0])")
-        }
     }
 
     func testAnyToken_noValue_diagnostics() throws {

@@ -352,6 +352,13 @@ public class SwiftCodeGen {
         in rule: InternalGrammar.Rule
     ) throws {
         switch lookahead {
+        case .forced(let atom):
+            buffer.emit("try self.expectForced(")
+            try buffer.emitInlinedBlock {
+                try generateAtom(atom, in: rule)
+            }
+            buffer.emit(#", \#(atom.description.debugDescription))"#)
+
         case .positive(let atom):
             buffer.emit("try self.positiveLookahead(")
             try buffer.emitInlinedBlock {

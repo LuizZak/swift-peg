@@ -11,16 +11,19 @@ extension SwiftPEGGrammar {
     /// Base class for grammar nodes.
     public class GrammarNode: Node {
         /// Accepts a given grammar-node visitor into this node.
-        public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: NodeVisitorType {
-            if let cast = visitor as? GrammarNodeVisitorType {
-                return try self.accept(cast)
+        public override func accept<Visitor>(_ visitor: Visitor) throws -> Visitor.VisitResult where Visitor: NodeVisitorType {
+            if
+                let cast = visitor as? any GrammarNodeVisitorType,
+                let result = try self.accept(cast) as? Visitor.VisitResult
+            {
+                return result
             }
 
             return try super.accept(visitor)
         }
 
         /// Accepts a given grammar-node visitor into this node.
-        public func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: GrammarNodeVisitorType {
+        public func accept<Visitor>(_ visitor: Visitor) throws -> Visitor.VisitResult where Visitor: GrammarNodeVisitorType {
             try super.accept(visitor)
         }
     }
@@ -44,7 +47,7 @@ extension SwiftPEGGrammar {
         private var _rules: [Rule] = []
 
         /// Accepts a given grammar-node visitor into this node.
-        public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: GrammarNodeVisitorType {
+        public override func accept<Visitor>(_ visitor: Visitor) throws -> Visitor.VisitResult where Visitor: GrammarNodeVisitorType {
             try visitor.visit(self)
         }
     }
@@ -72,7 +75,7 @@ extension SwiftPEGGrammar {
         }
 
         /// Accepts a given grammar-node visitor into this node.
-        public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: GrammarNodeVisitorType {
+        public override func accept<Visitor>(_ visitor: Visitor) throws -> Visitor.VisitResult where Visitor: GrammarNodeVisitorType {
             try visitor.visit(self)
         }
     }
@@ -108,7 +111,7 @@ extension SwiftPEGGrammar {
         public override var shortDebugDescription: String { String(identifier.string) }
 
         /// Accepts a given grammar-node visitor into this node.
-        public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: GrammarNodeVisitorType {
+        public override func accept<Visitor>(_ visitor: Visitor) throws -> Visitor.VisitResult where Visitor: GrammarNodeVisitorType {
             try visitor.visit(self)
         }
     }
@@ -128,7 +131,7 @@ extension SwiftPEGGrammar {
         public override var shortDebugDescription: String { string.asStringLiteral() }
 
         /// Accepts a given grammar-node visitor into this node.
-        public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: GrammarNodeVisitorType {
+        public override func accept<Visitor>(_ visitor: Visitor) throws -> Visitor.VisitResult where Visitor: GrammarNodeVisitorType {
             try visitor.visit(self)
         }
     }
@@ -167,7 +170,7 @@ extension SwiftPEGGrammar {
         }
 
         /// Accepts a given grammar-node visitor into this node.
-        public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: GrammarNodeVisitorType {
+        public override func accept<Visitor>(_ visitor: Visitor) throws -> Visitor.VisitResult where Visitor: GrammarNodeVisitorType {
             try visitor.visit(self)
         }
 
@@ -222,7 +225,7 @@ extension SwiftPEGGrammar {
         public override var shortDebugDescription: String { String(name.string) }
 
         /// Accepts a given grammar-node visitor into this node.
-        public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: GrammarNodeVisitorType {
+        public override func accept<Visitor>(_ visitor: Visitor) throws -> Visitor.VisitResult where Visitor: GrammarNodeVisitorType {
             try visitor.visit(self)
         }
     }
@@ -253,7 +256,7 @@ extension SwiftPEGGrammar {
         var _failAction: Action?
 
         /// Accepts a given grammar-node visitor into this node.
-        public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: GrammarNodeVisitorType {
+        public override func accept<Visitor>(_ visitor: Visitor) throws -> Visitor.VisitResult where Visitor: GrammarNodeVisitorType {
             try visitor.visit(self)
         }
 
@@ -317,7 +320,7 @@ extension SwiftPEGGrammar {
         var nullable: Bool = false
 
         /// Accepts a given grammar-node visitor into this node.
-        public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: GrammarNodeVisitorType {
+        public override func accept<Visitor>(_ visitor: Visitor) throws -> Visitor.VisitResult where Visitor: GrammarNodeVisitorType {
             try visitor.visit(self)
         }
 
@@ -356,6 +359,7 @@ extension SwiftPEGGrammar {
     /// Represents the construct:
     /// ```
     /// lookahead:
+    ///     | '&''&' atom
     ///     | '&' atom
     ///     | '!' atom
     ///     | '~'
@@ -378,6 +382,34 @@ extension SwiftPEGGrammar {
         }
     }
 
+    /// A forced atom.
+    ///
+    /// Forced atoms are in-grammar requirements that a production must succeed
+    /// otherwise a syntax error is raised on the spot.
+    ///
+    /// Represents the construct:
+    ///
+    /// ```
+    /// '&''&' atom ;
+    /// ```
+    @GeneratedNodeType<Node>(overrideDeepCopyType: "LookaheadOrCut")
+    public final class Forced: LookaheadOrCut {
+        @NodeProperty
+        var _atom: Atom
+
+        public override var shortDebugDescription: String { "&&" }
+
+        /// Accepts a given grammar-node visitor into this node.
+        public override func accept<Visitor>(_ visitor: Visitor) throws -> Visitor.VisitResult where Visitor: GrammarNodeVisitorType {
+            try visitor.visit(self)
+        }
+
+        /// Returns a set of all named identifiers referenced within this node.
+        override func allNames() -> Set<String> {
+            atom.allNames()
+        }
+    }
+
     /// A positive lookahead.
     ///
     /// Positive lookaheads are required to match the associated atom in order
@@ -396,7 +428,7 @@ extension SwiftPEGGrammar {
         public override var shortDebugDescription: String { "&" }
 
         /// Accepts a given grammar-node visitor into this node.
-        public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: GrammarNodeVisitorType {
+        public override func accept<Visitor>(_ visitor: Visitor) throws -> Visitor.VisitResult where Visitor: GrammarNodeVisitorType {
             try visitor.visit(self)
         }
 
@@ -423,7 +455,7 @@ extension SwiftPEGGrammar {
         public override var shortDebugDescription: String { "!" }
 
         /// Accepts a given grammar-node visitor into this node.
-        public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: GrammarNodeVisitorType {
+        public override func accept<Visitor>(_ visitor: Visitor) throws -> Visitor.VisitResult where Visitor: GrammarNodeVisitorType {
             try visitor.visit(self)
         }
 
@@ -447,7 +479,7 @@ extension SwiftPEGGrammar {
         public override var shortDebugDescription: String { "~" }
 
         /// Accepts a given grammar-node visitor into this node.
-        public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: GrammarNodeVisitorType {
+        public override func accept<Visitor>(_ visitor: Visitor) throws -> Visitor.VisitResult where Visitor: GrammarNodeVisitorType {
             try visitor.visit(self)
         }
     }
@@ -505,7 +537,7 @@ extension SwiftPEGGrammar {
         public override var shortDebugDescription: String { "?" }
 
         /// Accepts a given grammar-node visitor into this node.
-        public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: GrammarNodeVisitorType {
+        public override func accept<Visitor>(_ visitor: Visitor) throws -> Visitor.VisitResult where Visitor: GrammarNodeVisitorType {
             try visitor.visit(self)
         }
 
@@ -546,7 +578,7 @@ extension SwiftPEGGrammar {
         public override var shortDebugDescription: String { "?" }
 
         /// Accepts a given grammar-node visitor into this node.
-        public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: GrammarNodeVisitorType {
+        public override func accept<Visitor>(_ visitor: Visitor) throws -> Visitor.VisitResult where Visitor: GrammarNodeVisitorType {
             try visitor.visit(self)
         }
 
@@ -582,7 +614,7 @@ extension SwiftPEGGrammar {
         public override var shortDebugDescription: String { "*" }
 
         /// Accepts a given grammar-node visitor into this node.
-        public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: GrammarNodeVisitorType {
+        public override func accept<Visitor>(_ visitor: Visitor) throws -> Visitor.VisitResult where Visitor: GrammarNodeVisitorType {
             try visitor.visit(self)
         }
 
@@ -618,7 +650,7 @@ extension SwiftPEGGrammar {
         public override var shortDebugDescription: String { "+" }
 
         /// Accepts a given grammar-node visitor into this node.
-        public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: GrammarNodeVisitorType {
+        public override func accept<Visitor>(_ visitor: Visitor) throws -> Visitor.VisitResult where Visitor: GrammarNodeVisitorType {
             try visitor.visit(self)
         }
 
@@ -662,7 +694,7 @@ extension SwiftPEGGrammar {
         var _item: Atom
 
         /// Accepts a given grammar-node visitor into this node.
-        public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: GrammarNodeVisitorType {
+        public override func accept<Visitor>(_ visitor: Visitor) throws -> Visitor.VisitResult where Visitor: GrammarNodeVisitorType {
             try visitor.visit(self)
         }
 
@@ -692,7 +724,7 @@ extension SwiftPEGGrammar {
         var _atom: Atom
 
         /// Accepts a given grammar-node visitor into this node.
-        public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: GrammarNodeVisitorType {
+        public override func accept<Visitor>(_ visitor: Visitor) throws -> Visitor.VisitResult where Visitor: GrammarNodeVisitorType {
             try visitor.visit(self)
         }
 
@@ -754,7 +786,7 @@ extension SwiftPEGGrammar {
         var _alts: [Alt]
 
         /// Accepts a given grammar-node visitor into this node.
-        public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: GrammarNodeVisitorType {
+        public override func accept<Visitor>(_ visitor: Visitor) throws -> Visitor.VisitResult where Visitor: GrammarNodeVisitorType {
             try visitor.visit(self)
         }
 
@@ -801,7 +833,7 @@ extension SwiftPEGGrammar {
         public override var shortDebugDescription: String { string.asStringLiteral() }
 
         /// Accepts a given grammar-node visitor into this node.
-        public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: GrammarNodeVisitorType {
+        public override func accept<Visitor>(_ visitor: Visitor) throws -> Visitor.VisitResult where Visitor: GrammarNodeVisitorType {
             try visitor.visit(self)
         }
 
@@ -832,7 +864,7 @@ extension SwiftPEGGrammar {
         }
 
         /// Accepts a given grammar-node visitor into this node.
-        public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: GrammarNodeVisitorType {
+        public override func accept<Visitor>(_ visitor: Visitor) throws -> Visitor.VisitResult where Visitor: GrammarNodeVisitorType {
             try visitor.visit(self)
         }
 
@@ -900,7 +932,7 @@ extension SwiftPEGGrammar {
         }
 
         /// Accepts a given grammar-node visitor into this node.
-        public override func accept<Visitor>(_ visitor: Visitor) throws -> NodeVisitChildrenResult where Visitor: GrammarNodeVisitorType {
+        public override func accept<Visitor>(_ visitor: Visitor) throws -> Visitor.VisitResult where Visitor: GrammarNodeVisitorType {
             try visitor.visit(self)
         }
     }
@@ -944,71 +976,74 @@ extension SwiftPEGGrammar {
     /// Protocol for visiting Grammar node types.
     public protocol GrammarNodeVisitorType: NodeVisitorType {
         /// Visits a Grammar node.
-        func visit(_ node: Grammar) throws -> NodeVisitChildrenResult
+        func visit(_ node: Grammar) throws -> VisitResult
 
         /// Visits a Meta-property node.
-        func visit(_ node: Meta) throws -> NodeVisitChildrenResult
+        func visit(_ node: Meta) throws -> VisitResult
 
         /// Visits a Meta-property identifier value node.
-        func visit(_ node: MetaIdentifierValue) throws -> NodeVisitChildrenResult
+        func visit(_ node: MetaIdentifierValue) throws -> VisitResult
 
         /// Visits a Meta-property string value node.
-        func visit(_ node: MetaStringValue) throws -> NodeVisitChildrenResult
+        func visit(_ node: MetaStringValue) throws -> VisitResult
 
         /// Visits a Rule node.
-        func visit(_ node: Rule) throws -> NodeVisitChildrenResult
+        func visit(_ node: Rule) throws -> VisitResult
 
         /// Visits a Rule Name node.
-        func visit(_ node: RuleName) throws -> NodeVisitChildrenResult
+        func visit(_ node: RuleName) throws -> VisitResult
 
         /// Visits an Alt node.
-        func visit(_ node: Alt) throws -> NodeVisitChildrenResult
+        func visit(_ node: Alt) throws -> VisitResult
 
         /// Visits a Named Item node.
-        func visit(_ node: NamedItem) throws -> NodeVisitChildrenResult
+        func visit(_ node: NamedItem) throws -> VisitResult
+
+        /// Visits a Forced node.
+        func visit(_ node: Forced) throws -> VisitResult
 
         /// Visits a Positive Lookahead node.
-        func visit(_ node: PositiveLookahead) throws -> NodeVisitChildrenResult
+        func visit(_ node: PositiveLookahead) throws -> VisitResult
 
         /// Visits a Negative Lookahead node.
-        func visit(_ node: NegativeLookahead) throws -> NodeVisitChildrenResult
+        func visit(_ node: NegativeLookahead) throws -> VisitResult
 
         /// Visits a Cut node.
-        func visit(_ node: Cut) throws -> NodeVisitChildrenResult
+        func visit(_ node: Cut) throws -> VisitResult
 
         /// Visits an Optional Alts node.
-        func visit(_ node: OptionalItems) throws -> NodeVisitChildrenResult
+        func visit(_ node: OptionalItems) throws -> VisitResult
 
         /// Visits an Optional Atom node.
-        func visit(_ node: OptionalItem) throws -> NodeVisitChildrenResult
+        func visit(_ node: OptionalItem) throws -> VisitResult
 
         /// Visits a Zero Or More Item node.
-        func visit(_ node: ZeroOrMoreItem) throws -> NodeVisitChildrenResult
+        func visit(_ node: ZeroOrMoreItem) throws -> VisitResult
 
         /// Visits a One Or More Item node.
-        func visit(_ node: OneOrMoreItem) throws -> NodeVisitChildrenResult
+        func visit(_ node: OneOrMoreItem) throws -> VisitResult
 
         /// Visits a Gather Item node.
-        func visit(_ node: GatherItem) throws -> NodeVisitChildrenResult
+        func visit(_ node: GatherItem) throws -> VisitResult
 
         /// Visits an Atom Item node.
-        func visit(_ node: AtomItem) throws -> NodeVisitChildrenResult
+        func visit(_ node: AtomItem) throws -> VisitResult
 
         /// Visits a Group Atom node.
-        func visit(_ node: GroupAtom) throws -> NodeVisitChildrenResult
+        func visit(_ node: GroupAtom) throws -> VisitResult
 
         /// Visits a String Atom node.
-        func visit(_ node: StringAtom) throws -> NodeVisitChildrenResult
+        func visit(_ node: StringAtom) throws -> VisitResult
 
         /// Visits an Identifier Atom node.
-        func visit(_ node: IdentAtom) throws -> NodeVisitChildrenResult
+        func visit(_ node: IdentAtom) throws -> VisitResult
 
         /// Visits an Action node.
-        func visit(_ node: Action) throws -> NodeVisitChildrenResult
+        func visit(_ node: Action) throws -> VisitResult
     }
 }
 
-public extension SwiftPEGGrammar.GrammarNodeVisitorType {
+public extension SwiftPEGGrammar.GrammarNodeVisitorType where VisitResult == NodeVisitChildrenResult {
     func visit(_ node: SwiftPEGGrammar.Grammar) throws -> NodeVisitChildrenResult { .visitChildren }
     func visit(_ node: SwiftPEGGrammar.Meta) throws -> NodeVisitChildrenResult { .visitChildren }
     func visit(_ node: SwiftPEGGrammar.MetaIdentifierValue) throws -> NodeVisitChildrenResult { .visitChildren }
@@ -1017,6 +1052,7 @@ public extension SwiftPEGGrammar.GrammarNodeVisitorType {
     func visit(_ node: SwiftPEGGrammar.RuleName) throws -> NodeVisitChildrenResult { .visitChildren }
     func visit(_ node: SwiftPEGGrammar.Alt) throws -> NodeVisitChildrenResult { .visitChildren }
     func visit(_ node: SwiftPEGGrammar.NamedItem) throws -> NodeVisitChildrenResult { .visitChildren }
+    func visit(_ node: SwiftPEGGrammar.Forced) throws -> NodeVisitChildrenResult { .visitChildren }
     func visit(_ node: SwiftPEGGrammar.PositiveLookahead) throws -> NodeVisitChildrenResult { .visitChildren }
     func visit(_ node: SwiftPEGGrammar.NegativeLookahead) throws -> NodeVisitChildrenResult { .visitChildren }
     func visit(_ node: SwiftPEGGrammar.Cut) throws -> NodeVisitChildrenResult { .visitChildren }

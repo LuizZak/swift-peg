@@ -2,7 +2,7 @@ import XCTest
 
 @testable import SwiftPEG
 
-class GrammarProcessor_NullabilityTests: XCTestCase {
+class GrammarProcessor_RecursivityTests: XCTestCase {
     func testDetectLeftRecursiveRules_indirect() throws {
         let start = makeRule(name: "start", [
             makeAlt([ makeItem("rule1") ]),
@@ -31,6 +31,42 @@ class GrammarProcessor_NullabilityTests: XCTestCase {
         _ = try sut.process(grammar)
 
         assertEmpty(sut.diagnostics)
+    }
+
+    func testLeftRecursive() throws {
+        let grammarString = #"""
+        start: rule1 ;
+
+        rule1:
+            | rule2
+            ;
+        rule2:
+            | '(' rule1 ')'
+            | rule3 '*'
+            | rule4 '+'
+            ;
+        rule3:
+            | rule2 '-'
+            ; 
+        rule4:
+            | rule2 '/'
+            ;
+        """#
+        let grammar = try parseGrammar(grammarString)
+        let sut = makeSut()
+
+        let result = try sut.process(grammar)
+
+        assertEqual(sut.test_diagnosticMessages(), "")
+        assertEqualUnordered(
+            result.grammar.rules.map({ ($0.name, $0.isRecursive) }), [
+                ("start", false),
+                ("rule1", false),
+                ("rule2", true),
+                ("rule3", true),
+                ("rule4", true),
+            ], compare: ==
+        )
     }
 }
 
@@ -92,4 +128,20 @@ private func makeItem(_ ident: String, identity: SwiftPEGGrammar.IdentAtom.Ident
 
 private func makeIdent(_ ident: String) -> SwiftPEGGrammar.Token {
     .identifier(Substring(ident))
+}
+
+private func parseGrammar(
+    _ grammar: String,
+    file: StaticString = #file,
+    line: UInt = #line
+) throws -> SwiftPEGGrammar.Grammar {
+
+    let tokenizer = GrammarRawTokenizer(source: grammar)
+    let parser = GrammarParser(raw: tokenizer)
+
+    guard let grammar = try parser.start() else {
+        throw parser.makeSyntaxError()
+    }
+
+    return grammar
 }

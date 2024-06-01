@@ -79,8 +79,9 @@ class GrammarProcessor_ReachabilityTests: XCTestCase {
             | \(makeRef[6]).\(makeRef[7])+
             | ! \(makeRef[8])
             | & \(makeRef[9])
-            | ~ \(makeRef[10])
-            | named=\(makeRef[11])
+            | && \(makeRef[10])
+            | ~ \(makeRef[11])
+            | named=\(makeRef[12])
             ;
         
         \(makeRef.dumpRules())

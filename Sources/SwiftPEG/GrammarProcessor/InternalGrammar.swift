@@ -386,6 +386,7 @@ public enum InternalGrammar {
         case item(name: String? = nil, Item, type: CommonAbstract.SwiftType? = nil)
         /// ```
         /// lookahead:
+        ///     | '&''&' ~ atom
         ///     | '&' ~ atom
         ///     | '!' ~ atom
         ///     | '~'
@@ -768,6 +769,8 @@ public enum InternalGrammar {
         case negative(Atom)
         /// `'&' atom`
         case positive(Atom)
+        /// `'&''&' atom`
+        case forced(Atom)
         /// `~`
         case cut
 
@@ -777,6 +780,8 @@ public enum InternalGrammar {
                 return "!\(atom)"
             case .positive(let atom):
                 return "&\(atom)"
+            case .forced(let atom):
+                return "&&\(atom)"
             case .cut:
                 return "~"
             }
@@ -790,6 +795,8 @@ public enum InternalGrammar {
                 return atom.removingCuts.map(Self.negative)
             case .positive(let atom):
                 return atom.removingCuts.map(Self.positive)
+            case .forced(let atom):
+                return atom.removingCuts.map(Self.forced)
             case .cut:
                 return nil
             }
@@ -803,6 +810,8 @@ public enum InternalGrammar {
                 return atom.reduced.map(Self.negative)
             case .positive(let atom):
                 return atom.reduced.map(Self.positive)
+            case .forced(let atom):
+                return atom.reduced.map(Self.forced)
             case .cut:
                 return nil
             }
@@ -818,6 +827,8 @@ public enum InternalGrammar {
                 return atom.flattened().map(Self.negative)
             case .positive(let atom):
                 return atom.flattened().map(Self.positive)
+            case .forced(let atom):
+                return atom.flattened().map(Self.forced)
             case .cut:
                 return self
             }
@@ -830,6 +841,8 @@ public enum InternalGrammar {
             try visitor.visit(self)
 
             switch self {
+            case .forced(let atom):
+                try atom.accept(visitor)
             case .positive(let atom):
                 try atom.accept(visitor)
             case .negative(let atom):
@@ -846,6 +859,8 @@ public enum InternalGrammar {
         ) -> Self {
 
             switch node {
+            case let forced as SwiftPEGGrammar.Forced:
+                return .forced(Atom.from(forced.atom))
             case let positive as SwiftPEGGrammar.PositiveLookahead:
                 return .positive(Atom.from(positive.atom))
             case let negative as SwiftPEGGrammar.NegativeLookahead:

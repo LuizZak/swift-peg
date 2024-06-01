@@ -281,7 +281,7 @@ class SwiftCodeGenTests: XCTestCase {
             """#).diff(result)
     }
 
-    func testGenerateParser_usesTokenstaticToken() throws {
+    func testGenerateParser_usesTokensStaticToken() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
                 .init(items: [
@@ -782,7 +782,7 @@ class SwiftCodeGenTests: XCTestCase {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
                 .init(items: ["b"], failAction: " CustomAction() "),
-                .init(items: ["c"], failAction: " OtherCustomAction() "),
+                .init(items: ["c"], action: " CAction() ", failAction: " OtherCustomAction() "),
             ])
         ])
         let sut = makeSut(grammar)
@@ -795,7 +795,7 @@ class SwiftCodeGenTests: XCTestCase {
                 /// ```
                 /// a:
                 ///     | b !!{ CustomAction() }
-                ///     | c !!{ OtherCustomAction() }
+                ///     | c { CAction() } !!{ OtherCustomAction() }
                 ///     ;
                 /// ```
                 @memoized("a")
@@ -815,7 +815,7 @@ class SwiftCodeGenTests: XCTestCase {
                     if
                         let c = try self.c()
                     {
-                        return c
+                        return CAction()
                     }
 
                     self.restore(mark)
@@ -826,6 +826,72 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
+    func testGenerateParser_expectForced() throws {
+        let grammar = try parseGrammar("""
+        start:
+            | &&('a' | 'b')
+            ;
+        """)
+        let sut = makeSut(grammar)
+
+        let result = try sut.generateParser()
+
+        diffTest(expected: #"""
+            extension Parser {
+                /// ```
+                /// start:
+                ///     | &&('a' | 'b')
+                ///     ;
+                /// ```
+                @memoized("start")
+                @inlinable
+                public func __start() throws -> Node? {
+                    let mark = self.mark()
+
+                    if
+                        try self.expectForced({
+                            try self._start__group_()
+                        }, "(\'a\' | \'b\')")
+                    {
+                        return Node()
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+
+                /// ```
+                /// _start__group_[Any]:
+                ///     | 'a'
+                ///     | 'b'
+                ///     ;
+                /// ```
+                @memoized("_start__group_")
+                @inlinable
+                public func ___start__group_() throws -> Any? {
+                    let mark = self.mark()
+
+                    if
+                        let _ = try self.expect("a")
+                    {
+                        return Node()
+                    }
+
+                    self.restore(mark)
+
+                    if
+                        let _ = try self.expect("b")
+                    {
+                        return Node()
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+            }
+            """#).diff(result)
+    }
+
     func testGenerateParser_singleRule() throws {
         let grammar = makeGrammar([
             .init(name: "a", type: "ANode", alts: [
@@ -833,7 +899,6 @@ class SwiftCodeGenTests: XCTestCase {
             ])
         ])
         let sut = makeSut(grammar)
-
         let result = try sut.generateParser()
 
         diffTest(expected: """

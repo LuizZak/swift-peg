@@ -148,7 +148,7 @@ public class GrammarInterpreter {
             if endMark <= lastMark {
                 break
             }
-            
+
             lastResult = result
             lastMark = endMark
             self.cache[key] = .init(mark: lastMark, reach: lastMark, result: result)
@@ -204,11 +204,21 @@ public class GrammarInterpreter {
                 ctx.valueNames.append(alias)
                 ctx.values.append(result)
 
+            case .lookahead(.forced(let atom)):
+                guard let result = try self.tryAtom(atom) else {
+                    throw Error.expectForceFailed(
+                        "Expected \(atom.description.debugDescription)"
+                    )
+                }
+
+                ctx.valueNames.append(alias)
+                ctx.values.append(result)
+
             case .lookahead(.positive(let atom)):
                 if try self.tryAtom(atom) == nil {
                     return nil
                 }
-            
+
             case .lookahead(.negative(let atom)):
                 if try self.tryAtom(atom) != nil {
                     return nil
@@ -237,7 +247,7 @@ public class GrammarInterpreter {
 
             var mark = self.mark()
             var result: [Any] = [first]
-            
+
             while let next = try self.tryAtom(atom) {
                 result.append(next)
                 mark = self.mark()
@@ -245,11 +255,11 @@ public class GrammarInterpreter {
 
             self.restore(mark)
             return result
-            
+
         case .zeroOrMore(let atom):
             var mark = self.mark()
             var result: [Any] = []
-            
+
             while let next = try self.tryAtom(atom) {
                 result.append(next)
                 mark = self.mark()
@@ -265,7 +275,7 @@ public class GrammarInterpreter {
 
             var mark = self.mark()
             var result: [Any] = [first]
-            
+
             while try self.tryAtom(sep) != nil {
                 guard let next = try self.tryAtom(node) else {
                     break
@@ -293,7 +303,7 @@ public class GrammarInterpreter {
 
         case .token(let tokenName):
             return try expect(tokenName: tokenName)?.token
-        
+
         case .anyToken:
             return try next()?.token
 
@@ -391,7 +401,7 @@ public class GrammarInterpreter {
     public protocol Delegate: AnyObject {
         /// Requests that the delegate produce the resulting value for an alt
         /// that was matched.
-        /// 
+        ///
         /// Errors thrown during result production abort further parsing of the
         /// syntax.
         func produceResult(
@@ -407,7 +417,7 @@ public class GrammarInterpreter {
         /// The interpreter expects that the token be read from the beginning of
         /// the given `Substring`, and that an error be thrown if the token is
         /// not valid.
-        /// 
+        ///
         /// Returning `nil` indicates that end-of-file has been reached.
         func produceToken(
             string: Substring
@@ -436,6 +446,7 @@ public class GrammarInterpreter {
     public enum Error: Swift.Error, CustomStringConvertible {
         case ruleNotFound(String)
         case invalidGrammar(String)
+        case expectForceFailed(String)
         case delegateReleased
         case reachedRecursionLimit
 
@@ -443,6 +454,7 @@ public class GrammarInterpreter {
             switch self {
             case .ruleNotFound(let message): return "Could not find rule named '\(message)'"
             case .invalidGrammar(let message): return message
+            case .expectForceFailed(let message): return message
             case .delegateReleased: return "Delegate is nil: Class reference was released unexpectedly!"
             case .reachedRecursionLimit: return "Reached recursion limit while parsing."
             }

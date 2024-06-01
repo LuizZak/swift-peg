@@ -433,6 +433,27 @@ func assertEqualUnordered<T>(
     line: UInt = #line
 ) where T: Equatable {
 
+    assertEqualUnordered(
+        lhs,
+        rhs,
+        compare: ==,
+        message: message(),
+        file: file,
+        line: line
+    )
+}
+
+/// Asserts that two collection of items contains the same set of `T` values the
+/// same number of times.
+func assertEqualUnordered<T>(
+    _ lhs: some Collection<T>,
+    _ rhs: some Collection<T>,
+    compare: (T, T) -> Bool,
+    message: @autoclosure () -> String = "",
+    file: StaticString = #file,
+    line: UInt = #line
+) {
+
     if lhs.count != rhs.count {
         fail(
             "lhs.count != rhs.count (\(lhs.count) != \(rhs.count)) lhs: \(lhs) rhs: \(rhs) \(message())",
@@ -452,7 +473,7 @@ func assertEqualUnordered<T>(
 
     var remaining = Array(lhs)
     for item in rhs {
-        if let nextIndex = remaining.firstIndex(of: item) {
+        if let nextIndex = remaining.firstIndex(where: { compare($0, item) }) {
             remaining.remove(at: nextIndex)
         } else {
             return signal(message())
