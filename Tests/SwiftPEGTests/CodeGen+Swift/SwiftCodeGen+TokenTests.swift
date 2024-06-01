@@ -591,6 +591,76 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         """#).diff(sut.buffer.finishBuffer())
     }
 
+    func testGenerateTokenType_tokenTypeHeader() throws {
+        let tokens = try parseTokenDefinitions(#"""
+        $tok: 'abc' ;
+        """#)
+        let sut = makeSut(
+            grammar: .init(metas: [
+                .init(
+                    name: SwiftCodeGen.tokenTypeHeader,
+                    value: .string("// Token header content\nimport SwiftPEG\n")
+                )
+            ], rules: []),
+            tokens
+        )
+
+        let result = try sut.generateTokenType()
+
+        diffTest(expected: #"""
+        // Token header content
+        import SwiftPEG
+
+        struct ParserToken: TokenType, CustomStringConvertible {
+            var kind: TokenKind
+            var string: Substring
+
+            var length: Int {
+                string.count
+            }
+
+            var description: String {
+                String(string)
+            }
+
+            static func produceDummy(_ kind: TokenKind) -> Self {
+                .init(kind: kind, string: "<dummy>")
+            }
+
+            static func from<StringType>(stream: inout StringStream<StringType>) -> Self? where StringType.SubSequence == Substring {
+                guard !stream.isEof else { return nil }
+                stream.markSubstringStart()
+
+                if consume_tok(from: &stream) {
+                    return .init(kind: .tok, string: stream.substring)
+                }
+
+                return nil
+            }
+
+            enum TokenKind: TokenKindType {
+                /// `"abc"`
+                case tok
+
+                var description: String {
+                    switch self {
+                    case .tok: "abc"
+                    }
+                }
+            }
+
+            /// ```
+            /// tok:
+            ///     | "abc"
+            ///     ;
+            /// ```
+            static func consume_tok<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+                stream.advanceIfNext("abc")
+            }
+        }
+        """#).diff(result)
+    }
+
     func testGenerateTokenType_ignoreTokenFragmentsInTokenKindAndLexerFunction() throws {
         let tokens = try parseTokenDefinitions(#"""
         $tok: 'a' frag ;
@@ -1214,10 +1284,11 @@ class SwiftCodeGen_TokenTests: XCTestCase {
 // MARK: - Test internals
 
 private func makeSut(
+    grammar: InternalGrammar.Grammar = .init(rules: []),
     _ tokens: [InternalGrammar.TokenDefinition]
 ) -> SwiftCodeGen {
 
-    SwiftCodeGen(grammar: .init(rules: []), tokenDefinitions: tokens)
+    SwiftCodeGen(grammar: grammar, tokenDefinitions: tokens)
 }
 
 private func parseTokenDefinitions(

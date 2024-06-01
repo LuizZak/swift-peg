@@ -1,8 +1,14 @@
 /// Produces Swift code for parsing a grammar.
 public class SwiftCodeGen {
+    // TODO: Refactor to use MetaPropertyManager
+
     /// Name of optional meta-property (`@<name> <value>`) from grammar file that
     /// indicates the raw contents to print atop the generated parser code.
     public static let parserHeader: String = "parserHeader"
+
+    /// Name of optional meta-property (`@<name> <value>`) from grammar file that
+    /// indicates the raw contents to print atop the generated token type code.
+    public static let tokenTypeHeader: String = "tokenTypeHeader"
 
     /// Name of optional meta-property (`@<name> <value>`) from grammar file that
     /// indicates the name of the parser class to extend with the parsing methods.
@@ -668,9 +674,13 @@ extension SwiftCodeGen {
 
 // MARK: - Convenience extensions
 
-private extension InternalGrammar.Grammar {
+extension InternalGrammar.Grammar {
     func parserHeader() -> String? {
         return _stringOrIdentMeta(named: SwiftCodeGen.parserHeader)
+    }
+
+    func tokenTypeHeader() -> String? {
+        return _stringOrIdentMeta(named: SwiftCodeGen.tokenTypeHeader)
     }
 
     func parserName() -> String? {

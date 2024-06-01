@@ -9,6 +9,10 @@ extension SwiftCodeGen {
             throw Error.tokenDefinitionMissingSyntax(missingSyntax)
         }
 
+        if let header = grammar.tokenTypeHeader() {
+            buffer.emitLine(header)
+        }
+
         let tokenName = "\(parserName)Token"
 
         generateAccessLevel(settings: settings)
