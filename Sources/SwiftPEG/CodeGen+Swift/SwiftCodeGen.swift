@@ -145,7 +145,7 @@ public class SwiftCodeGen {
         // @memoized/@memoizedLeftRecursive
         if rule.isRecursiveLeader {
             buffer.emitLine(#"@memoizedLeftRecursive("\#(name)")"#)
-        } else {
+        } else if !rule.isRecursive {
             buffer.emitLine(#"@memoized("\#(name)")"#)
         }
 

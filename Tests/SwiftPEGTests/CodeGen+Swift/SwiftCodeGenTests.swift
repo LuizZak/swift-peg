@@ -1015,6 +1015,64 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
+    func testGenerateParser_nestedLeftRecursiveRule() throws {
+        let grammar = makeGrammar([
+            .init(name: "a", alts: [
+                .init(items: ["b"])
+            ]).with(\.isRecursive, value: true).with(\.isRecursiveLeader, value: true),
+            .init(name: "b", alts: [
+                .init(items: ["a"])
+            ]).with(\.isRecursive, value: true).with(\.isRecursiveLeader, value: false),
+        ])
+        let sut = makeSut(grammar)
+
+        let result = try sut.generateParser()
+
+        diffTest(expected: """
+            // TestParser
+            extension TestParser {
+                /// ```
+                /// a:
+                ///     | b
+                ///     ;
+                /// ```
+                @memoizedLeftRecursive("a")
+                @inlinable
+                public func __a() throws -> Node? {
+                    let mark = self.mark()
+
+                    if
+                        let b = try self.b()
+                    {
+                        return b
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+
+                /// ```
+                /// b:
+                ///     | a
+                ///     ;
+                /// ```
+                @inlinable
+                public func __b() throws -> Node? {
+                    let mark = self.mark()
+
+                    if
+                        let a = try self.a()
+                    {
+                        return a
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+            }
+            """).diff(result)
+    }
+
     func testGenerateParser_optionalGroup() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
