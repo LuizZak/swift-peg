@@ -38,6 +38,12 @@ public enum CommonAbstract {
             self = .fromCode(contents: value)
         }
 
+        /// Appends two dual strings into a new, combined one.
+        /// The result of the operation is always a `DualString.fromCode` value.
+        public func appending(_ other: Self) -> Self {
+            .fromCode(contents: contents + other.contents)
+        }
+
         public func hash(into hasher: inout Hasher) {
             hasher.combine(contents)
         }
@@ -175,20 +181,7 @@ extension CommonAbstract {
         /// a token syntax that matches against a single literal terminal with
         /// no repetitions or alts.
         public func isStatic() -> Bool {
-            guard let alt = self.alts.first, self.alts.count == 1 else {
-                return false
-            }
-            guard let item = alt.items.first, alt.items.count == 1 else {
-                return false
-            }
-            guard case .atom(let atom) = item else {
-                return false
-            }
-            guard case .literal = atom.terminal else {
-                return false
-            }
-
-            return true
+            staticTerminal() != nil
         }
 
         /// If this token syntax represents a static token, returns the terminal
@@ -205,11 +198,42 @@ extension CommonAbstract {
             guard case .atom(let atom) = item else {
                 return nil
             }
+            guard atom.excluded.isEmpty else {
+                return nil
+            }
             guard case .literal(let literal) = atom.terminal else {
                 return nil
             }
 
             return literal
+        }
+
+        /// Returns `true` if this token syntax represents a terminal, i.e.
+        /// a token syntax that contains a single alt, with a single item, that
+        /// is a terminal, with no exclusions.
+        public func isTerminal() -> Bool {
+            asTerminal() != nil
+        }
+
+        /// If this token syntax represents a single terminal, with no exclusions,
+        /// returns the associated terminal.
+        ///
+        /// - seealso: ``TokenSyntax.isTerminal()``
+        public func asTerminal() -> TokenTerminal? {
+            guard let alt = self.alts.first, self.alts.count == 1 else {
+                return nil
+            }
+            guard let item = alt.items.first, alt.items.count == 1 else {
+                return nil
+            }
+            guard case .atom(let atom) = item else {
+                return nil
+            }
+            guard atom.excluded.isEmpty else {
+                return nil
+            }
+
+            return atom.terminal
         }
 
         /// Returns `true` if this token syntax can be considered a prefix of
@@ -311,7 +335,35 @@ extension CommonAbstract {
         /// Flattens nested structures that can be simplified into shallower
         /// constructions.
         func flattened() -> Self {
-            Self(items: items.map({ $0.flattened() }))
+            var newItems: [TokenItem] = []
+
+            // Merge sequential literal terminals
+            for item in items.map({ $0.flattened() }) {
+                guard let last = newItems.last else {
+                    newItems.append(item)
+                    continue
+                }
+
+                switch (last, item) {
+                case (.atom(let last), .atom(let next))
+                    where last.excluded.isEmpty && next.excluded.isEmpty:
+
+                    if
+                        let last = last.terminal.asLiteral,
+                        let next = next.terminal.asLiteral
+                    {
+                        newItems[newItems.count - 1] = .atom(.init(
+                            terminal: .literal(last.appending(next))
+                        ))
+                    } else {
+                        newItems.append(item)
+                    }
+                default:
+                    newItems.append(item)
+                }
+            }
+
+            return Self(items: newItems)
         }
     }
 
@@ -516,6 +568,8 @@ extension CommonAbstract {
     ///     ;
     /// ```
     public struct TokenAtom: Equatable, CustomStringConvertible {
+        // TODO: Rework exclusion to be at the terminal level; exclusions don't make sense for some terminals like string literals
+
         /// A set of patterns to not match against.
         public var excluded: [TokenExclusion]
 
@@ -716,6 +770,15 @@ extension CommonAbstract {
                 return lower...upper
             default:
                 return nil
+            }
+        }
+
+        /// If this `TokenTerminal` is a `literal()` case, returns the associated
+        /// value, otherwise, returns `nil`.
+        public var asLiteral: DualString? {
+            switch self {
+            case .literal(let value): return value
+            default: return nil
             }
         }
 

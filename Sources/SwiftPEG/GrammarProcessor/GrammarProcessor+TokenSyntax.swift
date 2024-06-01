@@ -8,22 +8,24 @@ extension GrammarProcessor {
         _ tokens: [SwiftPEGGrammar.TokenDefinition]
     ) throws -> [InternalGrammar.TokenDefinition] {
 
+        // TODO: Throw error on repeated fragment/token declarations
+
         var fragmentReferenceCount: [String: Int] =
             Dictionary(grouping: tokens.filter(\.isFragment)) {
                 String($0.name.string)
             }.mapValues { _ in 0 }
 
         let byName = try validateTokenNames(tokens)
-        try ensureTokenSyntaxesAreNonReentrant(
+        let sorted = try ensureTokenSyntaxesAreNonReentrant(
             tokens,
             byName: byName,
             fragmentReferenceCount: &fragmentReferenceCount
         )
 
-        diagnoseAltOrder(tokens)
+        diagnoseAltOrder(sorted)
 
         let inlined = try applyFragmentInlining(
-            tokens,
+            sorted.reversed(),
             fragmentReferenceCount: fragmentReferenceCount
         )
 
@@ -80,11 +82,13 @@ extension GrammarProcessor {
 
     /// Token syntaxes do not support reentrance; they cannot be recursive on
     /// any level, either directly or indirectly.
+    ///
+    /// Returns a list of tokens sorted in topological order.
     func ensureTokenSyntaxesAreNonReentrant(
         _ tokens: [SwiftPEGGrammar.TokenDefinition],
         byName: [String: SwiftPEGGrammar.TokenDefinition],
         fragmentReferenceCount: inout [String: Int]
-    ) throws {
+    ) throws -> [SwiftPEGGrammar.TokenDefinition] {
         typealias Graph = GenericDirectedGraph<SwiftPEGGrammar.TokenDefinition>
 
         let graph = Graph()
@@ -134,6 +138,14 @@ extension GrammarProcessor {
                 }
             }
         }
+
+        guard let sorted = graph.topologicalSorted() else {
+            throw recordAndReturn(
+                GrammarProcessorError.message("Could not topologically sort tokens; this may indicate that there are cycles in the token definitions.")
+            )
+        }
+
+        return sorted.map(\.value)
     }
 
     /// Applies inlining of fragments into token definitions wherever they may
@@ -143,27 +155,32 @@ extension GrammarProcessor {
         fragmentReferenceCount: [String: Int]
     ) throws -> [InternalGrammar.TokenDefinition] {
 
-        // TODO: This fragment collection step can be performed earlier in validateTokenSyntaxes and reused here
-        let tokens = tokenDefinitions.map(InternalGrammar.TokenDefinition.from)
-        let fragments = tokens.filter(\.isFragment)
-
-        var fragmentsByName: [String: InternalGrammar.TokenDefinition] = [:]
-        for fragment in fragments {
-            // TODO: Throw error on repeated fragment declarations
-            fragmentsByName[fragment.name] = fragment
-        }
-
         var fragmentReferenceCount = fragmentReferenceCount
-        let rewriter = TokenFragmentInliner(fragments: fragmentsByName) { fragment in
-            fragmentReferenceCount[fragment.name, default: 0] -= 1
-        }
 
-        let inlined = tokens.map(rewriter.visit)
+        var tokens = tokenDefinitions.map(InternalGrammar.TokenDefinition.from)
+
+        for (i, token) in tokens.enumerated() {
+            var fragmentsByName: [String: InternalGrammar.TokenDefinition] {
+                var result: [String: InternalGrammar.TokenDefinition] = [:]
+                let fragments = tokens.filter(\.isFragment)
+                for fragment in fragments {
+                    result[fragment.name] = fragment
+                }
+                return result
+            }
+
+            let rewriter = TokenFragmentInliner(fragments: fragmentsByName) { fragment in
+                fragmentReferenceCount[fragment.name, default: 0] -= 1
+            }
+
+            let inlined = rewriter.visit(token)
+            tokens[i] = inlined
+        }
 
         let fullyInlined = Set(fragmentReferenceCount.filter { $0.value <= 0 }.keys)
 
         // Remove inlined fragments
-        return inlined.filter { token in
+        return tokens.filter { token in
             if token.isFragment {
                 return !fullyInlined.contains(token.name)
             }
@@ -215,41 +232,41 @@ extension GrammarProcessor {
             self.onInlineFragment = onInlineFragment
         }
 
-        // MARK: Inline as group
+        // MARK: Inline as atom
 
-        private func _inlinedAsGroup(_ node: InternalGrammar.TokenDefinition) -> [CommonAbstract.TokenAtom]? {
-            node.tokenSyntax.flatMap(_inlinedAsGroup)
+        private func _inlinedAsAtoms(_ node: InternalGrammar.TokenDefinition) -> [CommonAbstract.TokenAtom]? {
+            node.tokenSyntax.flatMap(_inlinedAsAtoms)
         }
 
-        private func _inlinedAsGroup(_ node: CommonAbstract.TokenSyntax) -> [CommonAbstract.TokenAtom]? {
+        private func _inlinedAsAtoms(_ node: CommonAbstract.TokenSyntax) -> [CommonAbstract.TokenAtom]? {
             var result: [CommonAbstract.TokenAtom] = []
             for alt in node.alts {
-                guard let asGroup = _inlinedAsGroup(alt) else {
-                    // If one alt cannot be turned into a group, then the syntax
-                    // is not group-able
+                guard let asAtoms = _inlinedAsAtoms(alt) else {
+                    // If one alt cannot be turned into an atom, then the syntax
+                    // is not atom-able
                     return nil
                 }
 
-                result.append(contentsOf: asGroup)
+                result.append(contentsOf: asAtoms)
             }
             return result
         }
 
-        private func _inlinedAsGroup(_ node: CommonAbstract.TokenAlt) -> [CommonAbstract.TokenAtom]? {
+        private func _inlinedAsAtoms(_ node: CommonAbstract.TokenAlt) -> [CommonAbstract.TokenAtom]? {
             var result: [CommonAbstract.TokenAtom] = []
             for item in node.items {
-                guard let asGroup = _inlinedAsGroup(item) else {
-                    // If one item cannot be turned into a group, then the alt
-                    // is not group-able
+                guard let asAtoms = _inlinedAsAtoms(item) else {
+                    // If one item cannot be turned into an atom, then the syntax
+                    // is not atom-able
                     return nil
                 }
 
-                result.append(contentsOf: asGroup)
+                result.append(contentsOf: asAtoms)
             }
             return result
         }
 
-        private func _inlinedAsGroup(_ node: CommonAbstract.TokenItem) -> [CommonAbstract.TokenAtom]? {
+        private func _inlinedAsAtoms(_ node: CommonAbstract.TokenItem) -> [CommonAbstract.TokenAtom]? {
             switch node {
             case .group(let group):
                 return group
@@ -281,6 +298,11 @@ extension GrammarProcessor {
         }
 
         private func _inlinedAsAlts(_ node: CommonAbstract.TokenAlt) -> [CommonAbstract.TokenAlt]? {
+            // Nodes can only be turned into alts if they consist of one item
+            if node.items.count > 1 {
+                return [node]
+            }
+
             var result: [CommonAbstract.TokenAlt] = []
             for item in node.items {
                 guard let asAlt = _inlinedAsAlts(item) else {
@@ -358,29 +380,29 @@ extension GrammarProcessor {
 
         func visit(_ node: CommonAbstract.TokenAlt) -> CommonAbstract.TokenAlt {
             var node = node
-            node.items = node.items.map(visit)
+            node.items = node.items.flatMap(visit)
             return node.flattened()
         }
 
-        func visit(_ node: CommonAbstract.TokenItem) -> CommonAbstract.TokenItem {
+        func visit(_ node: CommonAbstract.TokenItem) -> [CommonAbstract.TokenItem] {
             switch node {
             case .zeroOrMore(let atoms):
-                return .zeroOrMore(visit(atoms))
+                return [.zeroOrMore(visit(atoms))]
 
             case .oneOrMore(let atoms):
-                return .oneOrMore(visit(atoms))
+                return [.oneOrMore(visit(atoms))]
 
             case .optionalGroup(let atoms):
-                return .optionalGroup(visit(atoms))
+                return [.optionalGroup(visit(atoms))]
 
             case .group(let atoms):
-                return group(visit(atoms))
+                return [group(visit(atoms))]
 
             case .optionalAtom(let atom):
-                return .optionalAtom(visit(atom))
+                return [.optionalAtom(visit(atom))]
 
             case .atom(let atom):
-                return group(visit([atom]))
+                return [.atom(visit(atom))]
             }
         }
 
@@ -409,7 +431,7 @@ extension GrammarProcessor {
                     guard let fragment = fragments[identifier] else {
                         break
                     }
-                    guard let inlined = _inlinedAsGroup(fragment) else {
+                    guard let inlined = _inlinedAsAtoms(fragment) else {
                         break
                     }
 
@@ -459,9 +481,9 @@ extension GrammarProcessor {
                     return node
                 }
 
-                if let staticTerminal = fragment.tokenSyntax?.staticTerminal() {
+                if let terminal = fragment.tokenSyntax?.asTerminal() {
                     onInlineFragment(fragment)
-                    return .literal(staticTerminal)
+                    return terminal
                 }
 
                 return node

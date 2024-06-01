@@ -45,7 +45,7 @@ class GrammarProcessor_TokenSyntaxTests: XCTestCase {
         )
     }
 
-    func testInlineFragments_terminals() throws {
+    func testInlineFragments_literalTerminals() throws {
         let delegate = stubDelegate(tokensFile: """
         $a: b "c" !d e;
         $b: "b" ;
@@ -54,6 +54,25 @@ class GrammarProcessor_TokenSyntaxTests: XCTestCase {
         """)
         let expected = try parseTokenDefinitions(#"""
         $a: b "c" !"d" "e";
+        $b: "b" ;
+        """#)
+        let grammar = makeGrammar()
+        let sut = makeSut(delegate)
+
+        let processed = try sut.process(grammar)
+
+        assertEqualUnordered(processed.tokens, expected)
+    }
+
+    func testInlineFragments_terminals() throws {
+        let delegate = stubDelegate(tokensFile: """
+        $a: b d e ;
+        $b: "b" ;
+        %d: d { d.isLetter } ;
+        %e: "e"..."g" ;
+        """)
+        let expected = try parseTokenDefinitions(#"""
+        $a: b d { d.isLetter } "e"..."g" ;
         $b: "b" ;
         """#)
         let grammar = makeGrammar()
@@ -84,12 +103,13 @@ class GrammarProcessor_TokenSyntaxTests: XCTestCase {
 
     func testInlineFragments_alts() throws {
         let delegate = stubDelegate(tokensFile: """
-        $a: b | "c" | d;
+        $a: b | "c" | d | f;
         $b: "b" ;
-        %d: "d" | "e";
+        %d: "d" | "e" ;
+        %f: "f" "g" ;
         """)
         let expected = try parseTokenDefinitions(#"""
-        $a: b | "c" | "d" | "e";
+        $a: b | "c" | "d" | "e" | "fg";
         $b: "b" ;
         """#)
         let grammar = makeGrammar()
@@ -119,6 +139,42 @@ class GrammarProcessor_TokenSyntaxTests: XCTestCase {
             | '"' ('\\"' | '\\\\' | '\\' | !'"' !'\n' .)* '"'
             | "'" ("\\'" | '\\\\' | '\\' | !"'" !'\n' .)* "'"
             ;
+        """#)
+        let grammar = makeGrammar()
+        let sut = makeSut(delegate)
+
+        let processed = try sut.process(grammar)
+
+        assertEqualUnordered(processed.tokens, expected)
+    }
+
+    func testInlineFragments_sequentialFragments() throws {
+        let delegate = stubDelegate(tokensFile: #"""
+        $a: b c ;
+        %b: 'b' ;
+        %c: 'c' ;
+        """#)
+        let expected = try parseTokenDefinitions(#"""
+        $a: 'bc' ;
+        """#)
+        let grammar = makeGrammar()
+        let sut = makeSut(delegate)
+
+        let processed = try sut.process(grammar)
+
+        assertEqualUnordered(processed.tokens, expected)
+    }
+
+    func testInlineFragments_nestedFragments() throws {
+        let delegate = stubDelegate(tokensFile: #"""
+        $a: b ;
+        %b: 'b' c ;
+        %c: 'c' ;
+        $d: b c b ;
+        """#)
+        let expected = try parseTokenDefinitions(#"""
+        $a: 'bc' ;
+        $d: 'bccbc' ;
         """#)
         let grammar = makeGrammar()
         let sut = makeSut(delegate)
