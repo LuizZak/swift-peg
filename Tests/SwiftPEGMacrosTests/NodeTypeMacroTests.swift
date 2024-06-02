@@ -597,4 +597,38 @@ class NodeTypeMacroTests: XCTestCase {
             """#,
             macros: testMacros)
     }
+
+    func testNodeTypeMacro_nodeRequiredAttribute_usesInitialValueInInitializerArgument() {
+        assertMacroExpansion("""
+            @NodeType<BaseNode>
+            class Node: BaseNode {
+                @NodeRequired
+                public var notANode: Int = 0
+            }
+            """,
+            expandedSource: #"""
+            class Node: BaseNode {
+                @NodeRequired
+                public var notANode: Int = 0
+
+                /// Synthesized with `NodeTypeMacro`.
+                override var children: [BaseNode] {
+                    Self.makeNodeList()
+                }
+
+                /// Synthesized with `NodeTypeMacro`.
+                init(notANode: Int = 0) {
+                    self.notANode = notANode
+
+                    super.init()
+                }
+
+                /// Synthesized with `NodeTypeMacro`.
+                func deepCopy() -> Node {
+                    return Node(notANode: notANode)
+                }
+            }
+            """#,
+            macros: testMacros)
+    }
 }

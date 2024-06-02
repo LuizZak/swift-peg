@@ -91,7 +91,7 @@ class NodeTypeMacroImplementation {
             .ext_accessLevel()?
             .name.trimmed
             .with(\.trailingTrivia, .spaces(1))
-        
+
         let typeName: TokenSyntax
 
         if let type = declaration.as(ClassDeclSyntax.self) {
@@ -144,7 +144,7 @@ class NodeTypeMacroImplementation {
     }
 
     /// Synthesize the property:
-    /// 
+    ///
     /// ```
     /// <accessLevel> var <node.property>: <NodeType> {
     ///    get {
@@ -176,7 +176,7 @@ class NodeTypeMacroImplementation {
     }
 
     /// Synthesize the property:
-    /// 
+    ///
     /// ```
     /// <accessLevel> var children: [<NodeType>] {
     ///    Self.makeNodeList(lists: <nodes.nodeLists>, nodes: <nodes.nodes>)
@@ -225,18 +225,18 @@ class NodeTypeMacroImplementation {
     }
 
     /// Synthesize the initializer:
-    /// 
+    ///
     /// ```
     /// <accessLevel> init(<args>) {
     ///    self.<properties> = <args.properties>
     ///    self.<required> = <args.required>
-    /// 
+    ///
     ///    super.init()
-    /// 
+    ///
     ///    self.<properties>.parent = self
     /// }
     /// ```
-    /// 
+    ///
     /// If the evaluated type has no fields to initialize, `nil` is returned,
     /// instead.
     private func _synthesizeInit(
@@ -295,7 +295,7 @@ class NodeTypeMacroImplementation {
     }
 
     /// Synthesize the deep copy method:
-    /// 
+    ///
     /// ```
     /// <accessLevel> func deepCopy() -> <TypeName> {
     ///    return <TypeName>(<properties>.deepCopy()...)
@@ -448,11 +448,11 @@ class NodeTypeMacroImplementation {
 
         /// Generates function parameters that receive all properties and required
         /// nodes for the evaluated type.
-        /// 
+        ///
         /// Order of the resulting parameters is significant: it is the same order
         /// that the properties that generated the declarations are laid out within
         /// the type.
-        /// 
+        ///
         /// - note: Generated parameters don't include commas.
         func synthesizeFunctionParameters() -> [FunctionParameterSyntax] {
             var result: [(syntax: any SyntaxProtocol, param: FunctionParameterSyntax)] = []
@@ -477,11 +477,11 @@ class NodeTypeMacroImplementation {
         /// properties and required nodes for the evaluated type, calling `deepCopy()`
         /// on each node property, as required. Each argument receives the property
         /// of the same name.
-        /// 
+        ///
         /// Order of the resulting arguments is significant: it is the same order
         /// that the properties that generated the declarations are laid out within
         /// the type.
-        /// 
+        ///
         /// - note: Generated arguments don't include commas.
         func synthesizeDeepCopyArguments() -> [LabeledExprSyntax] {
             var result: [(syntax: any SyntaxProtocol, param: LabeledExprSyntax)] = []
@@ -526,6 +526,9 @@ class NodeTypeMacroImplementation {
         /// Type of the member
         var type: TypeSyntax
 
+        /// An initial value provided on the declaration.
+        var initialValue: InitializerClauseSyntax?
+
         static func fromDeclGroupSyntax(
             _ declaration: any DeclGroupSyntax,
             accessLevel: TokenSyntax? = nil,
@@ -566,7 +569,7 @@ class NodeTypeMacroImplementation {
             var result: [Self] = []
 
             let identifier = "@NodeRequired"
-            
+
             for binding in property.bindings.ext_bindings() {
                 let name = binding.name.trimmed
                 guard let type = binding.type ?? attributeType else {
@@ -582,7 +585,8 @@ class NodeTypeMacroImplementation {
                     attribute: attribute,
                     member: name,
                     diagnosticSyntax: binding.binding,
-                    type: type
+                    type: type,
+                    initialValue: binding.binding.initializer
                 )
                 result.append(entry)
             }
@@ -593,8 +597,9 @@ class NodeTypeMacroImplementation {
         /// Synthesizes a function parameter from this node's declaration.
         func synthesizeFunctionParameter(needsComma: Bool = false) -> FunctionParameterSyntax {
             FunctionParameterSyntax(
-                firstName: member,
-                type: type,
+                firstName: member.trimmed,
+                type: type.trimmed,
+                defaultValue: initialValue?.trimmed.withLeadingSpace(),
                 trailingComma: needsComma ? .commaToken().withTrailingSpace() : nil
             )
         }
@@ -602,9 +607,9 @@ class NodeTypeMacroImplementation {
         /// Synthesizes a function argument from this node's declaration.
         func synthesizeFunctionArgument(needsComma: Bool = false) -> LabeledExprListSyntax.Element {
             LabeledExprListSyntax.Element(
-                label: member,
+                label: member.trimmed,
                 colon: .colonToken().withTrailingSpace(),
-                expression: "\(member)" as ExprSyntax
+                expression: "\(member.trimmed)" as ExprSyntax
             )
         }
     }
@@ -667,9 +672,9 @@ class NodeTypeMacroImplementation {
             }
 
             var result: [Self] = []
-            
+
             let identifier = "@NodeRequired"
-            
+
             for binding in property.bindings.ext_bindings() {
                 let name = binding.name.trimmed
                 guard let type = binding.type ?? attributeType else {
@@ -707,7 +712,7 @@ class NodeTypeMacroImplementation {
         func synthesizeFunctionParameter(needsComma: Bool = false) -> FunctionParameterSyntax {
             FunctionParameterSyntax(
                 firstName: .identifier(synthesizedName),
-                type: childNodeType.type,
+                type: childNodeType.type.trimmed,
                 trailingComma: needsComma ? .commaToken().withTrailingSpace() : nil
             )
         }
@@ -717,7 +722,7 @@ class NodeTypeMacroImplementation {
             LabeledExprListSyntax.Element(
                 label: .identifier(synthesizedName),
                 colon: .colonToken().withTrailingSpace(),
-                expression: ExprSyntax(synthesizedNameExpr)
+                expression: ExprSyntax(synthesizedNameExpr.trimmed)
             )
         }
 
@@ -725,7 +730,7 @@ class NodeTypeMacroImplementation {
         /// according to this node's type.
         func synthesizeAssignParent(_ expr: ExprSyntax) -> ExprSyntax {
             return childNodeType.synthesizeAssign(
-                symbol: "\(member)",
+                symbol: "\(member.trimmed)",
                 member: .init(baseName: .identifier("parent")),
                 expr
             )
