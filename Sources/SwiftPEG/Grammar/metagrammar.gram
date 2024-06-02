@@ -84,19 +84,28 @@ atom[SwiftPEGGrammar.Atom]:
     ;
 
 swiftType[CommonAbstract.SwiftType]:
+    | '(' swiftTupleTypeList? ')'                       { .tuple(swiftTupleTypeList ?? []) }
     | '[' key=swiftType ':' ~ value=swiftType ']'       { .dictionary(key: key, value: value) }
     | '[' ~ swiftType ']'                               { .array(swiftType) }
     | swiftType '?'                                     { .optional(swiftType) }
-    | swiftType '.' IDENTIFIER '<' swiftTypeList '>'    { .nested(swiftType, .init(identifier: identifier.token.string, genericArguments: swiftTypeList)) }
-    | swiftType '.' IDENTIFIER                          { .nested(swiftType, .init(identifier: identifier.token.string)) }
-    | IDENTIFIER '<' swiftTypeList '>'                  { .nominal(.init(identifier: identifier.token.string, genericArguments: swiftTypeList)) }
-    | IDENTIFIER                                        { .nominal(.init(identifier: identifier.token.string)) }
+    | swiftType '.' IDENTIFIER '<' swiftTypeList '>'    { .nested(swiftType, .init(identifier: "\(identifier)", genericArguments: swiftTypeList)) }
+    | swiftType '.' IDENTIFIER                          { .nested(swiftType, .init(identifier: "\(identifier)")) }
+    | IDENTIFIER '<' swiftTypeList '>'                  { .nominal(.init(identifier: "\(identifier)", genericArguments: swiftTypeList)) }
+    | IDENTIFIER                                        { .nominal(.init(identifier: "\(identifier)")) }
     ;
 
 swiftTypeList[[CommonAbstract.SwiftType]]:
     | ','.swiftType+
     ;
 
+swiftTupleTypeList[[CommonAbstract.TupleTypeElement]]:
+    | ','.swiftTupleTypeElement+
+    ;
+
+swiftTupleTypeElement[CommonAbstract.TupleTypeElement]:
+    | label=IDENTIFIER ':' swiftType    { .labeled(label: "\(label)", swiftType) }
+    | swiftType                         { .unlabeled(swiftType) }
+    ;
 
 # Mini-grammar for the actions
 

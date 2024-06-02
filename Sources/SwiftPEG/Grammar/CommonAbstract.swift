@@ -62,6 +62,7 @@ public enum CommonAbstract {
     /// Represents the construct:
     /// ```
     /// swiftType:
+    ///     | '(' swiftTypeList? ')'
     ///     | '[' key=swiftType ':' ~ value=swiftType ']'
     ///     | '[' ~ swiftType ']'
     ///     | swiftType '?'
@@ -79,7 +80,23 @@ public enum CommonAbstract {
     ///     | ','.swiftType+
     ///     ;
     /// ```
+    ///
+    /// And for tuple type elements:
+    /// ```
+    /// swiftTupleTypeList:
+    ///     | ','.swiftTupleTypeElement+
+    ///     ;
+    /// swiftTupleTypeElement:
+    ///     | label=IDENTIFIER ':' swiftType
+    ///     | swiftType
+    ///     ;
+    /// ```
     public indirect enum SwiftType: Hashable, CustomStringConvertible, ExpressibleByStringLiteral {
+        /// A Swift tuple type
+        ///
+        /// `'(' swiftTypeList? ')'`
+        case tuple([TupleTypeElement])
+
         /// A Swift dictionary type.
         ///
         /// `'[' key=swiftType ':' ~ value=swiftType ']'`
@@ -110,8 +127,9 @@ public enum CommonAbstract {
 
         public var description: String {
             switch self {
-            case .array(let element): "[\(element)]"
+            case .tuple(let elements): "(\(elements.map(\.description).joined(separator: ", ")))"
             case .dictionary(let key, let value): "[\(key): \(value)]"
+            case .array(let element): "[\(element)]"
             case .optional(let wrappedType): "\(wrappedType)?"
             case .nested(let base, let nominal): "\(base).\(nominal)"
             case .nominal(let nominal): nominal.description
@@ -122,6 +140,51 @@ public enum CommonAbstract {
         /// string.
         public init(stringLiteral value: String) {
             self = .nominal(.init(identifier: value))
+        }
+    }
+
+    /// An auxiliary type to `SwiftType` that is used to describe tuple types,
+    /// with optional labels.
+    ///
+    /// ```
+    /// swiftTupleTypeList:
+    ///     | ','.swiftTupleTypeElement+
+    ///     ;
+    /// swiftTupleTypeElement:
+    ///     | label=IDENTIFIER ':' swiftType
+    ///     | swiftType
+    ///     ;
+    /// ```
+    public enum TupleTypeElement: Hashable, CustomStringConvertible {
+        indirect case unlabeled(SwiftType)
+        indirect case labeled(label: String, SwiftType)
+
+        public var description: String {
+            switch self {
+            case .labeled(let label, let type):
+                return "\(label): \(type)"
+            case .unlabeled(let type):
+                return type.description
+            }
+        }
+
+        /// Returns the swift type associated with this tuple type element.
+        public var swiftType: SwiftType {
+            switch self {
+            case .labeled(_, let type),
+                .unlabeled(let type):
+                return type
+            }
+        }
+
+        /// Returns the label associated with this tuple type element, if present.
+        public var label: String? {
+            switch self {
+            case .labeled(let label, _):
+                return label
+            case .unlabeled:
+                return nil
+            }
         }
     }
 

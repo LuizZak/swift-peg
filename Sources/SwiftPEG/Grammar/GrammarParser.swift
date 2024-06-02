@@ -500,13 +500,14 @@ extension GrammarParser {
 
     /// ```
     /// swiftType[CommonAbstract.SwiftType]:
+    ///     | '(' swiftTupleTypeList? ')' { .tuple(swiftTupleTypeList ?? []) }
     ///     | '[' key=swiftType ':' ~ value=swiftType ']' { .dictionary(key: key, value: value) }
     ///     | '[' ~ swiftType ']' { .array(swiftType) }
     ///     | swiftType '?' { .optional(swiftType) }
-    ///     | swiftType '.' IDENTIFIER '<' swiftTypeList '>' { .nested(swiftType, .init(identifier: identifier.token.string, genericArguments: swiftTypeList)) }
-    ///     | swiftType '.' IDENTIFIER { .nested(swiftType, .init(identifier: identifier.token.string)) }
-    ///     | IDENTIFIER '<' swiftTypeList '>' { .nominal(.init(identifier: identifier.token.string, genericArguments: swiftTypeList)) }
-    ///     | IDENTIFIER { .nominal(.init(identifier: identifier.token.string)) }
+    ///     | swiftType '.' IDENTIFIER '<' swiftTypeList '>' { .nested(swiftType, .init(identifier: "\(identifier)", genericArguments: swiftTypeList)) }
+    ///     | swiftType '.' IDENTIFIER { .nested(swiftType, .init(identifier: "\(identifier)")) }
+    ///     | IDENTIFIER '<' swiftTypeList '>' { .nominal(.init(identifier: "\(identifier)", genericArguments: swiftTypeList)) }
+    ///     | IDENTIFIER { .nominal(.init(identifier: "\(identifier)")) }
     ///     ;
     /// ```
     @memoizedLeftRecursive("swiftType")
@@ -514,6 +515,18 @@ extension GrammarParser {
     public func __swiftType() throws -> CommonAbstract.SwiftType? {
         let mark = self.mark()
         var cut = CutFlag()
+
+        if
+            let _ = try self.expect(kind: .leftParen),
+            let swiftTupleTypeList = try self.optional({
+                try self.swiftTupleTypeList()
+            }),
+            let _ = try self.expect(kind: .rightParen)
+        {
+            return .tuple(swiftTupleTypeList ?? [])
+        }
+
+        self.restore(mark)
 
         if
             let _ = try self.expect(kind: .leftSquare),
@@ -564,7 +577,7 @@ extension GrammarParser {
             let swiftTypeList = try self.swiftTypeList(),
             let _ = try self.expect(kind: .rightAngle)
         {
-            return .nested(swiftType, .init(identifier: identifier.token.string, genericArguments: swiftTypeList))
+            return .nested(swiftType, .init(identifier: "\(identifier)", genericArguments: swiftTypeList))
         }
 
         self.restore(mark)
@@ -574,7 +587,7 @@ extension GrammarParser {
             let _ = try self.expect(kind: .period),
             let identifier = try self.expect(kind: .identifier)
         {
-            return .nested(swiftType, .init(identifier: identifier.token.string))
+            return .nested(swiftType, .init(identifier: "\(identifier)"))
         }
 
         self.restore(mark)
@@ -585,7 +598,7 @@ extension GrammarParser {
             let swiftTypeList = try self.swiftTypeList(),
             let _ = try self.expect(kind: .rightAngle)
         {
-            return .nominal(.init(identifier: identifier.token.string, genericArguments: swiftTypeList))
+            return .nominal(.init(identifier: "\(identifier)", genericArguments: swiftTypeList))
         }
 
         self.restore(mark)
@@ -593,7 +606,7 @@ extension GrammarParser {
         if
             let identifier = try self.expect(kind: .identifier)
         {
-            return .nominal(.init(identifier: identifier.token.string))
+            return .nominal(.init(identifier: "\(identifier)"))
         }
 
         self.restore(mark)
@@ -618,6 +631,61 @@ extension GrammarParser {
             })
         {
             return swiftType
+        }
+
+        self.restore(mark)
+        return nil
+    }
+
+    /// ```
+    /// swiftTupleTypeList[[CommonAbstract.TupleTypeElement]]:
+    ///     | ','.swiftTupleTypeElement+
+    ///     ;
+    /// ```
+    @memoized("swiftTupleTypeList")
+    @inlinable
+    public func __swiftTupleTypeList() throws -> [CommonAbstract.TupleTypeElement]? {
+        let mark = self.mark()
+
+        if
+            let swiftTupleTypeElement = try self.gather(separator: {
+                try self.expect(kind: .comma)
+            }, item: {
+                try self.swiftTupleTypeElement()
+            })
+        {
+            return swiftTupleTypeElement
+        }
+
+        self.restore(mark)
+        return nil
+    }
+
+    /// ```
+    /// swiftTupleTypeElement[CommonAbstract.TupleTypeElement]:
+    ///     | label=IDENTIFIER ':' swiftType { .labeled(label: "\(label)", swiftType) }
+    ///     | swiftType { .unlabeled(swiftType) }
+    ///     ;
+    /// ```
+    @memoized("swiftTupleTypeElement")
+    @inlinable
+    public func __swiftTupleTypeElement() throws -> CommonAbstract.TupleTypeElement? {
+        let mark = self.mark()
+
+        if
+            let label = try self.expect(kind: .identifier),
+            let _ = try self.expect(kind: .colon),
+            let swiftType = try self.swiftType()
+        {
+            return .labeled(label: "\(label)", swiftType)
+        }
+
+        self.restore(mark)
+
+        if
+            let swiftType = try self.swiftType()
+        {
+            return .unlabeled(swiftType)
         }
 
         self.restore(mark)
