@@ -575,7 +575,7 @@ extension SwiftCodeGen: TokenLiteralResolver {
     func expandTokenName(_ ident: String) -> String {
         if
             let token = tokenDefinition(named: ident),
-            let staticToken = token.staticToken
+            let staticToken = staticToken(for: token)
         {
             return "self.expect(\(expectArguments(forResolvedToken: staticToken)))"
         }
@@ -594,7 +594,7 @@ extension SwiftCodeGen: TokenLiteralResolver {
         // Check for explicit token aliases
         if
             let token = tokenDefinition(named: identifier),
-            let staticToken = token.staticToken
+            let staticToken = staticToken(for: token)
         {
             return expectArguments(forResolvedToken: staticToken)
         }
@@ -613,12 +613,31 @@ extension SwiftCodeGen: TokenLiteralResolver {
         // Check for explicit token aliases
         if
             let token = tokenDefinition(ofRawLiteral: raw),
-            let staticToken = token.staticToken
+            let staticToken = staticToken(for: token)
         {
             return expectArguments(forResolvedToken: staticToken)
         }
 
         return expectArguments(forResolvedToken: literal)
+    }
+
+    /// Computes the static token name for a given token definition.
+    ///
+    /// If a custom static token was provided (`['.staticToken']`), that value
+    /// is returned; otherwise, an attempt is made to compute the potential case
+    /// name for a generated token type.
+    ///
+    /// If the token is missing both the static token and token syntax, it is
+    /// assumed to be implemented off-lexer and the return is `nil`.
+    func staticToken(for token: InternalGrammar.TokenDefinition) -> String? {
+        if let staticToken = token.staticToken {
+            return staticToken
+        }
+        if token.tokenSyntax == nil {
+            return nil
+        }
+
+        return ".\(caseName(for: token))"
     }
 
     /// Does final expansion of token `self.expect` call arguments based on the

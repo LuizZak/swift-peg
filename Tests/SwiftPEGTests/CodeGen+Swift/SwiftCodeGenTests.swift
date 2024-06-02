@@ -360,6 +360,87 @@ class SwiftCodeGenTests: XCTestCase {
             """#).diff(result)
     }
 
+    func testGenerateParser_useImplicitTokenNameForSyntaxTokens() throws {
+        let grammar = makeGrammar([
+            .init(name: "a", alts: [
+                .init(items: [
+                    .item("b"),
+                    "'+'",
+                    .item("c"),
+                    "BACKSLASH",
+                ]),
+            ]),
+            .init(name: "b", alts: [
+                .init(items: [
+                    .item("b"),
+                    "ADD",
+                    .item("c"),
+                    "'*'",
+                ]),
+            ]),
+        ], metas: [
+            .init(name: "tokenCall", value: .identifier("expectKind"))
+        ])
+        let tokens = makeTokenDefs([
+            makeTokenDef(name: "ADD", tokenSyntax: nil),
+            makeTokenDef(name: "BACKSLASH", tokenSyntax: "\\"),
+        ])
+        let sut = makeSut(grammar, tokens)
+
+        let result = try sut.generateParser()
+
+        diffTest(expected: #"""
+            // TestParser
+            extension TestParser {
+                /// ```
+                /// a:
+                ///     | b '+' c BACKSLASH
+                ///     ;
+                /// ```
+                @memoized("a")
+                @inlinable
+                public func __a() throws -> Node? {
+                    let mark = self.mark()
+
+                    if
+                        let b = try self.b(),
+                        let _ = try self.expect(kind: "+"),
+                        let c = try self.c(),
+                        let backslash = try self.expect(kind: .BACKSLASH)
+                    {
+                        return Node()
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+
+                /// ```
+                /// b:
+                ///     | b ADD c '*'
+                ///     ;
+                /// ```
+                @memoized("b")
+                @inlinable
+                public func __b() throws -> Node? {
+                    let mark = self.mark()
+
+                    if
+                        let b = try self.b(),
+                        let add = try self.ADD(),
+                        let c = try self.c(),
+                        let _ = try self.expect(kind: "*")
+                    {
+                        return Node()
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+            }
+            """#).diff(result)
+    }
+
     func testGenerateParser_respectsImplicitReturns_false() throws {
         let grammar = makeGrammar([
             .init(name: "a", type: "Any", alts: [
@@ -654,7 +735,7 @@ class SwiftCodeGenTests: XCTestCase {
                     let mark = self.mark()
 
                     if
-                        let _ = try self.expect("+")
+                        let _ = try self.expect(.ADD)
                     {
                         return Node()
                     }
@@ -1943,6 +2024,16 @@ private func makeTokenDef(
 ) -> InternalGrammar.TokenDefinition {
 
     .init(name: name, isFragment: isFragment, staticToken: staticToken, tokenSyntax: .init(stringLiteral: literal))
+}
+
+private func makeTokenDef(
+    name: String,
+    isFragment: Bool = false,
+    staticToken: String? = nil,
+    tokenSyntax: CommonAbstract.TokenSyntax?
+) -> InternalGrammar.TokenDefinition {
+
+    .init(name: name, isFragment: isFragment, staticToken: staticToken, tokenSyntax: tokenSyntax)
 }
 
 private func parseGrammar(

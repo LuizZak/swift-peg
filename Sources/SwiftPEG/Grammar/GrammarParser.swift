@@ -308,6 +308,7 @@ extension GrammarParser {
 
     /// ```
     /// lookahead[SwiftPEGGrammar.LookaheadOrCut]:
+    ///     | '&' '&' ~ atom { self.setLocation(SwiftPEGGrammar.Forced(atom: atom), at: mark) }
     ///     | '&' ~ atom { self.setLocation(SwiftPEGGrammar.PositiveLookahead(atom: atom), at: mark) }
     ///     | '!' ~ atom { self.setLocation(SwiftPEGGrammar.NegativeLookahead(atom: atom), at: mark) }
     ///     | '~' { self.setLocation(SwiftPEGGrammar.Cut(), at: mark) }
@@ -329,6 +330,10 @@ extension GrammarParser {
         }
 
         self.restore(mark)
+
+        if cut.isOn {
+            return nil
+        }
 
         if
             let _ = try self.expect(kind: .ampersand),

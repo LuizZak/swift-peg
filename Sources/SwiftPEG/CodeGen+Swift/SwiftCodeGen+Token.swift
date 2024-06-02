@@ -786,7 +786,7 @@ extension SwiftCodeGen {
     /// If the token has a static token string that matches `<someIdentifier>`
     /// or `.<someIdentifier>`, returns `<someIdentifier>`, otherwise returns
     /// the token's name.
-    private func caseName(for token: InternalGrammar.TokenDefinition) -> String {
+    func caseName(for token: InternalGrammar.TokenDefinition) -> String {
         guard let staticToken = token.staticToken else {
             return token.name
         }
