@@ -15,7 +15,7 @@ class AltReducer {
     }
 
     func reduced() -> InternalGrammar.Alt {
-        alt.reduced ?? .init(items: [], action: alt.action, failAction: alt.failAction)
+        alt.reduced ?? .init(namedItems: [], action: alt.action, failAction: alt.failAction)
     }
 
     /// Returns a set of permutations of the alt associated with this reducer,
@@ -31,16 +31,16 @@ class AltReducer {
         _currentDepth = 0
         _depthLimit = depthLimit
 
-        return permuted(alt.items).map {
-            InternalGrammar.Alt(items: $0, action: alt.action, failAction: alt.failAction)
+        return permuted(alt.namedItems).map {
+            InternalGrammar.Alt(namedItems: $0, action: alt.action, failAction: alt.failAction)
         }.compactMap({ $0.flattened() })
     }
 
     private func permuted(_ alt: InternalGrammar.Alt) -> [InternalGrammar.Alt] {
         if reachedDepthLimit { return [alt] }
 
-        return permuted(alt.items).map {
-            InternalGrammar.Alt(items: $0, action: alt.action, failAction: alt.failAction)
+        return permuted(alt.namedItems).map {
+            InternalGrammar.Alt(namedItems: $0, action: alt.action, failAction: alt.failAction)
         }
     }
 
@@ -149,7 +149,7 @@ class AltReducer {
         switch atom {
         case .group(let alts):
             return permuted(alts).map { alts in
-                let nonEmpty = alts.filter { !$0.items.isEmpty }
+                let nonEmpty = alts.filter { !$0.namedItems.isEmpty }
 
                 return [InternalGrammar.Atom.group(nonEmpty)]
             }

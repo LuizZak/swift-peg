@@ -20,7 +20,7 @@ class GrammarProcessorTests: XCTestCase {
 
         assertEmpty(sut.diagnostics)
         assertEqual(atom.identity, .anyToken)
-        switch result.grammar.rules[0].alts[0].items[0] {
+        switch result.grammar.rules[0].alts[0].namedItems[0] {
         case .item(_, .atom(.anyToken), _):
             success()
         default:

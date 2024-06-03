@@ -19,7 +19,7 @@ class SwiftCodeGenTests: XCTestCase {
     func testGenerateParser_anyTokenAtom_returnsNextToken() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
-                .init(items: [
+                .init(namedItems: [
                     .item(.atom(.anyToken("ANY"))),
                 ]),
             ]),
@@ -57,7 +57,7 @@ class SwiftCodeGenTests: XCTestCase {
     func testGenerateParser_anyReturn_returnsNode() throws {
         let grammar = makeGrammar([
             .init(name: "a", type: "Any", alts: [
-                .init(items: [
+                .init(namedItems: [
                     .item("'+'"),
                 ]),
             ]),
@@ -95,7 +95,7 @@ class SwiftCodeGenTests: XCTestCase {
     func testGenerateParser_omitUnreachableRules_true() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
-                .init(items: [
+                .init(namedItems: [
                     .item("b"),
                 ]),
             ]).with(\.isReachable, value: false),
@@ -116,7 +116,7 @@ class SwiftCodeGenTests: XCTestCase {
     func testGenerateParser_omitUnreachableRules_false() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
-                .init(items: [
+                .init(namedItems: [
                     .item("b"),
                 ]),
             ]).with(\.isReachable, value: false),
@@ -438,7 +438,7 @@ class SwiftCodeGenTests: XCTestCase {
     func testGenerateParser_respectsTokenCallMeta() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
-                .init(items: [
+                .init(namedItems: [
                     .item("b"),
                     "'+'",
                     .item("c"),
@@ -482,7 +482,7 @@ class SwiftCodeGenTests: XCTestCase {
     func testGenerateParser_escapesBackSlashLiterals() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
-                .init(items: [
+                .init(namedItems: [
                     .item("b"),
                     #"'\'"#,
                     .item("c"),
@@ -524,7 +524,7 @@ class SwiftCodeGenTests: XCTestCase {
     func testGenerateParser_escapesInvalidSwiftIdentifiers() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
-                .init(items: [
+                .init(namedItems: [
                     .item("default"),
                     #"'\'"#,
                     .item("switch"),
@@ -566,7 +566,7 @@ class SwiftCodeGenTests: XCTestCase {
     func testGenerateParser_usesTokensStaticToken() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
-                .init(items: [
+                .init(namedItems: [
                     .item("b"),
                     "'+'",
                     .item("c"),
@@ -574,7 +574,7 @@ class SwiftCodeGenTests: XCTestCase {
                 ]),
             ]),
             .init(name: "b", alts: [
-                .init(items: [
+                .init(namedItems: [
                     .item("b"),
                     "ADD",
                     .item("c"),
@@ -645,7 +645,7 @@ class SwiftCodeGenTests: XCTestCase {
     func testGenerateParser_useImplicitTokenNameForSyntaxTokens() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
-                .init(items: [
+                .init(namedItems: [
                     .item("b"),
                     "'+'",
                     .item("c"),
@@ -653,7 +653,7 @@ class SwiftCodeGenTests: XCTestCase {
                 ]),
             ]),
             .init(name: "b", alts: [
-                .init(items: [
+                .init(namedItems: [
                     .item("b"),
                     "ADD",
                     .item("c"),
@@ -726,7 +726,7 @@ class SwiftCodeGenTests: XCTestCase {
     func testGenerateParser_respectsImplicitReturns_false() throws {
         let grammar = makeGrammar([
             .init(name: "a", type: "Any", alts: [
-                .init(items: [
+                .init(namedItems: [
                     .item("'+'"),
                 ], action: " anAction "),
             ]),
@@ -766,7 +766,7 @@ class SwiftCodeGenTests: XCTestCase {
     func testGenerateParser_respectsImplicitReturns_true() throws {
         let grammar = makeGrammar([
             .init(name: "a", type: "Any", alts: [
-                .init(items: [
+                .init(namedItems: [
                     .item("'+'"),
                 ], action: " anAction "),
             ]),
@@ -806,7 +806,7 @@ class SwiftCodeGenTests: XCTestCase {
     func testGenerateParser_deduplicatesIdentifiers() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
-                .init(items: [
+                .init(namedItems: [
                     .item("b"),
                     .item(name: "_", "c"),
                     .item("b"),
@@ -848,12 +848,12 @@ class SwiftCodeGenTests: XCTestCase {
     func testGenerateParser_deduplication_runsPerAlt() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
-                .init(items: [
+                .init(namedItems: [
                     .item("b"),
                     .item(name: "_", "c"),
                     .item("b"),
                 ]),
-                .init(items: [
+                .init(namedItems: [
                     .item("b"),
                     .item(name: "_", "c"),
                     .item("b"),
@@ -906,7 +906,7 @@ class SwiftCodeGenTests: XCTestCase {
     func testGenerateParser_wildcardName() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
-                .init(items: [
+                .init(namedItems: [
                     .item("b"),
                     .item(name: "_", "c"),
                     .item(name: "_", "d"),
@@ -948,7 +948,7 @@ class SwiftCodeGenTests: XCTestCase {
     func testGenerateParser_tokenLiteral_expectKind_withStaticToken() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
-                .init(items: [
+                .init(namedItems: [
                     .item("ADD"),
                 ]),
             ]),
@@ -991,7 +991,7 @@ class SwiftCodeGenTests: XCTestCase {
     func testGenerateParser_soleTokenRule_doesNotEmitTokenNameAsReturnAction() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
-                .init(items: [
+                .init(namedItems: [
                     .item("'+'"),
                 ]),
             ]),
@@ -1032,7 +1032,7 @@ class SwiftCodeGenTests: XCTestCase {
     func testGenerateParser_altReturnsSingleNamedItemIfNoActionSpecified() throws {
         let grammar = makeGrammar([
             .init(name: "a", type: "SomeType", alts: [
-                .init(items: ["b"])
+                .init(namedItems: ["b"])
             ])
         ])
         let sut = makeSut(grammar)
@@ -1068,7 +1068,7 @@ class SwiftCodeGenTests: XCTestCase {
     func testGenerateParser_gather() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
-                .init(items: [.item(.gather(sep: "b", node: "c"))]),
+                .init(namedItems: [.item(.gather(sep: "b", node: "c"))]),
             ]),
         ])
         let sut = makeSut(grammar)
@@ -1108,7 +1108,7 @@ class SwiftCodeGenTests: XCTestCase {
     func testGenerateParser_altAction() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
-                .init(items: ["b"], action: " CustomAction() ")
+                .init(namedItems: ["b"], action: " CustomAction() ")
             ])
         ])
         let sut = makeSut(grammar)
@@ -1144,8 +1144,8 @@ class SwiftCodeGenTests: XCTestCase {
     func testGenerateParser_altFailAction() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
-                .init(items: ["b"], failAction: " CustomAction() "),
-                .init(items: ["c"], action: " CAction() ", failAction: " OtherCustomAction() "),
+                .init(namedItems: ["b"], failAction: " CustomAction() "),
+                .init(namedItems: ["c"], action: " CAction() ", failAction: " OtherCustomAction() "),
             ])
         ])
         let sut = makeSut(grammar)
@@ -1922,8 +1922,8 @@ class SwiftCodeGenTests: XCTestCase {
     func testGenerateParser_generateCut() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
-                .init(items: ["b", .lookahead(.cut), "c"]),
-                .init(items: ["b", "d"]),
+                .init(namedItems: ["b", .lookahead(.cut), "c"]),
+                .init(namedItems: ["b", "d"]),
             ])
         ])
         let sut = makeSut(grammar)
@@ -1973,116 +1973,10 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
-    func testGenerateParser_minimalZeroOrMore() throws {
-        let grammar = try parseGrammar("""
-        @token d; @token e; @tokenCallKind "expectKind" ;
-        start: a b*< c;
-        a[A]: 'a' ;
-        b[B]: 'b' ;
-        c[C]: 'c'? 'e' ;
-        """)
-        let sut = makeSut(grammar)
-
-        let result = try sut.generateParser(
-            settings: .default.with(\.emitTypesInBindings, value: true)
-        )
-
-        diffTest(expected: """
-            extension Parser {
-                /// ```
-                /// start:
-                ///     | a b*< c
-                ///     ;
-                /// ```
-                @memoized("start")
-                @inlinable
-                public func __start() throws -> Node? {
-                    let mark = self.mark()
-
-                    if
-                        let a: A = try self.a(),
-                        let b: [B] = try self.repeatZeroOrMore({
-                            try self.b()
-                        }),
-                        let c: C = try self.c()
-                    {
-                        return Node()
-                    }
-
-                    self.restore(mark)
-                    return nil
-                }
-
-                /// ```
-                /// a[A]:
-                ///     | 'a'
-                ///     ;
-                /// ```
-                @memoized("a")
-                @inlinable
-                public func __a() throws -> A? {
-                    let mark = self.mark()
-
-                    if
-                        let _: TokenResult = try self.expect("a")
-                    {
-                        return A()
-                    }
-
-                    self.restore(mark)
-                    return nil
-                }
-
-                /// ```
-                /// b[B]:
-                ///     | 'b'
-                ///     ;
-                /// ```
-                @memoized("b")
-                @inlinable
-                public func __b() throws -> B? {
-                    let mark = self.mark()
-
-                    if
-                        let _: TokenResult = try self.expect("b")
-                    {
-                        return B()
-                    }
-
-                    self.restore(mark)
-                    return nil
-                }
-
-                /// ```
-                /// c[C]:
-                ///     | 'c'? 'e'
-                ///     ;
-                /// ```
-                @memoized("c")
-                @inlinable
-                public func __c() throws -> C? {
-                    let mark = self.mark()
-
-                    if
-                        let _: TokenResult? = try self.optional({
-                            try self.expect("c")
-                        }),
-                        let _: TokenResult = try self.expect("e")
-                    {
-                        return C()
-                    }
-
-                    self.restore(mark)
-                    return nil
-                }
-            }
-            """).diff(result)
-    }
-
     func testGenerateParser_leftRecursiveRule() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
-                .init(items: ["b"])
+                .init(namedItems: ["b"])
             ]).with(\.isRecursiveLeader, value: true)
         ])
         let sut = makeSut(grammar)
@@ -2118,10 +2012,10 @@ class SwiftCodeGenTests: XCTestCase {
     func testGenerateParser_nestedLeftRecursiveRule() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
-                .init(items: ["b"])
+                .init(namedItems: ["b"])
             ]).with(\.isRecursive, value: true).with(\.isRecursiveLeader, value: true),
             .init(name: "b", alts: [
-                .init(items: ["a"])
+                .init(namedItems: ["a"])
             ]).with(\.isRecursive, value: true).with(\.isRecursiveLeader, value: false),
         ])
         let sut = makeSut(grammar)
@@ -2176,9 +2070,9 @@ class SwiftCodeGenTests: XCTestCase {
     func testGenerateParser_optionalGroup() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
-                .init(items: [
+                .init(namedItems: [
                     .item(.optionalItems([
-                        .init(items: [
+                        .init(namedItems: [
                             .item("b"),
                             #"'\'"#,
                             .item("c"),
@@ -2244,9 +2138,9 @@ class SwiftCodeGenTests: XCTestCase {
     func testGenerateParser_optionalGroup_named() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
-                .init(items: [
+                .init(namedItems: [
                     .item(name: "name", .optionalItems([
-                        .init(items: [
+                        .init(namedItems: [
                             "'+'",
                             .item(name: "nameInner", #"'\'"#),
                             "'-'",

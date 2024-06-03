@@ -143,121 +143,315 @@ public class SwiftCodeGen {
         return buffer.finishBuffer()
     }
 
+    // MARK: - Main productions
+
     func generateRemainingProductions() throws {
         while !remaining.isEmpty {
             let next = remaining.removeFirst()
 
             try generateRemainingProduction(next)
+
+            // Separate production members
+            buffer.ensureDoubleNewline()
         }
     }
 
     func generateRemainingProduction(_ production: RemainingProduction) throws {
         switch production {
         case .rule(let rule):
-            try generateRule(rule)
+            try generateRule(rule, for: production)
+
+        case .auxiliary(let rule, _):
+            try generateRule(rule, for: production)
+
+        case .nonStandardRepetition(let auxInfo, let repetition):
+            try generateNonStandardRepetition(
+                auxInfo,
+                repetition,
+                for: production
+            )
         }
     }
 
-    func generateRule(_ rule: InternalGrammar.Rule) throws {
+    // MARK: Production: Rule
+
+    func generateRule(
+        _ rule: InternalGrammar.Rule,
+        for production: RemainingProduction
+    ) throws {
         if latestSettings.omitUnreachable && !rule.isReachable {
             return
         }
 
-        let name = alias(for: rule)
+        generateRuleDocComment(rule)
 
+        // @memoized/@memoizedLeftRecursive
+        // @inlinable
+        let name = alias(for: rule)
+        let memoizationMode = memoizationMode(for: rule)
+        generateRuleMethodAttributes(
+            memoization: memoizationMode,
+            memoizedName: name
+        )
+
+        // func <rule>() -> <return type>
+        let fName = memoizationMode == .none ? name : "__\(name)"
+        let returnType = returnTypeForRule(rule)
+
+        buffer.emit("public func \(fName)() throws -> \(returnType) ")
+        try buffer.emitBlock {
+            // let mark = self.mark()
+            // var cut = CutFlag()
+            //
+            // ...if-let alt patterns...
+            //
+            // return nil
+            let failReturnExpression = _failReturnExpression(for: rule.type)
+
+            try generateRuleBody(
+                hasCut: hasCut(rule),
+                failReturnExpression: failReturnExpression
+            ) {
+                for alt in rule.alts {
+                    try generateAlt(
+                        alt,
+                        in: production,
+                        failReturnExpression: failReturnExpression
+                    )
+                }
+            }
+        }
+    }
+
+    // MARK: Production: Non-standard repetition with trailing cases
+
+    func generateNonStandardRepetition(
+        _ info: AuxiliaryRuleInformation,
+        _ repetitionInfo: RepetitionInfo,
+        for production: RemainingProduction
+    ) throws {
+
+        // Preparation
+
+        let ruleName = info.name
+        let ruleType = info.returnElements.scg_asTupleType().scg_optionalWrapped()
+        let returnType = ruleType.scg_asValidSwiftType()
+
+        let trailName = ruleName + "_tail"
+        let remainingElements = computeBindings(repetitionInfo.trail).scg_asReturnElements()
+        let trailInformation = AuxiliaryRuleInformation(
+            name: trailName,
+            returnElements: remainingElements,
+            memoizationMode: info.memoizationMode
+        )
+
+        let trailProductionName = enqueueAuxiliaryRule(
+            InternalGrammar.Rule(
+                name: trailName,
+                type: remainingElements.scg_asTupleType(),
+                alts: [
+                    .init(namedItems: repetitionInfo.trail)
+                ]
+            ),
+            trailInformation
+        )
+
+        let syntheticItem: InternalGrammar.Item =
+            .atom(.ruleName(trailProductionName))
+
+        // Synthesize method
+        generateRuleDocComment(ruleName, info.returnElements.scg_asTupleType(), [
+            .init(namedItems: [repetitionInfo.repetition, .item(syntheticItem)])
+        ])
+
+        // @memoized/@memoizedLeftRecursive
+        // @inlinable
+        generateRuleMethodAttributes(
+            memoization: info.memoizationMode,
+            memoizedName: ruleName
+        )
+
+        let fName = info.memoizationMode == .none ? ruleName : "__\(ruleName)"
+
+        buffer.emit("public func \(fName)() throws -> \(returnType) ")
+        try buffer.emitBlock {
+            func repetitionAtom() -> InternalGrammar.Atom {
+                guard let atom = repetitionInfo.repetition.asItem?.atom else {
+                    fatalError("Repetition request did not reference a repetition item?")
+                }
+
+                return atom
+            }
+            func repetitionType() -> CommonAbstract.SwiftType {
+                return typeForAtom(repetitionAtom())
+            }
+            func trailType() -> CommonAbstract.SwiftType {
+                trailInformation.returnElements.scg_asTupleType()
+            }
+            func fullType() -> CommonAbstract.SwiftType {
+                info.returnElements.scg_asTupleType()
+            }
+
+            let failReturnExpression = _failReturnExpression(for: ruleType)
+            let info = RepetitionBodyGenInfo(
+                production: production,
+                ruleInfo: info,
+                repetitionAtom: repetitionAtom(),
+                repetitionInfo: repetitionInfo,
+                trailName: trailProductionName,
+                trailInfo: trailInformation,
+                failReturnExpression: failReturnExpression,
+                repetitionAtomType: repetitionType(),
+                trailType: trailType(),
+                fullType: fullType()
+            )
+
+            declContext.push()
+            defer { declContext.pop() }
+
+            switch repetitionInfo.repetition {
+            case .item(_, .zeroOrMore(_, repetitionMode: .minimal), _):
+                try generateZeroOrMoreMinimalBody(info)
+
+            case .item(_, .zeroOrMore(_, repetitionMode: .maximal), _):
+                try generateZeroOrMoreMaximalBody(info)
+
+            case .item(_, .oneOrMore(_, repetitionMode: .minimal), _):
+                try generateOneOrMoreMinimalBody(info)
+
+            case .item(_, .oneOrMore(_, repetitionMode: .maximal), _):
+                try generateOneOrMoreMaximalBody(info)
+
+            default:
+                fatalError("Repetition request's Item is not a non-standard repetition item?")
+            }
+        }
+    }
+
+    // MARK: - Rule-related productions
+
+    /// ```
+    /// /// ```
+    /// /// ruleName[ruleType]:
+    /// ///     | alt1
+    /// ///     | alt2
+    /// ///     ...
+    /// ///     ;
+    /// /// ```
+    /// ```
+    fileprivate func generateRuleDocComment(_ rule: InternalGrammar.Rule) {
+        let ruleName = rule.name
+        let ruleType = rule.type
+        let alts = rule.alts
+
+        generateRuleDocComment(ruleName, ruleType, alts)
+    }
+
+    /// ```
+    /// /// ```
+    /// /// ruleName[ruleType]:
+    /// ///     | alt1
+    /// ///     | alt2
+    /// ///     ...
+    /// ///     ;
+    /// /// ```
+    /// ```
+    fileprivate func generateRuleDocComment(
+        _ ruleName: String,
+        _ ruleType: CommonAbstract.SwiftType?,
+        _ alts: [InternalGrammar.Alt]
+    ) {
         // Derive a doc comment for the generated rule
         let linePrefix = "///"
 
         buffer.emitLine("\(linePrefix) ```")
-        buffer.emit("\(linePrefix) \(rule.name)")
-        if let type = rule.type {
-            buffer.emit("[\(type.description)]")
+        buffer.emit("\(linePrefix) \(ruleName)")
+        if let ruleType {
+            buffer.emit("[\(ruleType.scg_asValidSwiftType())]")
         }
         buffer.emitLine(":")
-        for alt in rule.alts {
+        for alt in alts {
             buffer.emitLine("\(linePrefix)     | \(alt)")
         }
         buffer.emitLine("\(linePrefix)     ;")
         buffer.emitLine("\(linePrefix) ```")
+    }
 
-        // @memoized/@memoizedLeftRecursive
-        var isMemoized = false
-        if rule.isRecursiveLeader {
-            isMemoized = true
-            buffer.emitLine(#"@memoizedLeftRecursive("\#(name)")"#)
-        } else if !rule.isRecursive {
-            isMemoized = true
-            buffer.emitLine(#"@memoized("\#(name)")"#)
-        }
-
-        // @inlinable
-        buffer.emitLine("@inlinable")
-
-        // func <rule>() -> <node>
-        let fName = isMemoized ? "__\(name)" : name
-        var returnType = typeForRule(rule) ?? defaultRuleType()
-        // Ensure we don't emit labeled tuples with one element
-        switch returnType {
-        case .tuple(let elements) where elements.count == 1:
-            returnType = elements[0].swiftType
-        default:
+    /// ```
+    /// <none> / @memoized("<name>") / @memoizedLeftRecursive("<name>")
+    /// @inlinable
+    /// ```
+    func generateRuleMethodAttributes(
+        memoization: MemoizationMode,
+        memoizedName: String
+    ) {
+        switch memoization {
+        case .none:
             break
+        case .memoized:
+            buffer.emitLine("@memoized(\(memoizedName.debugDescription))")
+        case .memoizedLeftRecursive:
+            buffer.emitLine("@memoizedLeftRecursive(\(memoizedName.debugDescription))")
         }
 
-        let failReturnExpression =
-            switch rule.type {
-            case .tuple(let elements) where elements.count != 1:
-                "(\(elements.map({ _ in "nil" }).joined(separator: ", ")))"
-            default:
-                "nil"
-            }
+        buffer.emitLine("@inlinable")
+    }
 
-        buffer.emit("public func \(fName)() throws -> \(returnType) ")
-        try buffer.emitBlock {
-            declContext.push()
-            defer { declContext.pop() }
-            declContext.defineLocal(suggestedName: "mark")
-            declContext.defineLocal(suggestedName: "cut")
+    /// Generates a preamble and default tail-end of a rule-like method body that
+    /// has an optional return type and backtracks the parser, and optionally
+    /// has access to a cut flag.
+    ///
+    /// Pushes a new declaration context for the duration of the method.
+    ///
+    /// ```
+    /// let mark = self.mark()
+    /// var cut = CutFlag()   (only if hasCut == true)
+    /// <generator()>
+    /// return <failReturnExpression>
+    /// ```
+    func generateRuleBody(
+        hasCut: Bool,
+        failReturnExpression: String,
+        _ generator: () throws -> Void
+    ) throws {
+        declContext.push()
+        defer { declContext.pop() }
+        declContext.defineLocal(suggestedName: "mark")
+        declContext.defineLocal(suggestedName: "cut")
 
-            buffer.emitLine("let mark = self.mark()")
-            if hasCut(rule) {
-                buffer.emitLine("var cut = CutFlag()")
-            }
-
-            for alt in rule.alts {
-                try generateAlt(alt, in: rule, failReturnExpression: failReturnExpression)
-            }
-
-            buffer.emitLine("return \(failReturnExpression)")
+        buffer.emitLine("let mark = self.mark()")
+        if hasCut {
+            buffer.emitLine("var cut = CutFlag()")
         }
 
-        // Separate rule methods
-        buffer.ensureDoubleNewline()
+        try generator()
+
+        buffer.emitLine("return \(failReturnExpression)")
     }
 
     func generateAlt(
         _ alt: InternalGrammar.Alt,
-        in rule: InternalGrammar.Rule,
+        in production: RemainingProduction,
         failReturnExpression: String
     ) throws {
-        if alt.items.isEmpty { return }
+        if alt.namedItems.isEmpty { return }
 
         declContext.push()
         defer { declContext.pop() }
 
-        // TODO: Handle minimal/maximal repetitions
         buffer.emitNewline()
 
         // if block
         buffer.emitLine("if")
         try buffer.indented {
-            try generateNamedItems(alt.items, in: rule)
+            // if bindings/conditions
+            try generateNamedItems(alt.namedItems, in: production)
         }
         buffer.ensureNewline()
 
         // Successful alt match
         buffer.emitBlock {
-            generateOnAltMatchBlock(alt, in: rule)
+            generateOnAltMatchBlock(alt, in: production)
         }
 
         // Alt failure results in a restore to a previous mark
@@ -285,7 +479,7 @@ public class SwiftCodeGen {
     /// of the action's resolved string.
     func generateOnAltMatchBlock(
         _ alt: InternalGrammar.Alt,
-        in rule: InternalGrammar.Rule
+        in production: RemainingProduction
     ) {
         if implicitReturns {
             buffer.emit("return ")
@@ -298,7 +492,7 @@ public class SwiftCodeGen {
 
         // If no action is specified, attempt to return instead the named
         // item within the alt, if it's the only named item in the alt.
-        if alt.items.count == 1 {
+        if alt.namedItems.count == 1 {
             let bindings = computeBindings(alt)
             if bindings.count == 1, let label = bindings[0].label {
                 buffer.emitLine(label)
@@ -309,33 +503,63 @@ public class SwiftCodeGen {
         // Fallback: Return an initialization of the associated node type, assuming
         // it is not `nil` and is not a known existential type, otherwise return
         // `Node()`.
-        if let type = rule.type?.description, type != "Any" {
+        if let type = production.productionType?.description, type != "Any" {
             buffer.emitLine("\(type)()")
         } else {
             buffer.emitLine("Node()")
         }
     }
 
-    /// Generates items as a sequence of optional bindings.
+    /// Generates items as a sequence of if-let segments from a given sequence of
+    /// named items, separated by commas.
     func generateNamedItems(
         _ namedItems: [InternalGrammar.NamedItem],
-        in rule: InternalGrammar.Rule
+        in production: RemainingProduction
     ) throws {
+
+        // TODO: Handle minimal/maximal repetitions
+        let nonStandardIndex = self.nonStandardRepetitionIndex(in: namedItems)
+
         let commaEmitter = buffer.startConditionalEmitter()
-        for namedItem in namedItems {
-            try generateNamedItem(namedItem, commaEmitter, in: rule)
+        for (i, namedItem) in namedItems.enumerated() {
+            commaEmitter.conditional { buffer in
+                buffer.emitLine(",")
+            }
+
+            // Switch over to non-standard repetition, if present
+            if i == nonStandardIndex {
+                let auxInfo = enqueueNonStandardRepetition(
+                    for: production,
+                    suffix: "_nsr",
+                    namedItems[i...]
+                )
+
+                // Emit a dummy item that binds the repetition's results
+                let item: InternalGrammar.Item = .atom(.ruleName(auxInfo.name))
+                let bindings = auxInfo.returnElements.scg_asBindings()
+
+                try generateBindingsToItem(item, bindings, in: production)
+
+                // Stop emitting items after the repetition binding is emitted
+                break
+            } else {
+                try generateNamedItem(namedItem, in: production)
+            }
         }
     }
 
+    /// `let <bind>[: <BindingType>] = <production>`
+    /// Or:
+    /// `case let (<bind1>?, <bind2?>, ...) = <production>`
+    /// Depending on how many bindings exist in the named item.
+    ///
+    /// Returns an array containing the deduplicated names of all named bindings
+    /// created. Return is empty if no named bindings where created.
+    @discardableResult
     func generateNamedItem(
         _ namedItem: InternalGrammar.NamedItem,
-        _ commaEmitter: CodeStringBuffer.ConditionalEmitter,
-        in rule: InternalGrammar.Rule
-    ) throws {
-
-        commaEmitter.conditional { buffer in
-            buffer.emitLine(",")
-        }
+        in production: RemainingProduction
+    ) throws -> [String] {
 
         switch namedItem {
         case .item(_, let item, _):
@@ -346,22 +570,45 @@ public class SwiftCodeGen {
                 ]
             }
 
-            // Emit bindings
-            try generatePatternBinds(bindings, in: rule)
-            buffer.emit(" = ")
-            try generateItem(item, in: rule)
+            return try generateBindingsToItem(item, bindings, in: production)
 
         case .lookahead(let lookahead):
-            try generateLookahead(lookahead, in: rule)
+            try generateLookahead(lookahead, in: production)
+            return []
         }
     }
 
-    func generateItem(_ item: InternalGrammar.Item, in rule: InternalGrammar.Rule) throws {
+    /// Generates a binding pattern that binds the production described by `item`
+    /// with a given set of bindings.
+    ///
+    /// Returns an array containing the deduplicated names of all named bindings
+    /// created. Return is empty if no named bindings where created.
+    @discardableResult
+    func generateBindingsToItem(
+        _ item: InternalGrammar.Item,
+        _ bindings: [Binding],
+        in production: RemainingProduction
+    ) throws -> [String] {
+
+        // Emit bindings
+        let bindingNames = try generatePatternBinds(bindings, in: production)
+
+        buffer.emit(" = ")
+
+        try generateItem(item, in: production)
+
+        return bindingNames
+    }
+
+    func generateItem(
+        _ item: InternalGrammar.Item,
+        in production: RemainingProduction
+    ) throws {
         switch item {
         case .optional(let atom):
             buffer.emit("try self.optional(")
             try buffer.emitInlinedBlock {
-                try generateAtom(atom, in: rule)
+                try generateAtom(atom, in: production)
             }
             buffer.emit(")")
 
@@ -369,7 +616,7 @@ public class SwiftCodeGen {
             buffer.emit("try self.optional(")
             buffer.emitInlinedBlock {
                 let aux = enqueueAuxiliaryRule(
-                    for: rule,
+                    for: production,
                     suffix: "_opt",
                     alts
                 )
@@ -380,56 +627,56 @@ public class SwiftCodeGen {
         case .gather(let sep, let item):
             buffer.emit("try self.gather(separator: ")
                 try buffer.emitInlinedBlock {
-                    try generateAtom(sep, in: rule)
+                    try generateAtom(sep, in: production)
                 }
             buffer.emit(", item: ")
                 try buffer.emitInlinedBlock {
-                    try generateAtom(item, in: rule)
+                    try generateAtom(item, in: production)
                 }
             buffer.emit(")")
 
         case .zeroOrMore(let atom, _):
             buffer.emit("try self.repeatZeroOrMore(")
             try buffer.emitInlinedBlock {
-                try generateAtom(atom, in: rule)
+                try generateAtom(atom, in: production)
             }
             buffer.emit(")")
 
         case .oneOrMore(let atom, _):
             buffer.emit("try self.repeatOneOrMore(")
             try buffer.emitInlinedBlock {
-                try generateAtom(atom, in: rule)
+                try generateAtom(atom, in: production)
             }
             buffer.emit(")")
 
         case .atom(let atom):
-            try generateAtom(atom, in: rule)
+            try generateAtom(atom, in: production)
         }
     }
 
     func generateLookahead(
         _ lookahead: InternalGrammar.Lookahead,
-        in rule: InternalGrammar.Rule
+        in production: RemainingProduction
     ) throws {
         switch lookahead {
         case .forced(let atom):
             buffer.emit("try self.expectForced(")
             try buffer.emitInlinedBlock {
-                try generateAtom(atom, in: rule)
+                try generateAtom(atom, in: production)
             }
             buffer.emit(#", \#(atom.description.debugDescription))"#)
 
         case .positive(let atom):
             buffer.emit("try self.positiveLookahead(")
             try buffer.emitInlinedBlock {
-                try generateAtom(atom, in: rule)
+                try generateAtom(atom, in: production)
             }
             buffer.emit(")")
 
         case .negative(let atom):
             buffer.emit("try self.negativeLookahead(")
             try buffer.emitInlinedBlock {
-                try generateAtom(atom, in: rule)
+                try generateAtom(atom, in: production)
             }
             buffer.emit(")")
 
@@ -440,12 +687,12 @@ public class SwiftCodeGen {
 
     func generateAtom(
         _ atom: InternalGrammar.Atom,
-        in rule: InternalGrammar.Rule
+        in production: RemainingProduction
     ) throws {
         switch atom {
         case .group(let group):
             let aux = enqueueAuxiliaryRule(
-                for: rule,
+                for: production,
                 suffix: "_group_",
                 group
             )
@@ -484,10 +731,14 @@ public class SwiftCodeGen {
     /// Or:
     /// `case let (<bind1>?, <bind2?>, ...)`
     /// Depending on how many bindings exist in `bindings`.
+    ///
+    /// Returns an array containing the deduplicated names of all named bindings
+    /// created. Return is empty if no named bindings where created.
+    @discardableResult
     func generatePatternBinds(
         _ bindings: [Binding],
-        in rule: InternalGrammar.Rule
-    ) throws {
+        in production: RemainingProduction
+    ) throws -> [String] {
 
         // When emitting more than one optional unwrapping on tuple types,
         // emit a case-let- binding so we can unwrap each identifier within
@@ -503,6 +754,8 @@ public class SwiftCodeGen {
 
         buffer.emit("let ")
 
+        var deduplicatedBindings: [String] = []
+
         var bindingNames = ""
         var bindingTypes = ""
         if bindings.count > 1 {
@@ -516,6 +769,7 @@ public class SwiftCodeGen {
 
             if bindingName != "_" {
                 bindingName = declContext.defineLocal(suggestedName: bindingName, type: nil).name
+                deduplicatedBindings.append(bindingName)
             }
 
             if i > 0 {
@@ -542,6 +796,37 @@ public class SwiftCodeGen {
         if latestSettings.emitTypesInBindings && !isCasePatternBind {
             buffer.emit(": ")
             buffer.emit(bindingTypes)
+        }
+
+        return deduplicatedBindings
+    }
+
+    private func _failReturnExpression(for type: CommonAbstract.SwiftType?) -> String {
+        switch type {
+        case .tuple(let elements) where elements.count != 1:
+            "(\(elements.map({ _ in "nil" }).joined(separator: ", ")))"
+        default:
+            "nil"
+        }
+    }
+
+    private func memoizationMode(for rule: InternalGrammar.Rule) -> MemoizationMode {
+        return
+            if rule.isRecursiveLeader {
+                .memoizedLeftRecursive
+            } else if !rule.isRecursive {
+                .memoized
+            } else {
+                .none
+            }
+    }
+
+    private func memoizationMode(for production: RemainingProduction) -> MemoizationMode {
+        switch production {
+        case .rule(let rule), .auxiliary(let rule, _):
+            return memoizationMode(for: rule)
+        case .nonStandardRepetition(let info, _):
+            return info.memoizationMode
         }
     }
 
@@ -635,7 +920,7 @@ public class SwiftCodeGen {
         }
     }
 
-    /// Contains metadata about an auxiliary rule.
+    /// Contains metadata about an auxiliary rule/method.
     struct AuxiliaryRuleInformation {
         typealias ReturnElement = (label: String, type: CommonAbstract.SwiftType)
 
@@ -645,11 +930,76 @@ public class SwiftCodeGen {
         /// Holds the contents of common named items exposed by the rule's return
         /// type, as a tuple of elements.
         var returnElements: [ReturnElement]
+
+        /// The memoization mode for the rule.
+        var memoizationMode: MemoizationMode
+    }
+
+    /// The mode of memoization for a generated method.
+    enum MemoizationMode: Equatable {
+        /// No memoization.
+        case none
+
+        /// Use standard memoization.
+        case memoized
+
+        /// Use memoization that is specialize for left-recursive rule leaders.
+        case memoizedLeftRecursive
+    }
+
+    /// Contains information about a non-standard repetition construct.
+    struct RepetitionInfo {
+        /// The actual repetition item.
+        var repetition: InternalGrammar.NamedItem
+
+        /// A list of trailing items that must be parsed to succeed the repetition
+        /// production.
+        var trail: [InternalGrammar.NamedItem]
     }
 
     /// Encapsulates a remaining rule/auxiliary rule production.
     enum RemainingProduction {
+        /// A grammar rule to generate.
         case rule(InternalGrammar.Rule)
+
+        /// An auxiliary rule.
+        case auxiliary(InternalGrammar.Rule, AuxiliaryRuleInformation)
+
+        /// An auxiliary method that refers to a non-standard repetition within
+        /// a rule's alternative.
+        case nonStandardRepetition(
+            AuxiliaryRuleInformation,
+            RepetitionInfo
+        )
+
+        /// Returns a non-deduplicated identifier that can be used to refer to
+        /// this production's method.
+        ///
+        /// For rule productions and auxiliary rules, it is the rule's name, and
+        /// for other constructs it is the String value that will be used to generate
+        /// the production's method's name.
+        var name: String {
+            switch self {
+            case .rule(let rule), .auxiliary(let rule, _):
+                return rule.name
+            case .nonStandardRepetition(let ruleInfo, _):
+                return ruleInfo.name
+            }
+        }
+
+        /// Returns the production type associated with this production's method.
+        ///
+        /// For rule productions and auxiliary rules, it is the rule's
+        /// ``InternalGrammar.Rule.type``, and for other constructs it is the
+        /// computed value associated with the production's result.
+        var productionType: CommonAbstract.SwiftType? {
+            switch self {
+            case .rule(let rule), .auxiliary(let rule, _):
+                return rule.type
+            case .nonStandardRepetition(let ruleInfo, _):
+                return ruleInfo.returnElements.scg_asTupleType()
+            }
+        }
     }
 }
 
@@ -662,21 +1012,42 @@ extension SwiftCodeGen {
         for elements: [AuxiliaryRuleInformation.ReturnElement]
     ) -> InternalGrammar.Action {
 
-        let action: InternalGrammar.Action
-        let labels: [String] = elements.map(\.label)
+        return defaultReturnAction(for: elements.map { element in
+            (label: element.label, identifier: element.label)
+        })
+    }
+
+    /// Attempts to compute a default return action for a given set of
+    /// `<label>: <identifier>` pair expressions.
+    func defaultReturnAction(
+        for labeledExpressions: [(label: String, identifier: String)]
+    ) -> InternalGrammar.Action {
+
+        return .init(
+            string: " \(defaultReturnExpression(for: labeledExpressions)) "
+        )
+    }
+
+    /// Attempts to compute a default return expression for a given set of
+    /// `<label>: <identifier>` pair expressions.
+    func defaultReturnExpression(
+        for labeledExpressions: [(label: String?, identifier: String)]
+    ) -> String {
 
         // Avoid emitting single-tuple constructions
-        if labels.count == 1 {
-            action = .init(string: " \(escapeIdentifier(labels[0])) ")
+        if labeledExpressions.count == 1 {
+            return escapeIdentifier(labeledExpressions[0].identifier)
         } else {
-            let tupleElements = labels.map { label in
-                "\(label): \(escapeIdentifier(label))"
+            let tupleElements = labeledExpressions.map { expr in
+                if let label = expr.label {
+                    "\(label): \(escapeIdentifier(expr.identifier))"
+                } else {
+                    escapeIdentifier(expr.identifier)
+                }
             }.joined(separator: ", ")
 
-            action = .init(string: " (\(tupleElements)) ")
+            return "(\(tupleElements))"
         }
-
-        return action
     }
 
     /// Computes the implicit return elements for a given rule.
@@ -768,8 +1139,21 @@ extension SwiftCodeGen {
         _ alt: InternalGrammar.Alt
     ) -> [Binding] {
 
+        return computeBindings(alt.namedItems)
+    }
+
+    /// Computes the bindings for a given sequence of named items based on the
+    /// elements that are contained within.
+    ///
+    /// - note: Result removes a layer of optional wrapping from all bindings,
+    /// since the code generator assumes that the bindings are part of a
+    /// successful if-let pattern.
+    func computeBindings(
+        _ namedItems: some Sequence<InternalGrammar.NamedItem>
+    ) -> [Binding] {
+
         var result: [Binding] = []
-        for item in alt.items {
+        for item in namedItems {
             for binding in bindings(for: item) {
                 result.append(binding)
             }
@@ -788,7 +1172,7 @@ extension SwiftCodeGen {
     /// - note: Actions of all alts are replaced with the return expression for
     /// the auxiliary rule.
     func enqueueAuxiliaryRule(
-        for rule: InternalGrammar.Rule,
+        for production: RemainingProduction,
         suffix: String,
         _ alts: [InternalGrammar.Alt]
     ) -> String {
@@ -820,40 +1204,98 @@ extension SwiftCodeGen {
         }
 
         return enqueueAuxiliaryRule(
-            for: rule,
+            for: production,
             suffix: suffix,
             type: type,
             alts
         )
     }
 
-    /// Enqueues an auxiliary rule to be generated based on a given rule as context.
+    /// Enqueues an auxiliary rule to be generated based on a given production as
+    /// context.
     /// Returns the deduplicated, unique method name to use as a reference for
     /// further code generation.
     ///
     /// - note: Return type will be optionally-wrapped by this method.
     func enqueueAuxiliaryRule(
-        for rule: InternalGrammar.Rule,
+        for production: RemainingProduction,
         suffix: String,
         type: CommonAbstract.SwiftType,
         _ alts: [InternalGrammar.Alt]
     ) -> String {
 
-        let name = "_\(rule.name)_\(suffix)"
+        let name = "_\(production.name)_\(suffix)"
 
-        let ruleName = enqueueAuxiliaryRule(.init(name: name, type: type, alts: alts))
+        let info = AuxiliaryRuleInformation(
+            name: name,
+            returnElements: computeReturnElements(alts),
+            memoizationMode: memoizationMode(for: production)
+        )
+
+        let ruleName = enqueueAuxiliaryRule(
+            .init(name: name, type: type, alts: alts),
+            info
+        )
 
         return ruleName
     }
 
+    /// Enqueues an auxiliary production that encapsulates a minimal/maximal (`<`/`>`)
+    /// repetition segment of an alternative's list of items.
+    ///
+    /// - note: Expects the first element of the sequence of named items to be
+    /// the non-standard sequence, and the list of items to have more than one
+    /// item.
+    /// - precondition: `namedItems.count > 1`
+    func enqueueNonStandardRepetition(
+        for production: RemainingProduction,
+        suffix: String,
+        _ namedItems: some Collection<InternalGrammar.NamedItem>
+    ) -> AuxiliaryRuleInformation {
+
+        guard let lead = namedItems.first, namedItems.count > 1 else {
+            preconditionFailure("namedItems.count > 1")
+        }
+
+        precondition(hasNonStandardRepetition(lead), "hasNonStandardRepetition(namedItems[0])")
+
+        let name = "_\(production.name)_\(suffix)"
+
+        let bindings = computeBindings(namedItems)
+        let returnElements = bindings.scg_asReturnElements()
+
+        let information = AuxiliaryRuleInformation(
+            name: name,
+            returnElements: returnElements,
+            memoizationMode: memoizationMode(for: production)
+        )
+        let tail = Array(namedItems.dropFirst())
+
+        enqueueProduction(
+            .nonStandardRepetition(
+                information,
+                RepetitionInfo(
+                    repetition: lead,
+                    trail: tail
+                )
+            )
+        )
+
+        return information
+    }
+
     /// Enqueues a given auxiliary rule, returning its deduplicated name for
     /// further referencing.
-    private func enqueueAuxiliaryRule(_ rule: InternalGrammar.Rule) -> String {
+    private func enqueueAuxiliaryRule(
+        _ rule: InternalGrammar.Rule,
+        _ info: AuxiliaryRuleInformation
+    ) -> String {
+
         let decl = declContext.defineMethod(suggestedName: rule.name)
         var rule = rule
         rule.name = decl.name
 
-        enqueueProduction(.rule(rule))
+        enqueueProduction(.auxiliary(rule, info))
 
         return decl.name
     }
@@ -879,6 +1321,19 @@ extension SwiftCodeGen {
     /// - note: Rules always have an optional layer added to their return types.
     func defaultRuleType() -> CommonAbstract.SwiftType {
         .optional("Node")
+    }
+
+    /// Returns the string to use as the return type for a given rule's method.
+    ///
+    /// If computing the return type with the rule's type fails, a default `Node?`
+    /// type is returned, instead.
+    ///
+    /// If the generated type is a single-element tuple, the result is the tuple's
+    /// element type.
+    func returnTypeForRule(_ rule: InternalGrammar.Rule) -> String {
+        let returnType = typeForRule(rule) ?? defaultRuleType()
+
+        return returnType.scg_asValidSwiftType()
     }
 
     /// Attempts to statically infer the type of a given rule.
@@ -957,7 +1412,8 @@ extension SwiftCodeGen {
     }
 }
 
-// MARK: Alias management
+// MARK: Alias/binding management
+// TODO: Refactor out this binding logic to reuse in GrammarInterpreter
 
 extension SwiftCodeGen: TokenLiteralResolver {
     /// Type for if-let pattern binds.
@@ -1204,20 +1660,29 @@ extension SwiftCodeGen: TokenLiteralResolver {
 extension SwiftCodeGen {
     /// Returns `true` if the rule makes use of minimal/maximal (`<`/`>`) repetition
     /// in one of its primary alts.
+    ///
+    /// - note: a non-standard repetition can only occur if the repetition it is
+    /// attached to is not the last item of an alternative.
     func hasNonStandardRepetition(_ node: InternalGrammar.Rule) -> Bool {
         node.alts.contains(where: hasNonStandardRepetition(_:))
     }
 
     /// Returns `true` if one of the given alts makes use of minimal/maximal
     /// (`<`/`>`) repetition in one of its primary items.
+    ///
+    /// - note: a non-standard repetition can only occur if the repetition it is
+    /// attached to is not the last item of an alternative.
     func hasNonStandardRepetition(_ node: [InternalGrammar.Alt]) -> Bool {
         node.contains(where: hasNonStandardRepetition(_:))
     }
 
     /// Returns `true` if the given alt makes use of minimal/maximal (`<`/`>`)
     /// repetition in one of its primary items.
+    ///
+    /// - note: a non-standard repetition can only occur if the repetition it is
+    /// attached to is not the last item of an alternative.
     func hasNonStandardRepetition(_ node: InternalGrammar.Alt) -> Bool {
-        node.items.contains(where: hasNonStandardRepetition(_:))
+        node.namedItems.dropLast().contains(where: hasNonStandardRepetition(_:))
     }
 
     /// Returns `true` if the given named item makes use of minimal/maximal (`<`/`>`).
@@ -1241,6 +1706,22 @@ extension SwiftCodeGen {
             return false
         }
     }
+
+    /// Returns the first index at which the last valid minimal/maximal (`<`/`>`)
+    /// repetition occurs within the given collection of named items.
+    ///
+    /// Return is `nil`, if no valid non-standard repetition is found.
+    ///
+    /// - note: a non-standard repetition can only occur if the repetition it is
+    /// attached to is not the last item of an alternative. In this method's case,
+    /// the collection of named items is considered to be an entire alternative's
+    /// list of items.
+    func nonStandardRepetitionIndex<C: BidirectionalCollection<InternalGrammar.NamedItem>>(
+        in namedItems: C
+    ) -> C.Index? {
+
+        namedItems.dropLast().firstIndex(where: hasNonStandardRepetition(_:))
+    }
 }
 
 // MARK: - Cut detection
@@ -1262,7 +1743,7 @@ extension SwiftCodeGen {
     /// Returns `true` if the given alt makes use of cut (`~`) in one of its
     /// primary items.
     func hasCut(_ node: InternalGrammar.Alt) -> Bool {
-        node.items.contains(where: hasCut)
+        node.namedItems.contains(where: hasCut)
     }
 
     /// Returns `true` if the given named item makes use of cut (`~`).
@@ -1323,7 +1804,7 @@ extension InternalGrammar.Grammar {
     }
 }
 
-private extension Sequence where Element == SwiftCodeGen.Binding {
+internal extension Sequence where Element == SwiftCodeGen.Binding {
     /// Applies an optional type layer to bindings on this sequence.
     ///
     /// If the binding represents a tuple, with multiple bindings, each type
@@ -1355,9 +1836,19 @@ private extension Sequence where Element == SwiftCodeGen.Binding {
             }
         })
     }
+
+    /// Returns all bindings within this sequence of bindings that can be converted
+    /// into a return element for a rule/production.
+    func scg_asReturnElements() -> [SwiftCodeGen.AuxiliaryRuleInformation.ReturnElement] {
+        compactMap { binding in
+            if let label = binding.label {
+                (label, binding.type)
+            } else { nil }
+        }
+    }
 }
 
-private extension Sequence where Element == SwiftCodeGen.AuxiliaryRuleInformation.ReturnElement {
+internal extension Sequence where Element == SwiftCodeGen.AuxiliaryRuleInformation.ReturnElement {
     /// Converts the return elements within this sequence of return elements into
     /// a Swift tuple type, with labels as required.
     func scg_asTupleType() -> CommonAbstract.SwiftType {
@@ -1374,7 +1865,7 @@ private extension Sequence where Element == SwiftCodeGen.AuxiliaryRuleInformatio
     }
 }
 
-private extension CommonAbstract.SwiftType {
+internal extension CommonAbstract.SwiftType {
     /// Returns `self` unwrapped of an optional layer, unless `self` is a tuple
     /// type, in which case returns a tuple of each element unwrapped by one
     /// optional layer.
@@ -1395,6 +1886,18 @@ private extension CommonAbstract.SwiftType {
             return .tuple(types.map(\.optionalWrapped))
         default:
             return .optional(self)
+        }
+    }
+
+    /// Returns a string representation of this Swift type that can be used as a
+    /// valid Swift type in code.
+    func scg_asValidSwiftType() -> String {
+        // Ensure we don't emit labeled tuples with one element
+        switch self {
+        case .tuple(let elements) where elements.count == 1:
+            return elements[0].swiftType.scg_asValidSwiftType()
+        default:
+            return self.description
         }
     }
 }

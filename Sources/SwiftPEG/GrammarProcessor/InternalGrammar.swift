@@ -217,13 +217,13 @@ public enum InternalGrammar {
 
         /// Flattens rules that have a single alt in parenthesis.
         public func flattened() -> Self {
-            guard alts.count == 1 && alts[0].items.count == 1 else {
+            guard alts.count == 1 && alts[0].namedItems.count == 1 else {
                 return self
             }
 
             var copy = self
 
-            switch alts[0].items[0] {
+            switch alts[0].namedItems[0] {
             case .item(_, .atom(.group(let alts)), _):
                 copy.alts = alts
             default:
@@ -250,12 +250,17 @@ public enum InternalGrammar {
 
     /// `namedItems action?`
     public struct Alt: Hashable, CustomStringConvertible {
-        public var items: [NamedItem]
+        public var namedItems: [NamedItem]
         public var action: Action? = nil
         public var failAction: Action? = nil
 
+        @available(*, deprecated, renamed: "namedItems")
+        public var items: [NamedItem] {
+            namedItems
+        }
+
         public var description: String {
-            var string = self.items.map(\.description).joined(separator: " ")
+            var string = self.namedItems.map(\.description).joined(separator: " ")
             if let action {
                 string += " \(action)"
             }
@@ -268,19 +273,19 @@ public enum InternalGrammar {
         /// Returns a copy of `self` with Cuts (`~`) removed.
         /// If this results in this production being empty, returns `nil`.
         var removingCuts: Self? {
-            let items = items.compactMap(\.removingCuts)
-            if items.isEmpty { return nil }
+            let namedItems = namedItems.compactMap(\.removingCuts)
+            if namedItems.isEmpty { return nil }
 
-            return .init(items: items, action: action, failAction: failAction)
+            return .init(namedItems: namedItems, action: action, failAction: failAction)
         }
 
         /// Returns a copy of `self` with any optional productions elided.
         /// If this results in this production being empty, returns `nil`.
         var reduced: Self? {
-            let items = items.compactMap(\.reduced)
-            if items.isEmpty { return nil }
+            let namedItems = namedItems.compactMap(\.reduced)
+            if namedItems.isEmpty { return nil }
 
-            return .init(items: items, action: action, failAction: failAction)
+            return .init(namedItems: namedItems, action: action, failAction: failAction)
         }
 
         /// Flattens this alt. Returns a copy of `self` with nested productions
@@ -288,12 +293,12 @@ public enum InternalGrammar {
         ///
         /// If this results in this production being empty, returns `nil`.
         func flattened() -> Self? {
-            let items = items.compactMap({ $0.flattened() })
-            if items.isEmpty && action == nil {
+            let namedItems = namedItems.compactMap({ $0.flattened() })
+            if namedItems.isEmpty && action == nil {
                 return nil
             }
 
-            return .init(items: items, action: action, failAction: failAction)
+            return .init(namedItems: namedItems, action: action, failAction: failAction)
         }
 
         /// Accepts a given visitor, and recursively passes the visitor to nested
@@ -302,7 +307,7 @@ public enum InternalGrammar {
             try visitor.willVisit(self)
             try visitor.visit(self)
 
-            try items.forEach { try $0.accept(visitor) }
+            try namedItems.forEach { try $0.accept(visitor) }
             try action?.accept(visitor)
             try failAction?.accept(visitor)
 
@@ -322,10 +327,10 @@ public enum InternalGrammar {
                 return false
             }
 
-            if selfCut.items == otherCut.items { return true }
-            if selfCut.items.count != otherCut.items.count { return false }
+            if selfCut.namedItems == otherCut.namedItems { return true }
+            if selfCut.namedItems.count != otherCut.namedItems.count { return false }
 
-            return selfCut.items.elementsEqual(otherCut.items, by: { $0.isEquivalent(to: $1) })
+            return selfCut.namedItems.elementsEqual(otherCut.namedItems, by: { $0.isEquivalent(to: $1) })
         }
 
         /// Returns `true` if `self` executes a subset of the production of
@@ -341,18 +346,18 @@ public enum InternalGrammar {
                 return false
             }
 
-            if selfCut.items == otherCut.items { return true }
+            if selfCut.namedItems == otherCut.namedItems { return true }
             // Prefixes require `self` to be at most the same size as `other`
-            if selfCut.items.count > otherCut.items.count { return false }
+            if selfCut.namedItems.count > otherCut.namedItems.count { return false }
 
-            return selfCut.items.elementsEqual(otherCut.items[..<selfCut.items.count], by: { $0.isEquivalent(to: $1) })
+            return selfCut.namedItems.elementsEqual(otherCut.namedItems[..<selfCut.namedItems.count], by: { $0.isEquivalent(to: $1) })
         }
 
         public static func from(
             _ node: SwiftPEGGrammar.Alt
         ) -> Self {
             .init(
-                items: node.namedItems.map(NamedItem.from),
+                namedItems: node.namedItems.map(NamedItem.from),
                 action: node.action.map(Action.from),
                 failAction: node.failAction.map(Action.from)
             )
@@ -393,6 +398,17 @@ public enum InternalGrammar {
         ///     ;
         /// ```
         case lookahead(Lookahead)
+
+        /// Gets the item associated with this named item, if it is an item,
+        /// otherwise returns `nil`.
+        var asItem: Item? {
+            switch self {
+            case .item(_, let item, _):
+                return item
+            case .lookahead:
+                return nil
+            }
+        }
 
         /// Returns `true` if `self` is a lookahead of Cut (`~`) type.
         var isCut: Bool {
@@ -530,6 +546,28 @@ public enum InternalGrammar {
                 return "\(atom)?"
             case .optionalItems(let alts):
                 return "[\(alts.map(\.description).joined(separator: " | "))]"
+            }
+        }
+
+        /// If this Item is an atom or atom-related production, returns the
+        /// associated value for the atom, otherwise returns `nil`.
+        ///
+        /// - note: For gather items, the atom returned is the `node` associated
+        /// value.
+        var atom: Atom? {
+            switch self {
+            case .atom(let atom):
+                return atom
+            case .gather(_, let node):
+                return node
+            case .zeroOrMore(let atom, _):
+                return atom
+            case .oneOrMore(let atom, _):
+                return atom
+            case .optional(let atom):
+                return atom
+            case .optionalItems:
+                return nil
             }
         }
 
@@ -693,13 +731,13 @@ public enum InternalGrammar {
 
             switch (self, other) {
             // Check `[ atom ]` and `atom ?`
-            case (.optionalItems(let alts), .atom(let rhs)) where alts.count == 1 && alts[0].items.count == 1:
-                return alts[0].items[0].isEquivalent(
+            case (.optionalItems(let alts), .atom(let rhs)) where alts.count == 1 && alts[0].namedItems.count == 1:
+                return alts[0].namedItems[0].isEquivalent(
                     to: .item(name: nil, .atom(rhs), type: nil)
                 )
             // Check `atom ?` and `[ atom ]`
-            case (.atom(let lhs), .optionalItems(let alts)) where alts.count == 1 && alts[0].items.count == 1:
-                return alts[0].items[0].isEquivalent(
+            case (.atom(let lhs), .optionalItems(let alts)) where alts.count == 1 && alts[0].namedItems.count == 1:
+                return alts[0].namedItems[0].isEquivalent(
                     to: .item(name: nil, .atom(lhs), type: nil)
                 )
             default:

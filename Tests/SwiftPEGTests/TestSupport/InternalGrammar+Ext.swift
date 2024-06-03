@@ -4,7 +4,7 @@
 
 extension InternalGrammar.Alt: ExpressibleByArrayLiteral {
     public init(arrayLiteral elements: InternalGrammar.NamedItem...) {
-        self.init(items: elements)
+        self.init(namedItems: elements)
     }
 }
 
@@ -100,14 +100,14 @@ extension InternalGrammar.Alt: AltConvertible {
     var asAlt: Self { self }
 }
 extension InternalGrammar.NamedItem: AltConvertible {
-    var asAlt: InternalGrammar.Alt { .init(items: [self]) }
+    var asAlt: InternalGrammar.Alt { .init(namedItems: [self]) }
 }
 extension InternalGrammar.Item: AltConvertible {
-    var asAlt: InternalGrammar.Alt { .init(items: [.item(self)]) }
+    var asAlt: InternalGrammar.Alt { .init(namedItems: [.item(self)]) }
 }
 extension InternalGrammar.Atom: AltConvertible {
     var asAlt: InternalGrammar.Alt {
-        .init(items: [
+        .init(namedItems: [
             .item(.atom(self))
         ])
     }

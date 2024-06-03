@@ -9,7 +9,7 @@ class GrammarInterpreterTests: XCTestCase {
         """;
         let grammar = InternalGrammar.Grammar(rules: [
             .init(name: "ruleA", alts: [
-                .init(items: ["A", "','", "B"], action: "ruleA_alt0"),
+                .init(namedItems: ["A", "','", "B"], action: "ruleA_alt0"),
             ]),
         ])
         let delegate = mockDelegate()
@@ -36,8 +36,8 @@ class GrammarInterpreterTests: XCTestCase {
         """;
         let grammar = InternalGrammar.Grammar(rules: [
             .init(name: "ruleA", alts: [
-                .init(items: ["A", "','", "B", "','", "C"], action: "ruleA_alt0"),
-                .init(items: ["A", "','", "B"], action: "ruleA_alt1"),
+                .init(namedItems: ["A", "','", "B", "','", "C"], action: "ruleA_alt0"),
+                .init(namedItems: ["A", "','", "B"], action: "ruleA_alt1"),
             ]),
         ])
         let delegate = mockDelegate()
@@ -64,10 +64,10 @@ class GrammarInterpreterTests: XCTestCase {
         """;
         let grammar = InternalGrammar.Grammar(rules: [
             .init(name: "ruleA", alts: [
-                .init(items: ["A", "','", "ruleB"], action: "ruleA_alt0"),
+                .init(namedItems: ["A", "','", "ruleB"], action: "ruleA_alt0"),
             ]),
             .init(name: "ruleB", alts: [
-                .init(items: ["B", "'+'", "C"], action: "ruleB_alt0"),
+                .init(namedItems: ["B", "'+'", "C"], action: "ruleB_alt0"),
             ]),
         ])
         let delegate = mockDelegate()
@@ -103,11 +103,11 @@ class GrammarInterpreterTests: XCTestCase {
         let ruleBActionName = "ruleBAction"
         let grammar = InternalGrammar.Grammar(rules: [
             .init(name: "ruleA", alts: [
-                .init(items: ["ruleB", "','", "b"], action: "ruleA_alt0"),
-                .init(items: ["ruleB"], action: "ruleA_alt1"),
+                .init(namedItems: ["ruleB", "','", "b"], action: "ruleA_alt0"),
+                .init(namedItems: ["ruleB"], action: "ruleA_alt1"),
             ]),
             .init(name: "ruleB", alts: [
-                .init(items: ["B"], action: .init(string: ruleBActionName)),
+                .init(namedItems: ["B"], action: .init(string: ruleBActionName)),
             ]),
         ])
         let delegate = mockDelegate()
@@ -141,8 +141,8 @@ class GrammarInterpreterTests: XCTestCase {
         """;
         let grammar = InternalGrammar.Grammar(rules: [
             .init(name: "ruleA", alts: [
-                .init(items: ["ruleA", "','", "A"], action: "ruleA_alt0"),
-                .init(items: ["A"], action: "ruleA_alt1"),
+                .init(namedItems: ["ruleA", "','", "A"], action: "ruleA_alt0"),
+                .init(namedItems: ["A"], action: "ruleA_alt1"),
             ]).with(\.isRecursive, value: true).with(\.isRecursiveLeader, value: true),
         ])
         let delegate = mockDelegate()
