@@ -611,7 +611,11 @@ extension SwiftPEGGrammar {
         @NodeProperty
         var _atom: Atom
 
-        public override var shortDebugDescription: String { "*" }
+        /// The repetition mode for this one-or-more item.
+        @NodeRequired
+        public var repetitionMode: CommonAbstract.RepetitionMode = .standard
+
+        public override var shortDebugDescription: String { "*\(repetitionMode._suffixString)" }
 
         /// Accepts a given grammar-node visitor into this node.
         public override func accept<Visitor>(_ visitor: Visitor) throws -> Visitor.VisitResult where Visitor: GrammarNodeVisitorType {
@@ -647,7 +651,11 @@ extension SwiftPEGGrammar {
         @NodeProperty
         var _atom: Atom
 
-        public override var shortDebugDescription: String { "+" }
+        /// The repetition mode for this one-or-more item.
+        @NodeRequired
+        public var repetitionMode: CommonAbstract.RepetitionMode = .standard
+
+        public override var shortDebugDescription: String { "+\(repetitionMode._suffixString)" }
 
         /// Accepts a given grammar-node visitor into this node.
         public override func accept<Visitor>(_ visitor: Visitor) throws -> Visitor.VisitResult where Visitor: GrammarNodeVisitorType {

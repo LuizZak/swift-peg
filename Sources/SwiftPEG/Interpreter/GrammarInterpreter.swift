@@ -193,7 +193,7 @@ public class GrammarInterpreter {
         var ctx = AltContext(valueNames: [], values: [])
 
         for item in alt.items {
-            let alias = item.alias()
+            let alias = alias(item)
 
             switch item {
             case .item(_, let item, _):
@@ -233,6 +233,8 @@ public class GrammarInterpreter {
     }
 
     func tryItem(_ item: InternalGrammar.Item) throws -> Any? {
+        // TODO: Handle repetition mode of */+ productions
+
         switch item {
         case .optional(let atom):
             return Any??.some(try tryAtom(atom)) as Any?
@@ -240,7 +242,7 @@ public class GrammarInterpreter {
         case .optionalItems(let alts):
             return Any??.some(try tryAlts(alts)) as Any?
 
-        case .oneOrMore(let atom):
+        case .oneOrMore(let atom, _):
             guard let first = try self.tryAtom(atom) else {
                 return nil
             }
@@ -256,7 +258,7 @@ public class GrammarInterpreter {
             self.restore(mark)
             return result
 
-        case .zeroOrMore(let atom):
+        case .zeroOrMore(let atom, _):
             var mark = self.mark()
             var result: [Any] = []
 
@@ -338,6 +340,62 @@ public class GrammarInterpreter {
         }
 
         return next
+    }
+
+    func alias(
+        _ namedItem: InternalGrammar.NamedItem,
+        _ literalResolver: TokenLiteralResolver? = nil
+    ) -> String? {
+        switch namedItem {
+        case .item(let name?, _, _):
+            return name
+        case .item(_, let item, _):
+            return alias(item, literalResolver)
+        case .lookahead:
+            return nil
+        }
+    }
+
+    func alias(
+        _ item: InternalGrammar.Item,
+        _ literalResolver: TokenLiteralResolver? = nil
+    ) -> String? {
+
+        switch item {
+        case .atom(let atom),
+            .zeroOrMore(let atom, _),
+            .oneOrMore(let atom, _),
+            .optional(let atom):
+            return alias(atom, literalResolver)
+
+        case .gather(_, let node):
+            return alias(node, literalResolver)
+
+        case .optionalItems:
+            return nil
+        }
+    }
+
+    func alias(
+        _ atom: InternalGrammar.Atom,
+        _ literalResolver: TokenLiteralResolver? = nil
+    ) -> String? {
+        switch atom {
+        case .token(let ident):
+            return ident.lowercased()
+
+        case .anyToken(let ident):
+            return ident.lowercased()
+
+        case .ruleName(let ident):
+            return ident
+
+        case .group:
+            return nil
+
+        case .string(_, let literal):
+            return literalResolver?.tokenName(ofRawLiteral: literal)
+        }
     }
 
     /// Context for invocations of alts that match and require a return value

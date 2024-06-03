@@ -209,6 +209,22 @@ class GrammarParserTests: XCTestCase {
 
         assertEqual(result.action?.rawAction, " b.c() ")
     }
+
+    func testParseRepetitionMode() throws {
+        let tokenizer = rawTokenizer("""
+        a* a*< a*> a+ a+< a+>
+        """)
+        let sut = makeSut(tokenizer)
+
+        let result = try assertUnwrap(sut.namedItems())
+
+        assertEqual((result[0].item as? SwiftPEGGrammar.ZeroOrMoreItem)?.repetitionMode, .standard)
+        assertEqual((result[1].item as? SwiftPEGGrammar.ZeroOrMoreItem)?.repetitionMode, .minimal)
+        assertEqual((result[2].item as? SwiftPEGGrammar.ZeroOrMoreItem)?.repetitionMode, .maximal)
+        assertEqual((result[3].item as? SwiftPEGGrammar.OneOrMoreItem)?.repetitionMode, .standard)
+        assertEqual((result[4].item as? SwiftPEGGrammar.OneOrMoreItem)?.repetitionMode, .minimal)
+        assertEqual((result[5].item as? SwiftPEGGrammar.OneOrMoreItem)?.repetitionMode, .maximal)
+    }
 }
 
 // MARK: - Test internals

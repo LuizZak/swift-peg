@@ -136,6 +136,17 @@ public enum CommonAbstract {
             }
         }
 
+        /// If this Swift type is an optionally-wrapped type, returns the wrapped
+        /// type, otherwise returns `self`.
+        public var unwrapped: Self {
+            switch self {
+            case .optional(let wrapped):
+                return wrapped
+            default:
+                return self
+            }
+        }
+
         /// Initializes this `SwiftType` as a nominal type of the given identifier
         /// string.
         public init(stringLiteral value: String) {
@@ -158,6 +169,26 @@ public enum CommonAbstract {
     public enum TupleTypeElement: Hashable, CustomStringConvertible {
         indirect case unlabeled(SwiftType)
         indirect case labeled(label: String, SwiftType)
+
+        /// Applies optional-wrapping to this tuple type element.
+        var optionalWrapped: Self {
+            switch self {
+            case .labeled(let label, let type):
+                return .labeled(label: label, .optional(type))
+            case .unlabeled(let type):
+                return .unlabeled(.optional(type))
+            }
+        }
+
+        /// Applies optional-unwrapping to this tuple type element.
+        var unwrapped: Self {
+            switch self {
+            case .labeled(let label, let type):
+                return .labeled(label: label, type.unwrapped)
+            case .unlabeled(let type):
+                return .unlabeled(type.unwrapped)
+            }
+        }
 
         public var description: String {
             switch self {
@@ -215,6 +246,42 @@ public enum CommonAbstract {
         public init(identifier: String, genericArguments: [SwiftType] = []) {
             self.identifier = identifier
             self.genericArguments = genericArguments
+        }
+    }
+}
+
+// MARK: Repetition mode
+
+extension CommonAbstract {
+    /// Specifies the mode for a repetition ('*'/'+') that is present in the middle
+    /// of an alternative..
+    public enum RepetitionMode {
+        /// Repeats as long as the production succeeds, without giving up on tokens.
+        case standard
+
+        /// Starts capturing the least number of items with the repetition,
+        /// before trying the rest of the items in the alternative.
+        ///
+        /// If the rest of the items fail, the alternative backtracks and tries
+        /// to capture one more item in the repetition, repeating until either
+        /// no more items can be capture, or the rest of the alternative succeeds.
+        case minimal
+
+        /// Starts capturing the maximal number of items with the repetition,
+        /// before trying the rest of the items in the alternative.
+        ///
+        /// If the rest of the items fail, the alternative backtracks and tries
+        /// to capture one less item in the repetition, repeating until either
+        /// one ('+') or zero ('*') items have matched, or the rest of the
+        /// alternative succeeds.
+        case maximal
+
+        var _suffixString: String {
+            switch self {
+            case .standard: ""
+            case .maximal: ">"
+            case .minimal: "<"
+            }
         }
     }
 }

@@ -377,8 +377,8 @@ extension GrammarParser {
     /// item[SwiftPEGGrammar.Item]:
     ///     | '[' ~ alts ']' { self.setLocation(SwiftPEGGrammar.OptionalItems(alts: alts), at: mark) }
     ///     | atom '?' { self.setLocation(SwiftPEGGrammar.OptionalItem(atom: atom), at: mark) }
-    ///     | atom '*' { self.setLocation(SwiftPEGGrammar.ZeroOrMoreItem(atom: atom), at: mark) }
-    ///     | atom '+' { self.setLocation(SwiftPEGGrammar.OneOrMoreItem(atom: atom), at: mark) }
+    ///     | atom '*' repetitionMode? { self.setLocation(SwiftPEGGrammar.ZeroOrMoreItem(atom: atom, repetitionMode: repetitionMode ?? .standard), at: mark) }
+    ///     | atom '+' repetitionMode? { self.setLocation(SwiftPEGGrammar.OneOrMoreItem(atom: atom, repetitionMode: repetitionMode ?? .standard), at: mark) }
     ///     | sep=atom '.' node=atom '+' { self.setLocation(SwiftPEGGrammar.GatherItem(sep: sep, item: node), at: mark) }
     ///     | atom { self.setLocation(SwiftPEGGrammar.AtomItem(atom: atom), at: mark) }
     ///     ;
@@ -415,18 +415,24 @@ extension GrammarParser {
 
         if
             let atom = try self.atom(),
-            let _ = try self.expect(kind: .star)
+            let _ = try self.expect(kind: .star),
+            let repetitionMode = try self.optional({
+                try self.repetitionMode()
+            })
         {
-            return self.setLocation(SwiftPEGGrammar.ZeroOrMoreItem(atom: atom), at: mark)
+            return self.setLocation(SwiftPEGGrammar.ZeroOrMoreItem(atom: atom, repetitionMode: repetitionMode ?? .standard), at: mark)
         }
 
         self.restore(mark)
 
         if
             let atom = try self.atom(),
-            let _ = try self.expect(kind: .plus)
+            let _ = try self.expect(kind: .plus),
+            let repetitionMode = try self.optional({
+                try self.repetitionMode()
+            })
         {
-            return self.setLocation(SwiftPEGGrammar.OneOrMoreItem(atom: atom), at: mark)
+            return self.setLocation(SwiftPEGGrammar.OneOrMoreItem(atom: atom, repetitionMode: repetitionMode ?? .standard), at: mark)
         }
 
         self.restore(mark)
@@ -446,6 +452,35 @@ extension GrammarParser {
             let atom = try self.atom()
         {
             return self.setLocation(SwiftPEGGrammar.AtomItem(atom: atom), at: mark)
+        }
+
+        self.restore(mark)
+        return nil
+    }
+
+    /// ```
+    /// repetitionMode[SwiftPEGGrammar.RepetitionMode]:
+    ///     | '<' { .minimal }
+    ///     | '>' { .maximal }
+    ///     ;
+    /// ```
+    @memoized("repetitionMode")
+    @inlinable
+    public func __repetitionMode() throws -> CommonAbstract.RepetitionMode? {
+        let mark = self.mark()
+
+        if
+            let _ = try self.expect(kind: .leftAngle)
+        {
+            return .minimal
+        }
+
+        self.restore(mark)
+
+        if
+            let _ = try self.expect(kind: .rightAngle)
+        {
+            return .maximal
         }
 
         self.restore(mark)

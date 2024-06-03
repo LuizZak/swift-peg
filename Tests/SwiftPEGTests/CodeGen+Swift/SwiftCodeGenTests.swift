@@ -153,6 +153,288 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
+    func testGenerateParser_emitTypesInBindings() throws {
+        let grammar = try parseGrammar("""
+        start: a ;
+        a: 'a' | 'b' c+ ;
+        b[B]: 'aa' ;
+        c: ','.d+ ;
+        d[D]: 'a'? b? ;
+        """)
+        let sut = makeSut(grammar)
+
+        let result = try sut.generateParser(
+            settings: .default.with(\.emitTypesInBindings, value: true)
+        )
+
+        diffTest(expected: """
+            extension Parser {
+                /// ```
+                /// start:
+                ///     | a
+                ///     ;
+                /// ```
+                @memoized("start")
+                @inlinable
+                public func __start() throws -> Node? {
+                    let mark = self.mark()
+
+                    if
+                        let a: Node = try self.a()
+                    {
+                        return a
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+
+                /// ```
+                /// a:
+                ///     | 'a'
+                ///     | 'b' c+
+                ///     ;
+                /// ```
+                @memoized("a")
+                @inlinable
+                public func __a() throws -> Node? {
+                    let mark = self.mark()
+
+                    if
+                        let _: TokenResult = try self.expect("a")
+                    {
+                        return Node()
+                    }
+
+                    self.restore(mark)
+
+                    if
+                        let _: TokenResult = try self.expect("b"),
+                        let c: [Node] = try self.repeatOneOrMore({
+                            try self.c()
+                        })
+                    {
+                        return Node()
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+
+                /// ```
+                /// b[B]:
+                ///     | 'aa'
+                ///     ;
+                /// ```
+                @memoized("b")
+                @inlinable
+                public func __b() throws -> B? {
+                    let mark = self.mark()
+
+                    if
+                        let _: TokenResult = try self.expect("aa")
+                    {
+                        return B()
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+
+                /// ```
+                /// c:
+                ///     | ','.d+
+                ///     ;
+                /// ```
+                @memoized("c")
+                @inlinable
+                public func __c() throws -> Node? {
+                    let mark = self.mark()
+
+                    if
+                        let d: [D] = try self.gather(separator: {
+                            try self.expect(",")
+                        }, item: {
+                            try self.d()
+                        })
+                    {
+                        return d
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+
+                /// ```
+                /// d[D]:
+                ///     | 'a'? b?
+                ///     ;
+                /// ```
+                @memoized("d")
+                @inlinable
+                public func __d() throws -> D? {
+                    let mark = self.mark()
+
+                    if
+                        let _: TokenResult? = try self.optional({
+                            try self.expect("a")
+                        }),
+                        let b: B? = try self.optional({
+                            try self.b()
+                        })
+                    {
+                        return D()
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+            }
+            """).diff(result)
+    }
+
+    func testGenerateParser_implicitBindings_false() throws {
+        let grammar = try parseGrammar("""
+        @implicitBindings "false" ;
+
+        start: a ;
+        a: a='a' | 'b' c+ ;
+        b[B]: 'aa' ;
+        c: d=','.d+ ;
+        d[D]: 'a'? b? ;
+        """)
+        let sut = makeSut(grammar)
+
+        let result = try sut.generateParser(
+            settings: .default.with(\.emitTypesInBindings, value: true)
+        )
+
+        diffTest(expected: """
+            extension Parser {
+                /// ```
+                /// start:
+                ///     | a
+                ///     ;
+                /// ```
+                @memoized("start")
+                @inlinable
+                public func __start() throws -> Node? {
+                    let mark = self.mark()
+
+                    if
+                        let _: Node = try self.a()
+                    {
+                        return Node()
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+
+                /// ```
+                /// a:
+                ///     | a='a'
+                ///     | 'b' c+
+                ///     ;
+                /// ```
+                @memoized("a")
+                @inlinable
+                public func __a() throws -> Node? {
+                    let mark = self.mark()
+
+                    if
+                        let a: TokenResult = try self.expect("a")
+                    {
+                        return a
+                    }
+
+                    self.restore(mark)
+
+                    if
+                        let _: TokenResult = try self.expect("b"),
+                        let _: [Node] = try self.repeatOneOrMore({
+                            try self.c()
+                        })
+                    {
+                        return Node()
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+
+                /// ```
+                /// b[B]:
+                ///     | 'aa'
+                ///     ;
+                /// ```
+                @memoized("b")
+                @inlinable
+                public func __b() throws -> B? {
+                    let mark = self.mark()
+
+                    if
+                        let _: TokenResult = try self.expect("aa")
+                    {
+                        return B()
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+
+                /// ```
+                /// c:
+                ///     | d=','.d+
+                ///     ;
+                /// ```
+                @memoized("c")
+                @inlinable
+                public func __c() throws -> Node? {
+                    let mark = self.mark()
+
+                    if
+                        let d: [D] = try self.gather(separator: {
+                            try self.expect(",")
+                        }, item: {
+                            try self.d()
+                        })
+                    {
+                        return d
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+
+                /// ```
+                /// d[D]:
+                ///     | 'a'? b?
+                ///     ;
+                /// ```
+                @memoized("d")
+                @inlinable
+                public func __d() throws -> D? {
+                    let mark = self.mark()
+
+                    if
+                        let _: TokenResult? = try self.optional({
+                            try self.expect("a")
+                        }),
+                        let _: B? = try self.optional({
+                            try self.b()
+                        })
+                    {
+                        return D()
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+            }
+            """).diff(result)
+    }
+
     func testGenerateParser_respectsTokenCallMeta() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
@@ -323,9 +605,9 @@ class SwiftCodeGenTests: XCTestCase {
 
                     if
                         let b = try self.b(),
-                        let _ = try self.expect(custom: .add),
+                        let ADD = try self.expect(custom: .add),
                         let c = try self.c(),
-                        let _ = try self.expect(custom: .back)
+                        let BACKSLASH = try self.expect(custom: .back)
                     {
                         return Node()
                     }
@@ -735,9 +1017,9 @@ class SwiftCodeGenTests: XCTestCase {
                     let mark = self.mark()
 
                     if
-                        let _ = try self.expect(.ADD)
+                        let ADD = try self.expect(.ADD)
                     {
-                        return Node()
+                        return ADD
                     }
 
                     self.restore(mark)
@@ -943,8 +1225,8 @@ class SwiftCodeGenTests: XCTestCase {
 
                 /// ```
                 /// _start__group_[Any]:
-                ///     | 'a'
-                ///     | 'b'
+                ///     | 'a' { () }
+                ///     | 'b' { () }
                 ///     ;
                 /// ```
                 @memoized("_start__group_")
@@ -955,7 +1237,7 @@ class SwiftCodeGenTests: XCTestCase {
                     if
                         let _ = try self.expect("a")
                     {
-                        return Node()
+                        return ()
                     }
 
                     self.restore(mark)
@@ -963,7 +1245,7 @@ class SwiftCodeGenTests: XCTestCase {
                     if
                         let _ = try self.expect("b")
                     {
-                        return Node()
+                        return ()
                     }
 
                     self.restore(mark)
@@ -1038,7 +1320,7 @@ class SwiftCodeGenTests: XCTestCase {
                     if
                         let b = try self.b(),
                         let c = try self.c(),
-                        let _ = try self._a__group_()
+                        case let (d?, e?) = try self._a__group_()
                     {
                         return ANode()
                     }
@@ -1048,24 +1330,590 @@ class SwiftCodeGenTests: XCTestCase {
                 }
 
                 /// ```
-                /// _a__group_[Any]:
-                ///     | d e
+                /// _a__group_[(d: Node, e: Node)]:
+                ///     | d e { (d: d, e: e) }
                 ///     ;
                 /// ```
                 @memoized("_a__group_")
                 @inlinable
-                public func ___a__group_() throws -> Any? {
+                public func ___a__group_() throws -> (d: Node?, e: Node?) {
                     let mark = self.mark()
 
                     if
                         let d = try self.d(),
                         let e = try self.e()
                     {
+                        return (d: d, e: e)
+                    }
+
+                    self.restore(mark)
+                    return (nil, nil)
+                }
+            }
+            """).diff(result)
+    }
+
+    func testGenerateParser_groupInAtom_exposesBindings() throws {
+        let grammar = try parseGrammar("""
+        @token d; @tokenCallKind "expectKind" ;
+        start: a (b+ cBind=c 'd') ;
+        a[A]: 'a' ;
+        b[B]: 'b' ;
+        c[C]: 'c'? 'e' ;
+        """)
+        let sut = makeSut(grammar)
+
+        let result = try sut.generateParser(
+            settings: .default.with(\.emitTypesInBindings, value: true)
+        )
+
+        diffTest(expected: """
+            extension Parser {
+                /// ```
+                /// start:
+                ///     | a (b+ cBind=c 'd')
+                ///     ;
+                /// ```
+                @memoized("start")
+                @inlinable
+                public func __start() throws -> Node? {
+                    let mark = self.mark()
+
+                    if
+                        let a: A = try self.a(),
+                        case let (b?, cBind?) = try self._start__group_()
+                    {
                         return Node()
                     }
 
                     self.restore(mark)
                     return nil
+                }
+
+                /// ```
+                /// a[A]:
+                ///     | 'a'
+                ///     ;
+                /// ```
+                @memoized("a")
+                @inlinable
+                public func __a() throws -> A? {
+                    let mark = self.mark()
+
+                    if
+                        let _: TokenResult = try self.expect("a")
+                    {
+                        return A()
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+
+                /// ```
+                /// b[B]:
+                ///     | 'b'
+                ///     ;
+                /// ```
+                @memoized("b")
+                @inlinable
+                public func __b() throws -> B? {
+                    let mark = self.mark()
+
+                    if
+                        let _: TokenResult = try self.expect("b")
+                    {
+                        return B()
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+
+                /// ```
+                /// c[C]:
+                ///     | 'c'? 'e'
+                ///     ;
+                /// ```
+                @memoized("c")
+                @inlinable
+                public func __c() throws -> C? {
+                    let mark = self.mark()
+
+                    if
+                        let _: TokenResult? = try self.optional({
+                            try self.expect("c")
+                        }),
+                        let _: TokenResult = try self.expect("e")
+                    {
+                        return C()
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+
+                /// ```
+                /// _start__group_[(b: [B], cBind: C)]:
+                ///     | b+ cBind=c 'd' { (b: b, cBind: cBind) }
+                ///     ;
+                /// ```
+                @memoized("_start__group_")
+                @inlinable
+                public func ___start__group_() throws -> (b: [B]?, cBind: C?) {
+                    let mark = self.mark()
+
+                    if
+                        let b: [B] = try self.repeatOneOrMore({
+                            try self.b()
+                        }),
+                        let cBind: C = try self.c(),
+                        let _: TokenResult = try self.expect("d")
+                    {
+                        return (b: b, cBind: cBind)
+                    }
+
+                    self.restore(mark)
+                    return (nil, nil)
+                }
+            }
+            """).diff(result)
+    }
+
+    func testGenerateParser_optionalAtom_exposesNestedBindings() throws {
+        let grammar = try parseGrammar("""
+        @token d; @tokenCallKind "expectKind" ;
+        start: a (b+ cBind=c 'd')? ;
+        a[A]: 'a' ;
+        b[B]: 'b' ;
+        c[C]: 'c'? 'e' ;
+        """)
+        let sut = makeSut(grammar)
+
+        let result = try sut.generateParser(
+            settings: .default.with(\.emitTypesInBindings, value: true)
+        )
+
+        diffTest(expected: """
+            extension Parser {
+                /// ```
+                /// start:
+                ///     | a (b+ cBind=c 'd')?
+                ///     ;
+                /// ```
+                @memoized("start")
+                @inlinable
+                public func __start() throws -> Node? {
+                    let mark = self.mark()
+
+                    if
+                        let a: A = try self.a(),
+                        case let (b?, cBind?) = try self.optional({
+                            try self._start__group_()
+                        })
+                    {
+                        return Node()
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+
+                /// ```
+                /// a[A]:
+                ///     | 'a'
+                ///     ;
+                /// ```
+                @memoized("a")
+                @inlinable
+                public func __a() throws -> A? {
+                    let mark = self.mark()
+
+                    if
+                        let _: TokenResult = try self.expect("a")
+                    {
+                        return A()
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+
+                /// ```
+                /// b[B]:
+                ///     | 'b'
+                ///     ;
+                /// ```
+                @memoized("b")
+                @inlinable
+                public func __b() throws -> B? {
+                    let mark = self.mark()
+
+                    if
+                        let _: TokenResult = try self.expect("b")
+                    {
+                        return B()
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+
+                /// ```
+                /// c[C]:
+                ///     | 'c'? 'e'
+                ///     ;
+                /// ```
+                @memoized("c")
+                @inlinable
+                public func __c() throws -> C? {
+                    let mark = self.mark()
+
+                    if
+                        let _: TokenResult? = try self.optional({
+                            try self.expect("c")
+                        }),
+                        let _: TokenResult = try self.expect("e")
+                    {
+                        return C()
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+
+                /// ```
+                /// _start__group_[(b: [B], cBind: C)]:
+                ///     | b+ cBind=c 'd' { (b: b, cBind: cBind) }
+                ///     ;
+                /// ```
+                @memoized("_start__group_")
+                @inlinable
+                public func ___start__group_() throws -> (b: [B]?, cBind: C?) {
+                    let mark = self.mark()
+
+                    if
+                        let b: [B] = try self.repeatOneOrMore({
+                            try self.b()
+                        }),
+                        let cBind: C = try self.c(),
+                        let _: TokenResult = try self.expect("d")
+                    {
+                        return (b: b, cBind: cBind)
+                    }
+
+                    self.restore(mark)
+                    return (nil, nil)
+                }
+            }
+            """).diff(result)
+    }
+
+    func testGenerateParser_groupWithMultipleAlts_exposesCommonBindingsOnly() throws {
+        let grammar = try parseGrammar("""
+        @token d; @token e; @tokenCallKind "expectKind" ;
+        start: a (b+ cBind=c 'd' | b=e cBind=c) ;
+        a[A]: 'a' ;
+        b[B]: 'b' ;
+        c[C]: 'c'? 'e' ;
+        """)
+        let sut = makeSut(grammar)
+
+        let result = try sut.generateParser(
+            settings: .default.with(\.emitTypesInBindings, value: true)
+        )
+
+        diffTest(expected: """
+            extension Parser {
+                /// ```
+                /// start:
+                ///     | a (b+ cBind=c 'd' | b=e cBind=c)
+                ///     ;
+                /// ```
+                @memoized("start")
+                @inlinable
+                public func __start() throws -> Node? {
+                    let mark = self.mark()
+
+                    if
+                        let a: A = try self.a(),
+                        let cBind: C = try self._start__group_()
+                    {
+                        return Node()
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+
+                /// ```
+                /// a[A]:
+                ///     | 'a'
+                ///     ;
+                /// ```
+                @memoized("a")
+                @inlinable
+                public func __a() throws -> A? {
+                    let mark = self.mark()
+
+                    if
+                        let _: TokenResult = try self.expect("a")
+                    {
+                        return A()
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+
+                /// ```
+                /// b[B]:
+                ///     | 'b'
+                ///     ;
+                /// ```
+                @memoized("b")
+                @inlinable
+                public func __b() throws -> B? {
+                    let mark = self.mark()
+
+                    if
+                        let _: TokenResult = try self.expect("b")
+                    {
+                        return B()
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+
+                /// ```
+                /// c[C]:
+                ///     | 'c'? 'e'
+                ///     ;
+                /// ```
+                @memoized("c")
+                @inlinable
+                public func __c() throws -> C? {
+                    let mark = self.mark()
+
+                    if
+                        let _: TokenResult? = try self.optional({
+                            try self.expect("c")
+                        }),
+                        let _: TokenResult = try self.expect("e")
+                    {
+                        return C()
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+
+                /// ```
+                /// _start__group_[C]:
+                ///     | b+ cBind=c 'd' { cBind }
+                ///     | b=e cBind=c { cBind }
+                ///     ;
+                /// ```
+                @memoized("_start__group_")
+                @inlinable
+                public func ___start__group_() throws -> C? {
+                    let mark = self.mark()
+
+                    if
+                        let b: [B] = try self.repeatOneOrMore({
+                            try self.b()
+                        }),
+                        let cBind: C = try self.c(),
+                        let _: TokenResult = try self.expect("d")
+                    {
+                        return cBind
+                    }
+
+                    self.restore(mark)
+
+                    if
+                        let b: TokenResult = try self.e(),
+                        let cBind: C = try self.c()
+                    {
+                        return cBind
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+            }
+            """).diff(result)
+    }
+
+    func testGenerateParser_deeplyNestedOptionalGroups() throws {
+        let grammar = try parseGrammar("""
+        @token d; @token e; @tokenCallKind "expectKind" ;
+        start: a (((b+ cBind=c 'd')?)?)? ;
+        a[A]: 'a' ;
+        b[B]: 'b' ;
+        c[C]: 'c'? 'e' ;
+        """)
+        let sut = makeSut(grammar)
+
+        let result = try sut.generateParser(
+            settings: .default.with(\.emitTypesInBindings, value: true)
+        )
+
+        diffTest(expected: """
+            extension Parser {
+                /// ```
+                /// start:
+                ///     | a (((b+ cBind=c 'd')?)?)?
+                ///     ;
+                /// ```
+                @memoized("start")
+                @inlinable
+                public func __start() throws -> Node? {
+                    let mark = self.mark()
+
+                    if
+                        let a: A = try self.a(),
+                        case let (b?, cBind?) = try self.optional({
+                            try self._start__group_()
+                        })
+                    {
+                        return Node()
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+
+                /// ```
+                /// a[A]:
+                ///     | 'a'
+                ///     ;
+                /// ```
+                @memoized("a")
+                @inlinable
+                public func __a() throws -> A? {
+                    let mark = self.mark()
+
+                    if
+                        let _: TokenResult = try self.expect("a")
+                    {
+                        return A()
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+
+                /// ```
+                /// b[B]:
+                ///     | 'b'
+                ///     ;
+                /// ```
+                @memoized("b")
+                @inlinable
+                public func __b() throws -> B? {
+                    let mark = self.mark()
+
+                    if
+                        let _: TokenResult = try self.expect("b")
+                    {
+                        return B()
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+
+                /// ```
+                /// c[C]:
+                ///     | 'c'? 'e'
+                ///     ;
+                /// ```
+                @memoized("c")
+                @inlinable
+                public func __c() throws -> C? {
+                    let mark = self.mark()
+
+                    if
+                        let _: TokenResult? = try self.optional({
+                            try self.expect("c")
+                        }),
+                        let _: TokenResult = try self.expect("e")
+                    {
+                        return C()
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+
+                /// ```
+                /// _start__group_[(b: [B], cBind: C)]:
+                ///     | ((b+ cBind=c 'd')?)? { (b: b, cBind: cBind) }
+                ///     ;
+                /// ```
+                @memoized("_start__group_")
+                @inlinable
+                public func ___start__group_() throws -> (b: [B]?, cBind: C?) {
+                    let mark = self.mark()
+
+                    if
+                        case let (b?, cBind?) = try self.optional({
+                            try self.__start__group___group_()
+                        })
+                    {
+                        return (b: b, cBind: cBind)
+                    }
+
+                    self.restore(mark)
+                    return (nil, nil)
+                }
+
+                /// ```
+                /// __start__group___group_[(b: [B], cBind: C)]:
+                ///     | (b+ cBind=c 'd')? { (b: b, cBind: cBind) }
+                ///     ;
+                /// ```
+                @memoized("__start__group___group_")
+                @inlinable
+                public func ____start__group___group_() throws -> (b: [B]?, cBind: C?) {
+                    let mark = self.mark()
+
+                    if
+                        case let (b?, cBind?) = try self.optional({
+                            try self.___start__group___group___group_()
+                        })
+                    {
+                        return (b: b, cBind: cBind)
+                    }
+
+                    self.restore(mark)
+                    return (nil, nil)
+                }
+
+                /// ```
+                /// ___start__group___group___group_[(b: [B], cBind: C)]:
+                ///     | b+ cBind=c 'd' { (b: b, cBind: cBind) }
+                ///     ;
+                /// ```
+                @memoized("___start__group___group___group_")
+                @inlinable
+                public func _____start__group___group___group_() throws -> (b: [B]?, cBind: C?) {
+                    let mark = self.mark()
+
+                    if
+                        let b: [B] = try self.repeatOneOrMore({
+                            try self.b()
+                        }),
+                        let cBind: C = try self.c(),
+                        let _: TokenResult = try self.expect("d")
+                    {
+                        return (b: b, cBind: cBind)
+                    }
+
+                    self.restore(mark)
+                    return (nil, nil)
                 }
             }
             """).diff(result)
@@ -1116,6 +1964,112 @@ class SwiftCodeGenTests: XCTestCase {
                         let d = try self.d()
                     {
                         return Node()
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+            }
+            """).diff(result)
+    }
+
+    func testGenerateParser_minimalZeroOrMore() throws {
+        let grammar = try parseGrammar("""
+        @token d; @token e; @tokenCallKind "expectKind" ;
+        start: a b*< c;
+        a[A]: 'a' ;
+        b[B]: 'b' ;
+        c[C]: 'c'? 'e' ;
+        """)
+        let sut = makeSut(grammar)
+
+        let result = try sut.generateParser(
+            settings: .default.with(\.emitTypesInBindings, value: true)
+        )
+
+        diffTest(expected: """
+            extension Parser {
+                /// ```
+                /// start:
+                ///     | a b*< c
+                ///     ;
+                /// ```
+                @memoized("start")
+                @inlinable
+                public func __start() throws -> Node? {
+                    let mark = self.mark()
+
+                    if
+                        let a: A = try self.a(),
+                        let b: [B] = try self.repeatZeroOrMore({
+                            try self.b()
+                        }),
+                        let c: C = try self.c()
+                    {
+                        return Node()
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+
+                /// ```
+                /// a[A]:
+                ///     | 'a'
+                ///     ;
+                /// ```
+                @memoized("a")
+                @inlinable
+                public func __a() throws -> A? {
+                    let mark = self.mark()
+
+                    if
+                        let _: TokenResult = try self.expect("a")
+                    {
+                        return A()
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+
+                /// ```
+                /// b[B]:
+                ///     | 'b'
+                ///     ;
+                /// ```
+                @memoized("b")
+                @inlinable
+                public func __b() throws -> B? {
+                    let mark = self.mark()
+
+                    if
+                        let _: TokenResult = try self.expect("b")
+                    {
+                        return B()
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+
+                /// ```
+                /// c[C]:
+                ///     | 'c'? 'e'
+                ///     ;
+                /// ```
+                @memoized("c")
+                @inlinable
+                public func __c() throws -> C? {
+                    let mark = self.mark()
+
+                    if
+                        let _: TokenResult? = try self.optional({
+                            try self.expect("c")
+                        }),
+                        let _: TokenResult = try self.expect("e")
+                    {
+                        return C()
                     }
 
                     self.restore(mark)
@@ -1251,7 +2205,7 @@ class SwiftCodeGenTests: XCTestCase {
                     let mark = self.mark()
 
                     if
-                        let _ = try self.optional({
+                        case let (b?, c?) = try self.optional({
                             try self._a__opt()
                         })
                     {
@@ -1263,13 +2217,13 @@ class SwiftCodeGenTests: XCTestCase {
                 }
 
                 /// ```
-                /// _a__opt[Any]:
-                ///     | b '\' c
+                /// _a__opt[(b: Node, c: Node)]:
+                ///     | b '\' c { (b: b, c: c) }
                 ///     ;
                 /// ```
                 @memoized("_a__opt")
                 @inlinable
-                public func ___a__opt() throws -> Any? {
+                public func ___a__opt() throws -> (b: Node?, c: Node?) {
                     let mark = self.mark()
 
                     if
@@ -1277,11 +2231,11 @@ class SwiftCodeGenTests: XCTestCase {
                         let _ = try self.expect("\\"),
                         let c = try self.c()
                     {
-                        return Node()
+                        return (b: b, c: c)
                     }
 
                     self.restore(mark)
-                    return nil
+                    return (nil, nil)
                 }
             }
             """#).diff(result)
@@ -1331,13 +2285,13 @@ class SwiftCodeGenTests: XCTestCase {
                 }
 
                 /// ```
-                /// _a__opt[Any]:
+                /// _a__opt[TokenResult]:
                 ///     | '+' nameInner='\' '-' { nameInner }
                 ///     ;
                 /// ```
                 @memoized("_a__opt")
                 @inlinable
-                public func ___a__opt() throws -> Any? {
+                public func ___a__opt() throws -> TokenResult? {
                     let mark = self.mark()
 
                     if

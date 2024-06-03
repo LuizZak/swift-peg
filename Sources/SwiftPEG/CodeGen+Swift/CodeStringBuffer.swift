@@ -307,6 +307,8 @@ public class CodeStringBuffer {
             self.state = producer.buffer
         }
 
+        /// Returns whether the contents of the underlying buffer have changed
+        /// since the last time this conditional emitter emitted something.
         private func _hasChanged() -> Bool {
             self.state != producer.buffer
         }

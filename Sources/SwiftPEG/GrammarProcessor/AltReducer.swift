@@ -9,7 +9,7 @@ class AltReducer {
     }
 
     let alt: InternalGrammar.Alt
-    
+
     init(_ alt: InternalGrammar.Alt) {
         self.alt = alt
     }
@@ -21,7 +21,7 @@ class AltReducer {
     /// Returns a set of permutations of the alt associated with this reducer,
     /// with each optional production sequentially omitted in all possible
     /// combinations.
-    /// 
+    ///
     /// - parameter depthLimit: A limit on how many optional items to permute,
     /// with the limit reaching indicating that no further optional items should
     /// be permuted on. A depth limit of zero produces an array with a single alt
@@ -121,11 +121,13 @@ class AltReducer {
                 [InternalGrammar.Item.atom(.group(alts))]
             } + [[]]
 
-        case .zeroOrMore(let atom):
+        case .zeroOrMore(let atom, let repetitionMode):
             _currentDepth += 1
 
             return permuted(atom).map { atoms in
-                atoms.map(InternalGrammar.Item.oneOrMore)
+                atoms.map({
+                    InternalGrammar.Item.oneOrMore($0, repetitionMode: repetitionMode)
+                })
             } + [[]]
 
         case .oneOrMore:
