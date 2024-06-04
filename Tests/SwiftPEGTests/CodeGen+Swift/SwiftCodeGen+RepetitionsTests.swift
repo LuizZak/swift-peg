@@ -139,7 +139,7 @@ class SwiftCodeGen_RepetitionsTests: XCTestCase {
 
                 /// ```
                 /// _start__nsr_tail[C]:
-                ///     | c
+                ///     | c { c }
                 ///     ;
                 /// ```
                 @memoized("_start__nsr_tail")
@@ -268,6 +268,8 @@ class SwiftCodeGen_RepetitionsTests: XCTestCase {
                 @memoized("_start__nsr")
                 @inlinable
                 public func ___start__nsr() throws -> (b: [B]?, c: C?) {
+                    let _mark = self.mark()
+
                     // Start by fetching as many productions as possible
                     guard
                         var _current: [(Mark, B)] = try self.repeatZeroOrMore({
@@ -279,7 +281,7 @@ class SwiftCodeGen_RepetitionsTests: XCTestCase {
                     }
 
                     while true {
-                        let _endMark = _current.last?.0 ?? self.mark()
+                        let _endMark = _current.last?.0 ?? _mark
                         self.restore(_endMark)
 
                         if
@@ -299,7 +301,7 @@ class SwiftCodeGen_RepetitionsTests: XCTestCase {
 
                 /// ```
                 /// _start__nsr_tail[C]:
-                ///     | c
+                ///     | c { c }
                 ///     ;
                 /// ```
                 @memoized("_start__nsr_tail")
@@ -321,11 +323,11 @@ class SwiftCodeGen_RepetitionsTests: XCTestCase {
     }
     func testGenerateParser_oneOrMore_minimal() throws {
         let grammar = try parseGrammar("""
-        @token d; @token e; @tokenCallKind "expectKind" ;
+        @token d; @tokenCallKind "expectKind" ;
         start: a b+< c;
         a[A]: 'a' ;
         b[B]: 'b' ;
-        c[C]: 'c'? 'e' ;
+        c[C]: 'c'? 'd' ;
         """)
         let sut = makeSut(grammar)
 
@@ -398,7 +400,7 @@ class SwiftCodeGen_RepetitionsTests: XCTestCase {
 
                 /// ```
                 /// c[C]:
-                ///     | 'c'? 'e'
+                ///     | 'c'? 'd'
                 ///     ;
                 /// ```
                 @memoized("c")
@@ -410,7 +412,7 @@ class SwiftCodeGen_RepetitionsTests: XCTestCase {
                         let _: TokenResult? = try self.optional({
                             try self.expect("c")
                         }),
-                        let _: TokenResult = try self.expect("e")
+                        let _: TokenResult = try self.expect("d")
                     {
                         return C()
                     }
@@ -449,7 +451,7 @@ class SwiftCodeGen_RepetitionsTests: XCTestCase {
 
                 /// ```
                 /// _start__nsr_tail[C]:
-                ///     | c
+                ///     | c { c }
                 ///     ;
                 /// ```
                 @memoized("_start__nsr_tail")
@@ -608,7 +610,7 @@ class SwiftCodeGen_RepetitionsTests: XCTestCase {
 
                 /// ```
                 /// _start__nsr_tail[C]:
-                ///     | c
+                ///     | c { c }
                 ///     ;
                 /// ```
                 @memoized("_start__nsr_tail")

@@ -1,0 +1,118 @@
+# Make sure that non-greedy repetitions as the last items of alternatives doens't trigger
+# non-greedy repetition code generation
+
+@grammar """
+start:
+    | a b+>
+    | a b+<
+    | a b*>
+    | a b*<
+    ;
+a: 'a' ;
+b: 'b' ;
+""" ;
+
+@expectedParser """
+extension Parser {
+    /// ```
+    /// start:
+    ///     | a b+>
+    ///     | a b+<
+    ///     | a b*>
+    ///     | a b*<
+    ///     ;
+    /// ```
+    @memoized("start")
+    @inlinable
+    public func __start() throws -> Node? {
+        let mark = self.mark()
+
+        if
+            let a = try self.a(),
+            let b = try self.repeatOneOrMore({
+                try self.b()
+            })
+        {
+            return Node()
+        }
+
+        self.restore(mark)
+
+        if
+            let a = try self.a(),
+            let b = try self.repeatOneOrMore({
+                try self.b()
+            })
+        {
+            return Node()
+        }
+
+        self.restore(mark)
+
+        if
+            let a = try self.a(),
+            let b = try self.repeatZeroOrMore({
+                try self.b()
+            })
+        {
+            return Node()
+        }
+
+        self.restore(mark)
+
+        if
+            let a = try self.a(),
+            let b = try self.repeatZeroOrMore({
+                try self.b()
+            })
+        {
+            return Node()
+        }
+
+        self.restore(mark)
+        return nil
+    }
+
+    /// ```
+    /// a:
+    ///     | 'a'
+    ///     ;
+    /// ```
+    @memoized("a")
+    @inlinable
+    public func __a() throws -> Node? {
+        let mark = self.mark()
+
+        if
+            let _ = try self.expect("a")
+        {
+            return Node()
+        }
+
+        self.restore(mark)
+        return nil
+    }
+
+    /// ```
+    /// b:
+    ///     | 'b'
+    ///     ;
+    /// ```
+    @memoized("b")
+    @inlinable
+    public func __b() throws -> Node? {
+        let mark = self.mark()
+
+        if
+            let _ = try self.expect("b")
+        {
+            return Node()
+        }
+
+        self.restore(mark)
+        return nil
+    }
+}
+""" ;
+
+start: '' ;
