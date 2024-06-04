@@ -65,6 +65,8 @@ public class SwiftCodeGen {
     var implicitReturns: Bool = true
     var implicitBindings: Bool = true
 
+    var bindingEngine: BindingEngine
+
     /// Initializes a new `SwiftCodeGen`, preparing to generate the grammar and
     /// token definitions from a given grammar processor result.
     public convenience init(from processed: ProcessedGrammar) {
@@ -90,6 +92,7 @@ public class SwiftCodeGen {
         parserName = grammar.parserName() ?? "Parser"
         buffer = CodeStringBuffer()
         declContext = DeclarationsContext()
+        bindingEngine = BindingEngine()
     }
 
     /// Generates Swift parser code.
@@ -128,6 +131,15 @@ public class SwiftCodeGen {
                 // TODO: Issue diagnostic
                 break
             }
+        }
+
+        bindingEngine.clearState()
+        bindingEngine.implicitBindings = self.implicitBindings
+        for rule in grammar.rules {
+            bindingEngine.registerRule(rule)
+        }
+        for token in tokenDefinitions {
+            bindingEngine.registerToken(token)
         }
 
         declContext = DeclarationsContext()
@@ -187,7 +199,7 @@ public class SwiftCodeGen {
 
         // @memoized/@memoizedLeftRecursive
         // @inlinable
-        let name = alias(for: rule)
+        let name = bindingEngine.alias(for: rule)
         let memoizationMode = memoizationMode(for: rule)
         generateRuleMethodAttributes(
             memoization: memoizationMode,
@@ -196,7 +208,7 @@ public class SwiftCodeGen {
 
         // func <rule>() -> <return type>
         let fName = memoizationMode == .none ? name : "__\(name)"
-        let returnType = returnTypeForRule(rule)
+        let returnType = bindingEngine.returnTypeForRule(rule)
 
         buffer.emit("public func \(fName)() throws -> \(returnType) ")
         try buffer.emitBlock {
@@ -234,14 +246,14 @@ public class SwiftCodeGen {
         // Preparation
 
         let ruleName = info.name
-        let ruleType = info.returnElements.scg_asTupleType().scg_optionalWrapped()
+        let ruleType = info.bindings.scg_asTupleType().scg_optionalWrapped()
         let returnType = ruleType.scg_asValidSwiftType()
 
         let trailName = ruleName + "_tail"
-        let remainingElements = computeBindings(repetitionInfo.trail).scg_asReturnElements()
+        let remainingElements = bindingEngine.computeBindings(repetitionInfo.trail)
         let trailInformation = AuxiliaryRuleInformation(
             name: trailName,
-            returnElements: remainingElements,
+            bindings: remainingElements,
             memoizationMode: info.memoizationMode
         )
 
@@ -261,7 +273,7 @@ public class SwiftCodeGen {
             .atom(.ruleName(trailProductionName))
 
         // Synthesize method
-        generateRuleDocComment(ruleName, info.returnElements.scg_asTupleType(), [
+        generateRuleDocComment(ruleName, info.bindings.scg_asTupleType(), [
             .init(namedItems: [repetitionInfo.repetition, .item(syntheticItem)])
         ])
 
@@ -284,13 +296,13 @@ public class SwiftCodeGen {
                 return atom
             }
             func repetitionType() -> CommonAbstract.SwiftType {
-                return typeForAtom(repetitionAtom())
+                return bindingEngine.typeForAtom(repetitionAtom())
             }
             func trailType() -> CommonAbstract.SwiftType {
-                trailInformation.returnElements.scg_asTupleType()
+                trailInformation.bindings.scg_asTupleType()
             }
             func fullType() -> CommonAbstract.SwiftType {
-                info.returnElements.scg_asTupleType()
+                info.bindings.scg_asTupleType()
             }
 
             let failReturnExpression = _failReturnExpression(for: ruleType)
@@ -494,7 +506,7 @@ public class SwiftCodeGen {
         // If no action is specified, attempt to return instead the named
         // item within the alt, if it's the only named item in the alt.
         if alt.namedItems.count == 1 {
-            let bindings = computeBindings(alt)
+            let bindings = bindingEngine.computeBindings(alt)
             if bindings.count == 1, let label = bindings[0].label {
                 buffer.emitLine(label)
                 return
@@ -518,8 +530,7 @@ public class SwiftCodeGen {
         in production: RemainingProduction
     ) throws {
 
-        // TODO: Handle minimal/maximal repetitions
-        let nonStandardIndex = self.nonStandardRepetitionIndex(in: namedItems)
+        let nonStandardIndex = Self.nonStandardRepetitionIndex(in: namedItems)
 
         let commaEmitter = buffer.startConditionalEmitter()
         for (i, namedItem) in namedItems.enumerated() {
@@ -537,7 +548,7 @@ public class SwiftCodeGen {
 
                 // Emit a dummy item that binds the repetition's results
                 let item: InternalGrammar.Item = .atom(.ruleName(auxInfo.name))
-                let bindings = auxInfo.returnElements.scg_asBindings()
+                let bindings = auxInfo.bindings
 
                 try generateBindingsToItem(item, bindings, in: production)
 
@@ -564,10 +575,10 @@ public class SwiftCodeGen {
 
         switch namedItem {
         case .item(_, let item, _):
-            var bindings = self.bindings(for: namedItem)
+            var bindings = bindingEngine.bindings(for: namedItem)
             if bindings.isEmpty {
                 bindings = [
-                    ("_", typeForNamedItem(namedItem))
+                    ("_", bindingEngine.typeForNamedItem(namedItem))
                 ]
             }
 
@@ -587,7 +598,7 @@ public class SwiftCodeGen {
     @discardableResult
     func generateBindingsToItem(
         _ item: InternalGrammar.Item,
-        _ bindings: [Binding],
+        _ bindings: [BindingEngine.Binding],
         in production: RemainingProduction
     ) throws -> [String] {
 
@@ -737,7 +748,7 @@ public class SwiftCodeGen {
     /// created. Return is empty if no named bindings where created.
     @discardableResult
     func generatePatternBinds(
-        _ bindings: [Binding],
+        _ bindings: [BindingEngine.Binding],
         in production: RemainingProduction
     ) throws -> [String] {
 
@@ -930,7 +941,7 @@ public class SwiftCodeGen {
 
         /// Holds the contents of common named items exposed by the rule's return
         /// type, as a tuple of elements.
-        var returnElements: [ReturnElement]
+        var bindings: [BindingEngine.Binding]
 
         /// The memoization mode for the rule.
         var memoizationMode: MemoizationMode
@@ -998,7 +1009,7 @@ public class SwiftCodeGen {
             case .rule(let rule), .auxiliary(let rule, _):
                 return rule.type
             case .nonStandardRepetition(let ruleInfo, _):
-                return ruleInfo.returnElements.scg_asTupleType()
+                return ruleInfo.bindings.scg_asTupleType()
             }
         }
     }
@@ -1051,117 +1062,6 @@ extension SwiftCodeGen {
         }
     }
 
-    /// Computes the implicit return elements for a given rule.
-    ///
-    /// If no suitable set of common elements could be extracted, an empty array
-    /// is returned.
-    ///
-    /// - note: Result removes a layer of optional wrapping from all bindings,
-    /// since the code generator assumes that the bindings are part of a
-    /// successful if-let pattern.
-    func computeImplicitReturnElements(
-        _ rule: InternalGrammar.Rule
-    ) -> [AuxiliaryRuleInformation.ReturnElement] {
-
-        computeReturnElements(rule.alts)
-    }
-
-    /// Computes the return elements for a given set of alts.
-    ///
-    /// If no suitable set of common elements could be extracted, an empty array
-    /// is returned.
-    ///
-    /// - note: Result removes a layer of optional wrapping from all bindings,
-    /// since the code generator assumes that the bindings are part of a
-    /// successful if-let pattern.
-    func computeReturnElements(
-        _ alts: [InternalGrammar.Alt]
-    ) -> [AuxiliaryRuleInformation.ReturnElement] {
-
-        // Fill bindings
-
-        var firstBindingNames: [String] = [] // For ordering later
-        var bindingsPerAlt: [[String: CommonAbstract.SwiftType]] = []
-        for alt in alts {
-            var bindings: [String: CommonAbstract.SwiftType] = [:]
-
-            for case let (name?, type?) in computeBindings(alt) {
-                firstBindingNames.append(name)
-                bindings[name] = type
-            }
-
-            bindingsPerAlt.append(bindings)
-        }
-
-        // Only consider alts that occur in all alts, with the same type
-        var commonBindings: [String: CommonAbstract.SwiftType] = [:]
-        let allKeys = Set(bindingsPerAlt.flatMap(\.keys))
-
-        for key in allKeys {
-            guard bindingsPerAlt.allSatisfy({ $0[key] != nil }) else {
-                continue
-            }
-            let bindingTypes = Set(bindingsPerAlt.compactMap({ $0[key] }))
-            guard bindingTypes.count == 1, let type = bindingTypes.first else {
-                continue
-            }
-
-            commonBindings[key] = type
-        }
-
-        var pairs = commonBindings.map {
-            ($0.key, $0.value)
-        }
-        // Order bindings based on their appearance on the first alt
-        pairs.sort { (b1, b2) in
-            guard
-                let index1 = firstBindingNames.firstIndex(of: b1.0),
-                let index2 = firstBindingNames.firstIndex(of: b2.0)
-            else {
-                // Found bindings that are not in common with all/first alt?
-                return false
-            }
-
-            return index1 < index2
-        }
-
-        return pairs.map {
-            (label: $0.0, type: $0.1)
-        }
-    }
-
-    /// Computes the bindings for a given of alt based on the elements that are
-    /// contained within.
-    ///
-    /// - note: Result removes a layer of optional wrapping from all bindings,
-    /// since the code generator assumes that the bindings are part of a
-    /// successful if-let pattern.
-    func computeBindings(
-        _ alt: InternalGrammar.Alt
-    ) -> [Binding] {
-
-        return computeBindings(alt.namedItems)
-    }
-
-    /// Computes the bindings for a given sequence of named items based on the
-    /// elements that are contained within.
-    ///
-    /// - note: Result removes a layer of optional wrapping from all bindings,
-    /// since the code generator assumes that the bindings are part of a
-    /// successful if-let pattern.
-    func computeBindings(
-        _ namedItems: some Sequence<InternalGrammar.NamedItem>
-    ) -> [Binding] {
-
-        var result: [Binding] = []
-        for item in namedItems {
-            for binding in bindings(for: item) {
-                result.append(binding)
-            }
-        }
-        return result
-    }
-
     /// Enqueues an auxiliary rule to be generated based on a given rule as context.
     /// Returns the deduplicated, unique method name to use as a reference for
     /// further code generation.
@@ -1180,7 +1080,7 @@ extension SwiftCodeGen {
 
         var alts = alts
 
-        let elements = computeReturnElements(alts)
+        let elements = bindingEngine.computeBindings(alts)
         let type: CommonAbstract.SwiftType =
             if elements.isEmpty {
                 "Any"
@@ -1229,7 +1129,7 @@ extension SwiftCodeGen {
 
         let info = AuxiliaryRuleInformation(
             name: name,
-            returnElements: computeReturnElements(alts),
+            bindings: bindingEngine.computeBindings(alts),
             memoizationMode: memoizationMode(for: production)
         )
 
@@ -1258,16 +1158,15 @@ extension SwiftCodeGen {
             preconditionFailure("namedItems.count > 1")
         }
 
-        precondition(hasNonStandardRepetition(lead), "hasNonStandardRepetition(namedItems[0])")
+        precondition(lead.hasNonStandardRepetition, "namedItems[0].hasNonStandardRepetition")
 
         let name = "_\(production.name)_\(suffix)"
 
-        let bindings = computeBindings(namedItems)
-        let returnElements = bindings.scg_asReturnElements()
+        let bindings = bindingEngine.computeBindings(namedItems)
 
         let information = AuxiliaryRuleInformation(
             name: name,
-            returnElements: returnElements,
+            bindings: bindings,
             memoizationMode: memoizationMode(for: production)
         )
         let tail = Array(namedItems.dropFirst())
@@ -1298,6 +1197,8 @@ extension SwiftCodeGen {
 
         enqueueProduction(.auxiliary(rule, info))
 
+        bindingEngine.registerRule(rule)
+
         return decl.name
     }
 
@@ -1307,232 +1208,9 @@ extension SwiftCodeGen {
     }
 }
 
-// MARK: Type resolution
+// MARK: Identifier/token management
 
 extension SwiftCodeGen {
-    /// Returns the type to use when referring to tokens returned by a parser.
-    ///
-    /// - note: Only valid within `PEGParser` members.
-    func swiftTokenType() -> CommonAbstract.SwiftType {
-        "TokenResult"
-    }
-
-    /// Returns the default type to use when rules specify no return type.
-    ///
-    /// - note: Rules always have an optional layer added to their return types.
-    func defaultRuleType() -> CommonAbstract.SwiftType {
-        .optional("Node")
-    }
-
-    /// Returns the string to use as the return type for a given rule's method.
-    ///
-    /// If computing the return type with the rule's type fails, a default `Node?`
-    /// type is returned, instead.
-    ///
-    /// If the generated type is a single-element tuple, the result is the tuple's
-    /// element type.
-    func returnTypeForRule(_ rule: InternalGrammar.Rule) -> String {
-        let returnType = typeForRule(rule) ?? defaultRuleType()
-
-        return returnType.scg_asValidSwiftType()
-    }
-
-    /// Attempts to statically infer the type of a given rule.
-    ///
-    /// - note: Rules always have an optional layer added to their return types.
-    func typeForRule(_ rule: InternalGrammar.Rule) -> CommonAbstract.SwiftType? {
-        if _typeForRuleOngoing.contains(rule.name) {
-            return nil
-        }
-
-        return rule.type?.scg_optionalWrapped()
-    }
-
-    /// Attempts to statically infer the type of a given named item.
-    ///
-    /// Since named items are interpreted as if-let bindings by the code generator,
-    /// the return type is optionally-unwrapped, if it is an optional type,
-    /// except for items that explicitly provide a type (`name[<swiftType>]=someItem`),
-    /// which returns the provided type as-is.
-    func typeForNamedItem(_ namedItem: InternalGrammar.NamedItem) -> CommonAbstract.SwiftType {
-        switch namedItem {
-        case .item(_, _, let type?):
-            return type
-
-        case .item(_, let item, _):
-            return typeForItem(item).unwrapped
-
-        case .lookahead:
-            return "Bool"
-        }
-    }
-
-    /// Attempts to statically infer the type of an item.
-    ///
-    /// Always optionally-wrapped.
-    func typeForItem(_ item: InternalGrammar.Item) -> CommonAbstract.SwiftType {
-        switch item {
-        case .oneOrMore(let atom, _), .zeroOrMore(let atom, _), .gather(_, let atom):
-            // Remove one layer of optionality, as it's consumed by the repetition
-            // process to gauge when the repetition should end
-            let type = self.typeForAtom(atom).scg_unwrapped()
-            return .array(type).scg_optionalWrapped()
-
-        case .optionalItems(let alts):
-            let elements = computeReturnElements(alts)
-            return elements.scg_asTupleType().scg_optionalWrapped()
-
-        case .optional(let atom):
-            return typeForAtom(atom).scg_optionalWrapped()
-
-        case .atom(let atom):
-            return typeForAtom(atom)
-        }
-    }
-
-    /// Attempts to statically infer the type of an atom.
-    ///
-    /// Can be either a token type, or a rule's production.
-    /// Always optionally-wrapped.
-    func typeForAtom(_ atom: InternalGrammar.Atom) -> CommonAbstract.SwiftType {
-        switch atom {
-        case .group(let alts):
-            let elements = computeReturnElements(alts)
-            return elements.scg_asTupleType().scg_optionalWrapped()
-
-        case .anyToken, .token, .string:
-            return .optional(swiftTokenType())
-
-        case .ruleName(let ruleName):
-            if let rule = findRule(named: ruleName) {
-                return typeForRule(rule) ?? defaultRuleType()
-            }
-
-            return defaultRuleType()
-        }
-    }
-}
-
-// MARK: Alias/binding management
-// TODO: Refactor out this binding logic to reuse in GrammarInterpreter
-
-extension SwiftCodeGen: TokenLiteralResolver {
-    /// Type for if-let pattern binds.
-    typealias Binding = (label: String?, type: CommonAbstract.SwiftType)
-
-    /// Searches within grammar and remaining rules for one with a matching name.
-    ///
-    /// If none are found, returns `nil`, instead.
-    func findRule(named name: String) -> InternalGrammar.Rule? {
-        if let rule = grammar.rule(named: name) {
-            return rule
-        }
-        for production in remaining {
-            switch production {
-            case .rule(let rule) where rule.name == name:
-                return rule
-            default:
-                continue
-            }
-        }
-
-        return nil
-    }
-
-    /// Returns the alias for referencing the given rule in code with `self.<rule alias>()`.
-    func alias(for rule: InternalGrammar.Rule) -> String {
-        if let alias = self.ruleAliases[rule.name] {
-            return alias
-        }
-
-        return rule.name
-    }
-
-    /// Returns bindings for a given named item, to be used for if-let binding.
-    ///
-    /// The result might have more than one element, in case the item expands
-    /// into auxiliary rules with multiple elements.
-    ///
-    /// Since named items are interpreted as if-let bindings by the code generator,
-    /// the return type is optionally-unwrapped, if it is an optional type,
-    /// except for items that explicitly provide a type (`name[<swiftType>]=someItem`),
-    /// which returns the provided type as-is.
-    func bindings(for namedItem: InternalGrammar.NamedItem) -> [Binding] {
-        switch namedItem {
-        case .item(let name?, let item, let type):
-            return [(name, type ?? typeForItem(item).scg_unwrapped())]
-
-        case .item(_, let item, _):
-            let bindings = bindings(for: item)
-            return bindings.scg_unwrapped()
-
-        case .lookahead:
-            return []
-        }
-    }
-
-    /// Returns bindings for a given item, to be used for if-let binding.
-    ///
-    /// The result might have more than one element, in case the item expands
-    /// into auxiliary rules with multiple elements.
-    ///
-    /// - note: Bindings from this layer have extra optionality still.
-    func bindings(for item: InternalGrammar.Item) -> [Binding] {
-        switch item {
-        case .zeroOrMore(let atom, _),
-            .oneOrMore(let atom, _),
-            .gather(_, let atom):
-            // Remove one layer of optionality, as it's consumed by the repetition
-            // process to gauge when the repetition should end
-            var bindings = bindings(for: atom)
-            bindings = bindings.scg_unwrapped()
-            // Propagate binding names if this is a single-binding construct
-            if bindings.count == 1 {
-                return [(bindings[0].label, .array(bindings[0].type))]
-            }
-
-            return [(nil, .array(bindings.scg_asTupleType()))]
-
-        case .optional(let atom):
-            // TODO: Validate an optional bind of multiple results
-            return bindings(for: atom).scg_optionalWrapped()
-
-        case .optionalItems(let alts):
-            let elements = computeReturnElements(alts)
-            return elements.scg_asBindings()
-
-        case .atom(let atom):
-            return bindings(for: atom)
-        }
-    }
-
-    /// Returns bindings for a given atom, to be used for if-let binding.
-    ///
-    /// The result might have more than one element, in case the atom expands
-    /// into auxiliary rules with multiple elements.
-    ///
-    /// - note: Bindings from this layer have extra optionality still.
-    func bindings(for atom: InternalGrammar.Atom) -> [Binding] {
-        switch atom {
-        case .group(let alts):
-            let elements = computeReturnElements(alts)
-            return elements.scg_asBindings()
-
-        case .token(let ident):
-            return [(implicitBindings ? ident.lowercased() : nil, typeForAtom(atom))]
-
-        case .anyToken(let ident):
-            return [(implicitBindings ? ident.lowercased() : nil, typeForAtom(atom))]
-
-        case .ruleName(let ident):
-            return [(implicitBindings ? ident : nil, typeForAtom(atom))]
-
-        case .string(_, let literal):
-            let identifier = tokenName(ofRawLiteral: literal)
-            return [(implicitBindings ? identifier : nil, typeForAtom(atom))]
-        }
-    }
-
     /// Escapes the given identifier to something that can be declared as a local
     /// or member name in Swift.
     func escapeIdentifier(_ ident: String) -> String {
@@ -1561,7 +1239,7 @@ extension SwiftCodeGen: TokenLiteralResolver {
     /// `self.<ident>()`, as a fallback.
     func expandTokenName(_ ident: String) -> String {
         if
-            let token = tokenDefinition(named: ident),
+            let token = bindingEngine.tokenDefinition(named: ident),
             let staticToken = staticToken(for: token)
         {
             return "self.expect(\(expectArguments(forResolvedToken: staticToken)))"
@@ -1580,7 +1258,7 @@ extension SwiftCodeGen: TokenLiteralResolver {
     func expectArguments(forIdentifier identifier: String) -> String {
         // Check for explicit token aliases
         if
-            let token = tokenDefinition(named: identifier),
+            let token = bindingEngine.tokenDefinition(named: identifier),
             let staticToken = staticToken(for: token)
         {
             return expectArguments(forResolvedToken: staticToken)
@@ -1599,7 +1277,7 @@ extension SwiftCodeGen: TokenLiteralResolver {
     func expectArguments(forLiteral literal: String, raw: String) -> String {
         // Check for explicit token aliases
         if
-            let token = tokenDefinition(ofRawLiteral: raw),
+            let token = bindingEngine.tokenDefinition(ofRawLiteral: raw),
             let staticToken = staticToken(for: token)
         {
             return expectArguments(forResolvedToken: staticToken)
@@ -1636,78 +1314,11 @@ extension SwiftCodeGen: TokenLiteralResolver {
             return "\(resolvedToken)"
         }
     }
-
-    /// Returns a token definition from `self.tokenDefinitions` of a matching
-    /// name, or `nil`, if none is found.
-    func tokenDefinition(named name: String) -> InternalGrammar.TokenDefinition? {
-        self.tokenDefinitions.first(where: { $0.name == name })
-    }
-
-    /// Returns a token definition from `self.tokenDefinitions` that has a literal
-    /// value matching the given (non-quoted) value, or `nil`, if none is found.
-    func tokenDefinition(ofRawLiteral literal: String) -> InternalGrammar.TokenDefinition? {
-        self.tokenDefinitions.first(where: { $0.computedLiteral == literal })
-    }
-
-    /// Returns the name of a token that has a literal value matching the given
-    /// (non-quoted) value, or `nil`, if none is known.
-    func tokenName(ofRawLiteral literal: String) -> String? {
-        tokenDefinition(ofRawLiteral: literal)?.name
-    }
 }
 
 // MARK: - Minimal/maximal repetition detection
 
 extension SwiftCodeGen {
-    /// Returns `true` if the rule makes use of minimal/maximal (`<`/`>`) repetition
-    /// in one of its primary alts.
-    ///
-    /// - note: a non-standard repetition can only occur if the repetition it is
-    /// attached to is not the last item of an alternative.
-    func hasNonStandardRepetition(_ node: InternalGrammar.Rule) -> Bool {
-        node.alts.contains(where: hasNonStandardRepetition(_:))
-    }
-
-    /// Returns `true` if one of the given alts makes use of minimal/maximal
-    /// (`<`/`>`) repetition in one of its primary items.
-    ///
-    /// - note: a non-standard repetition can only occur if the repetition it is
-    /// attached to is not the last item of an alternative.
-    func hasNonStandardRepetition(_ node: [InternalGrammar.Alt]) -> Bool {
-        node.contains(where: hasNonStandardRepetition(_:))
-    }
-
-    /// Returns `true` if the given alt makes use of minimal/maximal (`<`/`>`)
-    /// repetition in one of its primary items.
-    ///
-    /// - note: a non-standard repetition can only occur if the repetition it is
-    /// attached to is not the last item of an alternative.
-    func hasNonStandardRepetition(_ node: InternalGrammar.Alt) -> Bool {
-        node.namedItems.dropLast().contains(where: hasNonStandardRepetition(_:))
-    }
-
-    /// Returns `true` if the given named item makes use of minimal/maximal (`<`/`>`).
-    func hasNonStandardRepetition(_ node: InternalGrammar.NamedItem) -> Bool {
-        switch node {
-        case .item(_, let item, _):
-            return hasNonStandardRepetition(item)
-        default:
-            return false
-        }
-    }
-
-    /// Returns `true` if the given item makes use of minimal/maximal (`<`/`>`).
-    func hasNonStandardRepetition(_ node: InternalGrammar.Item) -> Bool {
-        switch node {
-        case .zeroOrMore(_, let repetitionMode),
-            .oneOrMore(_, let repetitionMode):
-            return repetitionMode != .standard
-
-        default:
-            return false
-        }
-    }
-
     /// Returns the first index at which the last valid minimal/maximal (`<`/`>`)
     /// repetition occurs within the given collection of named items.
     ///
@@ -1717,18 +1328,16 @@ extension SwiftCodeGen {
     /// attached to is not the last item of an alternative. In this method's case,
     /// the collection of named items is considered to be an entire alternative's
     /// list of items.
-    func nonStandardRepetitionIndex<C: BidirectionalCollection<InternalGrammar.NamedItem>>(
+    static func nonStandardRepetitionIndex<C: BidirectionalCollection<InternalGrammar.NamedItem>>(
         in namedItems: C
     ) -> C.Index? {
-
-        namedItems.dropLast().firstIndex(where: hasNonStandardRepetition(_:))
+        namedItems.dropLast().firstIndex(where: \.hasNonStandardRepetition)
     }
 }
 
 // MARK: - Cut detection
 
 extension SwiftCodeGen {
-
     /// Returns `true` if the rule makes use of cut (`~`) in one of its primary
     /// alts.
     func hasCut(_ node: InternalGrammar.Rule) -> Bool {
@@ -1805,7 +1414,55 @@ extension InternalGrammar.Grammar {
     }
 }
 
-internal extension Sequence where Element == SwiftCodeGen.Binding {
+extension InternalGrammar.Rule {
+    /// Returns `true` if this rule makes use of minimal/maximal (`<`/`>`) repetition
+    /// in one of its primary alts.
+    ///
+    /// - note: a non-standard repetition can only occur if the repetition it is
+    /// attached to is not the last item of an alternative.
+    var hasNonStandardRepetition: Bool {
+        alts.contains(where: \.hasNonStandardRepetition)
+    }
+}
+
+extension InternalGrammar.Alt {
+    /// Returns `true` if this alt makes use of minimal/maximal (`<`/`>`)
+    /// repetition in one of its primary items.
+    ///
+    /// - note: a non-standard repetition can only occur if the repetition it is
+    /// attached to is not the last item of an alternative.
+    var hasNonStandardRepetition: Bool {
+        namedItems.dropLast().contains(where: \.hasNonStandardRepetition)
+    }
+}
+
+extension InternalGrammar.NamedItem {
+    /// Returns `true` if this named item makes use of minimal/maximal (`<`/`>`).
+    var hasNonStandardRepetition: Bool {
+        switch self {
+        case .item(_, let item, _):
+            return item.hasNonStandardRepetition
+        default:
+            return false
+        }
+    }
+}
+
+extension InternalGrammar.Item {
+    /// Returns `true` if the this item makes use of minimal/maximal (`<`/`>`).
+    var hasNonStandardRepetition: Bool {
+        switch self {
+        case .zeroOrMore(_, let repetitionMode),
+            .oneOrMore(_, let repetitionMode):
+            return repetitionMode != .standard
+
+        default:
+            return false
+        }
+    }
+}
+
+internal extension Sequence where Element == BindingEngine.Binding {
     /// Applies an optional type layer to bindings on this sequence.
     ///
     /// If the binding represents a tuple, with multiple bindings, each type
@@ -1836,33 +1493,6 @@ internal extension Sequence where Element == SwiftCodeGen.Binding {
                 .unlabeled(element.type)
             }
         })
-    }
-
-    /// Returns all bindings within this sequence of bindings that can be converted
-    /// into a return element for a rule/production.
-    func scg_asReturnElements() -> [SwiftCodeGen.AuxiliaryRuleInformation.ReturnElement] {
-        compactMap { binding in
-            (binding.label, binding.type)
-        }
-    }
-}
-
-internal extension Sequence where Element == SwiftCodeGen.AuxiliaryRuleInformation.ReturnElement {
-    /*
-    /// Converts the return elements within this sequence of return elements into
-    /// a Swift tuple type, with labels as required.
-    func scg_asTupleType() -> CommonAbstract.SwiftType {
-        .tuple(map {
-            .init(label: $0.label, $0.type)
-        })
-    }
-    */
-
-    /// Converts this sequence of return elements into a list of bindings.
-    func scg_asBindings() -> [SwiftCodeGen.Binding] {
-        map { element in
-            (element.label, element.type)
-        }
     }
 }
 

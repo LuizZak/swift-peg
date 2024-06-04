@@ -162,6 +162,59 @@ class GrammarInterpreterTests: XCTestCase {
         assertEqual(sut.recursionCount, 4)
         assertEqual(result as? String, "a , a , a")
     }
+
+    func testProduceRule_nonStandardRepetition() throws {
+        let source = """
+        a, b, c, and d
+        """
+        let grammar = try parseGrammar("""
+        @token IDENT ;
+
+        start: oxford_list ;
+        oxford_list:
+            | item (',' item)*> ',' and item { result }
+            ;
+        item:
+            | IDENT {item}
+            ;
+        and:
+            | IDENT {and}
+            ;
+        """)
+        let delegate = mockDelegate()
+        delegate
+            .addToken("and")
+            .addToken(StringMatcher.prefix(.regex(pattern: #"\w+"#)), named: "IDENT")
+            .addToken(",")
+        delegate.addAlt(action: .exact("item")) { ctx -> Any? in
+            return ctx.values.joinedAsString()
+        }
+        delegate.addAlt(action: .exact("and")) { ctx -> Any? in
+            let string = ctx.values.joinedAsString()
+            return string == "and" ? "and" : nil
+        }
+        delegate.addAlt(action: .contains("',' item")) { ctx -> Any? in
+            return ctx.values.joinedAsString(separator: " ")
+        }
+        delegate.addAlt(action: .contains("oxford_list")) { ctx -> Any? in
+            return ctx.values.joinedAsString()
+        }
+        delegate.addAlt(action: .contains("result")) { ctx -> Any? in
+            guard let value0 = ctx.values[0] as? String else {
+                return nil
+            }
+            guard let value1 = ctx.values[1] as? [String] else {
+                return nil
+            }
+
+            return ([value0] + value1).joined() + ctx.values.dropFirst(2).map({ "\($0)" }).joined(separator: " ")
+        }
+        let sut = makeSut(grammar, delegate, source: source)
+
+        let result = try assertUnwrap(sut.produce())
+
+        assertEqual(result as? String, "a, b, c, and d")
+    }
 }
 
 // MARK: - Test internals
@@ -177,4 +230,27 @@ private func makeSut(
 
 private func mockDelegate() -> TestInterpreterDelegate {
     return TestInterpreterDelegate()
+}
+
+private func parseGrammar(
+    _ grammar: String,
+    file: StaticString = #file,
+    line: UInt = #line
+) throws -> InternalGrammar.Grammar {
+
+    let tokenizer = GrammarRawTokenizer(source: grammar)
+    let parser = GrammarParser(raw: tokenizer)
+
+    guard let grammar = try parser.start(), tokenizer.isEOF else {
+        throw parser.makeSyntaxError()
+    }
+
+    let processor = GrammarProcessor(delegate: nil)
+    return try processor.process(grammar).grammar
+}
+
+private extension Sequence where Element == Any {
+    func joinedAsString(separator: String = "") -> String {
+        map { "\($0)" }.joined(separator: separator)
+    }
 }

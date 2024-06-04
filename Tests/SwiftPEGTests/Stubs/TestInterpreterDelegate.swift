@@ -5,6 +5,13 @@ class TestInterpreterDelegate: GrammarInterpreter.Delegate {
     var altMatchers: [AltProduction] = []
 
     @discardableResult
+    func addToken(_ token: StringMatcher, named name: String) -> Self {
+        let token = TokenProduction(pattern: token, value: name, literal: name, name: name)
+        tokenMatchers.append(token)
+        return self
+    }
+
+    @discardableResult
     func addToken(_ token: String, named name: String) -> Self {
         var token = TokenProduction(stringLiteral: token)
         token.name = name
@@ -28,14 +35,14 @@ class TestInterpreterDelegate: GrammarInterpreter.Delegate {
     }
 
     @discardableResult
-    func addAlt(action: StringMatcher, _ closure: @escaping (GrammarInterpreter.AltContext) throws -> Any) -> Self {
+    func addAlt(action: StringMatcher, _ closure: @escaping (GrammarInterpreter.AltContext) throws -> Any?) -> Self {
         let alt = AltProduction(action: action, closure: closure)
         altMatchers.append(alt)
         return self
     }
 
     @discardableResult
-    func addAlt(action: StringMatcher, value: Any) -> Self {
+    func addAlt(action: StringMatcher, value: Any?) -> Self {
         return addAlt(action: action, { _ in value })
     }
 
@@ -61,16 +68,25 @@ class TestInterpreterDelegate: GrammarInterpreter.Delegate {
         var name: String
 
         init(stringLiteral value: String) {
-            self.pattern = .prefix(.string(value))
+            self.init(
+                pattern: .prefix(.string(value)),
+                value: value,
+                literal: value,
+                name: value
+            )
+        }
+
+        init(pattern: StringMatcher, value: String, literal: String, name: String) {
+            self.pattern = pattern
             self.value = value
-            self.literal = value
-            self.name = value
+            self.literal = literal
+            self.name = name
         }
     }
 
     struct AltProduction {
         var action: StringMatcher
-        var closure: (GrammarInterpreter.AltContext) throws -> Any
+        var closure: (GrammarInterpreter.AltContext) throws -> Any?
     }
 
     enum Error: Swift.Error {
@@ -85,21 +101,19 @@ class TestInterpreterDelegate: GrammarInterpreter.Delegate {
     func produceResult(
         for alt: InternalGrammar.Alt,
         context: GrammarInterpreter.AltContext
-    ) throws -> Any {
+    ) throws -> Any? {
 
         produceResult_callCount += 1
         produceResult_calls.append((alt, context))
 
-        guard let action = alt.action else {
-            throw Error.unknownAlt(alt)
-        }
+        let matchTarget = alt.action?.string ?? alt.description
 
         for matcher in altMatchers {
-            if matcher.action.matches(action.string) {
+            if matcher.action.matches(matchTarget) {
                 return try matcher.closure(context)
             }
         }
-        
+
         throw Error.unknownAlt(alt)
     }
 
@@ -115,8 +129,8 @@ class TestInterpreterDelegate: GrammarInterpreter.Delegate {
         if string.isEmpty { return nil }
 
         for token in tokenMatchers {
-            if token.pattern.matches(string) {
-                return (token.value, token.value.count)
+            if let match = token.pattern.match(in: string) {
+                return (match, match.count)
             }
         }
 
@@ -133,12 +147,17 @@ class TestInterpreterDelegate: GrammarInterpreter.Delegate {
         tokenResult_matchesTokenName_callCount += 1
         tokenResult_matchesTokenName_calls.append((tokenResult, tokenName))
 
-        guard let tokenString = tokenResult.0 as? String else {
+        guard let tokenString = _string(from: tokenResult.token) else {
             return false
         }
 
         for token in tokenMatchers {
             if token.value == tokenString && token.name == tokenName {
+                return true
+            }
+        }
+        for token in tokenMatchers {
+            if token.pattern.matches(tokenString), token.name == tokenName {
                 return true
             }
         }
@@ -156,7 +175,7 @@ class TestInterpreterDelegate: GrammarInterpreter.Delegate {
         tokenResult_matchesTokenLiteral_callCount += 1
         tokenResult_matchesTokenLiteral_calls.append((tokenResult, tokenLiteral))
 
-        guard let tokenString = tokenResult.0 as? String else {
+        guard let tokenString = _string(from: tokenResult.token) else {
             return false
         }
 
@@ -167,5 +186,15 @@ class TestInterpreterDelegate: GrammarInterpreter.Delegate {
         }
 
         return false
+    }
+
+    private func _string(from tokenValue: Any) -> String? {
+        if let value = tokenValue as? String {
+            return value
+        }
+        if let value = tokenValue as? Substring {
+            return String(value)
+        }
+        return nil
     }
 }

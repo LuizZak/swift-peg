@@ -1040,16 +1040,6 @@ public enum InternalGrammar {
     }
 }
 
-/// Protocol for types capable of resolving a token string literal into a token
-/// definition with an appropriate name.
-///
-/// Used by some of internal grammar classes' `alias()` methods.
-protocol TokenLiteralResolver {
-    /// Returns the name of a token that has a literal value matching the given
-    /// (non-quoted) value, or `nil`, if none is known.
-    func tokenName(ofRawLiteral literal: String) -> String?
-}
-
 public extension InternalGrammar.Visitor {
     func visit(_ node: InternalGrammar.TokenDefinition) throws { }
 

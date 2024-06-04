@@ -30,7 +30,7 @@ extension SwiftCodeGen {
             var nextBindings: [String] = []
             try buffer.indented {
                 let item = InternalGrammar.Item.atom(info.repetitionAtom)
-                let bindings = bindings(for: info.repetitionAtom).scg_unwrapped()
+                let bindings = bindingEngine.bindings(for: info.repetitionAtom).scg_unwrapped()
 
                 nextBindings.append(contentsOf:
                     try generateBindingsToItem(
@@ -79,7 +79,7 @@ extension SwiftCodeGen {
                 defer { declContext.pop() }
 
                 let item = InternalGrammar.Item.atom(info.repetitionAtom)
-                let bindings = bindings(for: info.repetitionAtom).scg_unwrapped()
+                let bindings = bindingEngine.bindings(for: info.repetitionAtom).scg_unwrapped()
 
                 buffer.emit("if ")
                 let bound = try generateBindingsToItem(item, bindings, in: info.production)
@@ -135,7 +135,7 @@ extension SwiftCodeGen {
         var nextBindings: [String] = []
         try buffer.indented {
             let item = InternalGrammar.Item.atom(info.repetitionAtom)
-            let bindings = bindings(for: info.repetitionAtom).scg_unwrapped()
+            let bindings = bindingEngine.bindings(for: info.repetitionAtom).scg_unwrapped()
 
             nextBindings.append(contentsOf:
                 try generateBindingsToItem(
@@ -188,7 +188,7 @@ extension SwiftCodeGen {
                 defer { declContext.pop() }
 
                 let item = InternalGrammar.Item.atom(info.repetitionAtom)
-                let bindings = bindings(for: info.repetitionAtom).scg_unwrapped()
+                let bindings = bindingEngine.bindings(for: info.repetitionAtom).scg_unwrapped()
 
                 buffer.emit("if ")
                 let bound = try generateBindingsToItem(item, bindings, in: info.production)
@@ -252,7 +252,7 @@ extension SwiftCodeGen {
             declContext.push()
             defer { declContext.pop() }
             let item = InternalGrammar.Item.atom(.ruleName(info.trailName))
-            let bindings = info.trailInfo.returnElements.scg_asBindings()
+            let bindings = info.trailInfo.bindings
 
             bindingNames.append(contentsOf:
                 try generateBindingsToItem(
@@ -307,7 +307,7 @@ extension SwiftCodeGen {
             codeGen: SwiftCodeGen
         ) -> String {
 
-            var elements = ruleInfo.returnElements.map { element in
+            var elements = ruleInfo.bindings.map { element in
                 (label: element.label ?? "_", identifier: element.label ?? "_")
             }
             elements[0].identifier = repetitionVariable
@@ -316,7 +316,7 @@ extension SwiftCodeGen {
         }
 
         func trailExpression(codeGen: SwiftCodeGen) -> String {
-            codeGen.defaultReturnAction(for: trailInfo.returnElements).string.trimmingWhitespace()
+            codeGen.defaultReturnAction(for: trailInfo.bindings).string.trimmingWhitespace()
         }
     }
 }

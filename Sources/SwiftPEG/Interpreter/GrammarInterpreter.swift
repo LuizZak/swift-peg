@@ -24,6 +24,7 @@ public class GrammarInterpreter {
     let tokenizer: InterpreterTokenizer
     let grammar: InternalGrammar.Grammar
     let source: String
+    let bindingEngine: BindingEngine
 
     /// The number of re-entrant recursions that where made during parsing.
     public internal(set) var recursionCount: Int = 0
@@ -44,16 +45,32 @@ public class GrammarInterpreter {
 
     /// Initializes a new `GrammarInterpreter` with a given grammar, source string
     /// and delegate.
-    public init(
+    public convenience init(
         grammar: InternalGrammar.Grammar,
+        tokens: [InternalGrammar.TokenDefinition] = [],
+        source: String,
+        delegate: Delegate?
+    ) {
+        self.init(
+            processedGrammar: .init(grammar: grammar, tokens: tokens),
+            source: source,
+            delegate: delegate
+        )
+    }
+
+    /// Initializes a new `GrammarInterpreter` with a given processed grammar,
+    /// source string and delegate.
+    public init(
+        processedGrammar: ProcessedGrammar,
         source: String,
         delegate: Delegate?
     ) {
         self._delegate = delegate
-        self.grammar = grammar
+        self.grammar = processedGrammar.grammar
         self.source = source
         self.tokenizer = InterpreterTokenizer(source: source)
         self.cache = InterpreterCache()
+        self.bindingEngine = BindingEngine(processedGrammar: processedGrammar)
     }
 
     /// Produces the `start` rule in the grammar that was provided to this interpreter.
@@ -177,8 +194,11 @@ public class GrammarInterpreter {
         for alt in alts {
             let mark = self.mark()
 
-            if let ctx = try tryAlt(alt) {
-                return try self.delegate.produceResult(for: alt, context: ctx)
+            if
+                let ctx = try tryAlt(alt),
+                let result = try self.delegate.produceResult(for: alt, context: ctx)
+            {
+                return result
             }
 
             self.restore(mark)
@@ -190,41 +210,39 @@ public class GrammarInterpreter {
     }
 
     func tryAlt(_ alt: InternalGrammar.Alt) throws -> AltContext? {
-        var ctx = AltContext(valueNames: [], values: [])
+        let ctx = AltContext()
+        return try tryNamedItems(ctx: ctx, namedItems: alt.namedItems)
+    }
 
-        for item in alt.namedItems {
-            let alias = alias(item)
+    func tryNamedItems(ctx: AltContext, namedItems: [InternalGrammar.NamedItem]) throws -> AltContext? {
+        var ctx = ctx
 
-            switch item {
-            case .item(_, let item, _):
-                guard let result = try tryItem(item) else {
-                    return nil
-                }
+        let nonStandardIndex = SwiftCodeGen.nonStandardRepetitionIndex(in: namedItems)
 
+        for (index, namedItem) in namedItems.enumerated() {
+            if index == nonStandardIndex {
+                return try tryAltNonStandardRepetition(
+                    ctx,
+                    repetition: namedItem,
+                    remaining: Array(namedItems[(index + 1)...])
+                )
+            }
+
+            let alias = alias(namedItem)
+            switch try tryNamedItem(namedItem) {
+            case .none:
+                return nil
+
+            case .value(let value):
                 ctx.valueNames.append(alias)
-                ctx.values.append(result)
+                ctx.values.append(value)
 
-            case .lookahead(.forced(let atom)):
-                guard let result = try self.tryAtom(atom) else {
-                    throw Error.expectForceFailed(
-                        "Expected \(atom.description.debugDescription)"
-                    )
-                }
-
-                ctx.valueNames.append(alias)
-                ctx.values.append(result)
-
-            case .lookahead(.positive(let atom)):
-                if try self.tryAtom(atom) == nil {
+            case .boolean(let value):
+                if !value {
                     return nil
                 }
 
-            case .lookahead(.negative(let atom)):
-                if try self.tryAtom(atom) != nil {
-                    return nil
-                }
-
-            case .lookahead(.cut):
+            case .toggleCut:
                 context.toggleCutOn()
             }
         }
@@ -232,9 +250,157 @@ public class GrammarInterpreter {
         return ctx
     }
 
-    func tryItem(_ item: InternalGrammar.Item) throws -> Any? {
-        // TODO: Handle repetition mode of */+ productions
+    func tryAltNonStandardRepetition(
+        _ ctx: AltContext,
+        repetition: InternalGrammar.NamedItem,
+        remaining: [InternalGrammar.NamedItem]
+    ) throws -> AltContext? {
 
+        var ctx = ctx
+        let alias = alias(repetition)
+
+        assert(!remaining.isEmpty, "!remaining.isEmpty")
+
+        func tryRemaining() throws -> AltContext? {
+            let restCtx = AltContext()
+            return try tryNamedItems(ctx: restCtx, namedItems: remaining)
+        }
+
+        switch repetition {
+        // *<
+        case .item(_, .zeroOrMore(let atom, .minimal), _):
+            var collected: [Any] = []
+
+            while !tokenizer.isEOF {
+                if let rest = try tryRemaining() {
+                    ctx.valueNames.append(alias)
+                    ctx.values.append(collected)
+                    return ctx.merged(with: rest)
+                }
+                if let value = try tryAtom(atom) {
+                    collected.append(value)
+                } else {
+                    return nil
+                }
+            }
+
+            return nil
+
+        // *>
+        case .item(_, .zeroOrMore(let atom, .maximal), _):
+            let startMark = self.mark()
+            guard
+                var collected: [(Mark, Any)] = try zeroOrMore(production: {
+                    if let atom = try self.tryAtom(atom) { (self.mark(), atom) }
+                    else { nil }
+                })
+            else {
+                return nil
+            }
+
+            while true {
+                let mark = collected.last?.0 ?? startMark
+                self.restore(mark)
+
+                if let rest = try tryRemaining() {
+                    ctx.valueNames.append(alias)
+                    ctx.values.append(collected.map(\.1))
+                    return ctx.merged(with: rest)
+                }
+                if collected.isEmpty {
+                    return nil
+                }
+
+                collected.removeLast()
+            }
+
+        // +<
+        case .item(_, .oneOrMore(let atom, .minimal), _):
+            guard let first = try tryAtom(atom) else {
+                return nil
+            }
+
+            var collected: [Any] = [first]
+
+            while !tokenizer.isEOF {
+                if let rest = try tryRemaining() {
+                    ctx.valueNames.append(alias)
+                    ctx.values.append(collected)
+                    return ctx.merged(with: rest)
+                }
+                if let value = try tryAtom(atom) {
+                    collected.append(value)
+                } else {
+                    return nil
+                }
+            }
+
+            return nil
+
+        // +>
+        case .item(_, .oneOrMore(let atom, .maximal), _):
+            guard
+                var collected: [(Mark, Any)] = try oneOrMore(production: {
+                    if let atom = try self.tryAtom(atom) { (self.mark(), atom) }
+                    else { nil }
+                })
+            else {
+                return nil
+            }
+
+            while let last = collected.last {
+                let mark = last.0
+                self.restore(mark)
+
+                if let rest = try tryRemaining() {
+                    ctx.valueNames.append(alias)
+                    ctx.values.append(collected.map(\.1))
+                    return ctx.merged(with: rest)
+                }
+                if collected.count < 1 {
+                    return nil
+                }
+
+                collected.removeLast()
+            }
+
+            return nil
+
+        default:
+            preconditionFailure("item \(repetition) is not a non-standard repetition")
+        }
+    }
+
+    func tryNamedItem(_ namedItem: InternalGrammar.NamedItem) throws -> NamedItemResult {
+        switch namedItem {
+        case .item(_, let item, _):
+            guard let result = try tryItem(item) else {
+                return .none
+            }
+
+            return .value(result)
+
+        case .lookahead(.forced(let atom)):
+            guard let result = try self.tryAtom(atom) else {
+                throw Error.expectForceFailed(
+                    "Expected \(atom.description.debugDescription)"
+                )
+            }
+
+            return .value(result)
+
+        case .lookahead(.positive(let atom)):
+            return .boolean(try self.tryAtom(atom) != nil)
+
+        case .lookahead(.negative(let atom)):
+            return .boolean(try self.tryAtom(atom) == nil)
+
+        case .lookahead(.cut):
+            return .toggleCut
+        }
+    }
+
+    func tryItem(_ item: InternalGrammar.Item) throws -> Any? {
         switch item {
         case .optional(let atom):
             return Any??.some(try tryAtom(atom)) as Any?
@@ -242,33 +408,11 @@ public class GrammarInterpreter {
         case .optionalItems(let alts):
             return Any??.some(try tryAlts(alts)) as Any?
 
-        case .oneOrMore(let atom, _):
-            guard let first = try self.tryAtom(atom) else {
-                return nil
-            }
-
-            var mark = self.mark()
-            var result: [Any] = [first]
-
-            while let next = try self.tryAtom(atom) {
-                result.append(next)
-                mark = self.mark()
-            }
-
-            self.restore(mark)
-            return result
-
         case .zeroOrMore(let atom, _):
-            var mark = self.mark()
-            var result: [Any] = []
+            return try zeroOrMore(atom)
 
-            while let next = try self.tryAtom(atom) {
-                result.append(next)
-                mark = self.mark()
-            }
-
-            self.restore(mark)
-            return result
+        case .oneOrMore(let atom, _):
+            return try oneOrMore(atom)
 
         case .gather(let sep, let node):
             guard let first = try self.tryAtom(node) else {
@@ -342,44 +486,79 @@ public class GrammarInterpreter {
         return next
     }
 
-    func alias(
-        _ namedItem: InternalGrammar.NamedItem,
-        _ literalResolver: TokenLiteralResolver? = nil
-    ) -> String? {
+    func zeroOrMore(_ atom: InternalGrammar.Atom) throws -> [Any]? {
+        return try zeroOrMore {
+            try self.tryAtom(atom)
+        }
+    }
+
+    func oneOrMore(_ atom: InternalGrammar.Atom) throws -> [Any]? {
+        return try oneOrMore {
+            try self.tryAtom(atom)
+        }
+    }
+
+    func zeroOrMore<T>(production: () throws -> T?) throws -> [T]? {
+        var mark = self.mark()
+        var result: [T] = []
+
+        while let next = try production() {
+            result.append(next)
+            mark = self.mark()
+        }
+
+        self.restore(mark)
+        return result
+    }
+
+    func oneOrMore<T>(production: () throws -> T?) throws -> [T]? {
+        guard let first = try production() else {
+            return nil
+        }
+
+        var mark = self.mark()
+        var result: [T] = [first]
+
+        while let next = try production() {
+            result.append(next)
+            mark = self.mark()
+        }
+
+        self.restore(mark)
+        return result
+    }
+
+    //
+
+    func alias(_ namedItem: InternalGrammar.NamedItem) -> String? {
         switch namedItem {
         case .item(let name?, _, _):
             return name
         case .item(_, let item, _):
-            return alias(item, literalResolver)
+            return alias(item)
         case .lookahead:
             return nil
         }
     }
 
-    func alias(
-        _ item: InternalGrammar.Item,
-        _ literalResolver: TokenLiteralResolver? = nil
-    ) -> String? {
+    func alias(_ item: InternalGrammar.Item) -> String? {
 
         switch item {
         case .atom(let atom),
             .zeroOrMore(let atom, _),
             .oneOrMore(let atom, _),
             .optional(let atom):
-            return alias(atom, literalResolver)
+            return alias(atom)
 
         case .gather(_, let node):
-            return alias(node, literalResolver)
+            return alias(node)
 
         case .optionalItems:
             return nil
         }
     }
 
-    func alias(
-        _ atom: InternalGrammar.Atom,
-        _ literalResolver: TokenLiteralResolver? = nil
-    ) -> String? {
+    func alias(_ atom: InternalGrammar.Atom) -> String? {
         switch atom {
         case .token(let ident):
             return ident.lowercased()
@@ -394,8 +573,23 @@ public class GrammarInterpreter {
             return nil
 
         case .string(_, let literal):
-            return literalResolver?.tokenName(ofRawLiteral: literal)
+            return bindingEngine.tokenName(ofRawLiteral: literal)
         }
+    }
+
+    enum NamedItemResult {
+        /// Named item computed as a no value; indicates a matching fail for the
+        /// named item.
+        case none
+
+        /// Named item computed to a value.
+        case value(Any)
+
+        /// Named item computed to a boolean value.
+        case boolean(Bool)
+
+        /// Named item requested a cut to be toggled on.
+        case toggleCut
     }
 
     /// Context for invocations of alts that match and require a return value
@@ -407,12 +601,23 @@ public class GrammarInterpreter {
         ///
         /// Matches the named items that where matched on the alt. Entries are
         /// `nil` if no name could be derived from the named item.
-        public var valueNames: [String?]
+        public var valueNames: [String?] = []
 
         /// Gets the values that matched with the alt.
         ///
         /// Matches the named items that where matched on the alt.
-        public var values: [Any]
+        public var values: [Any] = []
+
+        func merged(with other: Self) -> Self {
+            .init(
+                valueNames: self.valueNames + other.valueNames,
+                values: self.values + other.values
+            )
+        }
+
+        mutating func merge(with other: Self) {
+            self = self.merged(with: other)
+        }
 
         /// Type of value in an alt context.
         private enum _Value: CustomStringConvertible {
@@ -460,12 +665,15 @@ public class GrammarInterpreter {
         /// Requests that the delegate produce the resulting value for an alt
         /// that was matched.
         ///
+        /// If the delegate returns `nil`, the alternative is failed as if it
+        /// didn't match its items.
+        ///
         /// Errors thrown during result production abort further parsing of the
         /// syntax.
         func produceResult(
             for alt: InternalGrammar.Alt,
             context: AltContext
-        ) throws -> Any
+        ) throws -> Any?
 
         /// Requests that a token be produced from a given substring, returning
         /// the token value and an associated length that indicates how much of
