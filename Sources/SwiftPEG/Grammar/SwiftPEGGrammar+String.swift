@@ -55,7 +55,9 @@ extension SwiftPEGGrammar {
                 section = token.string.dropFirst().dropLast()
                 quote = .singleQuote
             } else {
-                throw Error.unrecognizedTerminators(String(token.string.prefix(1)))
+                throw Error.unrecognizedTerminators(
+                    String(token.string.prefix(1)), at: token.string.startIndex
+                )
             }
 
             // Escape the string
@@ -76,7 +78,7 @@ extension SwiftPEGGrammar {
                         inEscapeSequence = false
                         continue
                     default:
-                        throw Error.unknownEscapeSequence("\\\(stream.peek())")
+                        throw Error.unknownEscapeSequence("\\\(stream.peek())", at: stream.index)
                     }
 
                     stream.advance()
@@ -161,21 +163,21 @@ extension SwiftPEGGrammar {
         /// `GrammarString.fromStringToken()`.
         public enum Error: Swift.Error, CustomStringConvertible {
             /// Reports an escape sequence that was not recognized.
-            case unknownEscapeSequence(String)
+            case unknownEscapeSequence(String, at: String.Index)
 
             /// A token that is not a string token was provided.
             case unrecognizedStringToken
 
             /// The terminators within the string where not recognized.
-            case unrecognizedTerminators(String)
+            case unrecognizedTerminators(String, at: String.Index)
 
             public var description: String {
                 switch self {
-                case .unknownEscapeSequence(let sequence):
+                case .unknownEscapeSequence(let sequence, _):
                     return "Unknown escape sequence \(sequence)"
                 case .unrecognizedStringToken:
                     return "Expected token with kind SwiftPEGGrammar.Token.TokenKind._string"
-                case .unrecognizedTerminators(let message):
+                case .unrecognizedTerminators(let message, _):
                     return "Unrecognized string terminators: \(message)"
                 }
             }

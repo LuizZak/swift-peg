@@ -66,9 +66,9 @@ extension SwiftCodeGen {
             .unlabeled(repetitionItemType),
         ])
 
-        buffer.emitLine("let _mark = self.mark()")
-
         // Initial element capturing
+        buffer.emitLine("let _mark = self.mark()")
+        buffer.ensureDoubleNewline()
         buffer.emitLine("// Start by fetching as many productions as possible")
         buffer.emitLine("guard")
         try buffer.indented {

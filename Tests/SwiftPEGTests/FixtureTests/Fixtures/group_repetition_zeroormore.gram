@@ -175,6 +175,7 @@ extension Parser {
     @inlinable
     public func ___e__nsr() throws -> ([(b: Node, d: TokenType)]?, c: [TokenType]?) {
         let _mark = self.mark()
+
         // Start by fetching as many productions as possible
         guard
             var _current: [(Mark, (b: Node, d: TokenType))] = try self.repeatZeroOrMore({
@@ -206,7 +207,7 @@ extension Parser {
 
     /// ```
     /// _a__nsr_tail[[TokenType]]:
-    ///     | c
+    ///     | c { c }
     ///     ;
     /// ```
     @memoized("_a__nsr_tail")
@@ -247,7 +248,7 @@ extension Parser {
 
     /// ```
     /// _e__nsr_tail[[TokenType]]:
-    ///     | c
+    ///     | c { c }
     ///     ;
     /// ```
     @memoized("_e__nsr_tail")

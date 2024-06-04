@@ -245,12 +245,13 @@ public class SwiftCodeGen {
             memoizationMode: info.memoizationMode
         )
 
+        let trailAction = defaultReturnAction(for: remainingElements)
         let trailProductionName = enqueueAuxiliaryRule(
             InternalGrammar.Rule(
                 name: trailName,
                 type: remainingElements.scg_asTupleType(),
                 alts: [
-                    .init(namedItems: repetitionInfo.trail)
+                    .init(namedItems: repetitionInfo.trail, action: trailAction)
                 ]
             ),
             trailInformation
@@ -1261,13 +1262,7 @@ extension SwiftCodeGen {
 
         let name = "_\(production.name)_\(suffix)"
 
-        var bindings = computeBindings(namedItems)
-        /*
-        // Ensure the first binding always has a label
-        if !bindings.isEmpty {
-            bindings[0].label = "_c"
-        }
-        */
+        let bindings = computeBindings(namedItems)
         let returnElements = bindings.scg_asReturnElements()
 
         let information = AuxiliaryRuleInformation(
