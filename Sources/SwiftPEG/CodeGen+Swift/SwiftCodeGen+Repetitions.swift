@@ -1,5 +1,4 @@
 extension SwiftCodeGen {
-
     /// Produces a zero-or-more minimal (`*<`) repetition parsing method.
     func generateZeroOrMoreMinimalBody(_ info: RepetitionBodyGenInfo) throws {
         let currentArray = "_current"
@@ -67,8 +66,9 @@ extension SwiftCodeGen {
             .unlabeled(repetitionItemType),
         ])
 
-        // Initial element capturing
+        buffer.emitLine("let _mark = self.mark()")
 
+        // Initial element capturing
         buffer.emitLine("// Start by fetching as many productions as possible")
         buffer.emitLine("guard")
         try buffer.indented {
@@ -100,7 +100,7 @@ extension SwiftCodeGen {
             declContext.push()
             defer { declContext.pop() }
 
-            buffer.emitLine("let _endMark = \(currentArray).last?.0 ?? self.mark()")
+            buffer.emitLine("let _endMark = \(currentArray).last?.0 ?? _mark")
             buffer.emitLine("self.restore(_endMark)")
 
             // if let <trail> = <trail>()
