@@ -192,7 +192,7 @@ public class GrammarInterpreter {
     func tryAlt(_ alt: InternalGrammar.Alt) throws -> AltContext? {
         var ctx = AltContext(valueNames: [], values: [])
 
-        for item in alt.items {
+        for item in alt.namedItems {
             let alias = alias(item)
 
             switch item {

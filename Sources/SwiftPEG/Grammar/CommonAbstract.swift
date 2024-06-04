@@ -57,6 +57,8 @@ public enum CommonAbstract {
         }
     }
 
+    // MARK: - SwiftType
+
     /// Describes the type of a grammar production, as a Swift type.
     ///
     /// Represents the construct:
@@ -215,6 +217,15 @@ public enum CommonAbstract {
                 return label
             case .unlabeled:
                 return nil
+            }
+        }
+
+        /// Convenience initializer for creating labeled/unlabeled tuple elements
+        public init(label: String?, _ type: SwiftType) {
+            if let label {
+                self = .labeled(label: label, type)
+            } else {
+                self = .unlabeled(type)
             }
         }
     }

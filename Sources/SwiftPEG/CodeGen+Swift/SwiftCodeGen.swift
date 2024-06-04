@@ -922,7 +922,7 @@ public class SwiftCodeGen {
 
     /// Contains metadata about an auxiliary rule/method.
     struct AuxiliaryRuleInformation {
-        typealias ReturnElement = (label: String, type: CommonAbstract.SwiftType)
+        typealias ReturnElement = (label: String?, type: CommonAbstract.SwiftType)
 
         /// The auxiliary rule's name.
         var name: String
@@ -1013,7 +1013,7 @@ extension SwiftCodeGen {
     ) -> InternalGrammar.Action {
 
         return defaultReturnAction(for: elements.map { element in
-            (label: element.label, identifier: element.label)
+            (label: element.label ?? "_", identifier: element.label ?? "_")
         })
     }
 
@@ -1187,7 +1187,7 @@ extension SwiftCodeGen {
                 elements[0].type
             } else {
                 .tuple(elements.map { element in
-                    .labeled(label: element.label, element.type)
+                    .init(label: element.label, element.type)
                 })
             }
 
@@ -1261,7 +1261,13 @@ extension SwiftCodeGen {
 
         let name = "_\(production.name)_\(suffix)"
 
-        let bindings = computeBindings(namedItems)
+        var bindings = computeBindings(namedItems)
+        /*
+        // Ensure the first binding always has a label
+        if !bindings.isEmpty {
+            bindings[0].label = "_c"
+        }
+        */
         let returnElements = bindings.scg_asReturnElements()
 
         let information = AuxiliaryRuleInformation(
@@ -1841,21 +1847,21 @@ internal extension Sequence where Element == SwiftCodeGen.Binding {
     /// into a return element for a rule/production.
     func scg_asReturnElements() -> [SwiftCodeGen.AuxiliaryRuleInformation.ReturnElement] {
         compactMap { binding in
-            if let label = binding.label {
-                (label, binding.type)
-            } else { nil }
+            (binding.label, binding.type)
         }
     }
 }
 
 internal extension Sequence where Element == SwiftCodeGen.AuxiliaryRuleInformation.ReturnElement {
+    /*
     /// Converts the return elements within this sequence of return elements into
     /// a Swift tuple type, with labels as required.
     func scg_asTupleType() -> CommonAbstract.SwiftType {
         .tuple(map {
-            .labeled(label: $0.label, $0.type)
+            .init(label: $0.label, $0.type)
         })
     }
+    */
 
     /// Converts this sequence of return elements into a list of bindings.
     func scg_asBindings() -> [SwiftCodeGen.Binding] {

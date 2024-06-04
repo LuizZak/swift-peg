@@ -27,8 +27,6 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
         tokenizer = Tokenizer(rawTokenizer: raw)
     }
 
-    // TODO: Reduce duplication of methods bellow
-
     /// Produces a syntax error description from the latest token position that
     /// the marker attempted to parse.
     @inlinable

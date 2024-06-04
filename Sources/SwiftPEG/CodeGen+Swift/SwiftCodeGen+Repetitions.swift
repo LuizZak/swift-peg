@@ -83,7 +83,7 @@ extension SwiftCodeGen {
 
                 buffer.emit("if ")
                 let bound = try generateBindingsToItem(item, bindings, in: info.production)
-                let mapTupleExpr = (["self.mark()"] + bound).scgr_asTupleExpr()
+                let mapTupleExpr = (["self.mark()", bound.scgr_asTupleExprString()]).scgr_asTupleExpr()
                 buffer.emitLine(" { return \(self.defaultReturnExpression(for: mapTupleExpr)) }")
                 buffer.emitLine("return nil")
             }
@@ -192,7 +192,7 @@ extension SwiftCodeGen {
 
                 buffer.emit("if ")
                 let bound = try generateBindingsToItem(item, bindings, in: info.production)
-                let mapTupleExpr = (["self.mark()"] + bound).scgr_asTupleExpr()
+                let mapTupleExpr = (["self.mark()", bound.scgr_asTupleExprString()]).scgr_asTupleExpr()
                 buffer.emitLine(" { return \(self.defaultReturnExpression(for: mapTupleExpr)) }")
                 buffer.emitLine("return nil")
             }
@@ -308,7 +308,7 @@ extension SwiftCodeGen {
         ) -> String {
 
             var elements = ruleInfo.returnElements.map { element in
-                (label: element.label, identifier: element.label)
+                (label: element.label ?? "_", identifier: element.label ?? "_")
             }
             elements[0].identifier = repetitionVariable
 
@@ -322,12 +322,24 @@ extension SwiftCodeGen {
 }
 
 private extension Sequence where Element == String {
-    /// Returns a tuple expression string with this collection of string elements,
+    /// Returns a tuple expression seque ce with this sequence of string elements,
     /// where the labels are all `nil`.
     func scgr_asTupleExpr() -> [(label: String?, identifier: String)] {
         map {
             (label: nil, identifier: $0)
         }
+    }
+
+    /// Returns a tuple expression string with this sequence of elements, flattening
+    /// the tuple to a single non-parenthesized element if the tuple consists of
+    /// a single element.
+    func scgr_asTupleExprString() -> String {
+        let contents = Array(self)
+        if contents.count == 1 {
+            return contents[0]
+        }
+
+        return "(\(contents.joined(separator: ", ")))"
     }
 }
 

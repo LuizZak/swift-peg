@@ -264,6 +264,58 @@ class StringDiffTestingTests: XCTestCase {
         )
     }
 
+    func testDiffLargerResultStringWithMismatchInMiddle() {
+        #sourceLocation(file: "test.swift", line: 1)
+        testReporter
+            .diffTest(
+                expected: """
+                    abc
+                    def
+                    """
+            ).diff(
+                """
+                abc
+                de
+                ghi
+                jkl
+                """
+            )
+        #sourceLocation()
+
+        assertLinesMatch(
+            testReporter.messages[safe: 0],
+            """
+            test.swift:4: Strings don't match: difference starts here: Expected matching line 'def'
+
+            Actual result (between ---):
+
+            ---
+            abc
+            de
+            ghi
+            jkl
+            ---
+
+            Expected (between ---):
+
+            ---
+            abc
+            def
+            ---
+
+            Diff (between ---):
+
+            ---
+            abc
+            de
+            ~~^ Difference starts here
+            ghi
+            jkl
+            ---
+            """
+        )
+    }
+
     func testDiffLargerExpectedStringWithChangeAtFirstLine() {
         #sourceLocation(file: "test.swift", line: 1)
         testReporter
@@ -607,7 +659,7 @@ private func assertLinesMatch(
     let firstChangedLine = zip(linesActual, linesExpected)
         .enumerated()
         .first(where: { $0.element.0 != $0.element.1 })
-    
+
     guard let firstChangedLine else {
         XCTFail(
             "Strings don't match:\n\(actual)\n\nvs\n\n\(expected)",

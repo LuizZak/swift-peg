@@ -1,6 +1,15 @@
 {
-  "originHash" : "9f72ecb811effe1df726d154aebf2476fd5a69bb44ed123e33f5bcc951c005ee",
+  "originHash" : "0e0eb0d8079f97216a4f457b0502d734baacf8ede276aa59a064f2ff57ec390b",
   "pins" : [
+    {
+      "identity" : "console",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/LuizZak/Console.git",
+      "state" : {
+        "revision" : "2b86864d767d2c05573cd404903d63fb0612fe74",
+        "version" : "0.12.1"
+      }
+    },
     {
       "identity" : "swift-syntax",
       "kind" : "remoteSourceControl",

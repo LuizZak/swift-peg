@@ -24,7 +24,7 @@ class GrammarProcessorTests: XCTestCase {
         case .item(_, .atom(.anyToken), _):
             success()
         default:
-            fail("Expected atom to be identified as InternalGrammar.Atom.anyToken, found \(result.grammar.rules[0].alts[0].items[0])")
+            fail("Expected atom to be identified as InternalGrammar.Atom.anyToken, found \(result.grammar.rules[0].alts[0].namedItems[0])")
         }
     }
 
