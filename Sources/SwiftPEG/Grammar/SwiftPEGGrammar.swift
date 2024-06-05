@@ -150,6 +150,15 @@ extension SwiftPEGGrammar {
         @NodeProperty
         var _name: RuleName
 
+        /// An optional action that is executed at the start of the rule's parse
+        /// method.
+        @NodeProperty
+        var _action: Action?
+
+        /// An optional action that is executed when the rule's parse method fails.
+        @NodeProperty
+        var _failAction: Action?
+
         /// List of one or more alts associated with this rule.
         @NodeProperty
         var _alts: [Alt]

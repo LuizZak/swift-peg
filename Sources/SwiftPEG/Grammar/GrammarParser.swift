@@ -107,7 +107,7 @@ extension GrammarParser {
 
     /// ```
     /// rule[SwiftPEGGrammar.Rule]:
-    ///     | ruleName ":" '|'? alts ';' { self.setLocation(.init(name: ruleName, alts: alts), at: _mark) }
+    ///     | ruleName ":" action? failAction? '|'? alts ';' { self.setLocation(.init(name: ruleName, alts: alts), at: _mark) }
     ///     ;
     /// ```
     @memoized("rule")
@@ -118,13 +118,19 @@ extension GrammarParser {
         if
             let ruleName = try self.ruleName(),
             let _ = try self.expect(kind: .colon),
+            let action = try self.optional({
+                try self.action()
+            }),
+            let failAction = try self.optional({
+                try self.failAction()
+            }),
             let _ = try self.optional({
                 try self.expect(kind: .bar)
             }),
             let alts = try self.alts(),
             let _ = try self.expect(kind: .semicolon)
         {
-            return self.setLocation(.init(name: ruleName, alts: alts), at: _mark)
+            return self.setLocation(.init(name: ruleName, action: action, failAction: failAction, alts: alts), at: _mark)
         }
 
         self.restore(_mark)

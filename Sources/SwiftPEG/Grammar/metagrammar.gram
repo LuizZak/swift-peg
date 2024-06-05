@@ -34,7 +34,7 @@ metaValue[SwiftPEGGrammar.MetaValue]:
     ;
 
 rule[SwiftPEGGrammar.Rule]:
-    | ruleName ":" '|'? alts ';'    { self.setLocation(.init(name: ruleName, alts: alts), at: _mark) }
+    | ruleName ":" action? failAction? '|'? alts ';'    { self.setLocation(.init(name: ruleName, action: action, failAction: failAction, alts: alts), at: _mark) }
     ;
 
 ruleName[SwiftPEGGrammar.RuleName]:
@@ -47,7 +47,7 @@ alts[[SwiftPEGGrammar.Alt]]:
     ;
 
 alt[SwiftPEGGrammar.Alt]:
-    | namedItems action? failAction?    { self.setLocation(.init(namedItems: namedItems, action: action, failAction: failAction), at: _mark) }
+    | namedItems action? failAction?            { self.setLocation(.init(namedItems: namedItems, action: action, failAction: failAction), at: _mark) }
     ;
 
 namedItems[[SwiftPEGGrammar.NamedItem]]:
