@@ -14,7 +14,7 @@ extension GrammarParser {
     @memoized("start")
     @inlinable
     public func __start() throws -> SwiftPEGGrammar.Grammar? {
-        let mark = self.mark()
+        let _mark = self.mark()
 
         if
             let grammar = try self.grammar()
@@ -22,19 +22,19 @@ extension GrammarParser {
             return grammar
         }
 
-        self.restore(mark)
+        self.restore(_mark)
         return nil
     }
 
     /// ```
     /// grammar[SwiftPEGGrammar.Grammar]:
-    ///     | metas=meta* rules=rule+ { self.setLocation(.init(metas: metas, rules: rules), at: mark) }
+    ///     | metas=meta* rules=rule+ { self.setLocation(.init(metas: metas, rules: rules), at: _mark) }
     ///     ;
     /// ```
     @memoized("grammar")
     @inlinable
     public func __grammar() throws -> SwiftPEGGrammar.Grammar? {
-        let mark = self.mark()
+        let _mark = self.mark()
 
         if
             let metas = try self.repeatZeroOrMore({
@@ -44,22 +44,22 @@ extension GrammarParser {
                 try self.rule()
             })
         {
-            return self.setLocation(.init(metas: metas, rules: rules), at: mark)
+            return self.setLocation(.init(metas: metas, rules: rules), at: _mark)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
         return nil
     }
 
     /// ```
     /// meta[SwiftPEGGrammar.Meta]:
-    ///     | "@" name=IDENTIFIER value=metaValue? ';' { self.setLocation(.init(name: name.token, value: value), at: mark) }
+    ///     | "@" name=IDENTIFIER value=metaValue? ';' { self.setLocation(.init(name: name.token, value: value), at: _mark) }
     ///     ;
     /// ```
     @memoized("meta")
     @inlinable
     public func __meta() throws -> SwiftPEGGrammar.Meta? {
-        let mark = self.mark()
+        let _mark = self.mark()
 
         if
             let _ = try self.expect(kind: .at),
@@ -69,51 +69,51 @@ extension GrammarParser {
             }),
             let _ = try self.expect(kind: .semicolon)
         {
-            return self.setLocation(.init(name: name.token, value: value), at: mark)
+            return self.setLocation(.init(name: name.token, value: value), at: _mark)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
         return nil
     }
 
     /// ```
     /// metaValue[SwiftPEGGrammar.MetaValue]:
-    ///     | ident=IDENTIFIER { self.setLocation(SwiftPEGGrammar.MetaIdentifierValue(identifier: ident.token), at: mark) }
-    ///     | string { self.setLocation(SwiftPEGGrammar.MetaStringValue(string: string), at: mark) }
+    ///     | ident=IDENTIFIER { self.setLocation(SwiftPEGGrammar.MetaIdentifierValue(identifier: ident.token), at: _mark) }
+    ///     | string { self.setLocation(SwiftPEGGrammar.MetaStringValue(string: string), at: _mark) }
     ///     ;
     /// ```
     @memoized("metaValue")
     @inlinable
     public func __metaValue() throws -> SwiftPEGGrammar.MetaValue? {
-        let mark = self.mark()
+        let _mark = self.mark()
 
         if
             let ident = try self.expect(kind: .identifier)
         {
-            return self.setLocation(SwiftPEGGrammar.MetaIdentifierValue(identifier: ident.token), at: mark)
+            return self.setLocation(SwiftPEGGrammar.MetaIdentifierValue(identifier: ident.token), at: _mark)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
         if
             let string = try self.string()
         {
-            return self.setLocation(SwiftPEGGrammar.MetaStringValue(string: string), at: mark)
+            return self.setLocation(SwiftPEGGrammar.MetaStringValue(string: string), at: _mark)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
         return nil
     }
 
     /// ```
     /// rule[SwiftPEGGrammar.Rule]:
-    ///     | ruleName ":" '|'? alts ';' { self.setLocation(.init(name: ruleName, alts: alts), at: mark) }
+    ///     | ruleName ":" '|'? alts ';' { self.setLocation(.init(name: ruleName, alts: alts), at: _mark) }
     ///     ;
     /// ```
     @memoized("rule")
     @inlinable
     public func __rule() throws -> SwiftPEGGrammar.Rule? {
-        let mark = self.mark()
+        let _mark = self.mark()
 
         if
             let ruleName = try self.ruleName(),
@@ -124,48 +124,48 @@ extension GrammarParser {
             let alts = try self.alts(),
             let _ = try self.expect(kind: .semicolon)
         {
-            return self.setLocation(.init(name: ruleName, alts: alts), at: mark)
+            return self.setLocation(.init(name: ruleName, alts: alts), at: _mark)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
         return nil
     }
 
     /// ```
     /// ruleName[SwiftPEGGrammar.RuleName]:
-    ///     | name=IDENTIFIER '[' ~ type=swiftType ']' { self.setLocation(.init(name: name.token, type: type), at: mark) }
-    ///     | name=IDENTIFIER { self.setLocation(.init(name: name.token, type: nil), at: mark) }
+    ///     | name=IDENTIFIER '[' ~ type=swiftType ']' { self.setLocation(.init(name: name.token, type: type), at: _mark) }
+    ///     | name=IDENTIFIER { self.setLocation(.init(name: name.token, type: nil), at: _mark) }
     ///     ;
     /// ```
     @memoized("ruleName")
     @inlinable
     public func __ruleName() throws -> SwiftPEGGrammar.RuleName? {
-        let mark = self.mark()
-        var cut = CutFlag()
+        let _mark = self.mark()
+        var _cut = CutFlag()
 
         if
             let name = try self.expect(kind: .identifier),
             let _ = try self.expect(kind: .leftSquare),
-            cut.toggleOn(),
+            _cut.toggleOn(),
             let type = try self.swiftType(),
             let _ = try self.expect(kind: .rightSquare)
         {
-            return self.setLocation(.init(name: name.token, type: type), at: mark)
+            return self.setLocation(.init(name: name.token, type: type), at: _mark)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
-        if cut.isOn {
+        if _cut.isOn {
             return nil
         }
 
         if
             let name = try self.expect(kind: .identifier)
         {
-            return self.setLocation(.init(name: name.token, type: nil), at: mark)
+            return self.setLocation(.init(name: name.token, type: nil), at: _mark)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
         return nil
     }
 
@@ -177,7 +177,7 @@ extension GrammarParser {
     @memoized("alts")
     @inlinable
     public func __alts() throws -> [SwiftPEGGrammar.Alt]? {
-        let mark = self.mark()
+        let _mark = self.mark()
 
         if
             let alt = try self.gather(separator: {
@@ -189,19 +189,19 @@ extension GrammarParser {
             return alt
         }
 
-        self.restore(mark)
+        self.restore(_mark)
         return nil
     }
 
     /// ```
     /// alt[SwiftPEGGrammar.Alt]:
-    ///     | namedItems action? failAction? { self.setLocation(.init(namedItems: namedItems, action: action, failAction: failAction), at: mark) }
+    ///     | namedItems action? failAction? { self.setLocation(.init(namedItems: namedItems, action: action, failAction: failAction), at: _mark) }
     ///     ;
     /// ```
     @memoized("alt")
     @inlinable
     public func __alt() throws -> SwiftPEGGrammar.Alt? {
-        let mark = self.mark()
+        let _mark = self.mark()
 
         if
             let namedItems = try self.namedItems(),
@@ -212,10 +212,10 @@ extension GrammarParser {
                 try self.failAction()
             })
         {
-            return self.setLocation(.init(namedItems: namedItems, action: action, failAction: failAction), at: mark)
+            return self.setLocation(.init(namedItems: namedItems, action: action, failAction: failAction), at: _mark)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
         return nil
     }
 
@@ -227,7 +227,7 @@ extension GrammarParser {
     @memoized("namedItems")
     @inlinable
     public func __namedItems() throws -> [SwiftPEGGrammar.NamedItem]? {
-        let mark = self.mark()
+        let _mark = self.mark()
 
         if
             let namedItem = try self.repeatOneOrMore({
@@ -237,23 +237,23 @@ extension GrammarParser {
             return namedItem
         }
 
-        self.restore(mark)
+        self.restore(_mark)
         return nil
     }
 
     /// ```
     /// namedItem[SwiftPEGGrammar.NamedItem]:
-    ///     | name=IDENTIFIER '[' type=swiftType ']' '=' ~ item { self.setLocation(.init(name: name.token, item: item, type: type, lookahead: nil), at: mark) }
-    ///     | name=IDENTIFIER '=' ~ item { self.setLocation(.init(name: name.token, item: item, type: nil, lookahead: nil), at: mark) }
-    ///     | item { self.setLocation(.init(name: nil, item: item, type: nil, lookahead: nil), at: mark) }
-    ///     | lookahead { self.setLocation(.init(name: nil, item: nil, type: nil, lookahead: lookahead), at: mark) }
+    ///     | name=IDENTIFIER '[' type=swiftType ']' '=' ~ item { self.setLocation(.init(name: name.token, item: item, type: type, lookahead: nil), at: _mark) }
+    ///     | name=IDENTIFIER '=' ~ item { self.setLocation(.init(name: name.token, item: item, type: nil, lookahead: nil), at: _mark) }
+    ///     | item { self.setLocation(.init(name: nil, item: item, type: nil, lookahead: nil), at: _mark) }
+    ///     | lookahead { self.setLocation(.init(name: nil, item: nil, type: nil, lookahead: lookahead), at: _mark) }
     ///     ;
     /// ```
     @memoized("namedItem")
     @inlinable
     public func __namedItem() throws -> SwiftPEGGrammar.NamedItem? {
-        let mark = self.mark()
-        var cut = CutFlag()
+        let _mark = self.mark()
+        var _cut = CutFlag()
 
         if
             let name = try self.expect(kind: .identifier),
@@ -261,146 +261,146 @@ extension GrammarParser {
             let type = try self.swiftType(),
             let _ = try self.expect(kind: .rightSquare),
             let _ = try self.expect(kind: .equals),
-            cut.toggleOn(),
+            _cut.toggleOn(),
             let item = try self.item()
         {
-            return self.setLocation(.init(name: name.token, item: item, type: type, lookahead: nil), at: mark)
+            return self.setLocation(.init(name: name.token, item: item, type: type, lookahead: nil), at: _mark)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
-        if cut.isOn {
+        if _cut.isOn {
             return nil
         }
 
         if
             let name = try self.expect(kind: .identifier),
             let _ = try self.expect(kind: .equals),
-            cut.toggleOn(),
+            _cut.toggleOn(),
             let item = try self.item()
         {
-            return self.setLocation(.init(name: name.token, item: item, type: nil, lookahead: nil), at: mark)
+            return self.setLocation(.init(name: name.token, item: item, type: nil, lookahead: nil), at: _mark)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
-        if cut.isOn {
+        if _cut.isOn {
             return nil
         }
 
         if
             let item = try self.item()
         {
-            return self.setLocation(.init(name: nil, item: item, type: nil, lookahead: nil), at: mark)
+            return self.setLocation(.init(name: nil, item: item, type: nil, lookahead: nil), at: _mark)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
         if
             let lookahead = try self.lookahead()
         {
-            return self.setLocation(.init(name: nil, item: nil, type: nil, lookahead: lookahead), at: mark)
+            return self.setLocation(.init(name: nil, item: nil, type: nil, lookahead: lookahead), at: _mark)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
         return nil
     }
 
     /// ```
     /// lookahead[SwiftPEGGrammar.LookaheadOrCut]:
-    ///     | '&' '&' ~ atom { self.setLocation(SwiftPEGGrammar.Forced(atom: atom), at: mark) }
-    ///     | '&' ~ atom { self.setLocation(SwiftPEGGrammar.PositiveLookahead(atom: atom), at: mark) }
-    ///     | '!' ~ atom { self.setLocation(SwiftPEGGrammar.NegativeLookahead(atom: atom), at: mark) }
-    ///     | '~' { self.setLocation(SwiftPEGGrammar.Cut(), at: mark) }
+    ///     | '&' '&' ~ atom { self.setLocation(SwiftPEGGrammar.Forced(atom: atom), at: _mark) }
+    ///     | '&' ~ atom { self.setLocation(SwiftPEGGrammar.PositiveLookahead(atom: atom), at: _mark) }
+    ///     | '!' ~ atom { self.setLocation(SwiftPEGGrammar.NegativeLookahead(atom: atom), at: _mark) }
+    ///     | '~' { self.setLocation(SwiftPEGGrammar.Cut(), at: _mark) }
     ///     ;
     /// ```
     @memoized("lookahead")
     @inlinable
     public func __lookahead() throws -> SwiftPEGGrammar.LookaheadOrCut? {
-        let mark = self.mark()
-        var cut = CutFlag()
+        let _mark = self.mark()
+        var _cut = CutFlag()
 
         if
             let _ = try self.expect(kind: .ampersand),
             let _ = try self.expect(kind: .ampersand),
-            cut.toggleOn(),
+            _cut.toggleOn(),
             let atom = try self.atom()
         {
-            return self.setLocation(SwiftPEGGrammar.Forced(atom: atom), at: mark)
+            return self.setLocation(SwiftPEGGrammar.Forced(atom: atom), at: _mark)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
-        if cut.isOn {
+        if _cut.isOn {
             return nil
         }
 
         if
             let _ = try self.expect(kind: .ampersand),
-            cut.toggleOn(),
+            _cut.toggleOn(),
             let atom = try self.atom()
         {
-            return self.setLocation(SwiftPEGGrammar.PositiveLookahead(atom: atom), at: mark)
+            return self.setLocation(SwiftPEGGrammar.PositiveLookahead(atom: atom), at: _mark)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
-        if cut.isOn {
+        if _cut.isOn {
             return nil
         }
 
         if
             let _ = try self.expect(kind: .exclamationMark),
-            cut.toggleOn(),
+            _cut.toggleOn(),
             let atom = try self.atom()
         {
-            return self.setLocation(SwiftPEGGrammar.NegativeLookahead(atom: atom), at: mark)
+            return self.setLocation(SwiftPEGGrammar.NegativeLookahead(atom: atom), at: _mark)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
-        if cut.isOn {
+        if _cut.isOn {
             return nil
         }
 
         if
             let _ = try self.expect(kind: .tilde)
         {
-            return self.setLocation(SwiftPEGGrammar.Cut(), at: mark)
+            return self.setLocation(SwiftPEGGrammar.Cut(), at: _mark)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
         return nil
     }
 
     /// ```
     /// item[SwiftPEGGrammar.Item]:
-    ///     | '[' ~ alts ']' { self.setLocation(SwiftPEGGrammar.OptionalItems(alts: alts), at: mark) }
-    ///     | atom '?' { self.setLocation(SwiftPEGGrammar.OptionalItem(atom: atom), at: mark) }
-    ///     | atom '*' repetitionMode? { self.setLocation(SwiftPEGGrammar.ZeroOrMoreItem(atom: atom, repetitionMode: repetitionMode ?? .standard), at: mark) }
-    ///     | atom '+' repetitionMode? { self.setLocation(SwiftPEGGrammar.OneOrMoreItem(atom: atom, repetitionMode: repetitionMode ?? .standard), at: mark) }
-    ///     | sep=atom '.' node=atom '+' repetitionMode? { self.setLocation(SwiftPEGGrammar.GatherItem(sep: sep, item: node, repetitionMode: repetitionMode ?? .standard), at: mark) }
-    ///     | atom { self.setLocation(SwiftPEGGrammar.AtomItem(atom: atom), at: mark) }
+    ///     | '[' ~ alts ']' { self.setLocation(SwiftPEGGrammar.OptionalItems(alts: alts), at: _mark) }
+    ///     | atom '?' { self.setLocation(SwiftPEGGrammar.OptionalItem(atom: atom), at: _mark) }
+    ///     | atom '*' repetitionMode? { self.setLocation(SwiftPEGGrammar.ZeroOrMoreItem(atom: atom, repetitionMode: repetitionMode ?? .standard), at: _mark) }
+    ///     | atom '+' repetitionMode? { self.setLocation(SwiftPEGGrammar.OneOrMoreItem(atom: atom, repetitionMode: repetitionMode ?? .standard), at: _mark) }
+    ///     | sep=atom '.' node=atom '+' repetitionMode? { self.setLocation(SwiftPEGGrammar.GatherItem(sep: sep, item: node, repetitionMode: repetitionMode ?? .standard), at: _mark) }
+    ///     | atom { self.setLocation(SwiftPEGGrammar.AtomItem(atom: atom), at: _mark) }
     ///     ;
     /// ```
     @memoized("item")
     @inlinable
     public func __item() throws -> SwiftPEGGrammar.Item? {
-        let mark = self.mark()
-        var cut = CutFlag()
+        let _mark = self.mark()
+        var _cut = CutFlag()
 
         if
             let _ = try self.expect(kind: .leftSquare),
-            cut.toggleOn(),
+            _cut.toggleOn(),
             let alts = try self.alts(),
             let _ = try self.expect(kind: .rightSquare)
         {
-            return self.setLocation(SwiftPEGGrammar.OptionalItems(alts: alts), at: mark)
+            return self.setLocation(SwiftPEGGrammar.OptionalItems(alts: alts), at: _mark)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
-        if cut.isOn {
+        if _cut.isOn {
             return nil
         }
 
@@ -408,10 +408,10 @@ extension GrammarParser {
             let atom = try self.atom(),
             let _ = try self.expect(kind: .questionMark)
         {
-            return self.setLocation(SwiftPEGGrammar.OptionalItem(atom: atom), at: mark)
+            return self.setLocation(SwiftPEGGrammar.OptionalItem(atom: atom), at: _mark)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
         if
             let atom = try self.atom(),
@@ -420,10 +420,10 @@ extension GrammarParser {
                 try self.repetitionMode()
             })
         {
-            return self.setLocation(SwiftPEGGrammar.ZeroOrMoreItem(atom: atom, repetitionMode: repetitionMode ?? .standard), at: mark)
+            return self.setLocation(SwiftPEGGrammar.ZeroOrMoreItem(atom: atom, repetitionMode: repetitionMode ?? .standard), at: _mark)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
         if
             let atom = try self.atom(),
@@ -432,10 +432,10 @@ extension GrammarParser {
                 try self.repetitionMode()
             })
         {
-            return self.setLocation(SwiftPEGGrammar.OneOrMoreItem(atom: atom, repetitionMode: repetitionMode ?? .standard), at: mark)
+            return self.setLocation(SwiftPEGGrammar.OneOrMoreItem(atom: atom, repetitionMode: repetitionMode ?? .standard), at: _mark)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
         if
             let sep = try self.atom(),
@@ -446,18 +446,18 @@ extension GrammarParser {
                 try self.repetitionMode()
             })
         {
-            return self.setLocation(SwiftPEGGrammar.GatherItem(sep: sep, item: node, repetitionMode: repetitionMode ?? .standard), at: mark)
+            return self.setLocation(SwiftPEGGrammar.GatherItem(sep: sep, item: node, repetitionMode: repetitionMode ?? .standard), at: _mark)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
         if
             let atom = try self.atom()
         {
-            return self.setLocation(SwiftPEGGrammar.AtomItem(atom: atom), at: mark)
+            return self.setLocation(SwiftPEGGrammar.AtomItem(atom: atom), at: _mark)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
         return nil
     }
 
@@ -470,7 +470,7 @@ extension GrammarParser {
     @memoized("repetitionMode")
     @inlinable
     public func __repetitionMode() throws -> CommonAbstract.RepetitionMode? {
-        let mark = self.mark()
+        let _mark = self.mark()
 
         if
             let _ = try self.expect(kind: .leftAngle)
@@ -478,7 +478,7 @@ extension GrammarParser {
             return .minimal
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
         if
             let _ = try self.expect(kind: .rightAngle)
@@ -486,53 +486,53 @@ extension GrammarParser {
             return .maximal
         }
 
-        self.restore(mark)
+        self.restore(_mark)
         return nil
     }
 
     /// ```
     /// atom[SwiftPEGGrammar.Atom]:
-    ///     | '(' ~ alts ')' { self.setLocation(SwiftPEGGrammar.GroupAtom(alts: alts), at: mark) }
-    ///     | IDENTIFIER { self.setLocation(SwiftPEGGrammar.IdentAtom(identifier: identifier.token, identity: .unresolved), at: mark) }
-    ///     | string { self.setLocation(SwiftPEGGrammar.StringAtom(string: string), at: mark) }
+    ///     | '(' ~ alts ')' { self.setLocation(SwiftPEGGrammar.GroupAtom(alts: alts), at: _mark) }
+    ///     | IDENTIFIER { self.setLocation(SwiftPEGGrammar.IdentAtom(identifier: identifier.token, identity: .unresolved), at: _mark) }
+    ///     | string { self.setLocation(SwiftPEGGrammar.StringAtom(string: string), at: _mark) }
     ///     ;
     /// ```
     @memoized("atom")
     @inlinable
     public func __atom() throws -> SwiftPEGGrammar.Atom? {
-        let mark = self.mark()
-        var cut = CutFlag()
+        let _mark = self.mark()
+        var _cut = CutFlag()
 
         if
             let _ = try self.expect(kind: .leftParen),
-            cut.toggleOn(),
+            _cut.toggleOn(),
             let alts = try self.alts(),
             let _ = try self.expect(kind: .rightParen)
         {
-            return self.setLocation(SwiftPEGGrammar.GroupAtom(alts: alts), at: mark)
+            return self.setLocation(SwiftPEGGrammar.GroupAtom(alts: alts), at: _mark)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
-        if cut.isOn {
+        if _cut.isOn {
             return nil
         }
 
         if
             let identifier = try self.expect(kind: .identifier)
         {
-            return self.setLocation(SwiftPEGGrammar.IdentAtom(identifier: identifier.token, identity: .unresolved), at: mark)
+            return self.setLocation(SwiftPEGGrammar.IdentAtom(identifier: identifier.token, identity: .unresolved), at: _mark)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
         if
             let string = try self.string()
         {
-            return self.setLocation(SwiftPEGGrammar.StringAtom(string: string), at: mark)
+            return self.setLocation(SwiftPEGGrammar.StringAtom(string: string), at: _mark)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
         return nil
     }
 
@@ -551,8 +551,8 @@ extension GrammarParser {
     @memoizedLeftRecursive("swiftType")
     @inlinable
     public func __swiftType() throws -> CommonAbstract.SwiftType? {
-        let mark = self.mark()
-        var cut = CutFlag()
+        let _mark = self.mark()
+        var _cut = CutFlag()
 
         if
             let _ = try self.expect(kind: .leftParen),
@@ -564,37 +564,37 @@ extension GrammarParser {
             return .tuple(swiftTupleTypeList ?? [])
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
         if
             let _ = try self.expect(kind: .leftSquare),
             let key = try self.swiftType(),
             let _ = try self.expect(kind: .colon),
-            cut.toggleOn(),
+            _cut.toggleOn(),
             let value = try self.swiftType(),
             let _ = try self.expect(kind: .rightSquare)
         {
             return .dictionary(key: key, value: value)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
-        if cut.isOn {
+        if _cut.isOn {
             return nil
         }
 
         if
             let _ = try self.expect(kind: .leftSquare),
-            cut.toggleOn(),
+            _cut.toggleOn(),
             let swiftType = try self.swiftType(),
             let _ = try self.expect(kind: .rightSquare)
         {
             return .array(swiftType)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
-        if cut.isOn {
+        if _cut.isOn {
             return nil
         }
 
@@ -605,7 +605,7 @@ extension GrammarParser {
             return .optional(swiftType)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
         if
             let swiftType = try self.swiftType(),
@@ -618,7 +618,7 @@ extension GrammarParser {
             return .nested(swiftType, .init(identifier: "\(identifier)", genericArguments: swiftTypeList))
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
         if
             let swiftType = try self.swiftType(),
@@ -628,7 +628,7 @@ extension GrammarParser {
             return .nested(swiftType, .init(identifier: "\(identifier)"))
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
         if
             let identifier = try self.expect(kind: .identifier),
@@ -639,7 +639,7 @@ extension GrammarParser {
             return .nominal(.init(identifier: "\(identifier)", genericArguments: swiftTypeList))
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
         if
             let identifier = try self.expect(kind: .identifier)
@@ -647,7 +647,7 @@ extension GrammarParser {
             return .nominal(.init(identifier: "\(identifier)"))
         }
 
-        self.restore(mark)
+        self.restore(_mark)
         return nil
     }
 
@@ -659,7 +659,7 @@ extension GrammarParser {
     @memoized("swiftTypeList")
     @inlinable
     public func __swiftTypeList() throws -> [CommonAbstract.SwiftType]? {
-        let mark = self.mark()
+        let _mark = self.mark()
 
         if
             let swiftType = try self.gather(separator: {
@@ -671,7 +671,7 @@ extension GrammarParser {
             return swiftType
         }
 
-        self.restore(mark)
+        self.restore(_mark)
         return nil
     }
 
@@ -683,7 +683,7 @@ extension GrammarParser {
     @memoized("swiftTupleTypeList")
     @inlinable
     public func __swiftTupleTypeList() throws -> [CommonAbstract.TupleTypeElement]? {
-        let mark = self.mark()
+        let _mark = self.mark()
 
         if
             let swiftTupleTypeElement = try self.gather(separator: {
@@ -695,7 +695,7 @@ extension GrammarParser {
             return swiftTupleTypeElement
         }
 
-        self.restore(mark)
+        self.restore(_mark)
         return nil
     }
 
@@ -708,7 +708,7 @@ extension GrammarParser {
     @memoized("swiftTupleTypeElement")
     @inlinable
     public func __swiftTupleTypeElement() throws -> CommonAbstract.TupleTypeElement? {
-        let mark = self.mark()
+        let _mark = self.mark()
 
         if
             let label = try self.expect(kind: .identifier),
@@ -718,7 +718,7 @@ extension GrammarParser {
             return .labeled(label: "\(label)", swiftType)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
         if
             let swiftType = try self.swiftType()
@@ -726,33 +726,33 @@ extension GrammarParser {
             return .unlabeled(swiftType)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
         return nil
     }
 
     /// ```
     /// action[SwiftPEGGrammar.Action]:
-    ///     | "{" ~ balancedTokens "}" { self.setLocation(.init(balancedTokens: balancedTokens), at: mark) }
+    ///     | "{" ~ balancedTokens "}" { self.setLocation(.init(balancedTokens: balancedTokens), at: _mark) }
     ///     ;
     /// ```
     @memoized("action")
     @inlinable
     public func __action() throws -> SwiftPEGGrammar.Action? {
-        let mark = self.mark()
-        var cut = CutFlag()
+        let _mark = self.mark()
+        var _cut = CutFlag()
 
         if
             let _ = try self.expect(kind: .leftBrace),
-            cut.toggleOn(),
+            _cut.toggleOn(),
             let balancedTokens = try self.balancedTokens(),
             let _ = try self.expect(kind: .rightBrace)
         {
-            return self.setLocation(.init(balancedTokens: balancedTokens), at: mark)
+            return self.setLocation(.init(balancedTokens: balancedTokens), at: _mark)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
-        if cut.isOn {
+        if _cut.isOn {
             return nil
         }
         return nil
@@ -760,28 +760,28 @@ extension GrammarParser {
 
     /// ```
     /// failAction[SwiftPEGGrammar.Action]:
-    ///     | "!!" "{" ~ balancedTokens "}" { self.setLocation(.init(balancedTokens: balancedTokens), at: mark) }
+    ///     | "!!" "{" ~ balancedTokens "}" { self.setLocation(.init(balancedTokens: balancedTokens), at: _mark) }
     ///     ;
     /// ```
     @memoized("failAction")
     @inlinable
     public func __failAction() throws -> SwiftPEGGrammar.Action? {
-        let mark = self.mark()
-        var cut = CutFlag()
+        let _mark = self.mark()
+        var _cut = CutFlag()
 
         if
             let _ = try self.expect(kind: .doubleExclamationMark),
             let _ = try self.expect(kind: .leftBrace),
-            cut.toggleOn(),
+            _cut.toggleOn(),
             let balancedTokens = try self.balancedTokens(),
             let _ = try self.expect(kind: .rightBrace)
         {
-            return self.setLocation(.init(balancedTokens: balancedTokens), at: mark)
+            return self.setLocation(.init(balancedTokens: balancedTokens), at: _mark)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
-        if cut.isOn {
+        if _cut.isOn {
             return nil
         }
         return nil
@@ -795,7 +795,7 @@ extension GrammarParser {
     @memoized("balancedTokens")
     @inlinable
     public func __balancedTokens() throws -> SwiftPEGGrammar.TokenSequence? {
-        let mark = self.mark()
+        let _mark = self.mark()
 
         if
             let balancedToken = try self.repeatOneOrMore({
@@ -805,7 +805,7 @@ extension GrammarParser {
             return .from(balancedToken)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
         return nil
     }
 
@@ -822,8 +822,8 @@ extension GrammarParser {
     @memoized("balancedToken")
     @inlinable
     public func __balancedToken() throws -> SwiftPEGGrammar.TokenSequence? {
-        let mark = self.mark()
-        var cut = CutFlag()
+        let _mark = self.mark()
+        var _cut = CutFlag()
 
         if
             let token = try self.expect(kind: .whitespace)
@@ -831,11 +831,11 @@ extension GrammarParser {
             return .from(token)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
         if
             let l = try self.expect(kind: .leftBrace),
-            cut.toggleOn(),
+            _cut.toggleOn(),
             let balancedToken = try self.repeatZeroOrMore({
                 try self.balancedToken()
             }),
@@ -844,15 +844,15 @@ extension GrammarParser {
             return .from(l).appending(contentsOf: balancedToken).appending(.from(r))
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
-        if cut.isOn {
+        if _cut.isOn {
             return nil
         }
 
         if
             let l = try self.expect(kind: .leftSquare),
-            cut.toggleOn(),
+            _cut.toggleOn(),
             let balancedToken = try self.repeatZeroOrMore({
                 try self.balancedToken()
             }),
@@ -861,15 +861,15 @@ extension GrammarParser {
             return .from(l).appending(contentsOf: balancedToken).appending(.from(r))
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
-        if cut.isOn {
+        if _cut.isOn {
             return nil
         }
 
         if
             let l = try self.expect(kind: .leftAngle),
-            cut.toggleOn(),
+            _cut.toggleOn(),
             let balancedToken = try self.repeatZeroOrMore({
                 try self.balancedToken()
             }),
@@ -878,15 +878,15 @@ extension GrammarParser {
             return .from(l).appending(contentsOf: balancedToken).appending(.from(r))
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
-        if cut.isOn {
+        if _cut.isOn {
             return nil
         }
 
         if
             let l = try self.expect(kind: .leftParen),
-            cut.toggleOn(),
+            _cut.toggleOn(),
             let balancedToken = try self.repeatZeroOrMore({
                 try self.balancedToken()
             }),
@@ -895,9 +895,9 @@ extension GrammarParser {
             return .from(l).appending(contentsOf: balancedToken).appending(.from(r))
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
-        if cut.isOn {
+        if _cut.isOn {
             return nil
         }
 
@@ -907,7 +907,7 @@ extension GrammarParser {
             return token
         }
 
-        self.restore(mark)
+        self.restore(_mark)
         return nil
     }
 
@@ -920,7 +920,7 @@ extension GrammarParser {
     @memoized("balancedTokenAtom")
     @inlinable
     public func __balancedTokenAtom() throws -> SwiftPEGGrammar.TokenSequence? {
-        let mark = self.mark()
+        let _mark = self.mark()
 
         if
             let string = try self.string()
@@ -928,7 +928,7 @@ extension GrammarParser {
             return .from(string)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
         if
             try self.negativeLookahead({
@@ -954,7 +954,7 @@ extension GrammarParser {
             return .from(token)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
         return nil
     }
 
@@ -966,7 +966,7 @@ extension GrammarParser {
     @memoized("string")
     @inlinable
     public func __string() throws -> SwiftPEGGrammar.GrammarString? {
-        let mark = self.mark()
+        let _mark = self.mark()
 
         if
             let token = try self.expect(kind: .string)
@@ -974,7 +974,7 @@ extension GrammarParser {
             return try .fromStringToken(token)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
         return nil
     }
 
@@ -986,7 +986,7 @@ extension GrammarParser {
     @memoized("tokensFile")
     @inlinable
     public func __tokensFile() throws -> [SwiftPEGGrammar.TokenDefinition]? {
-        let mark = self.mark()
+        let _mark = self.mark()
 
         if
             let tokens = try self.repeatZeroOrMore({
@@ -996,23 +996,23 @@ extension GrammarParser {
             return tokens
         }
 
-        self.restore(mark)
+        self.restore(_mark)
         return nil
     }
 
     /// ```
     /// tokenDefinition[SwiftPEGGrammar.TokenDefinition]:
-    ///     | spec=tokenOrFragmentSpecifier name=IDENTIFIER '[' staticToken=string ']' ':' ~ tokenSyntax ';' { self.setLocation(.init(name: name.token, isFragment: spec.kind == .percent, staticToken: staticToken, tokenSyntax: tokenSyntax), at: mark) }
-    ///     | spec=tokenOrFragmentSpecifier name=IDENTIFIER '[' staticToken=string ']' ';' { self.setLocation(.init(name: name.token, isFragment: spec.kind == .percent, staticToken: staticToken, tokenSyntax: nil), at: mark) }
-    ///     | spec=tokenOrFragmentSpecifier name=IDENTIFIER ':' ~ tokenSyntax ';' { self.setLocation(.init(name: name.token, isFragment: spec.kind == .percent, staticToken: nil, tokenSyntax: tokenSyntax), at: mark) }
-    ///     | spec=tokenOrFragmentSpecifier name=IDENTIFIER ';' { self.setLocation(.init(name: name.token, isFragment: spec.kind == .percent, staticToken: nil, tokenSyntax: nil), at: mark) }
+    ///     | spec=tokenOrFragmentSpecifier name=IDENTIFIER '[' staticToken=string ']' ':' ~ tokenSyntax ';' { self.setLocation(.init(name: name.token, isFragment: spec.kind == .percent, staticToken: staticToken, tokenSyntax: tokenSyntax), at: _mark) }
+    ///     | spec=tokenOrFragmentSpecifier name=IDENTIFIER '[' staticToken=string ']' ';' { self.setLocation(.init(name: name.token, isFragment: spec.kind == .percent, staticToken: staticToken, tokenSyntax: nil), at: _mark) }
+    ///     | spec=tokenOrFragmentSpecifier name=IDENTIFIER ':' ~ tokenSyntax ';' { self.setLocation(.init(name: name.token, isFragment: spec.kind == .percent, staticToken: nil, tokenSyntax: tokenSyntax), at: _mark) }
+    ///     | spec=tokenOrFragmentSpecifier name=IDENTIFIER ';' { self.setLocation(.init(name: name.token, isFragment: spec.kind == .percent, staticToken: nil, tokenSyntax: nil), at: _mark) }
     ///     ;
     /// ```
     @memoized("tokenDefinition")
     @inlinable
     public func __tokenDefinition() throws -> SwiftPEGGrammar.TokenDefinition? {
-        let mark = self.mark()
-        var cut = CutFlag()
+        let _mark = self.mark()
+        var _cut = CutFlag()
 
         if
             let spec = try self.tokenOrFragmentSpecifier(),
@@ -1021,16 +1021,16 @@ extension GrammarParser {
             let staticToken = try self.string(),
             let _ = try self.expect(kind: .rightSquare),
             let _ = try self.expect(kind: .colon),
-            cut.toggleOn(),
+            _cut.toggleOn(),
             let tokenSyntax = try self.tokenSyntax(),
             let _ = try self.expect(kind: .semicolon)
         {
-            return self.setLocation(.init(name: name.token, isFragment: spec.kind == .percent, staticToken: staticToken, tokenSyntax: tokenSyntax), at: mark)
+            return self.setLocation(.init(name: name.token, isFragment: spec.kind == .percent, staticToken: staticToken, tokenSyntax: tokenSyntax), at: _mark)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
-        if cut.isOn {
+        if _cut.isOn {
             return nil
         }
 
@@ -1042,25 +1042,25 @@ extension GrammarParser {
             let _ = try self.expect(kind: .rightSquare),
             let _ = try self.expect(kind: .semicolon)
         {
-            return self.setLocation(.init(name: name.token, isFragment: spec.kind == .percent, staticToken: staticToken, tokenSyntax: nil), at: mark)
+            return self.setLocation(.init(name: name.token, isFragment: spec.kind == .percent, staticToken: staticToken, tokenSyntax: nil), at: _mark)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
         if
             let spec = try self.tokenOrFragmentSpecifier(),
             let name = try self.expect(kind: .identifier),
             let _ = try self.expect(kind: .colon),
-            cut.toggleOn(),
+            _cut.toggleOn(),
             let tokenSyntax = try self.tokenSyntax(),
             let _ = try self.expect(kind: .semicolon)
         {
-            return self.setLocation(.init(name: name.token, isFragment: spec.kind == .percent, staticToken: nil, tokenSyntax: tokenSyntax), at: mark)
+            return self.setLocation(.init(name: name.token, isFragment: spec.kind == .percent, staticToken: nil, tokenSyntax: tokenSyntax), at: _mark)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
-        if cut.isOn {
+        if _cut.isOn {
             return nil
         }
 
@@ -1069,10 +1069,10 @@ extension GrammarParser {
             let name = try self.expect(kind: .identifier),
             let _ = try self.expect(kind: .semicolon)
         {
-            return self.setLocation(.init(name: name.token, isFragment: spec.kind == .percent, staticToken: nil, tokenSyntax: nil), at: mark)
+            return self.setLocation(.init(name: name.token, isFragment: spec.kind == .percent, staticToken: nil, tokenSyntax: nil), at: _mark)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
         return nil
     }
 
@@ -1085,7 +1085,7 @@ extension GrammarParser {
     @memoized("tokenOrFragmentSpecifier")
     @inlinable
     public func __tokenOrFragmentSpecifier() throws -> Token? {
-        let mark = self.mark()
+        let _mark = self.mark()
 
         if
             let token = try self.expect(kind: .dollarSign)
@@ -1093,7 +1093,7 @@ extension GrammarParser {
             return token.token
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
         if
             let token = try self.expect(kind: .percent)
@@ -1101,7 +1101,7 @@ extension GrammarParser {
             return token.token
         }
 
-        self.restore(mark)
+        self.restore(_mark)
         return nil
     }
 
@@ -1113,7 +1113,7 @@ extension GrammarParser {
     @memoized("tokenSyntax")
     @inlinable
     public func __tokenSyntax() throws -> CommonAbstract.TokenSyntax? {
-        let mark = self.mark()
+        let _mark = self.mark()
 
         if
             let _ = try self.optional({
@@ -1128,7 +1128,7 @@ extension GrammarParser {
             return .init(alts: tokenSyntaxAlt)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
         return nil
     }
 
@@ -1140,7 +1140,7 @@ extension GrammarParser {
     @memoized("tokenSyntaxAlt")
     @inlinable
     public func __tokenSyntaxAlt() throws -> CommonAbstract.TokenAlt? {
-        let mark = self.mark()
+        let _mark = self.mark()
 
         if
             let tokenSyntaxItem = try self.repeatOneOrMore({
@@ -1150,7 +1150,7 @@ extension GrammarParser {
             return .init(items: tokenSyntaxItem)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
         return nil
     }
 
@@ -1169,7 +1169,7 @@ extension GrammarParser {
     @memoized("tokenSyntaxItem")
     @inlinable
     public func __tokenSyntaxItem() throws -> CommonAbstract.TokenItem? {
-        let mark = self.mark()
+        let _mark = self.mark()
 
         if
             let _ = try self.expect(kind: .leftParen),
@@ -1184,7 +1184,7 @@ extension GrammarParser {
             return .zeroOrMore(tokenSyntaxAtom)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
         if
             let _ = try self.expect(kind: .leftParen),
@@ -1199,7 +1199,7 @@ extension GrammarParser {
             return .oneOrMore(tokenSyntaxAtom)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
         if
             let _ = try self.expect(kind: .leftParen),
@@ -1214,7 +1214,7 @@ extension GrammarParser {
             return .optionalGroup(tokenSyntaxAtom)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
         if
             let _ = try self.expect(kind: .leftParen),
@@ -1228,7 +1228,7 @@ extension GrammarParser {
             return .group(tokenSyntaxAtom)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
         if
             let tokenSyntaxAtom = try self.tokenSyntaxAtom(),
@@ -1237,7 +1237,7 @@ extension GrammarParser {
             return .zeroOrMore([tokenSyntaxAtom])
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
         if
             let tokenSyntaxAtom = try self.tokenSyntaxAtom(),
@@ -1246,7 +1246,7 @@ extension GrammarParser {
             return .oneOrMore([tokenSyntaxAtom])
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
         if
             let tokenSyntaxAtom = try self.tokenSyntaxAtom(),
@@ -1255,7 +1255,7 @@ extension GrammarParser {
             return .optionalAtom(tokenSyntaxAtom)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
         if
             let tokenSyntaxAtom = try self.tokenSyntaxAtom()
@@ -1263,7 +1263,7 @@ extension GrammarParser {
             return .atom(tokenSyntaxAtom)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
         return nil
     }
 
@@ -1275,7 +1275,7 @@ extension GrammarParser {
     @memoized("tokenSyntaxAtom")
     @inlinable
     public func __tokenSyntaxAtom() throws -> CommonAbstract.TokenAtom? {
-        let mark = self.mark()
+        let _mark = self.mark()
 
         if
             let tokenSyntaxExclusion = try self.repeatZeroOrMore({
@@ -1286,7 +1286,7 @@ extension GrammarParser {
             return .init(excluded: tokenSyntaxExclusion, terminal: tokenSyntaxTerminal)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
         return nil
     }
 
@@ -1299,7 +1299,7 @@ extension GrammarParser {
     @memoized("tokenSyntaxExclusion")
     @inlinable
     public func __tokenSyntaxExclusion() throws -> CommonAbstract.TokenExclusion? {
-        let mark = self.mark()
+        let _mark = self.mark()
 
         if
             let _ = try self.expect(kind: .exclamationMark),
@@ -1308,7 +1308,7 @@ extension GrammarParser {
             return .string(.from(string))
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
         if
             let _ = try self.expect(kind: .exclamationMark),
@@ -1317,7 +1317,7 @@ extension GrammarParser {
             return .identifier("\(identifier)")
         }
 
-        self.restore(mark)
+        self.restore(_mark)
         return nil
     }
 
@@ -1333,7 +1333,7 @@ extension GrammarParser {
     @memoized("tokenSyntaxTerminal")
     @inlinable
     public func __tokenSyntaxTerminal() throws -> CommonAbstract.TokenTerminal? {
-        let mark = self.mark()
+        let _mark = self.mark()
 
         if
             let identifier = try self.expect(kind: .identifier),
@@ -1342,7 +1342,7 @@ extension GrammarParser {
             return .characterPredicate("\(identifier)", action.rawAction)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
         if
             let start = try self.string(),
@@ -1352,7 +1352,7 @@ extension GrammarParser {
             return .rangeLiteral(.from(start), .from(end))
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
         if
             let string = try self.string()
@@ -1360,7 +1360,7 @@ extension GrammarParser {
             return .literal(.from(string))
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
         if
             let identifier = try self.expect(kind: .identifier)
@@ -1368,7 +1368,7 @@ extension GrammarParser {
             return .identifier("\(identifier)")
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
         if
             let _ = try self.expect(kind: .period)
@@ -1376,7 +1376,7 @@ extension GrammarParser {
             return .any
         }
 
-        self.restore(mark)
+        self.restore(_mark)
         return nil
     }
 }

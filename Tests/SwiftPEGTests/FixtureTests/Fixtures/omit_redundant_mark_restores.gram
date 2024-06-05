@@ -34,7 +34,7 @@ extension Parser {
     @memoized("a")
     @inlinable
     public func __a() throws -> Node? {
-        let mark = self.mark()
+        let _mark = self.mark()
 
         if
             let _ = try self.expect("a"),
@@ -43,7 +43,7 @@ extension Parser {
             return Node()
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
         if
             let c = try self.c()
@@ -62,7 +62,7 @@ extension Parser {
     @memoized("b")
     @inlinable
     public func __b() throws -> Node? {
-        let mark = self.mark()
+        let _mark = self.mark()
 
         if
             let _ = try self.expect("b"),
@@ -72,7 +72,7 @@ extension Parser {
             return Node()
         }
 
-        self.restore(mark)
+        self.restore(_mark)
         return nil
     }
 
@@ -86,7 +86,7 @@ extension Parser {
     @memoized("c")
     @inlinable
     public func __c() throws -> Node? {
-        var cut = CutFlag()
+        var _cut = CutFlag()
 
         if
             let _ = try self.expect("c")
@@ -106,13 +106,13 @@ extension Parser {
             try self.negativeLookahead({
                 try self.expect("c")
             }),
-            cut.toggleOn(),
+            _cut.toggleOn(),
             let _ = try self.expect("c")
         {
             return Node()
         }
 
-        if cut.isOn {
+        if _cut.isOn {
             return nil
         }
         return nil

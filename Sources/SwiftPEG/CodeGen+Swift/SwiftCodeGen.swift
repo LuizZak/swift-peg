@@ -74,6 +74,13 @@ public class SwiftCodeGen {
     /// Maps grammar rule name -> generate code name.
     var ruleAliases: [String: String] = [:]
 
+    /// Name of mark declaration generated within parser methods to do backtracking
+    /// when an alternative fails.
+    var markVarName: String = "_mark"
+    /// Name of cut flag declaration generated within parser methods to perform
+    /// cut flag verifications in alternatives that make use of cut (`~`) items.
+    var cutVarName: String = "_cut"
+
     var implicitReturns: Bool = true
     var implicitBindings: Bool = true
     var bindTokenLiterals: Bool = false
@@ -511,8 +518,8 @@ public class SwiftCodeGen {
     /// Pushes a new declaration context for the duration of the method.
     ///
     /// ```
-    /// let mark = self.mark() (only if usesMarks == true)
-    /// var cut = CutFlag()   (only if hasCut == true)
+    /// let _mark = self.mark() (only if usesMarks == true)
+    /// var _cut = CutFlag()   (only if hasCut == true)
     /// <generator()>
     /// return <failReturnExpression>
     /// ```
@@ -528,12 +535,12 @@ public class SwiftCodeGen {
         let conditional = buffer.startConditionalEmitter()
 
         if usesMarks {
-            buffer.emitLine("let mark = self.mark()")
-            declContext.defineLocal(suggestedName: "mark")
+            buffer.emitLine("let \(markVarName) = self.mark()")
+            declContext.defineLocal(suggestedName: markVarName)
         }
         if hasCut {
-            buffer.emitLine("var cut = CutFlag()")
-            declContext.defineLocal(suggestedName: "cut")
+            buffer.emitLine("var \(cutVarName) = CutFlag()")
+            declContext.defineLocal(suggestedName: cutVarName)
         }
 
         try generator(conditional)
@@ -569,7 +576,7 @@ public class SwiftCodeGen {
 
         if backtrackToMark && requiresMarkers(alt) {
             // Alt failure results in a restore to a previous mark
-            buffer.emitLine("self.restore(mark)")
+            buffer.emitLine("self.restore(\(markVarName))")
         }
 
         // Generate fail action, if present
@@ -579,7 +586,7 @@ public class SwiftCodeGen {
 
         if hasCut(alt) {
             buffer.ensureDoubleNewline()
-            buffer.emit("if cut.isOn ")
+            buffer.emit("if \(cutVarName).isOn ")
             buffer.emitBlock {
                 buffer.emitLine("return \(failReturnExpression)")
             }
@@ -793,7 +800,7 @@ public class SwiftCodeGen {
             buffer.emit(")")
 
         case .cut:
-            buffer.emit("cut.toggleOn()")
+            buffer.emit("\(cutVarName).toggleOn()")
         }
     }
 

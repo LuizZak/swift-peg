@@ -18,7 +18,7 @@ extension Parser {
     @memoized("start")
     @inlinable
     public func __start() throws -> Node? {
-        let mark = self.mark()
+        let _mark = self.mark()
 
         if
             let a = try self.a()
@@ -26,7 +26,7 @@ extension Parser {
             return a
         }
 
-        self.restore(mark)
+        self.restore(_mark)
         return nil
     }
 
@@ -38,7 +38,7 @@ extension Parser {
     @memoized("a")
     @inlinable
     public func __a() throws -> Node? {
-        let mark = self.mark()
+        let _mark = self.mark()
 
         if
             let b = try self.b(),
@@ -47,7 +47,7 @@ extension Parser {
             return Node()
         }
 
-        self.restore(mark)
+        self.restore(_mark)
         return nil
     }
 
@@ -59,7 +59,7 @@ extension Parser {
     @memoized("b")
     @inlinable
     public func __b() throws -> Node? {
-        let mark = self.mark()
+        let _mark = self.mark()
 
         if
             let _ = try self.expect("b"),
@@ -68,7 +68,7 @@ extension Parser {
             return Node()
         }
 
-        self.restore(mark)
+        self.restore(_mark)
         return nil
     }
 
@@ -80,7 +80,7 @@ extension Parser {
     @memoized("c")
     @inlinable
     public func __c() throws -> Node? {
-        let mark = self.mark()
+        let _mark = self.mark()
 
         if
             let _ = try self.expect("c")
@@ -88,7 +88,7 @@ extension Parser {
             return Node()
         }
 
-        self.restore(mark)
+        self.restore(_mark)
         return nil
     }
 
@@ -100,7 +100,7 @@ extension Parser {
     @memoized("d")
     @inlinable
     public func __d() throws -> Node? {
-        let mark = self.mark()
+        let _mark = self.mark()
 
         if
             let _ = try self.expect("d")
@@ -108,7 +108,7 @@ extension Parser {
             return Node()
         }
 
-        self.restore(mark)
+        self.restore(_mark)
         return nil
     }
 
@@ -121,7 +121,7 @@ extension Parser {
     @memoizedLeftRecursive("e")
     @inlinable
     public func __e() throws -> Node? {
-        let mark = self.mark()
+        let _mark = self.mark()
 
         if
             let e = try self.e()
@@ -129,7 +129,7 @@ extension Parser {
             return e
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
         if
             case let (c?, d?) = try self._e__group_(),
@@ -138,7 +138,7 @@ extension Parser {
             return Node()
         }
 
-        self.restore(mark)
+        self.restore(_mark)
         return nil
     }
 
@@ -150,7 +150,7 @@ extension Parser {
     @memoized("_a__group_")
     @inlinable
     public func ___a__group_() throws -> (c: Node?, d: Node?) {
-        let mark = self.mark()
+        let _mark = self.mark()
 
         if
             let c = try self.c(),
@@ -159,7 +159,7 @@ extension Parser {
             return (c: c, d: d)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
         return (nil, nil)
     }
 
@@ -170,7 +170,7 @@ extension Parser {
     /// ```
     @inlinable
     public func _e__group_() throws -> (c: Node?, d: Node?) {
-        let mark = self.mark()
+        let _mark = self.mark()
 
         if
             let c = try self.c(),
@@ -179,7 +179,7 @@ extension Parser {
             return (c: c, d: d)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
         return (nil, nil)
     }
 }

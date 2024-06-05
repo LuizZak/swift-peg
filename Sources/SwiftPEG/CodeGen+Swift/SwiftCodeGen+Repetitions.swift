@@ -11,7 +11,7 @@ extension SwiftCodeGen {
             declContext.push()
             defer { declContext.pop() }
 
-            buffer.emitLine("let mark = self.mark()")
+            buffer.emitLine("let \(markVarName) = self.mark()")
 
             // if let <trail> = <trail>()
             //   ...
@@ -26,7 +26,7 @@ extension SwiftCodeGen {
             }
 
             buffer.ensureDoubleNewline()
-            buffer.emitLine("self.restore(mark)")
+            buffer.emitLine("self.restore(\(markVarName))")
 
             // if let <next> = <repetition>()
             //   ...
@@ -74,7 +74,7 @@ extension SwiftCodeGen {
         ])
 
         // Initial element capturing
-        buffer.emitLine("let _mark = self.mark()")
+        buffer.emitLine("let \(markVarName) = self.mark()")
         buffer.ensureDoubleNewline()
         buffer.emitLine("// Start by fetching as many productions as possible")
         buffer.emitLine("guard")
@@ -107,7 +107,7 @@ extension SwiftCodeGen {
             declContext.push()
             defer { declContext.pop() }
 
-            buffer.emitLine("let _endMark = \(currentArray).last?.0 ?? _mark")
+            buffer.emitLine("let _endMark = \(currentArray).last?.0 ?? \(markVarName)")
             buffer.emitLine("self.restore(_endMark)")
 
             // if let <trail> = <trail>()
@@ -166,7 +166,7 @@ extension SwiftCodeGen {
 
             let expr = defaultReturnExpression(for: nextBindings.scgr_asTupleExpr())
             buffer.emitLine("\(currentArray).append(\(expr))")
-            buffer.emitLine("let _mark = self.mark()")
+            buffer.emitLine("let \(markVarName) = self.mark()")
 
             // if let <trail> = <trail>()
             //   ...
@@ -181,7 +181,7 @@ extension SwiftCodeGen {
             }
 
             buffer.ensureDoubleNewline()
-            buffer.emitLine("self.restore(_mark)")
+            buffer.emitLine("self.restore(\(markVarName))")
         }
 
         buffer.ensureDoubleNewline()
@@ -293,7 +293,7 @@ extension SwiftCodeGen {
 
             let expr = defaultReturnExpression(for: nextBindings.scgr_asTupleExpr())
             buffer.emitLine("\(currentArray).append(\(expr))")
-            buffer.emitLine("let _mark = self.mark()")
+            buffer.emitLine("let \(markVarName) = self.mark()")
 
             // if let <trail> = <trail>()
             //   ...
@@ -309,7 +309,7 @@ extension SwiftCodeGen {
             }
 
             buffer.ensureDoubleNewline()
-            buffer.emitLine("self.restore(_mark)")
+            buffer.emitLine("self.restore(\(markVarName))")
 
             buffer.ensureDoubleNewline()
             buffer.emitLine("// Try separator before next item")

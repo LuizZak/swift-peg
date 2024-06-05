@@ -39,7 +39,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Node? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let any = try self.nextToken()
@@ -47,7 +47,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return any
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
             }
@@ -77,7 +77,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Any? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let _ = try self.expect("+")
@@ -85,7 +85,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return Node()
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
             }
@@ -138,7 +138,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Node? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let b = try self.b()
@@ -146,7 +146,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return b
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
             }
@@ -177,7 +177,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("start")
                 @inlinable
                 public func __start() throws -> Node? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let a: Node = try self.a()
@@ -185,7 +185,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return a
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
 
@@ -198,7 +198,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Node? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let _: TokenResult = try self.expect("a")
@@ -206,7 +206,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return Node()
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
 
                     if
                         let _: TokenResult = try self.expect("b"),
@@ -217,7 +217,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return Node()
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
 
@@ -229,7 +229,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("b")
                 @inlinable
                 public func __b() throws -> B? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let _: TokenResult = try self.expect("aa")
@@ -237,7 +237,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return B()
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
 
@@ -249,7 +249,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("c")
                 @inlinable
                 public func __c() throws -> Node? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let d: [D] = try self.gather(separator: {
@@ -261,7 +261,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return d
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
 
@@ -273,7 +273,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("d")
                 @inlinable
                 public func __d() throws -> D? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let _: TokenResult? = try self.optional({
@@ -286,7 +286,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return D()
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
             }
@@ -319,7 +319,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("start")
                 @inlinable
                 public func __start() throws -> Node? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let _: Node = try self.a()
@@ -327,7 +327,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return Node()
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
 
@@ -340,7 +340,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Node? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let a: TokenResult = try self.expect("a")
@@ -348,7 +348,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return a
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
 
                     if
                         let _: TokenResult = try self.expect("b"),
@@ -359,7 +359,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return Node()
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
 
@@ -371,7 +371,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("b")
                 @inlinable
                 public func __b() throws -> B? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let _: TokenResult = try self.expect("aa")
@@ -379,7 +379,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return B()
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
 
@@ -391,7 +391,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("c")
                 @inlinable
                 public func __c() throws -> Node? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let d: [D] = try self.gather(separator: {
@@ -403,7 +403,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return d
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
 
@@ -415,7 +415,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("d")
                 @inlinable
                 public func __d() throws -> D? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let _: TokenResult? = try self.optional({
@@ -428,7 +428,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return D()
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
             }
@@ -464,7 +464,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Node? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let ADD = try self.expect(.ADD)
@@ -472,7 +472,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return ADD
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
             }
@@ -508,7 +508,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Node? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let _ = try self.expect(.ADD)
@@ -516,7 +516,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return Node()
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
             }
@@ -550,7 +550,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Node? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let b = try self.b(),
@@ -560,7 +560,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return Node()
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
             }
@@ -592,7 +592,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Node? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let b = try self.b(),
@@ -602,7 +602,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return Node()
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
             }
@@ -634,7 +634,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Node? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let `default` = try self.`default`(),
@@ -644,7 +644,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return Node()
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
             }
@@ -689,7 +689,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Node? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let b = try self.b(),
@@ -700,7 +700,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return Node()
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
 
@@ -712,7 +712,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("b")
                 @inlinable
                 public func __b() throws -> Node? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let b = try self.b(),
@@ -723,7 +723,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return Node()
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
             }
@@ -770,7 +770,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Node? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let b = try self.b(),
@@ -781,7 +781,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return Node()
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
 
@@ -793,7 +793,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("b")
                 @inlinable
                 public func __b() throws -> Node? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let b = try self.b(),
@@ -804,7 +804,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return Node()
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
             }
@@ -836,7 +836,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Any? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let _ = try self.expect("+")
@@ -844,7 +844,7 @@ class SwiftCodeGenTests: XCTestCase {
                         anAction
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
             }
@@ -876,7 +876,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Any? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let _ = try self.expect("+")
@@ -884,7 +884,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return anAction
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
             }
@@ -916,7 +916,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Node? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let b = try self.b(),
@@ -926,7 +926,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return Node()
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
             }
@@ -964,7 +964,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Node? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let b = try self.b(),
@@ -974,7 +974,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return Node()
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
 
                     if
                         let b = try self.b(),
@@ -984,7 +984,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return Node()
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
             }
@@ -1016,7 +1016,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Node? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let b = try self.b(),
@@ -1026,7 +1026,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return Node()
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
             }
@@ -1061,7 +1061,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Node? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let add = try self.expect(kind: .add)
@@ -1069,7 +1069,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return add
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
             }
@@ -1102,7 +1102,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Node? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let _ = try self.expect(.ADD)
@@ -1110,7 +1110,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return Node()
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
             }
@@ -1138,7 +1138,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> SomeType? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let b = try self.b()
@@ -1146,7 +1146,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return b
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
             }
@@ -1174,7 +1174,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Node? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let c = try self.gather(separator: {
@@ -1186,7 +1186,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return c
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
             }
@@ -1214,7 +1214,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Node? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let b = try self.b()
@@ -1222,7 +1222,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return CustomAction()
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
             }
@@ -1252,7 +1252,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Node? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let b = try self.b()
@@ -1260,7 +1260,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return b
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     CustomAction()
 
                     if
@@ -1269,7 +1269,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return CAction()
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     OtherCustomAction()
                     return nil
                 }
@@ -1297,7 +1297,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("start")
                 @inlinable
                 public func __start() throws -> Node? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         try self.expectForced({
@@ -1307,7 +1307,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return Node()
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
 
@@ -1320,7 +1320,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("_start__group_")
                 @inlinable
                 public func ___start__group_() throws -> Any? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let _ = try self.expect("a")
@@ -1328,7 +1328,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return ()
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
 
                     if
                         let _ = try self.expect("b")
@@ -1336,7 +1336,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return ()
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
             }
@@ -1363,7 +1363,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> ANode? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let b = try self.b(),
@@ -1375,7 +1375,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return ANode()
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
             }
@@ -1403,7 +1403,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> ANode? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let b = try self.b(),
@@ -1413,7 +1413,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return ANode()
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
 
@@ -1425,7 +1425,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("_a__group_")
                 @inlinable
                 public func ___a__group_() throws -> (d: Node?, e: Node?) {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let d = try self.d(),
@@ -1434,7 +1434,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return (d: d, e: e)
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return (nil, nil)
                 }
             }
@@ -1465,7 +1465,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("start")
                 @inlinable
                 public func __start() throws -> Node? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let a: A = try self.a(),
@@ -1474,7 +1474,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return Node()
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
 
@@ -1486,7 +1486,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> A? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let _: TokenResult = try self.expect("a")
@@ -1494,7 +1494,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return A()
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
 
@@ -1506,7 +1506,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("b")
                 @inlinable
                 public func __b() throws -> B? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let _: TokenResult = try self.expect("b")
@@ -1514,7 +1514,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return B()
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
 
@@ -1526,7 +1526,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("c")
                 @inlinable
                 public func __c() throws -> C? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let _: TokenResult? = try self.optional({
@@ -1537,7 +1537,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return C()
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
 
@@ -1549,7 +1549,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("_start__group_")
                 @inlinable
                 public func ___start__group_() throws -> (b: [B]?, cBind: C?) {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let b: [B] = try self.repeatOneOrMore({
@@ -1561,7 +1561,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return (b: b, cBind: cBind)
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return (nil, nil)
                 }
             }
@@ -1592,7 +1592,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("start")
                 @inlinable
                 public func __start() throws -> Node? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let a: A = try self.a(),
@@ -1603,7 +1603,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return Node()
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
 
@@ -1615,7 +1615,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> A? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let _: TokenResult = try self.expect("a")
@@ -1623,7 +1623,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return A()
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
 
@@ -1635,7 +1635,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("b")
                 @inlinable
                 public func __b() throws -> B? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let _: TokenResult = try self.expect("b")
@@ -1643,7 +1643,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return B()
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
 
@@ -1655,7 +1655,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("c")
                 @inlinable
                 public func __c() throws -> C? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let _: TokenResult? = try self.optional({
@@ -1666,7 +1666,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return C()
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
 
@@ -1678,7 +1678,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("_start__group_")
                 @inlinable
                 public func ___start__group_() throws -> (b: [B]?, cBind: C?) {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let b: [B] = try self.repeatOneOrMore({
@@ -1690,7 +1690,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return (b: b, cBind: cBind)
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return (nil, nil)
                 }
             }
@@ -1721,7 +1721,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("start")
                 @inlinable
                 public func __start() throws -> Node? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let a: A = try self.a(),
@@ -1730,7 +1730,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return Node()
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
 
@@ -1742,7 +1742,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> A? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let _: TokenResult = try self.expect("a")
@@ -1750,7 +1750,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return A()
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
 
@@ -1762,7 +1762,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("b")
                 @inlinable
                 public func __b() throws -> B? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let _: TokenResult = try self.expect("b")
@@ -1770,7 +1770,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return B()
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
 
@@ -1782,7 +1782,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("c")
                 @inlinable
                 public func __c() throws -> C? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let _: TokenResult? = try self.optional({
@@ -1793,7 +1793,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return C()
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
 
@@ -1806,7 +1806,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("_start__group_")
                 @inlinable
                 public func ___start__group_() throws -> C? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let b: [B] = try self.repeatOneOrMore({
@@ -1818,7 +1818,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return cBind
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
 
                     if
                         let b: TokenResult = try self.e(),
@@ -1827,7 +1827,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return cBind
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
             }
@@ -1858,7 +1858,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("start")
                 @inlinable
                 public func __start() throws -> Node? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let a: A = try self.a(),
@@ -1869,7 +1869,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return Node()
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
 
@@ -1881,7 +1881,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> A? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let _: TokenResult = try self.expect("a")
@@ -1889,7 +1889,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return A()
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
 
@@ -1901,7 +1901,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("b")
                 @inlinable
                 public func __b() throws -> B? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let _: TokenResult = try self.expect("b")
@@ -1909,7 +1909,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return B()
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
 
@@ -1921,7 +1921,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("c")
                 @inlinable
                 public func __c() throws -> C? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let _: TokenResult? = try self.optional({
@@ -1932,7 +1932,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return C()
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
 
@@ -1944,7 +1944,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("_start__group_")
                 @inlinable
                 public func ___start__group_() throws -> (b: [B]?, cBind: C?) {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         case let (b?, cBind?) = try self.optional({
@@ -1954,7 +1954,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return (b: b, cBind: cBind)
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return (nil, nil)
                 }
 
@@ -1966,7 +1966,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("__start__group___group_")
                 @inlinable
                 public func ____start__group___group_() throws -> (b: [B]?, cBind: C?) {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         case let (b?, cBind?) = try self.optional({
@@ -1976,7 +1976,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return (b: b, cBind: cBind)
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return (nil, nil)
                 }
 
@@ -1988,7 +1988,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("___start__group___group___group_")
                 @inlinable
                 public func _____start__group___group___group_() throws -> (b: [B]?, cBind: C?) {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let b: [B] = try self.repeatOneOrMore({
@@ -2000,7 +2000,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return (b: b, cBind: cBind)
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return (nil, nil)
                 }
             }
@@ -2030,20 +2030,20 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Node? {
-                    let mark = self.mark()
-                    var cut = CutFlag()
+                    let _mark = self.mark()
+                    var _cut = CutFlag()
 
                     if
                         let b = try self.b(),
-                        cut.toggleOn(),
+                        _cut.toggleOn(),
                         let c = try self.c()
                     {
                         return Node()
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
 
-                    if cut.isOn {
+                    if _cut.isOn {
                         return nil
                     }
 
@@ -2054,7 +2054,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return Node()
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
             }
@@ -2082,7 +2082,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoizedLeftRecursive("a")
                 @inlinable
                 public func __a() throws -> Node? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let b = try self.b()
@@ -2090,7 +2090,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return b
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
             }
@@ -2121,7 +2121,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoizedLeftRecursive("a")
                 @inlinable
                 public func __a() throws -> Node? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let b = try self.b()
@@ -2129,7 +2129,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return b
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
 
@@ -2140,7 +2140,7 @@ class SwiftCodeGenTests: XCTestCase {
                 /// ```
                 @inlinable
                 public func b() throws -> Node? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let a = try self.a()
@@ -2148,7 +2148,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return a
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
             }
@@ -2184,7 +2184,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Node? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         case let (b?, c?) = try self.optional({
@@ -2194,7 +2194,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return Node()
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
 
@@ -2206,7 +2206,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("_a__opt")
                 @inlinable
                 public func ___a__opt() throws -> (b: Node?, c: Node?) {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let b = try self.b(),
@@ -2216,7 +2216,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return (b: b, c: c)
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return (nil, nil)
                 }
             }
@@ -2252,7 +2252,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Node? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let name = try self.optional({
@@ -2262,7 +2262,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return name
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
 
@@ -2274,7 +2274,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("_a__opt")
                 @inlinable
                 public func ___a__opt() throws -> TokenResult? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let _ = try self.expect("+"),
@@ -2284,7 +2284,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return nameInner
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
             }
@@ -2761,7 +2761,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("start")
                 @inlinable
                 public func __start() throws -> TestGrammarAST.Expression? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let expr = try self.expr(),
@@ -2772,7 +2772,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return expr
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
 
@@ -2786,7 +2786,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoizedLeftRecursive("expr")
                 @inlinable
                 public func __expr() throws -> TestGrammarAST.Expr? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let expr = try self.expr(),
@@ -2796,7 +2796,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return .add(expr, term)
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
 
                     if
                         let expr = try self.expr(),
@@ -2806,7 +2806,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return .sub(expr, term)
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
 
                     if
                         let term = try self.term()
@@ -2814,7 +2814,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return .term(term)
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
 
@@ -2828,7 +2828,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoizedLeftRecursive("term")
                 @inlinable
                 public func __term() throws -> TestGrammarAST.Term? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let term = try self.term(),
@@ -2838,7 +2838,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return .mul(term, factor)
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
 
                     if
                         let term = try self.term(),
@@ -2848,7 +2848,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return .div(term, factor)
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
 
                     if
                         let factor = try self.factor()
@@ -2856,7 +2856,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return .factor(factor)
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
 
@@ -2869,7 +2869,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("factor")
                 @inlinable
                 public func __factor() throws -> TestGrammarAST.Factor? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let _ = try self.expect("("),
@@ -2879,7 +2879,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return .expr(expr)
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
 
                     if
                         let atom = try self.atom()
@@ -2887,7 +2887,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return .atom(atom)
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
 
@@ -2900,7 +2900,7 @@ class SwiftCodeGenTests: XCTestCase {
                 @memoized("atom")
                 @inlinable
                 public func __atom() throws -> TestGrammarAST.Atom? {
-                    let mark = self.mark()
+                    let _mark = self.mark()
 
                     if
                         let name = try self.NAME()
@@ -2908,7 +2908,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return .name(name)
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
 
                     if
                         let number = try self.NUMBER()
@@ -2916,7 +2916,7 @@ class SwiftCodeGenTests: XCTestCase {
                         return .number(number)
                     }
 
-                    self.restore(mark)
+                    self.restore(_mark)
                     return nil
                 }
             }

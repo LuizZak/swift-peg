@@ -17,7 +17,7 @@ extension Parser {
     @memoized("start")
     @inlinable
     public func __start() throws -> Node? {
-        let mark = self.mark()
+        let _mark = self.mark()
 
         if
             let a = try self.a()
@@ -25,7 +25,7 @@ extension Parser {
             return a
         }
 
-        self.restore(mark)
+        self.restore(_mark)
         return nil
     }
 
@@ -37,7 +37,7 @@ extension Parser {
     @memoized("a")
     @inlinable
     public func __a() throws -> Node? {
-        let mark = self.mark()
+        let _mark = self.mark()
 
         if
             case let (_?, c?) = try self._a_nsr()
@@ -45,7 +45,7 @@ extension Parser {
             return Node()
         }
 
-        self.restore(mark)
+        self.restore(_mark)
         return nil
     }
 
@@ -57,7 +57,7 @@ extension Parser {
     @memoizedLeftRecursive("b")
     @inlinable
     public func __b() throws -> Node? {
-        let mark = self.mark()
+        let _mark = self.mark()
 
         if
             let b = try self.b(),
@@ -66,7 +66,7 @@ extension Parser {
             return Node()
         }
 
-        self.restore(mark)
+        self.restore(_mark)
         return nil
     }
 
@@ -78,7 +78,7 @@ extension Parser {
     @memoized("c")
     @inlinable
     public func __c() throws -> [TokenType]? {
-        let mark = self.mark()
+        let _mark = self.mark()
 
         if
             let d = try self.repeatOneOrMore({
@@ -88,7 +88,7 @@ extension Parser {
             return d
         }
 
-        self.restore(mark)
+        self.restore(_mark)
         return nil
     }
 
@@ -100,7 +100,7 @@ extension Parser {
     @memoized("d")
     @inlinable
     public func __d() throws -> TokenType? {
-        let mark = self.mark()
+        let _mark = self.mark()
 
         if
             let d = try self.expect("d")
@@ -108,7 +108,7 @@ extension Parser {
             return d
         }
 
-        self.restore(mark)
+        self.restore(_mark)
         return nil
     }
 
@@ -120,7 +120,7 @@ extension Parser {
     @memoized("e")
     @inlinable
     public func __e() throws -> Node? {
-        let mark = self.mark()
+        let _mark = self.mark()
 
         if
             case let (_?, c?) = try self._e_nsr()
@@ -128,7 +128,7 @@ extension Parser {
             return Node()
         }
 
-        self.restore(mark)
+        self.restore(_mark)
         return nil
     }
 
@@ -204,7 +204,7 @@ extension Parser {
     @memoized("_a_nsr_tail")
     @inlinable
     public func ___a_nsr_tail() throws -> [TokenType]? {
-        let mark = self.mark()
+        let _mark = self.mark()
 
         if
             let c = try self.c()
@@ -212,7 +212,7 @@ extension Parser {
             return c
         }
 
-        self.restore(mark)
+        self.restore(_mark)
         return nil
     }
 
@@ -224,7 +224,7 @@ extension Parser {
     @memoized("__a_nsr__group_")
     @inlinable
     public func ____a_nsr__group_() throws -> (b: Node?, d: TokenType?) {
-        let mark = self.mark()
+        let _mark = self.mark()
 
         if
             let b = try self.b(),
@@ -233,7 +233,7 @@ extension Parser {
             return (b: b, d: d)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
         return (nil, nil)
     }
 }

@@ -13,7 +13,7 @@ extension Parser {
     @memoized("start")
     @inlinable
     public func __start() throws -> Node? {
-        let mark = self.mark()
+        let _mark = self.mark()
 
         if
             let a = try self.a()
@@ -21,7 +21,7 @@ extension Parser {
             return a
         }
 
-        self.restore(mark)
+        self.restore(_mark)
         return nil
     }
 
@@ -34,7 +34,7 @@ extension Parser {
     @memoizedLeftRecursive("a")
     @inlinable
     public func __a() throws -> Node? {
-        let mark = self.mark()
+        let _mark = self.mark()
 
         if
             let a = try self.a(),
@@ -43,7 +43,7 @@ extension Parser {
             return Node()
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
         if
             let _ = try self.expect("a")
@@ -51,7 +51,7 @@ extension Parser {
             return Node()
         }
 
-        self.restore(mark)
+        self.restore(_mark)
         return nil
     }
 
@@ -89,7 +89,7 @@ extension Parser {
     /// ```
     @inlinable
     public func _a_nsr_tail() throws -> TokenResult? {
-        let mark = self.mark()
+        let _mark = self.mark()
 
         if
             let _ = try self.expect("c")
@@ -97,7 +97,7 @@ extension Parser {
             return _
         }
 
-        self.restore(mark)
+        self.restore(_mark)
         return nil
     }
 }
