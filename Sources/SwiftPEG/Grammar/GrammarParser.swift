@@ -379,7 +379,7 @@ extension GrammarParser {
     ///     | atom '?' { self.setLocation(SwiftPEGGrammar.OptionalItem(atom: atom), at: mark) }
     ///     | atom '*' repetitionMode? { self.setLocation(SwiftPEGGrammar.ZeroOrMoreItem(atom: atom, repetitionMode: repetitionMode ?? .standard), at: mark) }
     ///     | atom '+' repetitionMode? { self.setLocation(SwiftPEGGrammar.OneOrMoreItem(atom: atom, repetitionMode: repetitionMode ?? .standard), at: mark) }
-    ///     | sep=atom '.' node=atom '+' { self.setLocation(SwiftPEGGrammar.GatherItem(sep: sep, item: node), at: mark) }
+    ///     | sep=atom '.' node=atom '+' repetitionMode? { self.setLocation(SwiftPEGGrammar.GatherItem(sep: sep, item: node, repetitionMode: repetitionMode ?? .standard), at: mark) }
     ///     | atom { self.setLocation(SwiftPEGGrammar.AtomItem(atom: atom), at: mark) }
     ///     ;
     /// ```
@@ -441,9 +441,12 @@ extension GrammarParser {
             let sep = try self.atom(),
             let _ = try self.expect(kind: .period),
             let node = try self.atom(),
-            let _ = try self.expect(kind: .plus)
+            let _ = try self.expect(kind: .plus),
+            let repetitionMode = try self.optional({
+                try self.repetitionMode()
+            })
         {
-            return self.setLocation(SwiftPEGGrammar.GatherItem(sep: sep, item: node), at: mark)
+            return self.setLocation(SwiftPEGGrammar.GatherItem(sep: sep, item: node, repetitionMode: repetitionMode ?? .standard), at: mark)
         }
 
         self.restore(mark)

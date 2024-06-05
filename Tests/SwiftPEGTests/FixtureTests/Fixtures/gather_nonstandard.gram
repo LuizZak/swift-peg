@@ -1,0 +1,215 @@
+@grammar """
+start: a ;
+a: c.b+< d | c.b+> d;
+b[TokenType]: 'b' ;
+c[TokenType]: 'c' ;
+d[TokenType]: 'd' ;
+""" ;
+
+@expectedParser """
+extension Parser {
+    /// ```
+    /// start:
+    ///     | a
+    ///     ;
+    /// ```
+    @memoized("start")
+    @inlinable
+    public func __start() throws -> Node? {
+        let mark = self.mark()
+
+        if
+            let a = try self.a()
+        {
+            return a
+        }
+
+        self.restore(mark)
+        return nil
+    }
+
+    /// ```
+    /// a:
+    ///     | c.b+< d
+    ///     | c.b+> d
+    ///     ;
+    /// ```
+    @memoized("a")
+    @inlinable
+    public func __a() throws -> Node? {
+        let mark = self.mark()
+
+        if
+            case let (b?, d?) = try self._a_nsr()
+        {
+            return Node()
+        }
+
+        self.restore(mark)
+
+        if
+            case let (b?, d?) = try self._a_nsr1()
+        {
+            return Node()
+        }
+
+        self.restore(mark)
+        return nil
+    }
+
+    /// ```
+    /// b[TokenType]:
+    ///     | 'b'
+    ///     ;
+    /// ```
+    @memoized("b")
+    @inlinable
+    public func __b() throws -> TokenType? {
+        let mark = self.mark()
+
+        if
+            let _ = try self.expect("b")
+        {
+            return TokenType()
+        }
+
+        self.restore(mark)
+        return nil
+    }
+
+    /// ```
+    /// c[TokenType]:
+    ///     | 'c'
+    ///     ;
+    /// ```
+    @memoized("c")
+    @inlinable
+    public func __c() throws -> TokenType? {
+        let mark = self.mark()
+
+        if
+            let _ = try self.expect("c")
+        {
+            return TokenType()
+        }
+
+        self.restore(mark)
+        return nil
+    }
+
+    /// ```
+    /// d[TokenType]:
+    ///     | 'd'
+    ///     ;
+    /// ```
+    @memoized("d")
+    @inlinable
+    public func __d() throws -> TokenType? {
+        let mark = self.mark()
+
+        if
+            let _ = try self.expect("d")
+        {
+            return TokenType()
+        }
+
+        self.restore(mark)
+        return nil
+    }
+
+    /// ```
+    /// _a_nsr[(b: [TokenType], d: TokenType)]:
+    ///     | c.b+< _a_nsr_tail
+    ///     ;
+    /// ```
+    @memoized("_a_nsr")
+    @inlinable
+    public func ___a_nsr() throws -> (b: [TokenType]?, d: TokenType?) {
+        var _current: [TokenType] = []
+
+        while
+            let b = try self.b()
+        {
+            _current.append(b)
+            let _mark = self.mark()
+
+            if
+                let d = try self._a_nsr_tail()
+            {
+                return (_current, d)
+            }
+
+            self.restore(_mark)
+
+            // Try separator before next item
+            guard
+                let _ = try self.c()
+            else {
+                break
+            }
+        }
+
+        return (nil, nil)
+    }
+
+    /// ```
+    /// _a_nsr1[(b: [TokenType], d: TokenType)]:
+    ///     | c.b+> _a_nsr_tail
+    ///     ;
+    /// ```
+    @memoized("_a_nsr1")
+    @inlinable
+    public func ___a_nsr1() throws -> (b: [TokenType]?, d: TokenType?) {
+        // Start by fetching as many productions as possible
+        guard
+            var _current: [(Mark, TokenType)] = try self.gather(separator: {
+                try self.c()
+            }, item: {
+                if let b = try self.b() { return (self.mark(), b) }
+                return nil
+            })
+        else {
+            return (nil, nil)
+        }
+
+        while let _end = _current.last {
+            self.restore(_end.0)
+
+            if
+                let d = try self._a_nsr_tail()
+            {
+                return (_current.map(\\.1), d)
+            } else if _current.count <= 1 {
+                return (nil, nil)
+            }
+
+            // Drop an item, backtrack the parser, and try again
+            _current.removeLast()
+        }
+
+        return (nil, nil)
+    }
+
+    /// ```
+    /// _a_nsr_tail[TokenType]:
+    ///     | d { d }
+    ///     ;
+    /// ```
+    @memoized("_a_nsr_tail")
+    @inlinable
+    public func ___a_nsr_tail() throws -> TokenType? {
+        let mark = self.mark()
+
+        if
+            let d = try self.d()
+        {
+            return d
+        }
+
+        self.restore(mark)
+        return nil
+    }
+}
+""" ;
+
+start: '' ;

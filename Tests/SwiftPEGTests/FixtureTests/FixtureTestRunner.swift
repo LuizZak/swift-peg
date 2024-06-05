@@ -17,12 +17,17 @@ class FixtureTestRunner {
     static let grammarProp = "grammar"
     static let expectedParserProp = "expectedParser"
     static let expectedTokenTypeProp = "expectedTokenType"
+    // Test file flags
+    static let focusProp = "focus"
 
     let tester: XCTestCase
     let logger: FixtureTestRunnerLogger
 
-    /// List of tests executed by this runner.
-    var tests: [FixtureTest] = []
+    /// List of test results from tests executed by this runner.
+    var testResults: [FixtureTestResults] = []
+    /// List of fixture URLs that failed to be parsed by some reason or another
+    /// during fixture collection.
+    var fixtureParseFailures: [URL] = []
 
     init(tester: XCTestCase) {
         self.tester = tester
@@ -37,42 +42,48 @@ class FixtureTestRunner {
 
         // Find all fixtures
         logger.beginLogMessageScope("Finding test files...")
-
         let files = try FileManager.default.contentsOfDirectory(at: fixturesPath, includingPropertiesForKeys: nil)
 
         logger.logMessage("Found \(files.count) test file(s)")
+        let allFixtures = try collectFixtures(grammarFileUrls: files)
         logger.endLogMessageScope()
 
-        try runFixtures(files)
+        try runTests(allFixtures)
 
         // Log results
-        let failed = tests.filter(\.failed).count
-        logger.logMessage("Ran \(tests.count, color: .cyan) test(s), \(failed, color: failed == 0 ? .green : .red) failed.")
+        let failed = testResults.filter(\.failed).count
+        let parseFailures = fixtureParseFailures.count
+        logger.logMessage(
+            """
+            Ran \(testResults.count, color: .cyan) test(s), \
+            \(failureCounter: failed) failed and \
+            \(failureCounter: parseFailures) parsing failure(s).
+            """
+        )
     }
 
-    /// Runs test fixtures detected from all of the provided grammar file URLs.
-    func runFixtures(_ grammarFileUrls: [URL]) throws {
-        logger.beginLogMessageScope("Running test fixtures...")
-        defer { logger.endLogMessageScope() }
+    /// Collects all recognized test fixtures from all of the given grammar file
+    /// URLs.
+    func collectFixtures(
+        grammarFileUrls: [URL]
+    ) throws -> [FixtureTestsFile] {
 
-        for url in grammarFileUrls {
-            do {
-                try runFixture(url)
-            } catch {
-                recordFailure(
-                    "Error parsing grammar file: \(error)",
-                    file: url.path,
-                    line: 1,
-                    expected: false
-                )
-            }
+        var result: [FixtureTestsFile] = []
+
+        for grammarFileUrl in grammarFileUrls {
+            let file = try collectFixtures(grammarFileUrl: grammarFileUrl)
+            result.append(file)
         }
+
+        return result
     }
 
-    /// Runs test fixtures detected from a given grammar file URL.
-    func runFixture(_ grammarFileUrl: URL) throws {
+    /// Collects all recognized test fixtures from a given grammar file URL.
+    func collectFixtures(
+        grammarFileUrl: URL
+    ) throws -> FixtureTestsFile {
         logger.beginLogMessageScope(
-            "Running \(url: grammarFileUrl.test_relativeURL(to: basePath))..."
+            "Collecting fixtures from \(url: grammarFileUrl.test_relativeURL(to: basePath))..."
         )
         defer { logger.endLogMessageScope() }
 
@@ -83,11 +94,16 @@ class FixtureTestRunner {
             from: grammar,
             grammarFileUrl: grammarFileUrl
         )
-
-        for var fixture in fixtures {
-            fixture.failures = try runTest(fixture)
-            self.tests.append(fixture)
+        var flags: FixtureTestsFile.Flags = []
+        if grammar.test_focus() {
+            flags.insert(.focus)
         }
+
+        return FixtureTestsFile(
+            file: grammarFileUrl,
+            fixtures: fixtures,
+            flags: flags
+        )
     }
 
     /// Collects all recognized test fixtures from a given grammar object, parsed
@@ -114,11 +130,50 @@ class FixtureTestRunner {
         return fixtures
     }
 
+    /// Runs all provided file fixtures.
+    func runTests(_ fileFixtures: [FixtureTestsFile]) throws {
+        // Detect focused files
+        let focused = fileFixtures.filter({ $0.flags.contains(.focus) })
+        guard focused.isEmpty else {
+            for fileFixture in focused {
+                try runTests(in: fileFixture)
+            }
+            return
+        }
+
+        for fileFixture in fileFixtures {
+            try runTests(in: fileFixture)
+        }
+    }
+
+    /// Run fixtures from a set of file fixtures.
+    func runTests(in fileFixture: FixtureTestsFile) throws {
+        logger.beginLogMessageScope(
+            depth: 2,
+            "Running \(fileName: fileFixture.file)..."
+        )
+        defer { logger.endLogMessageScope(depth: 2) }
+
+        for fixture in fileFixture.fixtures {
+            let failures: [FixtureTestFailure]
+            do {
+                failures = try runTest(fixture)
+            } catch {
+                failures = [
+                    .init(message: "Error running test: \(error)", file: fileFixture.file.path, line: 1)
+                ]
+            }
+
+            let result = FixtureTestResults(title: fixture.title, failures: failures)
+            self.testResults.append(result)
+        }
+    }
+
     /// Runs a test fixture, returning the test failures.
     func runTest(_ test: FixtureTest) throws -> [FixtureTestFailure] {
         let context = makeTestContext(for: test)
 
-        logger.logMessage("Running \(formatted: test.title) test... ", terminator: "")
+        logger.logMessage("Test \(formatted: test.title)... ", terminator: "")
 
         try test.testFunction(context)
 
@@ -335,5 +390,10 @@ private extension SwiftPEGGrammar.Grammar {
     /// `@grammar <value>`
     func test_grammar() -> String? {
         return test_stringOrIdentMetaValue(named: FixtureTestRunner.grammarProp)
+    }
+
+    /// `@focus`
+    func test_focus() -> Bool {
+        return test_metaProperty(named: FixtureTestRunner.focusProp) != nil
     }
 }

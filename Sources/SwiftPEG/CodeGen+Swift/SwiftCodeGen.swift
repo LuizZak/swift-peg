@@ -330,7 +330,7 @@ public class SwiftCodeGen {
         // Preparation
 
         let ruleName = info.name
-        let ruleType = info.bindings.scg_asTupleType().scg_optionalWrapped()
+        let ruleType = info.bindings.be_asTupleType().be_optionalWrapped()
         let returnType = ruleType.scg_asValidSwiftType()
 
         let trailName = ruleName + "_tail"
@@ -345,7 +345,7 @@ public class SwiftCodeGen {
         let trailProductionName = enqueueAuxiliaryRule(
             InternalGrammar.Rule(
                 name: trailName,
-                type: remainingElements.scg_asTupleType(),
+                type: remainingElements.be_asTupleType(),
                 alts: [
                     .init(namedItems: repetitionInfo.trail, action: trailAction)
                 ]
@@ -357,7 +357,7 @@ public class SwiftCodeGen {
             .atom(.ruleName(trailProductionName))
 
         // Synthesize method
-        generateRuleDocComment(ruleName, info.bindings.scg_asTupleType(), [
+        generateRuleDocComment(ruleName, info.bindings.be_asTupleType(), [
             .init(namedItems: [repetitionInfo.repetition, .item(syntheticItem)])
         ])
 
@@ -383,10 +383,10 @@ public class SwiftCodeGen {
                 return bindingEngine.typeForAtom(repetitionAtom())
             }
             func trailType() -> CommonAbstract.SwiftType {
-                trailInformation.bindings.scg_asTupleType()
+                trailInformation.bindings.be_asTupleType()
             }
             func fullType() -> CommonAbstract.SwiftType {
-                info.bindings.scg_asTupleType()
+                info.bindings.be_asTupleType()
             }
 
             let failReturnExpression = _failReturnExpression(for: ruleType)
@@ -418,6 +418,16 @@ public class SwiftCodeGen {
 
             case .item(_, .oneOrMore(_, repetitionMode: .maximal), _):
                 try generateOneOrMoreMaximalBody(info)
+
+            case .item(_, .gather(let sep, let node, repetitionMode: .minimal), _):
+                try generateGatherMinimalBody(
+                    separator: sep, node: node, info
+                )
+
+            case .item(_, .gather(let sep, let node, repetitionMode: .maximal), _):
+                try generateGatherMaximalBody(
+                    separator: sep, node: node, info
+                )
 
             default:
                 fatalError("Repetition request's Item is not a non-standard repetition item?")
@@ -720,13 +730,13 @@ public class SwiftCodeGen {
                 let aux = enqueueAuxiliaryRule(
                     for: production,
                     suffix: "_opt",
-                    alts
+                    alts: alts
                 )
                 buffer.emit("try self.\(aux)()")
             }
             buffer.emit(")")
 
-        case .gather(let sep, let item):
+        case .gather(let sep, let item, _):
             buffer.emit("try self.gather(separator: ")
                 try buffer.emitInlinedBlock {
                     try generateAtom(sep, in: production)
@@ -796,7 +806,7 @@ public class SwiftCodeGen {
             let aux = enqueueAuxiliaryRule(
                 for: production,
                 suffix: "_group_",
-                group
+                alts: group
             )
 
             buffer.emit("try self.\(aux)()")
@@ -1143,7 +1153,7 @@ public class SwiftCodeGen {
             case .rule(let rule), .auxiliary(let rule, _):
                 return rule.type
             case .nonStandardRepetition(let ruleInfo, _):
-                return ruleInfo.bindings.scg_asTupleType()
+                return ruleInfo.bindings.be_asTupleType()
             }
         }
 
@@ -1232,7 +1242,7 @@ extension SwiftCodeGen {
     func enqueueAuxiliaryRule(
         for production: RemainingProduction,
         suffix: String,
-        _ alts: [InternalGrammar.Alt]
+        alts: [InternalGrammar.Alt]
     ) -> String {
 
         var alts = alts
@@ -1265,8 +1275,29 @@ extension SwiftCodeGen {
             for: production,
             suffix: suffix,
             type: type,
-            alts
+            alts: alts
         )
+    }
+
+    /// Enqueues an auxiliary rule to be generated based on a given rule as context.
+    /// Returns the deduplicated, unique method name to use as a reference for
+    /// further code generation.
+    ///
+    /// The type of the rule will be computed by inspecting the return elements
+    /// of the alts provided, and will fallback to `Any` if no suitable result
+    /// type could be computed.
+    ///
+    /// - note: Action for the generated alt wrapping the item is replaced with
+    /// the return expression for the auxiliary rule.
+    func enqueueAuxiliaryRule(
+        for production: RemainingProduction,
+        suffix: String,
+        namedItem: InternalGrammar.NamedItem
+    ) -> String {
+
+        enqueueAuxiliaryRule(for: production, suffix: suffix, alts: [
+            .init(namedItems: [namedItem])
+        ])
     }
 
     /// Enqueues an auxiliary rule to be generated based on a given production as
@@ -1279,7 +1310,7 @@ extension SwiftCodeGen {
         for production: RemainingProduction,
         suffix: String,
         type: CommonAbstract.SwiftType,
-        _ alts: [InternalGrammar.Alt]
+        alts: [InternalGrammar.Alt]
     ) -> String {
 
         let name = "_\(production.name)_\(suffix)"
@@ -1703,7 +1734,8 @@ extension InternalGrammar.Item {
     var hasNonStandardRepetition: Bool {
         switch self {
         case .zeroOrMore(_, let repetitionMode),
-            .oneOrMore(_, let repetitionMode):
+            .oneOrMore(_, let repetitionMode),
+            .gather(_, _, let repetitionMode):
             return repetitionMode != .standard
 
         default:
@@ -1712,45 +1744,11 @@ extension InternalGrammar.Item {
     }
 }
 
-internal extension Sequence where Element == BindingEngine.Binding {
-    /// Applies an optional type layer to bindings on this sequence.
-    ///
-    /// If the binding represents a tuple, with multiple bindings, each type
-    /// binding within the tuple is optional-wrapped.
-    func scg_optionalWrapped() -> [Element] {
-        map {
-            ($0.label, .optional($0.type))
-        }
-    }
-
-    /// Applies optional unwrapping to each element within this binding.
-    ///
-    /// If the binding represents a tuple, with multiple bindings, each type
-    /// binding within the tuple is unwrapped.
-    func scg_unwrapped() -> [Element] {
-        map {
-            ($0.label, $0.type.unwrapped)
-        }
-    }
-
-    /// Converts the bindings within this sequence of bindings into a Swift tuple
-    /// type, with labels as required.
-    func scg_asTupleType() -> CommonAbstract.SwiftType {
-        .tuple(map { element in
-            if let label = element.label {
-                .labeled(label: label, element.type)
-            } else {
-                .unlabeled(element.type)
-            }
-        })
-    }
-}
-
 internal extension CommonAbstract.SwiftType {
     /// Returns `self` unwrapped of an optional layer, unless `self` is a tuple
     /// type, in which case returns a tuple of each element unwrapped by one
     /// optional layer.
-    func scg_unwrapped() -> Self {
+    func be_unwrapped() -> Self {
         switch self {
         case .tuple(let types):
             return .tuple(types.map(\.unwrapped))
@@ -1761,7 +1759,7 @@ internal extension CommonAbstract.SwiftType {
 
     /// Returns `self` wrapped in an optional layer, unless `self` is a tuple type,
     /// in which case returns a tuple of optional elements of the tuple type.
-    func scg_optionalWrapped() -> Self {
+    func be_optionalWrapped() -> Self {
         switch self {
         case .tuple(let types):
             return .tuple(types.map(\.optionalWrapped))

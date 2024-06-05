@@ -262,8 +262,13 @@ public class GrammarInterpreter {
         assert(!remaining.isEmpty, "!remaining.isEmpty")
 
         func tryRemaining() throws -> AltContext? {
+            let mark = self.mark()
             let restCtx = AltContext()
-            return try tryNamedItems(ctx: restCtx, namedItems: remaining)
+            if let result = try tryNamedItems(ctx: restCtx, namedItems: remaining) {
+                return result
+            }
+            self.restore(mark)
+            return nil
         }
 
         switch repetition {
@@ -366,6 +371,61 @@ public class GrammarInterpreter {
 
             return nil
 
+        // sep.node+<
+        case .item(_, .gather(let sep, let atom, .minimal), _):
+            guard let first = try tryAtom(atom) else {
+                return nil
+            }
+
+            var collected: [Any] = [first]
+
+            while !tokenizer.isEOF {
+                if let rest = try tryRemaining() {
+                    ctx.valueNames.append(alias)
+                    ctx.values.append(collected)
+                    return ctx.merged(with: rest)
+                }
+                guard let _ = try tryAtom(sep) else {
+                    break
+                }
+                if let value = try tryAtom(atom) {
+                    collected.append(value)
+                } else {
+                    return nil
+                }
+            }
+
+            return nil
+
+        // sep.node+>
+        case .item(_, .gather(let sep, let atom, .maximal), _):
+            guard
+                var collected: [(Mark, Any)] = try gather(separator: { try self.tryAtom(sep) }, production: {
+                    if let atom = try self.tryAtom(atom) { (self.mark(), atom) }
+                    else { nil }
+                })
+            else {
+                return nil
+            }
+
+            while let last = collected.last {
+                let mark = last.0
+                self.restore(mark)
+
+                if let rest = try tryRemaining() {
+                    ctx.valueNames.append(alias)
+                    ctx.values.append(collected.map(\.1))
+                    return ctx.merged(with: rest)
+                }
+                if collected.count < 1 {
+                    return nil
+                }
+
+                collected.removeLast()
+            }
+
+            return nil
+
         default:
             preconditionFailure("item \(repetition) is not a non-standard repetition")
         }
@@ -414,25 +474,8 @@ public class GrammarInterpreter {
         case .oneOrMore(let atom, _):
             return try oneOrMore(atom)
 
-        case .gather(let sep, let node):
-            guard let first = try self.tryAtom(node) else {
-                return nil
-            }
-
-            var mark = self.mark()
-            var result: [Any] = [first]
-
-            while try self.tryAtom(sep) != nil {
-                guard let next = try self.tryAtom(node) else {
-                    break
-                }
-
-                result.append(next)
-                mark = self.mark()
-            }
-
-            self.restore(mark)
-            return result
+        case .gather(let sep, let node, _):
+            return try gather(sep, node)
 
         case .atom(let atom):
             return try self.tryAtom(atom)
@@ -498,6 +541,12 @@ public class GrammarInterpreter {
         }
     }
 
+    func gather(_ sep: InternalGrammar.Atom, _ node: InternalGrammar.Atom) throws -> [Any]? {
+        try gather(separator: { try self.tryAtom(sep) }) {
+            try self.tryAtom(node)
+        }
+    }
+
     func zeroOrMore<T>(production: () throws -> T?) throws -> [T]? {
         var mark = self.mark()
         var result: [T] = []
@@ -528,6 +577,27 @@ public class GrammarInterpreter {
         return result
     }
 
+    func gather<U, T>(separator: () throws -> U?, production: () throws -> T?) throws -> [T]? {
+        guard let first = try production() else {
+            return nil
+        }
+
+        var mark = self.mark()
+        var result: [T] = [first]
+
+        while try separator() != nil {
+            guard let next = try production() else {
+                break
+            }
+
+            result.append(next)
+            mark = self.mark()
+        }
+
+        self.restore(mark)
+        return result
+    }
+
     //
 
     func alias(_ namedItem: InternalGrammar.NamedItem) -> String? {
@@ -542,7 +612,6 @@ public class GrammarInterpreter {
     }
 
     func alias(_ item: InternalGrammar.Item) -> String? {
-
         switch item {
         case .atom(let atom),
             .zeroOrMore(let atom, _),
@@ -550,7 +619,7 @@ public class GrammarInterpreter {
             .optional(let atom):
             return alias(atom)
 
-        case .gather(_, let node):
+        case .gather(_, let node, _):
             return alias(node)
 
         case .optionalItems:

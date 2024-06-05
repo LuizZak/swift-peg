@@ -2,7 +2,7 @@ extension SwiftCodeGen {
     /// Produces a zero-or-more minimal (`*<`) repetition parsing method.
     func generateZeroOrMoreMinimalBody(_ info: RepetitionBodyGenInfo) throws {
         let currentArray = "_current"
-        let repetitionItemType = info.repetitionAtomType.scg_unwrapped().scg_asValidSwiftType()
+        let repetitionItemType = info.repetitionAtomType.be_unwrapped().scg_asValidSwiftType()
 
         buffer.emitLine("var \(currentArray): [\(repetitionItemType)] = []")
 
@@ -16,7 +16,14 @@ extension SwiftCodeGen {
             // if let <trail> = <trail>()
             //   ...
             buffer.ensureDoubleNewline()
-            try _generateSuccessIfLet(info, leftExpression: currentArray)
+            let trailItem = info.trailItem
+            let trailBindings = info.trailBindings(bindingEngine)
+            try _generateIfLet(item: trailItem, bindings: trailBindings, in: info.production) { (bindingNames) in
+                let bindingNames = [currentArray] + bindingNames
+
+                let expr = defaultReturnExpression(for: bindingNames.scgr_asTupleExpr())
+                buffer.emitLine("return \(expr)")
+            }
 
             buffer.ensureDoubleNewline()
             buffer.emitLine("self.restore(mark)")
@@ -30,7 +37,7 @@ extension SwiftCodeGen {
             var nextBindings: [String] = []
             try buffer.indented {
                 let item = InternalGrammar.Item.atom(info.repetitionAtom)
-                let bindings = bindingEngine.bindings(for: info.repetitionAtom).scg_unwrapped()
+                let bindings = bindingEngine.bindings(for: info.repetitionAtom).be_unwrapped()
 
                 nextBindings.append(contentsOf:
                     try generateBindingsToItem(
@@ -60,7 +67,7 @@ extension SwiftCodeGen {
     /// Produces a zero-or-more maximal (`*>`) repetition parsing method.
     func generateZeroOrMoreMaximalBody(_ info: RepetitionBodyGenInfo) throws {
         let currentArray = "_current"
-        let repetitionItemType = info.repetitionAtomType.scg_unwrapped().scgr_flattened()
+        let repetitionItemType = info.repetitionAtomType.be_unwrapped().scgr_flattened()
         let arrayElementType = CommonAbstract.SwiftType.tuple([
             .unlabeled("Mark"),
             .unlabeled(repetitionItemType),
@@ -79,7 +86,7 @@ extension SwiftCodeGen {
                 defer { declContext.pop() }
 
                 let item = InternalGrammar.Item.atom(info.repetitionAtom)
-                let bindings = bindingEngine.bindings(for: info.repetitionAtom).scg_unwrapped()
+                let bindings = bindingEngine.bindings(for: info.repetitionAtom).be_unwrapped()
 
                 buffer.emit("if ")
                 let bound = try generateBindingsToItem(item, bindings, in: info.production)
@@ -106,7 +113,14 @@ extension SwiftCodeGen {
             // if let <trail> = <trail>()
             //   ...
             buffer.ensureDoubleNewline()
-            try _generateSuccessIfLet(info, leftExpression: "\(currentArray).map(\\.1)")
+            let trailItem = info.trailItem
+            let trailBindings = info.trailBindings(bindingEngine)
+            try _generateIfLet(item: trailItem, bindings: trailBindings, in: info.production) { (bindingNames) in
+                let bindingNames = ["\(currentArray).map(\\.1)"] + bindingNames
+
+                let expr = defaultReturnExpression(for: bindingNames.scgr_asTupleExpr())
+                buffer.emitLine("return \(expr)")
+            }
             buffer.backtrackWhitespace()
             buffer.emitBlock(" else if \(currentArray).isEmpty ") {
                 buffer.emit("return \(info.failReturnExpression)")
@@ -124,7 +138,7 @@ extension SwiftCodeGen {
     /// Produces a one-or-more minimal (`+<`) repetition parsing method.
     func generateOneOrMoreMinimalBody(_ info: RepetitionBodyGenInfo) throws {
         let currentArray = "_current"
-        let repetitionItemType = info.repetitionAtomType.scg_unwrapped().scg_asValidSwiftType()
+        let repetitionItemType = info.repetitionAtomType.be_unwrapped().scg_asValidSwiftType()
 
         buffer.emitLine("var \(currentArray): [\(repetitionItemType)] = []")
 
@@ -135,7 +149,7 @@ extension SwiftCodeGen {
         var nextBindings: [String] = []
         try buffer.indented {
             let item = InternalGrammar.Item.atom(info.repetitionAtom)
-            let bindings = bindingEngine.bindings(for: info.repetitionAtom).scg_unwrapped()
+            let bindings = bindingEngine.bindings(for: info.repetitionAtom).be_unwrapped()
 
             nextBindings.append(contentsOf:
                 try generateBindingsToItem(
@@ -157,7 +171,14 @@ extension SwiftCodeGen {
             // if let <trail> = <trail>()
             //   ...
             buffer.ensureDoubleNewline()
-            try _generateSuccessIfLet(info, leftExpression: currentArray)
+            let trailItem = info.trailItem
+            let trailBindings = info.trailBindings(bindingEngine)
+            try _generateIfLet(item: trailItem, bindings: trailBindings, in: info.production) { (bindingNames) in
+                let bindingNames = [currentArray] + bindingNames
+
+                let expr = defaultReturnExpression(for: bindingNames.scgr_asTupleExpr())
+                buffer.emitLine("return \(expr)")
+            }
 
             buffer.ensureDoubleNewline()
             buffer.emitLine("self.restore(_mark)")
@@ -170,7 +191,7 @@ extension SwiftCodeGen {
     /// Produces a one-or-more maximal (`+>`) repetition parsing method.
     func generateOneOrMoreMaximalBody(_ info: RepetitionBodyGenInfo) throws {
         let currentArray = "_current"
-        let repetitionItemType = info.repetitionAtomType.scg_unwrapped().scgr_flattened()
+        let repetitionItemType = info.repetitionAtomType.be_unwrapped().scgr_flattened()
         let arrayElementType = CommonAbstract.SwiftType.tuple([
             .unlabeled("Mark"),
             .unlabeled(repetitionItemType),
@@ -188,7 +209,7 @@ extension SwiftCodeGen {
                 defer { declContext.pop() }
 
                 let item = InternalGrammar.Item.atom(info.repetitionAtom)
-                let bindings = bindingEngine.bindings(for: info.repetitionAtom).scg_unwrapped()
+                let bindings = bindingEngine.bindings(for: info.repetitionAtom).be_unwrapped()
 
                 buffer.emit("if ")
                 let bound = try generateBindingsToItem(item, bindings, in: info.production)
@@ -214,7 +235,161 @@ extension SwiftCodeGen {
             // if let <trail> = <trail>()
             //   ...
             buffer.ensureDoubleNewline()
-            try _generateSuccessIfLet(info, leftExpression: "\(currentArray).map(\\.1)")
+            let trailItem = info.trailItem
+            let trailBindings = info.trailBindings(bindingEngine)
+            try _generateIfLet(item: trailItem, bindings: trailBindings, in: info.production) { (bindingNames) in
+                let bindingNames = ["\(currentArray).map(\\.1)"] + bindingNames
+
+                let expr = defaultReturnExpression(for: bindingNames.scgr_asTupleExpr())
+                buffer.emitLine("return \(expr)")
+            }
+
+            buffer.backtrackWhitespace()
+            buffer.emitBlock(" else if \(currentArray).count <= 1 ") {
+                buffer.emit("return \(info.failReturnExpression)")
+            }
+
+            buffer.ensureDoubleNewline()
+            buffer.emitLine("// Drop an item, backtrack the parser, and try again")
+            buffer.emitLine("\(currentArray).removeLast()")
+        }
+
+        buffer.ensureDoubleNewline()
+        buffer.emit("return \(info.failReturnExpression)")
+    }
+
+    /// Produces a gather minimal (`<sep>.<node>+<`) repetition parsing method.
+    func generateGatherMinimalBody(
+        separator: InternalGrammar.Atom,
+        node: InternalGrammar.Atom,
+        _ info: RepetitionBodyGenInfo
+    ) throws {
+        let currentArray = "_current"
+        let repetitionItemType = info.repetitionAtomType.be_unwrapped().scg_asValidSwiftType()
+
+        buffer.emitLine("var \(currentArray): [\(repetitionItemType)] = []")
+
+        buffer.ensureDoubleNewline()
+        buffer.emitLine("while")
+        declContext.push()
+
+        var nextBindings: [String] = []
+        try buffer.indented {
+            let item = InternalGrammar.Item.atom(info.repetitionAtom)
+            let bindings = bindingEngine.bindings(for: info.repetitionAtom).be_unwrapped()
+
+            nextBindings.append(contentsOf:
+                try generateBindingsToItem(
+                    item,
+                    bindings,
+                    in: info.production
+                )
+            )
+        }
+
+        buffer.ensureNewline()
+        try buffer.emitBlock {
+            defer { declContext.pop() }
+
+            let expr = defaultReturnExpression(for: nextBindings.scgr_asTupleExpr())
+            buffer.emitLine("\(currentArray).append(\(expr))")
+            buffer.emitLine("let _mark = self.mark()")
+
+            // if let <trail> = <trail>()
+            //   ...
+            buffer.ensureDoubleNewline()
+            //try _generateSuccessIfLet(info, leftExpression: currentArray)
+            let trailItem = info.trailItem
+            let trailBindings = info.trailBindings(bindingEngine)
+            try _generateIfLet(item: trailItem, bindings: trailBindings, in: info.production) { (bindingNames) in
+                let bindingNames = [currentArray] + bindingNames
+
+                let expr = defaultReturnExpression(for: bindingNames.scgr_asTupleExpr())
+                buffer.emitLine("return \(expr)")
+            }
+
+            buffer.ensureDoubleNewline()
+            buffer.emitLine("self.restore(_mark)")
+
+            buffer.ensureDoubleNewline()
+            buffer.emitLine("// Try separator before next item")
+            let bindings = bindingEngine.bindings(for: separator).be_unlabeled()
+            _=try _generateGuardBinding(item: .atom(separator), bindings: bindings, in: info.production) {
+                buffer.emitLine("break")
+            }
+        }
+
+        buffer.ensureDoubleNewline()
+        buffer.emit("return \(info.failReturnExpression)")
+    }
+
+    /// Produces a gather maximal (`<sep>.<node>+>`) repetition parsing method.
+    func generateGatherMaximalBody(
+        separator: InternalGrammar.Atom,
+        node: InternalGrammar.Atom,
+        _ info: RepetitionBodyGenInfo
+    ) throws {
+        let currentArray = "_current"
+        let repetitionItemType = info.repetitionAtomType.be_unwrapped().scgr_flattened()
+        let arrayElementType = CommonAbstract.SwiftType.tuple([
+            .unlabeled("Mark"),
+            .unlabeled(repetitionItemType),
+        ])
+
+        // Initial element capturing
+
+        buffer.emitLine("// Start by fetching as many productions as possible")
+        buffer.emitLine("guard")
+        try buffer.indented {
+            buffer.emit("var \(currentArray): [\(arrayElementType)] = ")
+            buffer.emit("try self.gather(separator: ")
+            try buffer.emitInlinedBlock {
+                declContext.push()
+                defer { declContext.pop() }
+
+                try generateAtom(separator, in: info.production)
+            }
+            buffer.emit(", item: ")
+            try buffer.emitInlinedBlock {
+                declContext.push()
+                defer { declContext.pop() }
+
+                let item = InternalGrammar.Item.atom(info.repetitionAtom)
+                let bindings = bindingEngine.bindings(for: info.repetitionAtom).be_unwrapped()
+
+                buffer.emit("if ")
+                let bound = try generateBindingsToItem(item, bindings, in: info.production)
+                let mapTupleExpr = (["self.mark()", bound.scgr_asTupleExprString()]).scgr_asTupleExpr()
+                buffer.emitLine(" { return \(self.defaultReturnExpression(for: mapTupleExpr)) }")
+                buffer.emitLine("return nil")
+            }
+            buffer.emitLine(")")
+        }
+        buffer.emitBlock("else ") {
+            buffer.emitLine("return \(info.failReturnExpression)")
+        }
+
+        // Main while loop
+
+        buffer.ensureDoubleNewline()
+        try buffer.emitBlock("while let _end = \(currentArray).last") {
+            declContext.push()
+            defer { declContext.pop() }
+
+            buffer.emitLine("self.restore(_end.0)")
+
+            // if let <trail> = <trail>()
+            //   ...
+            buffer.ensureDoubleNewline()
+            let trailItem = info.trailItem
+            let trailBindings = info.trailBindings(bindingEngine)
+            try _generateIfLet(item: trailItem, bindings: trailBindings, in: info.production) { (bindingNames) in
+                let bindingNames = ["\(currentArray).map(\\.1)"] + bindingNames
+
+                let expr = defaultReturnExpression(for: bindingNames.scgr_asTupleExpr())
+                buffer.emitLine("return \(expr)")
+            }
+
             buffer.backtrackWhitespace()
             buffer.emitBlock(" else if \(currentArray).count <= 1 ") {
                 buffer.emit("return \(info.failReturnExpression)")
@@ -234,39 +409,65 @@ extension SwiftCodeGen {
     ///
     /// ```
     /// if
-    ///     let <trail bind> = try self.<trail production>()
+    ///     let <bindings> = <item>
     /// {
     ///     return (<leftExpression>, <trail bind>)
     /// }
     /// ```
-    fileprivate func _generateSuccessIfLet(
-        _ info: RepetitionBodyGenInfo,
-        leftExpression: String
+    fileprivate func _generateIfLet(
+        item: InternalGrammar.Item,
+        bindings: [BindingEngine.Binding],
+        in production: RemainingProduction,
+        block: ([String]) throws -> ()
     ) throws {
-        var bindingNames: [String] = [
-            leftExpression
-        ]
+        var bindingNames: [String] = []
 
         buffer.emitLine("if")
         try buffer.indented {
             declContext.push()
             defer { declContext.pop() }
-            let item = InternalGrammar.Item.atom(.ruleName(info.trailName))
-            let bindings = info.trailInfo.bindings
 
-            bindingNames.append(contentsOf:
-                try generateBindingsToItem(
-                    item,
-                    bindings,
-                    in: info.production
-                )
+            bindingNames = try generateBindingsToItem(
+                item,
+                bindings,
+                in: production
             )
         }
         buffer.ensureNewline()
-        buffer.emitBlock {
-            let expr = defaultReturnExpression(for: bindingNames.scgr_asTupleExpr())
-            buffer.emitLine("return \(expr)")
+        try buffer.emitBlock {
+            try block(bindingNames)
         }
+    }
+
+    /// Generates:
+    ///
+    /// ```
+    /// guard
+    ///     let <bindings> = <item>
+    /// else {
+    ///     elseBlock()
+    /// }
+    /// ```
+    fileprivate func _generateGuardBinding(
+        item: InternalGrammar.Item,
+        bindings: [BindingEngine.Binding],
+        in production: RemainingProduction,
+        elseBlock: () throws -> ()
+    ) throws -> [String] {
+        var bindingNames: [String] = []
+
+        buffer.emitLine("guard")
+        try buffer.indented {
+            bindingNames = try generateBindingsToItem(
+                item,
+                bindings,
+                in: production
+            )
+        }
+        buffer.ensureNewline()
+        try buffer.emitBlock("else ", elseBlock)
+
+        return bindingNames
     }
 
     struct RepetitionBodyGenInfo {
@@ -289,17 +490,33 @@ extension SwiftCodeGen {
         /// non-standard repetition operation.
         var fullType: CommonAbstract.SwiftType
 
-        /// Convenience for `repetitionAtomType.scg_unwrapped().scg_asValidSwiftType()`
+        /// Convenience for `repetitionAtomType.be_unwrapped().scg_asValidSwiftType()`
         var repetitionAtomTypeString: String {
-            repetitionAtomType.scg_unwrapped().scg_asValidSwiftType()
+            repetitionAtomType.be_unwrapped().scg_asValidSwiftType()
         }
         /// Convenience for `trailType.scg_asValidSwiftType()`
         var trailTypeString: String {
-            trailType.scg_unwrapped().scg_asValidSwiftType()
+            trailType.be_unwrapped().scg_asValidSwiftType()
         }
         /// Convenience for `fullType.scg_asValidSwiftType()`
         var fullTypeString: String {
-            fullType.scg_unwrapped().scg_asValidSwiftType()
+            fullType.be_unwrapped().scg_asValidSwiftType()
+        }
+
+        /// Convenience for `.atom(.ruleName(trailName))`.
+        var trailItem: InternalGrammar.Item {
+            .atom(.ruleName(trailName))
+        }
+
+        func trailBindings(_ bindingEngine: BindingEngine) -> [BindingEngine.Binding] {
+            if trailInfo.bindings.isEmpty {
+                return bindingEngine.bindings(for: trailItem)
+            }
+            if trailInfo.bindings.count == 1 && trailInfo.bindings[0].label == nil {
+                return bindingEngine.bindings(for: trailItem)
+            }
+
+            return trailInfo.bindings
         }
 
         func successExpression(

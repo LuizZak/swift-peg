@@ -215,6 +215,53 @@ class GrammarInterpreterTests: XCTestCase {
 
         assertEqual(result as? String, "a, b, c, and d")
     }
+
+    func testProduceRule_nonStandardGather() throws {
+        let source = """
+        a, b, c, and d
+        """
+        let grammar = try parseGrammar("""
+        @token IDENT ;
+
+        start: oxford_list ;
+        oxford_list:
+            | ','.item+> ',' and item { result }
+            ;
+        item:
+            | IDENT {item}
+            ;
+        and:
+            | IDENT {and}
+            ;
+        """)
+        let delegate = mockDelegate()
+        delegate
+            .addToken("and")
+            .addToken(StringMatcher.prefix(.regex(pattern: #"\w+"#)), named: "IDENT")
+            .addToken(",")
+        delegate.addAlt(action: .exact("item")) { ctx -> Any? in
+            return ctx.values.joinedAsString()
+        }
+        delegate.addAlt(action: .exact("and")) { ctx -> Any? in
+            let string = ctx.values.joinedAsString()
+            return string == "and" ? "and" : nil
+        }
+        delegate.addAlt(action: .contains("oxford_list")) { ctx -> Any? in
+            return ctx.values.joinedAsString()
+        }
+        delegate.addAlt(action: .contains("result")) { ctx -> Any? in
+            guard let value0 = ctx.values[0] as? [String] else {
+                return nil
+            }
+
+            return value0.joined(separator: ", ") + ctx.values.dropFirst().map({ "\($0)" }).joined(separator: " ")
+        }
+        let sut = makeSut(grammar, delegate, source: source)
+
+        let result = try assertUnwrap(sut.produce())
+
+        assertEqual(result as? String, "a, b, c, and d")
+    }
 }
 
 // MARK: - Test internals

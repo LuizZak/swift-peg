@@ -125,7 +125,7 @@ class BindingEngine {
     ///
     /// - note: Rules always have an optional layer added to their return types.
     func typeForRule(_ rule: InternalGrammar.Rule) -> CommonAbstract.SwiftType? {
-        return rule.type?.scg_optionalWrapped()
+        return rule.type?.be_optionalWrapped()
     }
 
     /// Attempts to statically infer the type of a given named item.
@@ -152,18 +152,18 @@ class BindingEngine {
     /// Always optionally-wrapped.
     func typeForItem(_ item: InternalGrammar.Item) -> CommonAbstract.SwiftType {
         switch item {
-        case .oneOrMore(let atom, _), .zeroOrMore(let atom, _), .gather(_, let atom):
+        case .oneOrMore(let atom, _), .zeroOrMore(let atom, _), .gather(_, let atom, _):
             // Remove one layer of optionality, as it's consumed by the repetition
             // process to gauge when the repetition should end
-            let type = self.typeForAtom(atom).scg_unwrapped()
-            return .array(type).scg_optionalWrapped()
+            let type = self.typeForAtom(atom).be_unwrapped()
+            return .array(type).be_optionalWrapped()
 
         case .optionalItems(let alts):
             let bindings = computeBindings(alts)
-            return bindings.scg_asTupleType().scg_optionalWrapped()
+            return bindings.be_asTupleType().be_optionalWrapped()
 
         case .optional(let atom):
-            return typeForAtom(atom).scg_optionalWrapped()
+            return typeForAtom(atom).be_optionalWrapped()
 
         case .atom(let atom):
             return typeForAtom(atom)
@@ -178,7 +178,7 @@ class BindingEngine {
         switch atom {
         case .group(let alts):
             let bindings = computeBindings(alts)
-            return bindings.scg_asTupleType().scg_optionalWrapped()
+            return bindings.be_asTupleType().be_optionalWrapped()
 
         case .anyToken, .token, .string:
             return .optional(swiftTokenType())
@@ -206,11 +206,11 @@ class BindingEngine {
     func bindings(for namedItem: InternalGrammar.NamedItem) -> [Binding] {
         switch namedItem {
         case .item(let name?, let item, let type):
-            return [(name, type ?? typeForItem(item).scg_unwrapped())]
+            return [(name, type ?? typeForItem(item).be_unwrapped())]
 
         case .item(_, let item, _):
             let bindings = bindings(for: item)
-            return bindings.scg_unwrapped()
+            return bindings.be_unwrapped()
 
         case .lookahead:
             return []
@@ -227,21 +227,21 @@ class BindingEngine {
         switch item {
         case .zeroOrMore(let atom, _),
             .oneOrMore(let atom, _),
-            .gather(_, let atom):
+            .gather(_, let atom, _):
             // Remove one layer of optionality, as it's consumed by the repetition
             // process to gauge when the repetition should end
             var bindings = bindings(for: atom)
-            bindings = bindings.scg_unwrapped()
+            bindings = bindings.be_unwrapped()
             // Propagate binding names if this is a single-binding construct
             if bindings.count == 1 {
                 return [(bindings[0].label, .array(bindings[0].type))]
             }
 
-            return [(nil, .array(bindings.scg_asTupleType()))]
+            return [(nil, .array(bindings.be_asTupleType()))]
 
         case .optional(let atom):
             // TODO: Validate an optional bind of multiple results
-            return bindings(for: atom).scg_optionalWrapped()
+            return bindings(for: atom).be_optionalWrapped()
 
         case .optionalItems(let alts):
             return computeBindings(alts)
@@ -408,5 +408,47 @@ class BindingEngine {
             }
         }
         return result
+    }
+}
+
+internal extension Sequence where Element == BindingEngine.Binding {
+    /// Applies an optional type layer to bindings on this sequence.
+    ///
+    /// If the binding represents a tuple, with multiple bindings, each type
+    /// binding within the tuple is optional-wrapped.
+    func be_optionalWrapped() -> [Element] {
+        map { binding in
+            (binding.label, .optional(binding.type))
+        }
+    }
+
+    /// Applies optional unwrapping to each element within this binding.
+    ///
+    /// If the binding represents a tuple, with multiple bindings, each type
+    /// binding within the tuple is unwrapped.
+    func be_unwrapped() -> [Element] {
+        map { binding in
+            (binding.label, binding.type.unwrapped)
+        }
+    }
+
+    /// Converts the bindings within this sequence of bindings into a Swift tuple
+    /// type, with labels as required.
+    func be_asTupleType() -> CommonAbstract.SwiftType {
+        .tuple(map { element in
+            if let label = element.label {
+                .labeled(label: label, element.type)
+            } else {
+                .unlabeled(element.type)
+            }
+        })
+    }
+
+    /// Returns a copy of this sequence of bindings, removing all labels from each
+    /// binding, but retaining the binding's type.
+    func be_unlabeled() -> [Element] {
+        map { binding in
+            (nil, binding.type)
+        }
     }
 }

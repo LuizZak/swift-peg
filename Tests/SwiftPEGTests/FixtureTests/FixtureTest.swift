@@ -1,12 +1,45 @@
+import Foundation
 import Console
 import SwiftPEG
 
-/// A fixture test execution context.
+/// A collection of test fixtures that came from a single file.
+struct FixtureTestsFile {
+    var file: URL
+    var fixtures: [FixtureTest]
+
+    /// Flags for a fixture test file
+    var flags: Flags = []
+
+    struct Flags: OptionSet {
+        /// A flag for files that are meant to be tested, and all other tests in
+        /// other files without the flag are to be skipped.
+        ///
+        /// If no file has a focus flag, then all fixture tests from all files
+        /// are executed as normal.
+        static let focus: Self = Self(rawValue: 0b0000_0001)
+
+        var rawValue: Int
+
+        init(rawValue: Int) {
+            self.rawValue = rawValue
+        }
+    }
+}
+
+/// A fixture test definition.
 struct FixtureTest {
     var title: ConsoleString
     var diagnosticTarget: any LineDiagnosticTarget
     var testFunction: (FixtureTestContext) throws -> Void
-    var failures: [FixtureTestFailure] = []
+
+    var file: URL {
+        diagnosticTarget.fileUrl
+    }
+}
+
+struct FixtureTestResults {
+    var title: ConsoleString
+    var failures: [FixtureTestFailure]
 
     var failed: Bool {
         !failures.isEmpty

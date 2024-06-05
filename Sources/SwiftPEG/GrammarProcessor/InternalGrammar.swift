@@ -536,7 +536,7 @@ public enum InternalGrammar {
         /// `atom '+'`
         case oneOrMore(Atom, repetitionMode: CommonAbstract.RepetitionMode = .standard)
         /// `sep=atom '.' node=atom '+'`
-        case gather(sep: Atom, node: Atom)
+        case gather(sep: Atom, node: Atom, repetitionMode: CommonAbstract.RepetitionMode = .standard)
         /// `atom`
         case atom(Atom)
 
@@ -544,8 +544,8 @@ public enum InternalGrammar {
             switch self {
             case .atom(let atom):
                 return atom.description
-            case .gather(let sep, let node):
-                return "\(sep).\(node)+"
+            case .gather(let sep, let node, let repetitionMode):
+                return "\(sep).\(node)+\(repetitionMode._suffixString)"
             case .zeroOrMore(let atom, let repetitionMode):
                 return "\(atom)*\(repetitionMode._suffixString)"
             case .oneOrMore(let atom, let repetitionMode):
@@ -566,7 +566,7 @@ public enum InternalGrammar {
             switch self {
             case .atom(let atom):
                 return atom
-            case .gather(_, let node):
+            case .gather(_, let node, _):
                 return node
             case .zeroOrMore(let atom, _):
                 return atom
@@ -586,9 +586,9 @@ public enum InternalGrammar {
             case .atom(let atom):
                 return atom.removingCuts.map(Self.atom)
 
-            case .gather(let sep, let node):
+            case .gather(let sep, let node, let repetitionMode):
                 if let sep = sep.removingCuts, let node = node.removingCuts {
-                    return Self.gather(sep: sep, node: node)
+                    return Self.gather(sep: sep, node: node, repetitionMode: repetitionMode)
                 }
                 return nil
 
@@ -627,10 +627,10 @@ public enum InternalGrammar {
                     Self.oneOrMore($0, repetitionMode: repetitionMode)
                 }
 
-            case .gather(let sep, let node):
+            case .gather(let sep, let node, let repetitionMode):
                 switch (sep.reduced, node.reduced) {
                 case (let sep?, let node?):
-                    return Self.gather(sep: sep, node: node)
+                    return Self.gather(sep: sep, node: node, repetitionMode: repetitionMode)
 
                 case (nil, let node?):
                     // A gather with nil separators is equivalent to a 'node+'
@@ -677,20 +677,20 @@ public enum InternalGrammar {
                     Self.oneOrMore($0, repetitionMode: repetitionMode)
                 })
 
-            case .gather(let sep, let node):
+            case .gather(let sep, let node, let repetitionMode):
                 switch (sep.flattened(), node.flattened()) {
                 case (let sep?, let node?):
-                    return Self.gather(sep: sep, node: node)
+                    return Self.gather(sep: sep, node: node, repetitionMode: repetitionMode)
 
                 case (nil, let node?):
                     // A gather with just nodes is equivalent to a 'node+'
                     // production
-                    return Self.oneOrMore(node)
+                    return Self.oneOrMore(node, repetitionMode: repetitionMode)
 
                 case (let sep?, nil):
                     // A gather with just separators is equivalent to a 'sep*'
                     // production
-                    return Self.zeroOrMore(sep)
+                    return Self.zeroOrMore(sep, repetitionMode: repetitionMode)
 
                 case (nil, nil):
                     return nil
@@ -711,7 +711,7 @@ public enum InternalGrammar {
             case .atom(let atom):
                 try atom.accept(visitor)
 
-            case .gather(let sep, let node):
+            case .gather(let sep, let node, _):
                 try sep.accept(visitor)
                 try node.accept(visitor)
 
@@ -771,7 +771,7 @@ public enum InternalGrammar {
                 return .oneOrMore(Atom.from(item.atom), repetitionMode: item.repetitionMode)
 
             case let item as SwiftPEGGrammar.GatherItem:
-                return .gather(sep: Atom.from(item.sep), node: Atom.from(item.item))
+                return .gather(sep: Atom.from(item.sep), node: Atom.from(item.item), repetitionMode: item.repetitionMode)
 
             case let item as SwiftPEGGrammar.OptionalItem:
                 return .optional(Atom.from(item.atom))

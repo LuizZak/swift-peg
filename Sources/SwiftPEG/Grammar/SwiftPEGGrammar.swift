@@ -701,6 +701,10 @@ extension SwiftPEGGrammar {
         @NodeProperty
         var _item: Atom
 
+        /// The repetition mode for this gather item.
+        @NodeRequired
+        public var repetitionMode: CommonAbstract.RepetitionMode = .standard
+
         /// Accepts a given grammar-node visitor into this node.
         public override func accept<Visitor>(_ visitor: Visitor) throws -> Visitor.VisitResult where Visitor: GrammarNodeVisitorType {
             try visitor.visit(self)

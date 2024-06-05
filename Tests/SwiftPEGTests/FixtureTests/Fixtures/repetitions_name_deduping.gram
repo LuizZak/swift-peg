@@ -71,9 +71,9 @@ extension Parser {
             let _mark = self.mark()
 
             if
-                let _ = try self._a_nsr_tail()
+                let _a_nsr_tail = try self._a_nsr_tail()
             {
-                return _current
+                return (_current, _a_nsr_tail)
             }
 
             self.restore(_mark)
@@ -99,9 +99,9 @@ extension Parser {
             let _mark = self.mark()
 
             if
-                let _ = try self._a_nsr1_tail()
+                let _a_nsr1_tail = try self._a_nsr1_tail()
             {
-                return _current
+                return (_current, _a_nsr1_tail)
             }
 
             self.restore(_mark)

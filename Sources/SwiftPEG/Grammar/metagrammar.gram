@@ -69,16 +69,16 @@ lookahead[SwiftPEGGrammar.LookaheadOrCut]:
     ;
 
 item[SwiftPEGGrammar.Item]:
-    | '[' ~ alts ']'                { self.setLocation(SwiftPEGGrammar.OptionalItems(alts: alts), at: mark) }
-    |  atom '?'                     { self.setLocation(SwiftPEGGrammar.OptionalItem(atom: atom), at: mark) }
-    |  atom '*' repetitionMode?     { self.setLocation(SwiftPEGGrammar.ZeroOrMoreItem(atom: atom, repetitionMode: repetitionMode ?? .standard), at: mark) }
-    |  atom '+' repetitionMode?     { self.setLocation(SwiftPEGGrammar.OneOrMoreItem(atom: atom, repetitionMode: repetitionMode ?? .standard), at: mark) }
-    |  sep=atom '.' node=atom '+'   { self.setLocation(SwiftPEGGrammar.GatherItem(sep: sep, item: node), at: mark) }
-    |  atom                         { self.setLocation(SwiftPEGGrammar.AtomItem(atom: atom), at: mark) }
+    | '[' ~ alts ']'                                { self.setLocation(SwiftPEGGrammar.OptionalItems(alts: alts), at: mark) }
+    |  atom '?'                                     { self.setLocation(SwiftPEGGrammar.OptionalItem(atom: atom), at: mark) }
+    |  atom '*' repetitionMode?                     { self.setLocation(SwiftPEGGrammar.ZeroOrMoreItem(atom: atom, repetitionMode: repetitionMode ?? .standard), at: mark) }
+    |  atom '+' repetitionMode?                     { self.setLocation(SwiftPEGGrammar.OneOrMoreItem(atom: atom, repetitionMode: repetitionMode ?? .standard), at: mark) }
+    |  sep=atom '.' node=atom '+' repetitionMode?   { self.setLocation(SwiftPEGGrammar.GatherItem(sep: sep, item: node, repetitionMode: repetitionMode ?? .standard), at: mark) }
+    |  atom                                         { self.setLocation(SwiftPEGGrammar.AtomItem(atom: atom), at: mark) }
     ;
 repetitionMode[CommonAbstract.RepetitionMode]:
-    | '<'                           { .minimal }
-    | '>'                           { .maximal }
+    | '<'                                           { .minimal }
+    | '>'                                           { .maximal }
     ;
 
 atom[SwiftPEGGrammar.Atom]:
