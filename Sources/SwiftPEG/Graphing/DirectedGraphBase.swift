@@ -24,7 +24,7 @@ class DirectedGraphBase<Node, Edge: DirectedGraphBaseEdgeType>: DirectedGraph wh
 
         let graph = Self()
         graph.addNodes(nodeSet)
-        
+
         for edge in connectedEdges {
             graph.addEdge(from: edge.start, to: edge.end)
         }
@@ -38,7 +38,7 @@ class DirectedGraphBase<Node, Edge: DirectedGraphBaseEdgeType>: DirectedGraph wh
     public func areNodesEqual(_ node1: Node, _ node2: Node) -> Bool {
         node1 === node2
     }
-    
+
     /// Returns whether a given graph node exists in this graph.
     ///
     /// A reference equality test (===) is used to determine syntax node equality.
@@ -46,37 +46,69 @@ class DirectedGraphBase<Node, Edge: DirectedGraphBaseEdgeType>: DirectedGraph wh
     public func containsNode(_ node: Node) -> Bool {
         nodes.contains { $0 === node }
     }
-    
+
     @inlinable
     public func startNode(for edge: Edge) -> Node {
         edge.start
     }
-    
+
     @inlinable
     public func endNode(for edge: Edge) -> Node {
         edge.end
     }
-    
+
     /// Returns all outgoing edges for a given graph node.
     ///
     /// A reference equality test (===) is used to determine graph node equality.
     func edges(from node: Node) -> [Edge] {
         edges.filter { $0.start === node }
     }
-    
+
     /// Returns all ingoing edges for a given graph node.
     ///
     /// A reference equality test (===) is used to determine graph node equality.
     func edges(towards node: Node) -> [Edge] {
         edges.filter { $0.end === node }
     }
-    
+
     /// Returns an existing edge between two nodes, or `nil`, if no edges between
     /// them currently exist.
     ///
     /// A reference equality test (===) is used to determine graph node equality.
     func edge(from start: Node, to end: Node) -> Edge? {
         edges.first { $0.start === start && $0.end === end }
+    }
+
+    func nodesConnected(towards node: Node) -> [Node] {
+        edges.compactMap { edge in
+            if edge.end == node {
+                edge.start
+            } else {
+                nil
+            }
+        }
+    }
+
+    func nodesConnected(from node: Node) -> [Node] {
+        edges.compactMap { edge in
+            if edge.start == node {
+                edge.end
+            } else {
+                nil
+            }
+        }
+    }
+
+    func allNodesConnected(to node: Node) -> [Node] {
+        edges.compactMap { edge in
+            if edge.start == node {
+                edge.end
+            } else if edge.end == node {
+                edge.start
+            } else {
+                nil
+            }
+        }
     }
 
     // MARK: - Internals
@@ -86,7 +118,7 @@ class DirectedGraphBase<Node, Edge: DirectedGraphBaseEdgeType>: DirectedGraph wh
     }
 
     func copyMetadata(from edge1: Edge, to edge2: Edge) {
-        
+
     }
 
     /// Removes all nodes and edges from this graph.
@@ -94,14 +126,14 @@ class DirectedGraphBase<Node, Edge: DirectedGraphBaseEdgeType>: DirectedGraph wh
         nodes.removeAll()
         edges.removeAll()
     }
-    
+
     /// Adds a given node to this graph.
     func addNode(_ node: Node) {
         assert(
             !self.containsNode(node),
             "Node \(node) already exists in this graph"
         )
-        
+
         nodes.append(node)
     }
 
@@ -119,7 +151,7 @@ class DirectedGraphBase<Node, Edge: DirectedGraphBaseEdgeType>: DirectedGraph wh
 
         return addEdge(from: start, to: end)
     }
-    
+
     /// Adds an edge `start -> end` to this graph.
     @discardableResult
     func addEdge(from start: Node, to end: Node) -> Edge {
@@ -173,7 +205,7 @@ class DirectedGraphBase<Node, Edge: DirectedGraphBaseEdgeType>: DirectedGraph wh
             "Attempted to remove edge from nodes \(start) -> \(end) that do not exist in this graph."
         )
     }
-    
+
     /// Removes a given node from this graph.
     func removeNode(_ node: Node) {
         if _uncheckedRemoveNode(node) {
@@ -184,14 +216,14 @@ class DirectedGraphBase<Node, Edge: DirectedGraphBaseEdgeType>: DirectedGraph wh
             )
         }
     }
-    
+
     /// Removes a given sequence of edges from this graph.
     func removeEdges<S: Sequence>(_ edgesToRemove: S) where S.Element == Edge {
         for edge in edgesToRemove {
             _uncheckedRemoveEdge(edge)
         }
     }
-    
+
     /// Removes a given sequence of nodes from this graph.
     func removeNodes<S: Sequence>(_ nodesToRemove: S) where S.Element == Node {
         for node in nodesToRemove {

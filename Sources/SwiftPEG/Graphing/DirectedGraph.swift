@@ -333,47 +333,41 @@ extension DirectedGraph {
 
     @inlinable
     func stronglyConnectedComponents() -> [Set<Node>] {
-        // TODO: Cleanup implementation
         var result: [Set<Node>] = []
 
         var indices: [Node: Int] = [:]
-        var lowLink: [Node: Int] = [:]
         var stack: [Node] = []
         var index = 0
 
-        func strongConnect(_ node: Node) {
+        func strongConnect(_ node: Node) -> Int {
+            var lowLink = index
             indices[node] = index
-            lowLink[node] = index
             index += 1
             stack.append(node)
 
             for next in self.nodesConnected(from: node) {
-                if indices[next] == nil {
-                    strongConnect(next)
-                    lowLink[node] = min(lowLink[node]!, lowLink[next]!)
-                } else if stack.contains(next) {
-                    lowLink[node] = min(lowLink[node]!, indices[next]!)
+                guard let nextIndex = indices[next] else {
+                    // Not been visited
+                    lowLink = min(lowLink, strongConnect(next))
+                    continue
+                }
+
+                if stack.contains(next) {
+                    lowLink = min(lowLink, nextIndex)
                 }
             }
 
-            if lowLink[node] == indices[node] {
-                var components: Set<Node> = []
-
-                while let next = stack.popLast() {
-                    components.insert(next)
-
-                    if next == node {
-                        break
-                    }
-                }
-
-                result.append(components)
+            if lowLink == indices[node], let idx = stack.lastIndex(of: node) {
+                result.append(Set(stack[idx...]))
+                stack.removeSubrange(idx...)
             }
+
+            return lowLink
         }
 
         for node in nodes {
             if indices[node] == nil {
-                strongConnect(node)
+                _=strongConnect(node)
             }
         }
 
@@ -389,7 +383,6 @@ extension DirectedGraph {
             var component: Set<Node> = []
             var nextNodes: [Node] = [start]
 
-            // Backtrack
             while !nextNodes.isEmpty {
                 let next = nextNodes.removeFirst()
                 remaining.remove(next)
