@@ -14,8 +14,14 @@ class AltReducer {
         self.alt = alt
     }
 
+    /// Returns a reduced version of the alt associated with this reducer, removing
+    /// any optional productions within the alternative.
     func reduced() -> InternalGrammar.Alt {
-        alt.reduced ?? .init(namedItems: [], action: alt.action, failAction: alt.failAction)
+        alt.reduced ?? .init(
+            namedItems: [],
+            action: alt.action,
+            failAction: alt.failAction
+        )
     }
 
     /// Returns a set of permutations of the alt associated with this reducer,
@@ -156,11 +162,5 @@ class AltReducer {
         default:
             return [[atom]]
         }
-    }
-
-    enum Error: Swift.Error {
-        /// Error raised when `AltReducer.permute` reaches the limit of permutations
-        /// allowable.
-        case permutationLimitReached
     }
 }

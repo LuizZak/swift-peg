@@ -34,10 +34,10 @@ extension GrammarProcessor {
 
         printIfVerbose("Computing reachable rules...")
 
-        let graph = InitialGraph()
-        graph.addNodes(rules.keys.map(RuleNode.init))
+        let graph = StringDirectedGraph()
+        graph.addNodes(rules.keys)
 
-        guard let startNode = graph.nodes.first(where: { $0.ruleName == startRuleName }) else {
+        guard let startNode = graph.nodes.first(where: { $0.value == startRuleName }) else {
             throw recordAndReturn(
                 .message("Invalid starting rule name '\(startRuleName)': rule not found.")
             )
@@ -55,13 +55,13 @@ extension GrammarProcessor {
 
         var unreachable: Set<String> = Set(rules.keys)
         graph.breadthFirstVisit(start: startNode) { visit in
-            unreachable.remove(visit.node.ruleName)
+            unreachable.remove(visit.node.value)
             return true
         }
 
         // Split graph based on unreachable nodes, and try to do topological sort
         // on each subgraph, diagnosing only on the first node
-        let unreachableNodes = graph.nodes.filter({ unreachable.contains($0.ruleName) })
+        let unreachableNodes = graph.nodes.filter({ unreachable.contains($0.value) })
         let subgraph = graph.subgraph(of: unreachableNodes)
 
         var diagnose: Set<String> = []
@@ -78,7 +78,7 @@ extension GrammarProcessor {
             // rules in this component
             guard component.count > 1 else {
                 // Component is a single rule
-                diagnose.insert(first.ruleName)
+                diagnose.insert(first.value)
                 continue
             }
 
@@ -86,11 +86,11 @@ extension GrammarProcessor {
             guard let sorted = subgraph.topologicalSorted(), !sorted.isEmpty else {
                 // Fallback: report on previously randomly-picked first component
                 // and move on
-                diagnose.insert(first.ruleName)
+                diagnose.insert(first.value)
                 continue
             }
 
-            diagnose.insert(sorted[0].ruleName)
+            diagnose.insert(sorted[0].value)
         }
 
         return diagnose

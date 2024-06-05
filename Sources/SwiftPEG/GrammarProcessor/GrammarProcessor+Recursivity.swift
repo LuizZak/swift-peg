@@ -10,8 +10,8 @@ extension GrammarProcessor {
 
         printIfVerbose("Computing initial names...")
 
-        let graph = InitialGraph()
-        graph.addNodes(rules.keys.map(RuleNode.init))
+        let graph = StringDirectedGraph()
+        graph.addNodes(rules.keys)
 
         for (ruleName, rule) in rules {
             let initialNames = rule.initialNames()
@@ -28,7 +28,7 @@ extension GrammarProcessor {
     /// Computes left-recursive rules in a given grammar
     func computeLeftRecursive(
         in grammar: SwiftPEGGrammar.Grammar,
-        _ graph: InitialGraph,
+        _ graph: StringDirectedGraph,
         _ rules: [String : SwiftPEGGrammar.Rule]
     ) throws {
         printIfVerbose("Computing left-recursion...")
@@ -37,14 +37,14 @@ extension GrammarProcessor {
             if component.count == 1, let first = component.first {
                 // Check if the rule is re-entrant into itself
                 if graph.edge(from: first, to: first) != nil {
-                    guard let rule = rules[first.ruleName] else { continue }
+                    guard let rule = rules[first.value] else { continue }
 
                     rule.isLeftRecursive = true
                     rule.isLeftRecursiveLead = true
                 }
             } else {
                 for ruleName in component {
-                    guard let rule = rules[ruleName.ruleName] else { continue }
+                    guard let rule = rules[ruleName.value] else { continue }
 
                     rule.isLeftRecursive = true
                 }
@@ -58,12 +58,12 @@ extension GrammarProcessor {
                 }
 
                 if let first = leaders.first {
-                    guard let rule = rules[first.ruleName] else { continue }
+                    guard let rule = rules[first.value] else { continue }
 
                     rule.isLeftRecursiveLead = true
                 } else {
                     throw recordAndReturn(
-                        .unresolvedLeftRecursion(ruleNames: component.map(\.ruleName))
+                        .unresolvedLeftRecursion(ruleNames: component.map(\.value))
                     )
                 }
             }
