@@ -1040,12 +1040,30 @@ public class SwiftCodeGen {
         /// For rule productions and auxiliary rules, it is the rule's name, and
         /// for other constructs it is the String value that will be used to generate
         /// the production's method's name.
+        ///
+        /// Can be set to alter the underlying production's name.
         var name: String {
-            switch self {
-            case .rule(let rule), .auxiliary(let rule, _):
-                return rule.name
-            case .nonStandardRepetition(let ruleInfo, _):
-                return ruleInfo.name
+            get {
+                switch self {
+                case .rule(let rule), .auxiliary(let rule, _):
+                    return rule.name
+                case .nonStandardRepetition(let ruleInfo, _):
+                    return ruleInfo.name
+                }
+            }
+            set {
+                switch self {
+                case .rule(var rule):
+                    rule.name = newValue
+                    self = .rule(rule)
+                case .auxiliary(var rule, var info):
+                    rule.name = newValue
+                    info.name = newValue
+                    self = .auxiliary(rule, info)
+                case .nonStandardRepetition(var ruleInfo, let repInfo):
+                    ruleInfo.name = newValue
+                    self = .nonStandardRepetition(ruleInfo, repInfo)
+                }
             }
         }
 
@@ -1216,14 +1234,14 @@ extension SwiftCodeGen {
         let bindings = bindingEngine.computeBindings(namedItems)
 
         let memoization = memoizationMode(for: production)
-        let information = AuxiliaryRuleInformation(
+        var information = AuxiliaryRuleInformation(
             name: name,
             bindings: bindings,
             memoizationMode: memoization == .memoizedLeftRecursive ? .none : memoization
         )
         let tail = Array(namedItems.dropFirst())
 
-        enqueueProduction(
+        let deduplicated = enqueueProduction(
             .nonStandardRepetition(
                 information,
                 RepetitionInfo(
@@ -1231,8 +1249,9 @@ extension SwiftCodeGen {
                     trail: tail
                 )
             )
-        )
+        ).name
 
+        information.name = deduplicated
         return information
     }
 
@@ -1243,20 +1262,26 @@ extension SwiftCodeGen {
         _ info: AuxiliaryRuleInformation
     ) -> String {
 
-        let decl = declContext.defineMethod(suggestedName: rule.name)
         var rule = rule
-        rule.name = decl.name
-
-        enqueueProduction(.auxiliary(rule, info))
+        rule.name = enqueueProduction(.auxiliary(rule, info)).name
 
         bindingEngine.registerRule(rule)
 
-        return decl.name
+        return rule.name
     }
 
     /// Enqueues a given production into the queue of remaining productions.
-    private func enqueueProduction(_ production: RemainingProduction) {
+    ///
+    /// Returns a copy of the production with a deduplicated name for further
+    /// referencing.
+    private func enqueueProduction(_ production: RemainingProduction) -> RemainingProduction {
+        var production = production
+        let decl = declContext.defineMethod(suggestedName: production.name)
+        production.name = decl.name
+
         remaining.append(production)
+
+        return production
     }
 }
 
