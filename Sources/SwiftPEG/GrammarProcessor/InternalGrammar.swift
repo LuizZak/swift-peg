@@ -184,13 +184,14 @@ public enum InternalGrammar {
 
     /// ```
     /// rule:
-    ///     | ruleName ":" '|' alts ';'
-    ///     | ruleName ":" alts ';'
+    ///     | ruleName ":" action? failAction? '|'? alts ';'
     ///     ;
     /// ```
     public struct Rule: Hashable {
         public var name: String
         public var type: CommonAbstract.SwiftType?
+        public var action: Action?
+        public var failAction: Action?
         public var alts: [Alt]
 
         /// Whether this rule has been marked as reachable from a starting rule
@@ -248,6 +249,8 @@ public enum InternalGrammar {
             .init(
                 name: String(node.name.name.string),
                 type: node.name.type,
+                action: node.action.map(Action.from),
+                failAction: node.failAction.map(Action.from),
                 alts: node.alts.map(Alt.from),
                 isReachable: node.isReachable,
                 isRecursive: node.isLeftRecursive,
