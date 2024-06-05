@@ -204,6 +204,14 @@ public enum InternalGrammar {
         /// to be memoized as a left-recursive lead.
         public var isRecursiveLeader: Bool = false
 
+        /// Returns `true` if `self` and `other` are equivalent in terms of the
+        /// productions they reference, except for their name.
+        func isEquivalent(to other: Self) -> Bool {
+            var other = other
+            other.name = self.name
+            return self == other
+        }
+
         /// Accepts a given visitor, and recursively passes the visitor to nested
         /// property types within this object that can be visited, if present.
         public func accept(_ visitor: some Visitor) throws {

@@ -56,6 +56,10 @@ public class SwiftCodeGen {
 
     var latestSettings: ParserGenSettings = .default
     var tokenCallKind: TokenCallKind = .expect
+
+    /// List of productions generated so far.
+    var generated: [RemainingProduction] = []
+    /// Queue of productions that still remain to be generated.
     var remaining: [RemainingProduction] = []
 
     /// Aliasing for rules that may be used to circumvent name clashes.
@@ -162,6 +166,8 @@ public class SwiftCodeGen {
             let next = remaining.removeFirst()
 
             try generateRemainingProduction(next)
+
+            generated.append(next)
 
             // Separate production members
             buffer.ensureDoubleNewline()
@@ -592,7 +598,6 @@ public class SwiftCodeGen {
             if i == nonStandardIndex {
                 let auxInfo = enqueueNonStandardRepetition(
                     for: production,
-                    suffix: "_nsr",
                     namedItems[i...]
                 )
 
@@ -995,6 +1000,11 @@ public class SwiftCodeGen {
 
         /// The memoization mode for the rule.
         var memoizationMode: MemoizationMode
+
+        /// Returns `true` if `self` and `other` are equal except for their names.
+        func isEquivalent(to other: Self) -> Bool {
+            self.bindings.elementsEqual(other.bindings, by: ==) && self.memoizationMode == other.memoizationMode
+        }
     }
 
     /// The mode of memoization for a generated method.
@@ -1010,7 +1020,7 @@ public class SwiftCodeGen {
     }
 
     /// Contains information about a non-standard repetition construct.
-    struct RepetitionInfo {
+    struct RepetitionInfo: Equatable {
         /// The actual repetition item.
         var repetition: InternalGrammar.NamedItem
 
@@ -1078,6 +1088,29 @@ public class SwiftCodeGen {
                 return rule.type
             case .nonStandardRepetition(let ruleInfo, _):
                 return ruleInfo.bindings.scg_asTupleType()
+            }
+        }
+
+        /// Returns `true` if this production refers to a rule from the grammar.
+        var isGrammarRule: Bool {
+            switch self {
+            case .rule: true
+            default: false
+            }
+        }
+
+        /// Returns `true` if `self` and `other` reference productions that are
+        /// equivalent in terms of generated code, apart from function names.
+        func isEquivalent(to other: Self) -> Bool {
+            switch (self, other) {
+            case (.rule(let lhs), .rule(let rhs)):
+                return lhs.isEquivalent(to: rhs)
+            case (.auxiliary(let lhsRule, let lhsInfo), .auxiliary(let rhsRule, let rhsInfo)):
+                return lhsRule.isEquivalent(to: rhsRule) && lhsInfo.isEquivalent(to: rhsInfo)
+            case (.nonStandardRepetition(let lhsRule, let lhsInfo), .nonStandardRepetition(let rhsRule, let rhsInfo)):
+                return lhsRule.isEquivalent(to: rhsRule) && lhsInfo == rhsInfo
+            default:
+                return false
             }
         }
     }
@@ -1219,7 +1252,6 @@ extension SwiftCodeGen {
     /// - precondition: `namedItems.count > 1`
     func enqueueNonStandardRepetition(
         for production: RemainingProduction,
-        suffix: String,
         _ namedItems: some Collection<InternalGrammar.NamedItem>
     ) -> AuxiliaryRuleInformation {
 
@@ -1229,7 +1261,7 @@ extension SwiftCodeGen {
 
         precondition(lead.hasNonStandardRepetition, "namedItems[0].hasNonStandardRepetition")
 
-        let name = "_\(production.name)_\(suffix)"
+        let name = "_\(production.name)_nsr"
 
         let bindings = bindingEngine.computeBindings(namedItems)
 
@@ -1274,7 +1306,34 @@ extension SwiftCodeGen {
     ///
     /// Returns a copy of the production with a deduplicated name for further
     /// referencing.
-    private func enqueueProduction(_ production: RemainingProduction) -> RemainingProduction {
+    ///
+    /// - Parameters:
+    ///   - production: The production to enqueue.
+    ///   - reuseExisting: If `true`, and `production` is not a grammar rule,
+    /// attempts to fetch an existing production of the same parameters, but
+    /// potentially different names, and returns it instead of queueing the
+    /// provided production.
+    /// - Returns: A copy of the input production, with deduplicated names, or,
+    /// if `reuseExisting` is `true` and an existing production matches the
+    /// parameters of the provided production, that production is returned.
+    private func enqueueProduction(
+        _ production: RemainingProduction,
+        reuseExisting: Bool = true
+    ) -> RemainingProduction {
+
+        if reuseExisting && !production.isGrammarRule {
+            for previous in generated {
+                if previous.isEquivalent(to: production) {
+                    return previous
+                }
+            }
+            for upcoming in remaining {
+                if upcoming.isEquivalent(to: production) {
+                    return upcoming
+                }
+            }
+        }
+
         var production = production
         let decl = declContext.defineMethod(suggestedName: production.name)
         production.name = decl.name

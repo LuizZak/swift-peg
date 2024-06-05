@@ -37,7 +37,7 @@ extension Parser {
         let mark = self.mark()
 
         if
-            case let (_?, _?) = try self._a__nsr()
+            case let (_?, _?) = try self._a_nsr()
         {
             return Node()
         }
@@ -45,7 +45,7 @@ extension Parser {
         self.restore(mark)
 
         if
-            case let (_?, _?) = try self._a__nsr1()
+            case let (_?, _?) = try self._a_nsr1()
         {
             return Node()
         }
@@ -55,13 +55,13 @@ extension Parser {
     }
 
     /// ```
-    /// _a__nsr[([TokenResult], TokenResult)]:
-    ///     | 'b'+< _a__nsr_tail
+    /// _a_nsr[([TokenResult], TokenResult)]:
+    ///     | 'b'+< _a_nsr_tail
     ///     ;
     /// ```
-    @memoized("_a__nsr")
+    @memoized("_a_nsr")
     @inlinable
-    public func ___a__nsr() throws -> ([TokenResult]?, TokenResult?) {
+    public func ___a_nsr() throws -> ([TokenResult]?, TokenResult?) {
         var _current: [TokenResult] = []
 
         while
@@ -71,7 +71,7 @@ extension Parser {
             let _mark = self.mark()
 
             if
-                let _ = try self._a__nsr_tail()
+                let _ = try self._a_nsr_tail()
             {
                 return _current
             }
@@ -83,13 +83,13 @@ extension Parser {
     }
 
     /// ```
-    /// _a__nsr1[([TokenResult], TokenResult)]:
-    ///     | 'b'+< _a__nsr1_tail
+    /// _a_nsr1[([TokenResult], TokenResult)]:
+    ///     | 'b'+< _a_nsr1_tail
     ///     ;
     /// ```
-    @memoized("_a__nsr1")
+    @memoized("_a_nsr1")
     @inlinable
-    public func ___a__nsr1() throws -> ([TokenResult]?, TokenResult?) {
+    public func ___a_nsr1() throws -> ([TokenResult]?, TokenResult?) {
         var _current: [TokenResult] = []
 
         while
@@ -99,7 +99,7 @@ extension Parser {
             let _mark = self.mark()
 
             if
-                let _ = try self._a__nsr1_tail()
+                let _ = try self._a_nsr1_tail()
             {
                 return _current
             }
@@ -111,13 +111,13 @@ extension Parser {
     }
 
     /// ```
-    /// _a__nsr_tail[TokenResult]:
+    /// _a_nsr_tail[TokenResult]:
     ///     | 'c' { _ }
     ///     ;
     /// ```
-    @memoized("_a__nsr_tail")
+    @memoized("_a_nsr_tail")
     @inlinable
-    public func ___a__nsr_tail() throws -> TokenResult? {
+    public func ___a_nsr_tail() throws -> TokenResult? {
         let mark = self.mark()
 
         if
@@ -131,13 +131,13 @@ extension Parser {
     }
 
     /// ```
-    /// _a__nsr1_tail[TokenResult]:
+    /// _a_nsr1_tail[TokenResult]:
     ///     | 'd' { _ }
     ///     ;
     /// ```
-    @memoized("_a__nsr1_tail")
+    @memoized("_a_nsr1_tail")
     @inlinable
-    public func ___a__nsr1_tail() throws -> TokenResult? {
+    public func ___a_nsr1_tail() throws -> TokenResult? {
         let mark = self.mark()
 
         if

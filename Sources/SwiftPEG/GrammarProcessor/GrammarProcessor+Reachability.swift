@@ -23,7 +23,7 @@ extension GrammarProcessor {
 
     /// Computes all rules that are unreachable by examining rule dependencies
     /// within the grammar, starting from a given start rule name.
-    /// 
+    ///
     /// Returns a set containing all rules that could not be reached from the
     /// setting start rule.
     func computeUnreachableRules(
@@ -38,7 +38,9 @@ extension GrammarProcessor {
         graph.addNodes(rules.keys.map(RuleNode.init))
 
         guard let startNode = graph.nodes.first(where: { $0.ruleName == startRuleName }) else {
-            throw GrammarProcessor.GrammarProcessorError.message("Invalid starting rule name '\(startRuleName)': rule not found.")
+            throw recordAndReturn(
+                .message("Invalid starting rule name '\(startRuleName)': rule not found.")
+            )
         }
 
         // Connect rule graph

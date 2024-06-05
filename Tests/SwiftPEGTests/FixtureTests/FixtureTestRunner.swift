@@ -47,7 +47,7 @@ class FixtureTestRunner {
 
         // Log results
         let failed = tests.filter(\.failed).count
-        logger.logMessage("Ran \(tests.count) test(s), \(failed) failed.")
+        logger.logMessage("Ran \(tests.count, color: .cyan) test(s), \(failed, color: failed == 0 ? .green : .red) failed.")
     }
 
     /// Runs test fixtures detected from all of the provided grammar file URLs.
@@ -56,7 +56,16 @@ class FixtureTestRunner {
         defer { logger.endLogMessageScope() }
 
         for url in grammarFileUrls {
-            try runFixture(url)
+            do {
+                try runFixture(url)
+            } catch {
+                recordFailure(
+                    "Error parsing grammar file: \(error)",
+                    file: url.path,
+                    line: 1,
+                    expected: false
+                )
+            }
         }
     }
 
@@ -190,6 +199,10 @@ class FixtureTestRunner {
     /// Creates a test context for a given fixture test.
     func makeTestContext(for test: FixtureTest) -> TestContext {
         TestContext(runner: self, diagnosticsTarget: test.diagnosticTarget)
+    }
+
+    func recordFailure(_ message: String, file: String, line: Int, expected: Bool) {
+        tester.recordFailure(withDescription: message, inFile: file, atLine: line, expected: expected)
     }
 
     /// An unexpected error raised during fixture testing.

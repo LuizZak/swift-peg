@@ -1,0 +1,188 @@
+# Ensure auxiliary rules are reused, but only if reused rules share a memoization mode.
+@grammar """
+start: a ;
+a: b (c d) ;
+b: 'b' (c d) ;
+c: 'c' ;
+d: 'd' ;
+e: e | (c d) 'a' ;
+""" ;
+
+@expectedParser """
+extension Parser {
+    /// ```
+    /// start:
+    ///     | a
+    ///     ;
+    /// ```
+    @memoized("start")
+    @inlinable
+    public func __start() throws -> Node? {
+        let mark = self.mark()
+
+        if
+            let a = try self.a()
+        {
+            return a
+        }
+
+        self.restore(mark)
+        return nil
+    }
+
+    /// ```
+    /// a:
+    ///     | b (c d)
+    ///     ;
+    /// ```
+    @memoized("a")
+    @inlinable
+    public func __a() throws -> Node? {
+        let mark = self.mark()
+
+        if
+            let b = try self.b(),
+            case let (c?, d?) = try self._a__group_()
+        {
+            return Node()
+        }
+
+        self.restore(mark)
+        return nil
+    }
+
+    /// ```
+    /// b:
+    ///     | 'b' (c d)
+    ///     ;
+    /// ```
+    @memoized("b")
+    @inlinable
+    public func __b() throws -> Node? {
+        let mark = self.mark()
+
+        if
+            let _ = try self.expect("b"),
+            case let (c?, d?) = try self._a__group_()
+        {
+            return Node()
+        }
+
+        self.restore(mark)
+        return nil
+    }
+
+    /// ```
+    /// c:
+    ///     | 'c'
+    ///     ;
+    /// ```
+    @memoized("c")
+    @inlinable
+    public func __c() throws -> Node? {
+        let mark = self.mark()
+
+        if
+            let _ = try self.expect("c")
+        {
+            return Node()
+        }
+
+        self.restore(mark)
+        return nil
+    }
+
+    /// ```
+    /// d:
+    ///     | 'd'
+    ///     ;
+    /// ```
+    @memoized("d")
+    @inlinable
+    public func __d() throws -> Node? {
+        let mark = self.mark()
+
+        if
+            let _ = try self.expect("d")
+        {
+            return Node()
+        }
+
+        self.restore(mark)
+        return nil
+    }
+
+    /// ```
+    /// e:
+    ///     | e
+    ///     | (c d) 'a'
+    ///     ;
+    /// ```
+    @memoizedLeftRecursive("e")
+    @inlinable
+    public func __e() throws -> Node? {
+        let mark = self.mark()
+
+        if
+            let e = try self.e()
+        {
+            return e
+        }
+
+        self.restore(mark)
+
+        if
+            case let (c?, d?) = try self._e__group_(),
+            let _ = try self.expect("a")
+        {
+            return Node()
+        }
+
+        self.restore(mark)
+        return nil
+    }
+
+    /// ```
+    /// _a__group_[(c: Node, d: Node)]:
+    ///     | c d { (c: c, d: d) }
+    ///     ;
+    /// ```
+    @memoized("_a__group_")
+    @inlinable
+    public func ___a__group_() throws -> (c: Node?, d: Node?) {
+        let mark = self.mark()
+
+        if
+            let c = try self.c(),
+            let d = try self.d()
+        {
+            return (c: c, d: d)
+        }
+
+        self.restore(mark)
+        return (nil, nil)
+    }
+
+    /// ```
+    /// _e__group_[(c: Node, d: Node)]:
+    ///     | c d { (c: c, d: d) }
+    ///     ;
+    /// ```
+    @inlinable
+    public func _e__group_() throws -> (c: Node?, d: Node?) {
+        let mark = self.mark()
+
+        if
+            let c = try self.c(),
+            let d = try self.d()
+        {
+            return (c: c, d: d)
+        }
+
+        self.restore(mark)
+        return (nil, nil)
+    }
+}
+""" ;
+
+start: '' ;

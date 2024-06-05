@@ -38,7 +38,7 @@ extension Parser {
 
         if
             let a = try self.a(),
-            case let (_?, _?) = try self._a__nsr()
+            case let (_?, _?) = try self._a_nsr()
         {
             return Node()
         }
@@ -56,12 +56,12 @@ extension Parser {
     }
 
     /// ```
-    /// _a__nsr[([TokenResult], TokenResult)]:
-    ///     | 'b'+< _a__nsr_tail
+    /// _a_nsr[([TokenResult], TokenResult)]:
+    ///     | 'b'+< _a_nsr_tail
     ///     ;
     /// ```
     @inlinable
-    public func _a__nsr() throws -> ([TokenResult]?, TokenResult?) {
+    public func _a_nsr() throws -> ([TokenResult]?, TokenResult?) {
         var _current: [TokenResult] = []
 
         while
@@ -71,7 +71,7 @@ extension Parser {
             let _mark = self.mark()
 
             if
-                let _ = try self._a__nsr_tail()
+                let _ = try self._a_nsr_tail()
             {
                 return _current
             }
@@ -83,12 +83,12 @@ extension Parser {
     }
 
     /// ```
-    /// _a__nsr_tail[TokenResult]:
+    /// _a_nsr_tail[TokenResult]:
     ///     | 'c' { _ }
     ///     ;
     /// ```
     @inlinable
-    public func _a__nsr_tail() throws -> TokenResult? {
+    public func _a_nsr_tail() throws -> TokenResult? {
         let mark = self.mark()
 
         if

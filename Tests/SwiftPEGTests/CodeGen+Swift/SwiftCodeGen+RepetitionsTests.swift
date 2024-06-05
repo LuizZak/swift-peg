@@ -31,7 +31,7 @@ class SwiftCodeGen_RepetitionsTests: XCTestCase {
 
                     if
                         let a: A = try self.a(),
-                        case let (b?, c?) = try self._start__nsr()
+                        case let (b?, c?) = try self._start_nsr()
                     {
                         return Node()
                     }
@@ -104,20 +104,20 @@ class SwiftCodeGen_RepetitionsTests: XCTestCase {
                 }
 
                 /// ```
-                /// _start__nsr[(b: [B], c: C)]:
-                ///     | b*< _start__nsr_tail
+                /// _start_nsr[(b: [B], c: C)]:
+                ///     | b*< _start_nsr_tail
                 ///     ;
                 /// ```
-                @memoized("_start__nsr")
+                @memoized("_start_nsr")
                 @inlinable
-                public func ___start__nsr() throws -> (b: [B]?, c: C?) {
+                public func ___start_nsr() throws -> (b: [B]?, c: C?) {
                     var _current: [B] = []
 
                     while true {
                         let mark = self.mark()
 
                         if
-                            let c: C = try self._start__nsr_tail()
+                            let c: C = try self._start_nsr_tail()
                         {
                             return (_current, c)
                         }
@@ -138,13 +138,13 @@ class SwiftCodeGen_RepetitionsTests: XCTestCase {
                 }
 
                 /// ```
-                /// _start__nsr_tail[C]:
+                /// _start_nsr_tail[C]:
                 ///     | c { c }
                 ///     ;
                 /// ```
-                @memoized("_start__nsr_tail")
+                @memoized("_start_nsr_tail")
                 @inlinable
-                public func ___start__nsr_tail() throws -> C? {
+                public func ___start_nsr_tail() throws -> C? {
                     let mark = self.mark()
 
                     if
@@ -188,7 +188,7 @@ class SwiftCodeGen_RepetitionsTests: XCTestCase {
 
                     if
                         let a: A = try self.a(),
-                        case let (b?, c?) = try self._start__nsr()
+                        case let (b?, c?) = try self._start_nsr()
                     {
                         return Node()
                     }
@@ -261,13 +261,13 @@ class SwiftCodeGen_RepetitionsTests: XCTestCase {
                 }
 
                 /// ```
-                /// _start__nsr[(b: [B], c: C)]:
-                ///     | b*> _start__nsr_tail
+                /// _start_nsr[(b: [B], c: C)]:
+                ///     | b*> _start_nsr_tail
                 ///     ;
                 /// ```
-                @memoized("_start__nsr")
+                @memoized("_start_nsr")
                 @inlinable
-                public func ___start__nsr() throws -> (b: [B]?, c: C?) {
+                public func ___start_nsr() throws -> (b: [B]?, c: C?) {
                     let _mark = self.mark()
 
                     // Start by fetching as many productions as possible
@@ -285,7 +285,7 @@ class SwiftCodeGen_RepetitionsTests: XCTestCase {
                         self.restore(_endMark)
 
                         if
-                            let c: C = try self._start__nsr_tail()
+                            let c: C = try self._start_nsr_tail()
                         {
                             return (_current.map(\.1), c)
                         } else if _current.isEmpty {
@@ -300,13 +300,13 @@ class SwiftCodeGen_RepetitionsTests: XCTestCase {
                 }
 
                 /// ```
-                /// _start__nsr_tail[C]:
+                /// _start_nsr_tail[C]:
                 ///     | c { c }
                 ///     ;
                 /// ```
-                @memoized("_start__nsr_tail")
+                @memoized("_start_nsr_tail")
                 @inlinable
-                public func ___start__nsr_tail() throws -> C? {
+                public func ___start_nsr_tail() throws -> C? {
                     let mark = self.mark()
 
                     if
@@ -349,7 +349,7 @@ class SwiftCodeGen_RepetitionsTests: XCTestCase {
 
                     if
                         let a: A = try self.a(),
-                        case let (b?, c?) = try self._start__nsr()
+                        case let (b?, c?) = try self._start_nsr()
                     {
                         return Node()
                     }
@@ -422,13 +422,13 @@ class SwiftCodeGen_RepetitionsTests: XCTestCase {
                 }
 
                 /// ```
-                /// _start__nsr[(b: [B], c: C)]:
-                ///     | b+< _start__nsr_tail
+                /// _start_nsr[(b: [B], c: C)]:
+                ///     | b+< _start_nsr_tail
                 ///     ;
                 /// ```
-                @memoized("_start__nsr")
+                @memoized("_start_nsr")
                 @inlinable
-                public func ___start__nsr() throws -> (b: [B]?, c: C?) {
+                public func ___start_nsr() throws -> (b: [B]?, c: C?) {
                     var _current: [B] = []
 
                     while
@@ -438,7 +438,7 @@ class SwiftCodeGen_RepetitionsTests: XCTestCase {
                         let _mark = self.mark()
 
                         if
-                            let c: C = try self._start__nsr_tail()
+                            let c: C = try self._start_nsr_tail()
                         {
                             return (_current, c)
                         }
@@ -450,13 +450,13 @@ class SwiftCodeGen_RepetitionsTests: XCTestCase {
                 }
 
                 /// ```
-                /// _start__nsr_tail[C]:
+                /// _start_nsr_tail[C]:
                 ///     | c { c }
                 ///     ;
                 /// ```
-                @memoized("_start__nsr_tail")
+                @memoized("_start_nsr_tail")
                 @inlinable
-                public func ___start__nsr_tail() throws -> C? {
+                public func ___start_nsr_tail() throws -> C? {
                     let mark = self.mark()
 
                     if
@@ -500,7 +500,7 @@ class SwiftCodeGen_RepetitionsTests: XCTestCase {
 
                     if
                         let a: A = try self.a(),
-                        case let (b?, c?) = try self._start__nsr()
+                        case let (b?, c?) = try self._start_nsr()
                     {
                         return Node()
                     }
@@ -573,13 +573,13 @@ class SwiftCodeGen_RepetitionsTests: XCTestCase {
                 }
 
                 /// ```
-                /// _start__nsr[(b: [B], c: C)]:
-                ///     | b+> _start__nsr_tail
+                /// _start_nsr[(b: [B], c: C)]:
+                ///     | b+> _start_nsr_tail
                 ///     ;
                 /// ```
-                @memoized("_start__nsr")
+                @memoized("_start_nsr")
                 @inlinable
-                public func ___start__nsr() throws -> (b: [B]?, c: C?) {
+                public func ___start_nsr() throws -> (b: [B]?, c: C?) {
                     // Start by fetching as many productions as possible
                     guard
                         var _current: [(Mark, B)] = try self.repeatZeroOrMore({
@@ -594,7 +594,7 @@ class SwiftCodeGen_RepetitionsTests: XCTestCase {
                         self.restore(_end.0)
 
                         if
-                            let c: C = try self._start__nsr_tail()
+                            let c: C = try self._start_nsr_tail()
                         {
                             return (_current.map(\.1), c)
                         } else if _current.count <= 1 {
@@ -609,13 +609,13 @@ class SwiftCodeGen_RepetitionsTests: XCTestCase {
                 }
 
                 /// ```
-                /// _start__nsr_tail[C]:
+                /// _start_nsr_tail[C]:
                 ///     | c { c }
                 ///     ;
                 /// ```
-                @memoized("_start__nsr_tail")
+                @memoized("_start_nsr_tail")
                 @inlinable
-                public func ___start__nsr_tail() throws -> C? {
+                public func ___start_nsr_tail() throws -> C? {
                     let mark = self.mark()
 
                     if

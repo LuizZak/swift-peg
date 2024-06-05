@@ -65,11 +65,13 @@ extension GrammarProcessor {
         for token in tokens {
             let name = String(token.name.string)
             if let prior = byName[name] {
-                throw recordAndReturn(GrammarProcessorError.repeatedTokenName(
-                    name,
-                    token,
-                    prior: prior
-                ))
+                throw recordAndReturn(
+                    .repeatedTokenName(
+                        name,
+                        token,
+                        prior: prior
+                    )
+                )
             }
 
             byName[name] = token
@@ -135,10 +137,12 @@ extension GrammarProcessor {
 
             for identifier in collector.identifiers {
                 guard let referenceNode = nodesByName[identifier] else {
-                    throw recordAndReturn(GrammarProcessorError.unknownReferenceInToken(
-                        identifier,
-                        token
-                    ))
+                    throw recordAndReturn(
+                        .unknownReferenceInToken(
+                            identifier,
+                            token
+                        )
+                    )
                 }
 
                 graph.addEdge(from: tokenNode, to: referenceNode)
@@ -156,7 +160,7 @@ extension GrammarProcessor {
 
                     let diagnoseCycle = cycle[nodeBack...]
                     throw recordAndReturn(
-                        GrammarProcessorError.recursivityInTokens(diagnoseCycle.map(\.value))
+                        .recursivityInTokens(diagnoseCycle.map(\.value))
                     )
                 }
             }
@@ -164,7 +168,7 @@ extension GrammarProcessor {
 
         guard let sorted = graph.topologicalSorted() else {
             throw recordAndReturn(
-                GrammarProcessorError.message("Could not topologically sort tokens; this may indicate that there are cycles in the token definitions.")
+                .message("Could not topologically sort tokens; this may indicate that there are cycles in the token definitions.")
             )
         }
 

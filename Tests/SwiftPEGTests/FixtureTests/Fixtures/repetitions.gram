@@ -39,7 +39,7 @@ extension Parser {
         let mark = self.mark()
 
         if
-            case let (b?, c?, d?) = try self._a__nsr()
+            case let (b?, c?, d?) = try self._a_nsr()
         {
             return Node()
         }
@@ -109,13 +109,13 @@ extension Parser {
     }
 
     /// ```
-    /// _a__nsr[(b: [TokenType], c: [TokenType], d: TokenType)]:
-    ///     | b+< _a__nsr_tail
+    /// _a_nsr[(b: [TokenType], c: [TokenType], d: TokenType)]:
+    ///     | b+< _a_nsr_tail
     ///     ;
     /// ```
-    @memoized("_a__nsr")
+    @memoized("_a_nsr")
     @inlinable
-    public func ___a__nsr() throws -> (b: [TokenType]?, c: [TokenType]?, d: TokenType?) {
+    public func ___a_nsr() throws -> (b: [TokenType]?, c: [TokenType]?, d: TokenType?) {
         var _current: [TokenType] = []
 
         while
@@ -125,7 +125,7 @@ extension Parser {
             let _mark = self.mark()
 
             if
-                case let (c?, d?) = try self._a__nsr_tail()
+                case let (c?, d?) = try self._a_nsr_tail()
             {
                 return (_current, c, d)
             }
@@ -137,17 +137,17 @@ extension Parser {
     }
 
     /// ```
-    /// _a__nsr_tail[(c: [TokenType], d: TokenType)]:
+    /// _a_nsr_tail[(c: [TokenType], d: TokenType)]:
     ///     | c*> d { (c: c, d: d) }
     ///     ;
     /// ```
-    @memoized("_a__nsr_tail")
+    @memoized("_a_nsr_tail")
     @inlinable
-    public func ___a__nsr_tail() throws -> (c: [TokenType]?, d: TokenType?) {
+    public func ___a_nsr_tail() throws -> (c: [TokenType]?, d: TokenType?) {
         let mark = self.mark()
 
         if
-            case let (c?, d?) = try self.__a__nsr_tail__nsr()
+            case let (c?, d?) = try self.__a_nsr_tail_nsr()
         {
             return (c: c, d: d)
         }
@@ -157,13 +157,13 @@ extension Parser {
     }
 
     /// ```
-    /// __a__nsr_tail__nsr[(c: [TokenType], d: TokenType)]:
-    ///     | c*> __a__nsr_tail__nsr_tail
+    /// __a_nsr_tail_nsr[(c: [TokenType], d: TokenType)]:
+    ///     | c*> __a_nsr_tail_nsr_tail
     ///     ;
     /// ```
-    @memoized("__a__nsr_tail__nsr")
+    @memoized("__a_nsr_tail_nsr")
     @inlinable
-    public func ____a__nsr_tail__nsr() throws -> (c: [TokenType]?, d: TokenType?) {
+    public func ____a_nsr_tail_nsr() throws -> (c: [TokenType]?, d: TokenType?) {
         let _mark = self.mark()
 
         // Start by fetching as many productions as possible
@@ -181,7 +181,7 @@ extension Parser {
             self.restore(_endMark)
 
             if
-                let d = try self.__a__nsr_tail__nsr_tail()
+                let d = try self.__a_nsr_tail_nsr_tail()
             {
                 return (_current.map(\\.1), d)
             } else if _current.isEmpty {
@@ -196,13 +196,13 @@ extension Parser {
     }
 
     /// ```
-    /// __a__nsr_tail__nsr_tail[TokenType]:
+    /// __a_nsr_tail_nsr_tail[TokenType]:
     ///     | d { d }
     ///     ;
     /// ```
-    @memoized("__a__nsr_tail__nsr_tail")
+    @memoized("__a_nsr_tail_nsr_tail")
     @inlinable
-    public func ____a__nsr_tail__nsr_tail() throws -> TokenType? {
+    public func ____a_nsr_tail_nsr_tail() throws -> TokenType? {
         let mark = self.mark()
 
         if

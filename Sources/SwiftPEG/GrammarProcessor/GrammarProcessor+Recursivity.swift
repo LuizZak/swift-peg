@@ -62,7 +62,9 @@ extension GrammarProcessor {
 
                     rule.isLeftRecursiveLead = true
                 } else {
-                    throw GrammarProcessorError.unresolvedLeftRecursion(ruleNames: component.map(\.ruleName))
+                    throw recordAndReturn(
+                        .unresolvedLeftRecursion(ruleNames: component.map(\.ruleName))
+                    )
                 }
             }
         }

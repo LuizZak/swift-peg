@@ -40,7 +40,7 @@ extension Parser {
         let mark = self.mark()
 
         if
-            case let (_?, c?) = try self._a__nsr()
+            case let (_?, c?) = try self._a_nsr()
         {
             return Node()
         }
@@ -123,7 +123,7 @@ extension Parser {
         let mark = self.mark()
 
         if
-            case let (_?, c?) = try self._e__nsr()
+            case let (_?, c?) = try self._e_nsr()
         {
             return Node()
         }
@@ -133,20 +133,20 @@ extension Parser {
     }
 
     /// ```
-    /// _a__nsr[([(b: Node, d: TokenType)], c: [TokenType])]:
-    ///     | (b d)*< _a__nsr_tail
+    /// _a_nsr[([(b: Node, d: TokenType)], c: [TokenType])]:
+    ///     | (b d)*< _a_nsr_tail
     ///     ;
     /// ```
-    @memoized("_a__nsr")
+    @memoized("_a_nsr")
     @inlinable
-    public func ___a__nsr() throws -> ([(b: Node, d: TokenType)]?, c: [TokenType]?) {
+    public func ___a_nsr() throws -> ([(b: Node, d: TokenType)]?, c: [TokenType]?) {
         var _current: [(b: Node, d: TokenType)] = []
 
         while true {
             let mark = self.mark()
 
             if
-                let c = try self._a__nsr_tail()
+                let c = try self._a_nsr_tail()
             {
                 return (_current, c)
             }
@@ -155,7 +155,7 @@ extension Parser {
 
             // Collect an extra item and try again
             if
-                case let (b?, d?) = try self.__a__nsr__group_()
+                case let (b?, d?) = try self.__a_nsr__group_()
             {
                 _current.append((b, d))
             } else {
@@ -167,19 +167,19 @@ extension Parser {
     }
 
     /// ```
-    /// _e__nsr[([(b: Node, d: TokenType)], c: [TokenType])]:
-    ///     | (b d)*> _e__nsr_tail
+    /// _e_nsr[([(b: Node, d: TokenType)], c: [TokenType])]:
+    ///     | (b d)*> _a_nsr_tail
     ///     ;
     /// ```
-    @memoized("_e__nsr")
+    @memoized("_e_nsr")
     @inlinable
-    public func ___e__nsr() throws -> ([(b: Node, d: TokenType)]?, c: [TokenType]?) {
+    public func ___e_nsr() throws -> ([(b: Node, d: TokenType)]?, c: [TokenType]?) {
         let _mark = self.mark()
 
         // Start by fetching as many productions as possible
         guard
             var _current: [(Mark, (b: Node, d: TokenType))] = try self.repeatZeroOrMore({
-                if case let (b?, d?) = try self.__e__nsr__group_() { return (self.mark(), (b, d)) }
+                if case let (b?, d?) = try self.__a_nsr__group_() { return (self.mark(), (b, d)) }
                 return nil
             })
         else {
@@ -191,7 +191,7 @@ extension Parser {
             self.restore(_endMark)
 
             if
-                let c = try self._e__nsr_tail()
+                let c = try self._a_nsr_tail()
             {
                 return (_current.map(\\.1), c)
             } else if _current.isEmpty {
@@ -206,13 +206,13 @@ extension Parser {
     }
 
     /// ```
-    /// _a__nsr_tail[[TokenType]]:
+    /// _a_nsr_tail[[TokenType]]:
     ///     | c { c }
     ///     ;
     /// ```
-    @memoized("_a__nsr_tail")
+    @memoized("_a_nsr_tail")
     @inlinable
-    public func ___a__nsr_tail() throws -> [TokenType]? {
+    public func ___a_nsr_tail() throws -> [TokenType]? {
         let mark = self.mark()
 
         if
@@ -226,54 +226,13 @@ extension Parser {
     }
 
     /// ```
-    /// __a__nsr__group_[(b: Node, d: TokenType)]:
+    /// __a_nsr__group_[(b: Node, d: TokenType)]:
     ///     | b d { (b: b, d: d) }
     ///     ;
     /// ```
-    @memoized("__a__nsr__group_")
+    @memoized("__a_nsr__group_")
     @inlinable
-    public func ____a__nsr__group_() throws -> (b: Node?, d: TokenType?) {
-        let mark = self.mark()
-
-        if
-            let b = try self.b(),
-            let d = try self.d()
-        {
-            return (b: b, d: d)
-        }
-
-        self.restore(mark)
-        return (nil, nil)
-    }
-
-    /// ```
-    /// _e__nsr_tail[[TokenType]]:
-    ///     | c { c }
-    ///     ;
-    /// ```
-    @memoized("_e__nsr_tail")
-    @inlinable
-    public func ___e__nsr_tail() throws -> [TokenType]? {
-        let mark = self.mark()
-
-        if
-            let c = try self.c()
-        {
-            return c
-        }
-
-        self.restore(mark)
-        return nil
-    }
-
-    /// ```
-    /// __e__nsr__group_[(b: Node, d: TokenType)]:
-    ///     | b d { (b: b, d: d) }
-    ///     ;
-    /// ```
-    @memoized("__e__nsr__group_")
-    @inlinable
-    public func ____e__nsr__group_() throws -> (b: Node?, d: TokenType?) {
+    public func ____a_nsr__group_() throws -> (b: Node?, d: TokenType?) {
         let mark = self.mark()
 
         if

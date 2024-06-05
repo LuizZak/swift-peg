@@ -113,7 +113,7 @@ public class GrammarProcessor {
             let ruleName = try validateRuleName(rule)
 
             if let existing = knownRules[ruleName] {
-                throw recordAndReturn(GrammarProcessorError.repeatedRuleName(ruleName, rule, prior: existing))
+                throw recordAndReturn(.repeatedRuleName(ruleName, rule, prior: existing))
             } else {
                 knownRules[ruleName] = rule
             }
@@ -125,10 +125,10 @@ public class GrammarProcessor {
     func validateRuleName(_ rule: SwiftPEGGrammar.Rule) throws -> String {
         let ruleName = String(rule.name.name.string)
         if ruleName.isEmpty {
-            throw recordAndReturn(GrammarProcessorError.invalidRuleName(desc: "Rule name cannot be empty", rule))
+            throw recordAndReturn(.invalidRuleName(desc: "Rule name cannot be empty", rule))
         }
         if try Regex(Self.ruleNameGrammar).wholeMatch(in: ruleName) == nil {
-            throw recordAndReturn(GrammarProcessorError.invalidRuleName(desc: "Expected rule names to match regex '\(Self.ruleNameGrammar)'", rule))
+            throw recordAndReturn(.invalidRuleName(desc: "Expected rule names to match regex '\(Self.ruleNameGrammar)'", rule))
         }
 
         return ruleName
@@ -143,21 +143,21 @@ public class GrammarProcessor {
         }
 
         guard let fileContents = try delegate?.grammarProcessor(self, loadTokensFileNamed: tokensFileName, ofGrammar: grammar) else {
-            throw recordAndReturn(GrammarProcessorError.failedToLoadTokensFile(tokensMeta.node))
+            throw recordAndReturn(.failedToLoadTokensFile(tokensMeta.node))
         }
 
         let parser = GrammarParser(raw: GrammarRawTokenizer(source: fileContents))
 
         do {
             guard let tokens = try parser.tokensFile(), parser.tokenizer.isEOF else {
-                throw recordAndReturn(GrammarProcessorError.tokensFileSyntaxError(tokensMeta.node, parser.makeSyntaxError()))
+                throw recordAndReturn(.tokensFileSyntaxError(tokensMeta.node, parser.makeSyntaxError()))
             }
 
             return tokens
         } catch let error as ParserError {
-            throw recordAndReturn(GrammarProcessorError.tokensFileSyntaxError(tokensMeta.node, error))
+            throw recordAndReturn(.tokensFileSyntaxError(tokensMeta.node, error))
         } catch let error as TokenizerError {
-            throw recordAndReturn(GrammarProcessorError.tokensFileTokenizerError(tokensMeta.node, error))
+            throw recordAndReturn(.tokensFileTokenizerError(tokensMeta.node, error))
         } catch {
             throw error
         }
@@ -247,13 +247,13 @@ public class GrammarProcessor {
 
             if fragments.contains(String(ref.name)) {
                 error = recordAndReturn(
-                    GrammarProcessorError.referencedFragmentInParser(
+                    .referencedFragmentInParser(
                         ref, rule
                     )
                 )
             } else {
                 error = recordAndReturn(
-                    GrammarProcessorError.unknownReference(
+                    .unknownReference(
                         ref, rule, tokensFileName: tokensFile
                     )
                 )
