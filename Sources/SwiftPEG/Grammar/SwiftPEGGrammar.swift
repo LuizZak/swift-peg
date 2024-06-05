@@ -141,7 +141,7 @@ extension SwiftPEGGrammar {
     /// Represents the construct:
     /// ```
     /// rule:
-    ///     | ruleName ":" '|'? alts ';'
+    ///     | ruleName ":" action? failAction? '|'? alts ';'
     ///     ;
     /// ```
     @GeneratedNodeType<Node>
