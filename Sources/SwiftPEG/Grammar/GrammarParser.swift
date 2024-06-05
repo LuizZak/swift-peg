@@ -459,7 +459,7 @@ extension GrammarParser {
     }
 
     /// ```
-    /// repetitionMode[SwiftPEGGrammar.RepetitionMode]:
+    /// repetitionMode[CommonAbstract.RepetitionMode]:
     ///     | '<' { .minimal }
     ///     | '>' { .maximal }
     ///     ;

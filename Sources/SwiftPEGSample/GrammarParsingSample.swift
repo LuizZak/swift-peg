@@ -7,6 +7,7 @@ class GrammarParsingSample {
     var verbose: Bool = false
     var useBuiltInFiles: Bool = false
     var emitTokenType: Bool = false
+    var omitRedundantMarkRestores: Bool = false
 
     func run() throws {
         try parse()
@@ -112,7 +113,12 @@ class GrammarParsingSample {
                 )
                 codeKind = "token type"
             } else {
-                code = try swiftCodeGen.generateParser()
+                code = try swiftCodeGen.generateParser(
+                    settings: .default.with(
+                        \.omitRedundantMarkRestores,
+                        value: omitRedundantMarkRestores
+                    )
+                )
                 codeKind = "parser"
             }
 

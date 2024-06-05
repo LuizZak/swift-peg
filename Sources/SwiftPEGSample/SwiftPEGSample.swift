@@ -22,6 +22,7 @@ struct SwiftPEGSample {
                 let sample = GrammarParsingSample()
                 sample.useBuiltInFiles = args.contains("--use-builtin-grammar")
                 sample.emitTokenType = args.contains("--emit-token")
+                sample.omitRedundantMarkRestores = args.contains("--omit-redundant-marks")
                 sample.verbose = verbose
 
                 try sample.run()

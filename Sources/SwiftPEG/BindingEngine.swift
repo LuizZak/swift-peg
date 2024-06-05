@@ -11,6 +11,9 @@ class BindingEngine {
     /// known identifiers.
     var implicitBindings: Bool = true
 
+    /// Whether to create bindings for token literals.
+    var bindTokenLiterals: Bool = false
+
     /// Initializes a binding engine with the contents of the provided processed
     /// grammar object.
     init(processedGrammar: ProcessedGrammar) {
@@ -270,7 +273,7 @@ class BindingEngine {
 
         case .string(_, let literal):
             let identifier = tokenName(ofRawLiteral: literal)
-            return [(implicitBindings ? identifier : nil, typeForAtom(atom))]
+            return [(implicitBindings && bindTokenLiterals ? identifier : nil, typeForAtom(atom))]
         }
     }
 

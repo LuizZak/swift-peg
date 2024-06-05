@@ -39,6 +39,14 @@ public class SwiftCodeGen {
     /// or identifiers.
     public static let implicitBindings: String = "implicitBindings"
 
+    /// Name of optional meta-property (`@<name> <value>`) from grammar file that
+    /// indicates whether to generate named patterns for token literals. Only in
+    /// effect is `implicitBindings` is also `true`.
+    ///
+    /// Defaults to `true`, can be specified `true` or `false`, as either strings
+    /// or identifiers.
+    public static let bindTokenLiterals: String = "bindTokenLiterals"
+
     /// Set of identifiers that cannot be used as bare identifiers in Swift, and
     /// must be escaped with backticks (`) to allow usage in declarations.
     public static var invalidBareIdentifiers: Set<String> {
@@ -68,6 +76,7 @@ public class SwiftCodeGen {
 
     var implicitReturns: Bool = true
     var implicitBindings: Bool = true
+    var bindTokenLiterals: Bool = false
 
     var bindingEngine: BindingEngine
 
@@ -136,9 +145,22 @@ public class SwiftCodeGen {
                 break
             }
         }
+        // @bindTokenLiterals
+        if let value = grammar.bindTokenLiterals() {
+            switch value {
+            case "true":
+                bindTokenLiterals = true
+            case "false":
+                bindTokenLiterals = false
+            default:
+                // TODO: Issue diagnostic
+                break
+            }
+        }
 
         bindingEngine.clearState()
         bindingEngine.implicitBindings = self.implicitBindings
+        bindingEngine.bindTokenLiterals = self.bindTokenLiterals
         for rule in grammar.rules {
             bindingEngine.registerRule(rule)
         }
@@ -1616,6 +1638,10 @@ extension InternalGrammar.Grammar {
 
     func implicitBindings() -> String? {
         return _stringOrIdentMeta(named: SwiftCodeGen.implicitBindings)
+    }
+
+    func bindTokenLiterals() -> String? {
+        return _stringOrIdentMeta(named: SwiftCodeGen.bindTokenLiterals)
     }
 
     private func _stringOrIdentMeta(named name: String) -> String? {

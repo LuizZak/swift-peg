@@ -435,6 +435,94 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
+    func testGenerateParser_implicitBindings_true_bindTokenLiterals_true() throws {
+        let grammar = makeGrammar([
+            .init(name: "a", alts: [
+                .init(namedItems: [
+                    .item("'+'"),
+                ]),
+            ]),
+        ], metas: [
+            .init(name: "implicitBindings", value: .identifier("true")),
+            .init(name: "bindTokenLiterals", value: .identifier("true")),
+        ])
+        let tokens = [
+            makeTokenDef(name: "ADD", literal: "+"),
+        ]
+        let sut = makeSut(grammar, tokens)
+
+        let result = try sut.generateParser()
+
+        diffTest(expected: """
+            // TestParser
+            extension TestParser {
+                /// ```
+                /// a:
+                ///     | '+'
+                ///     ;
+                /// ```
+                @memoized("a")
+                @inlinable
+                public func __a() throws -> Node? {
+                    let mark = self.mark()
+
+                    if
+                        let ADD = try self.expect(.ADD)
+                    {
+                        return ADD
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+            }
+            """).diff(result)
+    }
+
+    func testGenerateParser_implicitBindings_false_bindTokenLiterals_true() throws {
+        let grammar = makeGrammar([
+            .init(name: "a", alts: [
+                .init(namedItems: [
+                    .item("'+'"),
+                ]),
+            ]),
+        ], metas: [
+            .init(name: "implicitBindings", value: .identifier("false")),
+            .init(name: "bindTokenLiterals", value: .identifier("true")),
+        ])
+        let tokens = [
+            makeTokenDef(name: "ADD", literal: "+"),
+        ]
+        let sut = makeSut(grammar, tokens)
+
+        let result = try sut.generateParser()
+
+        diffTest(expected: """
+            // TestParser
+            extension TestParser {
+                /// ```
+                /// a:
+                ///     | '+'
+                ///     ;
+                /// ```
+                @memoized("a")
+                @inlinable
+                public func __a() throws -> Node? {
+                    let mark = self.mark()
+
+                    if
+                        let _ = try self.expect(.ADD)
+                    {
+                        return Node()
+                    }
+
+                    self.restore(mark)
+                    return nil
+                }
+            }
+            """).diff(result)
+    }
+
     func testGenerateParser_respectsTokenCallMeta() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
@@ -605,9 +693,9 @@ class SwiftCodeGenTests: XCTestCase {
 
                     if
                         let b = try self.b(),
-                        let ADD = try self.expect(custom: .add),
+                        let _ = try self.expect(custom: .add),
                         let c = try self.c(),
-                        let BACKSLASH = try self.expect(custom: .back)
+                        let _ = try self.expect(custom: .back)
                     {
                         return Node()
                     }
@@ -1017,9 +1105,9 @@ class SwiftCodeGenTests: XCTestCase {
                     let mark = self.mark()
 
                     if
-                        let ADD = try self.expect(.ADD)
+                        let _ = try self.expect(.ADD)
                     {
-                        return ADD
+                        return Node()
                     }
 
                     self.restore(mark)
