@@ -1,0 +1,196 @@
+@grammar """
+start: a | b | c ;
+a: { anAction() } 'a' | 'aa' ;
+b: !!{ aFailAction() } 'b' | 'bb';
+c: { anAction() } !!{ aFailAction() } 'c' | 'cc';
+d: { anAction() } !!{ aFailAction() } 'd' 'd' | 'd' ~ 'e' | 'e' 'e';
+""" ;
+
+@expectedParser """
+extension Parser {
+    /// ```
+    /// start:
+    ///     | a
+    ///     | b
+    ///     | c
+    ///     ;
+    /// ```
+    @memoized("start")
+    @inlinable
+    public func __start() throws -> Node? {
+        let _mark = self.mark()
+
+        if
+            let a = try self.a()
+        {
+            return a
+        }
+
+        self.restore(_mark)
+
+        if
+            let b = try self.b()
+        {
+            return b
+        }
+
+        self.restore(_mark)
+
+        if
+            let c = try self.c()
+        {
+            return c
+        }
+
+        self.restore(_mark)
+        return nil
+    }
+
+    /// ```
+    /// a:
+    ///     { anAction() }
+    ///     | 'a'
+    ///     | 'aa'
+    ///     ;
+    /// ```
+    @memoized("a")
+    @inlinable
+    public func __a() throws -> Node? {
+        let _mark = self.mark()
+        anAction()
+
+        if
+            let _ = try self.expect("a")
+        {
+            return Node()
+        }
+
+        self.restore(_mark)
+
+        if
+            let _ = try self.expect("aa")
+        {
+            return Node()
+        }
+
+        self.restore(_mark)
+        return nil
+    }
+
+    /// ```
+    /// b:
+    ///     !!{ aFailAction() }
+    ///     | 'b'
+    ///     | 'bb'
+    ///     ;
+    /// ```
+    @memoized("b")
+    @inlinable
+    public func __b() throws -> Node? {
+        let _mark = self.mark()
+
+        if
+            let _ = try self.expect("b")
+        {
+            return Node()
+        }
+
+        self.restore(_mark)
+
+        if
+            let _ = try self.expect("bb")
+        {
+            return Node()
+        }
+
+        self.restore(_mark)
+        aFailAction()
+        return nil
+    }
+
+    /// ```
+    /// c:
+    ///     { anAction() } !!{ aFailAction() }
+    ///     | 'c'
+    ///     | 'cc'
+    ///     ;
+    /// ```
+    @memoized("c")
+    @inlinable
+    public func __c() throws -> Node? {
+        let _mark = self.mark()
+        anAction()
+
+        if
+            let _ = try self.expect("c")
+        {
+            return Node()
+        }
+
+        self.restore(_mark)
+
+        if
+            let _ = try self.expect("cc")
+        {
+            return Node()
+        }
+
+        self.restore(_mark)
+        aFailAction()
+        return nil
+    }
+
+    /// ```
+    /// d:
+    ///     { anAction() } !!{ aFailAction() }
+    ///     | 'd' 'd'
+    ///     | 'd' ~ 'e'
+    ///     | 'e' 'e'
+    ///     ;
+    /// ```
+    @memoized("d")
+    @inlinable
+    public func __d() throws -> Node? {
+        let _mark = self.mark()
+        var _cut = CutFlag()
+        anAction()
+
+        if
+            let _ = try self.expect("d"),
+            let _ = try self.expect("d")
+        {
+            return Node()
+        }
+
+        self.restore(_mark)
+
+        if
+            let _ = try self.expect("d"),
+            _cut.toggleOn(),
+            let _ = try self.expect("e")
+        {
+            return Node()
+        }
+
+        self.restore(_mark)
+
+        if _cut.isOn {
+            aFailAction()
+            return nil
+        }
+
+        if
+            let _ = try self.expect("e"),
+            let _ = try self.expect("e")
+        {
+            return Node()
+        }
+
+        self.restore(_mark)
+        aFailAction()
+        return nil
+    }
+}
+""" ;
+
+start: '' ;

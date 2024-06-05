@@ -260,14 +260,26 @@ public class SwiftCodeGen {
                 usesMarks: requiresMarkers(rule),
                 failReturnExpression: failReturnExpression
             ) { conditional in
+                if let action = rule.action {
+                    generateAction(action)
+                }
+
                 for alt in rule.alts {
                     conditional.ensureEmptyLine()
                     try generateAlt(
                         alt,
                         in: production,
-                        backtrackToMark: requiresMarkers(rule),
-                        failReturnExpression: failReturnExpression
-                    )
+                        backtrackToMark: requiresMarkers(rule)
+                    ) {
+                        if let action = rule.failAction {
+                            generateAction(action)
+                        }
+                        buffer.emitLine("return \(failReturnExpression)")
+                    }
+                }
+
+                if let action = rule.failAction {
+                    generateAction(action)
                 }
             }
         }
@@ -314,14 +326,26 @@ public class SwiftCodeGen {
                 usesMarks: requiresMarkers(rule),
                 failReturnExpression: failReturnExpression
             ) { conditional in
+                if let action = rule.action {
+                    generateAction(action)
+                }
+
                 for alt in rule.alts {
                     conditional.ensureEmptyLine()
                     try generateAlt(
                         alt,
                         in: production,
-                        backtrackToMark: requiresMarkers(rule),
-                        failReturnExpression: failReturnExpression
-                    )
+                        backtrackToMark: requiresMarkers(rule)
+                    ) {
+                        if let action = rule.failAction {
+                            generateAction(action)
+                        }
+                        buffer.emitLine("return \(failReturnExpression)")
+                    }
+                }
+
+                if let action = rule.failAction {
+                    generateAction(action)
                 }
             }
         }
@@ -364,7 +388,7 @@ public class SwiftCodeGen {
             .atom(.ruleName(trailProductionName))
 
         // Synthesize method
-        generateRuleDocComment(ruleName, info.bindings.be_asTupleType(), [
+        generateRuleDocComment(ruleName, info.bindings.be_asTupleType(), nil, nil, [
             .init(namedItems: [repetitionInfo.repetition, .item(syntheticItem)])
         ])
 
@@ -447,6 +471,7 @@ public class SwiftCodeGen {
     /// ```
     /// /// ```
     /// /// ruleName[ruleType]:
+    /// ///     [{ action }] [!!{ failAction }]
     /// ///     | alt1
     /// ///     | alt2
     /// ///     ...
@@ -456,14 +481,17 @@ public class SwiftCodeGen {
     fileprivate func generateRuleDocComment(_ rule: InternalGrammar.Rule) {
         let ruleName = rule.name
         let ruleType = rule.type
+        let action = rule.action
+        let failAction = rule.failAction
         let alts = rule.alts
 
-        generateRuleDocComment(ruleName, ruleType, alts)
+        generateRuleDocComment(ruleName, ruleType, action, failAction, alts)
     }
 
     /// ```
     /// /// ```
     /// /// ruleName[ruleType]:
+    /// ///     [{ action }] [!!{ failAction }]
     /// ///     | alt1
     /// ///     | alt2
     /// ///     ...
@@ -473,22 +501,44 @@ public class SwiftCodeGen {
     fileprivate func generateRuleDocComment(
         _ ruleName: String,
         _ ruleType: CommonAbstract.SwiftType?,
+        _ action: InternalGrammar.Action?,
+        _ failAction: InternalGrammar.Action?,
         _ alts: [InternalGrammar.Alt]
     ) {
         // Derive a doc comment for the generated rule
-        let linePrefix = "///"
+        let linePrefix = "/// "
+        let indentation = "    "
+        func emitIndentation() {
+            buffer.emit(linePrefix)
+            buffer.emit(indentation)
+        }
 
-        buffer.emitLine("\(linePrefix) ```")
-        buffer.emit("\(linePrefix) \(ruleName)")
+        buffer.emitLine("\(linePrefix)```")
+        buffer.emit("\(linePrefix)\(ruleName)")
         if let ruleType {
             buffer.emit("[\(ruleType.scg_asValidSwiftType())]")
         }
         buffer.emitLine(":")
-        for alt in alts {
-            buffer.emitLine("\(linePrefix)     | \(alt)")
+        if action != nil || failAction != nil {
+            emitIndentation()
+            // { action }
+            if let action {
+                buffer.emit("\(action)")
+            }
+            // !!{ failAction }
+            if let failAction {
+                buffer.ensureSpaceSeparator()
+                buffer.emit("!!\(failAction)")
+            }
+            buffer.emitNewline()
         }
-        buffer.emitLine("\(linePrefix)     ;")
-        buffer.emitLine("\(linePrefix) ```")
+        for alt in alts {
+            emitIndentation()
+            buffer.emitLine("| \(alt)")
+        }
+        emitIndentation()
+        buffer.emitLine(";")
+        buffer.emitLine("\(linePrefix)```")
     }
 
     /// ```
@@ -552,7 +602,7 @@ public class SwiftCodeGen {
         _ alt: InternalGrammar.Alt,
         in production: RemainingProduction,
         backtrackToMark: Bool,
-        failReturnExpression: String
+        failBlock: () -> Void
     ) throws {
         if alt.namedItems.isEmpty { return }
 
@@ -581,14 +631,14 @@ public class SwiftCodeGen {
 
         // Generate fail action, if present
         if let failAction = alt.failAction {
-            buffer.emitLine(failAction.string.trimmingWhitespace())
+            generateAction(failAction)
         }
 
         if hasCut(alt) {
             buffer.ensureDoubleNewline()
             buffer.emit("if \(cutVarName).isOn ")
             buffer.emitBlock {
-                buffer.emitLine("return \(failReturnExpression)")
+                failBlock()
             }
         }
     }
@@ -607,7 +657,7 @@ public class SwiftCodeGen {
         }
 
         if let action = alt.action {
-            buffer.emitLine(action.string.trimmingWhitespace())
+            generateAction(action)
             return
         }
 
@@ -629,6 +679,14 @@ public class SwiftCodeGen {
         } else {
             buffer.emitLine("Node()")
         }
+    }
+
+    /// Generates a given action as an in-line string terminated with a newline.
+    ///
+    /// Whitespace surrounding the action's string is stripped before emitting
+    /// the string.
+    func generateAction(_ action: InternalGrammar.Action) {
+        buffer.emitLine(action.string.trimmingWhitespace())
     }
 
     /// Generates items as a sequence of if-let segments from a given sequence of
