@@ -181,7 +181,7 @@ class FixtureTestRunner {
                 failures = try runTest(fixture)
             } catch {
                 failures = [
-                    .init(message: "Error running test: \(error)", file: fileFixture.file.path, line: 1)
+                    .init(message: "Error running test: \(error)", file: fileFixture.file, line: 1)
                 ]
             }
 
@@ -381,7 +381,7 @@ class FixtureTestRunner {
         func diagnoseError(message: String, line: Int) {
             let failure = FixtureTestFailure(
                 message: message,
-                file: diagnosticsTarget.fileUrl.path,
+                file: diagnosticsTarget.fileUrl,
                 line: line
             )
             failures.append(failure)

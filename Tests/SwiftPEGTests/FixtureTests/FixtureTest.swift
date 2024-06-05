@@ -48,7 +48,7 @@ struct FixtureTestResults {
 
 struct FixtureTestFailure {
     var message: String
-    var file: String
+    var file: URL
     var line: Int
 }
 
