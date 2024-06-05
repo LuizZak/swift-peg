@@ -173,8 +173,8 @@ public class SwiftCodeGen {
         case .rule(let rule):
             try generateRule(rule, for: production)
 
-        case .auxiliary(let rule, _):
-            try generateRule(rule, for: production)
+        case .auxiliary(let rule, let info):
+            try generateAuxiliaryRule(rule, info, for: production)
 
         case .nonStandardRepetition(let auxInfo, let repetition):
             try generateNonStandardRepetition(
@@ -235,6 +235,56 @@ public class SwiftCodeGen {
         }
     }
 
+    // MARK: Production: Auxiliary rule
+
+    func generateAuxiliaryRule(
+        _ rule: InternalGrammar.Rule,
+        _ info: AuxiliaryRuleInformation,
+        for production: RemainingProduction
+    ) throws {
+        if latestSettings.omitUnreachable && !rule.isReachable {
+            return
+        }
+
+        generateRuleDocComment(rule)
+
+        // @memoized/@memoizedLeftRecursive
+        // @inlinable
+        let name = bindingEngine.alias(for: rule)
+        let memoizationMode = info.memoizationMode
+        generateRuleMethodAttributes(
+            memoization: memoizationMode,
+            memoizedName: name
+        )
+
+        // func <rule>() -> <return type>
+        let fName = memoizationMode == .none ? name : "__\(name)"
+        let returnType = bindingEngine.returnTypeForRule(rule)
+
+        buffer.emit("public func \(fName)() throws -> \(returnType) ")
+        try buffer.emitBlock {
+            // let mark = self.mark()
+            // var cut = CutFlag()
+            //
+            // ...if-let alt patterns...
+            //
+            // return nil
+            let failReturnExpression = _failReturnExpression(for: rule.type)
+
+            try generateRuleBody(
+                hasCut: hasCut(rule),
+                failReturnExpression: failReturnExpression
+            ) {
+                for alt in rule.alts {
+                    try generateAlt(
+                        alt,
+                        in: production,
+                        failReturnExpression: failReturnExpression
+                    )
+                }
+            }
+        }
+    }
     // MARK: Production: Non-standard repetition with trailing cases
 
     func generateNonStandardRepetition(
@@ -254,7 +304,7 @@ public class SwiftCodeGen {
         let trailInformation = AuxiliaryRuleInformation(
             name: trailName,
             bindings: remainingElements,
-            memoizationMode: info.memoizationMode
+            memoizationMode: info.memoizationMode == .memoizedLeftRecursive ? .none : info.memoizationMode
         )
 
         let trailAction = defaultReturnAction(for: remainingElements)
@@ -1127,10 +1177,11 @@ extension SwiftCodeGen {
 
         let name = "_\(production.name)_\(suffix)"
 
+        let memoization = memoizationMode(for: production)
         let info = AuxiliaryRuleInformation(
             name: name,
             bindings: bindingEngine.computeBindings(alts),
-            memoizationMode: memoizationMode(for: production)
+            memoizationMode: memoization == .memoizedLeftRecursive ? .none : memoization
         )
 
         let ruleName = enqueueAuxiliaryRule(
@@ -1164,10 +1215,11 @@ extension SwiftCodeGen {
 
         let bindings = bindingEngine.computeBindings(namedItems)
 
+        let memoization = memoizationMode(for: production)
         let information = AuxiliaryRuleInformation(
             name: name,
             bindings: bindings,
-            memoizationMode: memoizationMode(for: production)
+            memoizationMode: memoization == .memoizedLeftRecursive ? .none : memoization
         )
         let tail = Array(namedItems.dropFirst())
 

@@ -1,0 +1,106 @@
+@grammar """
+start: a ;
+a: a 'b'+< 'c' | 'a' ;
+""" ;
+
+@expectedParser """
+extension Parser {
+    /// ```
+    /// start:
+    ///     | a
+    ///     ;
+    /// ```
+    @memoized("start")
+    @inlinable
+    public func __start() throws -> Node? {
+        let mark = self.mark()
+
+        if
+            let a = try self.a()
+        {
+            return a
+        }
+
+        self.restore(mark)
+        return nil
+    }
+
+    /// ```
+    /// a:
+    ///     | a 'b'+< 'c'
+    ///     | 'a'
+    ///     ;
+    /// ```
+    @memoizedLeftRecursive("a")
+    @inlinable
+    public func __a() throws -> Node? {
+        let mark = self.mark()
+
+        if
+            let a = try self.a(),
+            case let (_?, _?) = try self._a__nsr()
+        {
+            return Node()
+        }
+
+        self.restore(mark)
+
+        if
+            let _ = try self.expect("a")
+        {
+            return Node()
+        }
+
+        self.restore(mark)
+        return nil
+    }
+
+    /// ```
+    /// _a__nsr[([TokenResult], TokenResult)]:
+    ///     | 'b'+< _a__nsr_tail
+    ///     ;
+    /// ```
+    @inlinable
+    public func _a__nsr() throws -> ([TokenResult]?, TokenResult?) {
+        var _current: [TokenResult] = []
+
+        while
+            let _ = try self.expect("b")
+        {
+            _current.append(())
+            let _mark = self.mark()
+
+            if
+                let _ = try self._a__nsr_tail()
+            {
+                return _current
+            }
+
+            self.restore(_mark)
+        }
+
+        return (nil, nil)
+    }
+
+    /// ```
+    /// _a__nsr_tail[TokenResult]:
+    ///     | 'c' { _ }
+    ///     ;
+    /// ```
+    @inlinable
+    public func _a__nsr_tail() throws -> TokenResult? {
+        let mark = self.mark()
+
+        if
+            let _ = try self.expect("c")
+        {
+            return _
+        }
+
+        self.restore(mark)
+        return nil
+    }
+}
+""" ;
+
+start: '' ;
