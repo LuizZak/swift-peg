@@ -22,8 +22,9 @@ extension FixtureTestRunner {
         return FixtureTest(title: "\(name: expectedParserProp)", diagnosticTarget: diagnosticTarget) { context in
             let processed = try context.processGrammar(grammarToTest)
             let codeGen = SwiftCodeGen(from: processed)
+            let settings = file.test_parserSettings()
 
-            let parser = try codeGen.generateParser().trimmingWhitespaceTrail()
+            let parser = try codeGen.generateParser(settings: settings).trimmingWhitespaceTrail()
 
             context.diffTest(
                 expected: value,
@@ -42,5 +43,16 @@ extension SwiftPEGGrammar.Grammar {
     /// `@expectedTokenType <value>`
     func test_expectedTokenType() -> String? {
         return test_stringOrIdentMetaValue(named: FixtureTestRunner.expectedTokenTypeProp)
+    }
+
+    /// `@omitRedundantMarkRestores <true/false>`
+    func test_parserSettings() -> SwiftCodeGen.ParserGenSettings {
+        var settings = SwiftCodeGen.ParserGenSettings.default
+
+        if let omitRedundantMarkRestores = test_stringOrIdentMetaValue(named: "omitRedundantMarkRestores") {
+            settings.omitRedundantMarkRestores = omitRedundantMarkRestores == "true"
+        }
+
+        return settings
     }
 }

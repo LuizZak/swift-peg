@@ -228,12 +228,15 @@ public class SwiftCodeGen {
 
             try generateRuleBody(
                 hasCut: hasCut(rule),
+                usesMarks: requiresMarkers(rule),
                 failReturnExpression: failReturnExpression
-            ) {
+            ) { conditional in
                 for alt in rule.alts {
+                    conditional.ensureEmptyLine()
                     try generateAlt(
                         alt,
                         in: production,
+                        backtrackToMark: requiresMarkers(rule),
                         failReturnExpression: failReturnExpression
                     )
                 }
@@ -279,12 +282,15 @@ public class SwiftCodeGen {
 
             try generateRuleBody(
                 hasCut: hasCut(rule),
+                usesMarks: requiresMarkers(rule),
                 failReturnExpression: failReturnExpression
-            ) {
+            ) { conditional in
                 for alt in rule.alts {
+                    conditional.ensureEmptyLine()
                     try generateAlt(
                         alt,
                         in: production,
+                        backtrackToMark: requiresMarkers(rule),
                         failReturnExpression: failReturnExpression
                     )
                 }
@@ -473,27 +479,32 @@ public class SwiftCodeGen {
     /// Pushes a new declaration context for the duration of the method.
     ///
     /// ```
-    /// let mark = self.mark()
+    /// let mark = self.mark() (only if usesMarks == true)
     /// var cut = CutFlag()   (only if hasCut == true)
     /// <generator()>
     /// return <failReturnExpression>
     /// ```
     func generateRuleBody(
         hasCut: Bool,
+        usesMarks: Bool,
         failReturnExpression: String,
-        _ generator: () throws -> Void
+        _ generator: (CodeStringBuffer.ConditionalEmitter) throws -> Void
     ) throws {
         declContext.push()
         defer { declContext.pop() }
-        declContext.defineLocal(suggestedName: "mark")
-        declContext.defineLocal(suggestedName: "cut")
 
-        buffer.emitLine("let mark = self.mark()")
+        let conditional = buffer.startConditionalEmitter()
+
+        if usesMarks {
+            buffer.emitLine("let mark = self.mark()")
+            declContext.defineLocal(suggestedName: "mark")
+        }
         if hasCut {
             buffer.emitLine("var cut = CutFlag()")
+            declContext.defineLocal(suggestedName: "cut")
         }
 
-        try generator()
+        try generator(conditional)
 
         buffer.emitLine("return \(failReturnExpression)")
     }
@@ -501,14 +512,13 @@ public class SwiftCodeGen {
     func generateAlt(
         _ alt: InternalGrammar.Alt,
         in production: RemainingProduction,
+        backtrackToMark: Bool,
         failReturnExpression: String
     ) throws {
         if alt.namedItems.isEmpty { return }
 
         declContext.push()
         defer { declContext.pop() }
-
-        buffer.emitNewline()
 
         // if block
         buffer.emitLine("if")
@@ -523,9 +533,12 @@ public class SwiftCodeGen {
             generateOnAltMatchBlock(alt, in: production)
         }
 
-        // Alt failure results in a restore to a previous mark
         buffer.emitNewline()
-        buffer.emitLine("self.restore(mark)")
+
+        if backtrackToMark && requiresMarkers(alt) {
+            // Alt failure results in a restore to a previous mark
+            buffer.emitLine("self.restore(mark)")
+        }
 
         // Generate fail action, if present
         if let failAction = alt.failAction {
@@ -533,7 +546,7 @@ public class SwiftCodeGen {
         }
 
         if hasCut(alt) {
-            buffer.emitNewline()
+            buffer.ensureDoubleNewline()
             buffer.emit("if cut.isOn ")
             buffer.emitBlock {
                 buffer.emitLine("return \(failReturnExpression)")
@@ -925,7 +938,8 @@ public class SwiftCodeGen {
         /// Gets the static default settings configuration.
         public static let `default`: Self = Self(
             omitUnreachable: false,
-            emitTypesInBindings: false
+            emitTypesInBindings: false,
+            omitRedundantMarkRestores: false
         )
 
         /// Whether to omit unreachable rules, as detected by a `GrammarProcessor`
@@ -937,12 +951,32 @@ public class SwiftCodeGen {
         /// bound is resolvable by the code generator.
         public var emitTypesInBindings: Bool
 
+        /// Whether to make attempts to omit redundant `self.mark()`/`self.restore(mark)`
+        /// calls in parsing methods.
+        ///
+        /// Mark/restore calls can be omitted if all methods in the parser (including
+        /// built-in PEGParser methods like `expect` and `maybe`) follow the rule
+        /// that on failure, they restore the parser to the same point as when
+        /// they where called. In such cases, if a parsing function's alt only
+        /// calls one method in the alternative, a failure results in the parser
+        /// backtracking from that method call, which is the same as backtracking
+        /// to the start of the alternative.
+        ///
+        /// Emitting mark/restore calls around all parsing methods may reduce the
+        /// chances of a rough parsing method breaking callers, and the overhead
+        /// of calling a restore on a mark that points to the current parser state
+        /// is very low, so the calls should only be removed if they become a
+        /// measurable bottleneck.
+        public var omitRedundantMarkRestores: Bool
+
         public init(
             omitUnreachable: Bool,
-            emitTypesInBindings: Bool
+            emitTypesInBindings: Bool,
+            omitRedundantMarkRestores: Bool
         ) {
             self.omitUnreachable = omitUnreachable
             self.emitTypesInBindings = emitTypesInBindings
+            self.omitRedundantMarkRestores = omitRedundantMarkRestores
         }
 
         /// Returns a copy of `self` with a given keypath modified to be `value`.
@@ -1500,6 +1534,60 @@ extension SwiftCodeGen {
         default:
             return false
         }
+    }
+}
+
+// MARK: - Mark requirement detection
+
+extension SwiftCodeGen {
+    /// Returns `true` if the rule requires a marker to backtrack in between alts.
+    ///
+    /// Always returns `true` if `latestSettings.omitRedundantMarkRestores` is
+    /// `false`.
+    func requiresMarkers(_ node: InternalGrammar.Rule) -> Bool {
+        guard latestSettings.omitRedundantMarkRestores else {
+            return true
+        }
+
+        return node.alts.contains(where: requiresMarkers)
+    }
+
+    /// Returns `true` if the one of the given alts requires a marker to backtrack
+    /// in case of failure.
+    ///
+    /// Always returns `true` if `latestSettings.omitRedundantMarkRestores` is
+    /// `false`.
+    func requiresMarkers(_ nodes: [InternalGrammar.Alt]) -> Bool {
+        guard latestSettings.omitRedundantMarkRestores else {
+            return true
+        }
+
+        return nodes.contains(where: requiresMarkers)
+    }
+
+    /// Returns `true` if the given alt requires a marker to backtrack in case
+    /// of failure.
+    ///
+    /// Markers are required if an alternative has more than one fallible bind,
+    /// requiring a backtrack that returns to before the first bind.
+    ///
+    /// Always returns `true` if `latestSettings.omitRedundantMarkRestores` is
+    /// `false`.
+    func requiresMarkers(_ node: InternalGrammar.Alt) -> Bool {
+        guard latestSettings.omitRedundantMarkRestores else {
+            return true
+        }
+
+        let bindCount = node.namedItems.filter {
+            switch $0 {
+            case .item, .lookahead(.forced):
+                return true
+            case .lookahead(.negative), .lookahead(.positive), .lookahead(.cut):
+                return false
+            }
+        }.count
+
+        return bindCount > 1
     }
 }
 

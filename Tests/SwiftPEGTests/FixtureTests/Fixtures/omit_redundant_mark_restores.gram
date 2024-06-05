@@ -1,0 +1,123 @@
+@omitRedundantMarkRestores true ;
+@grammar """
+start: a ;
+a: 'a' b | c ;
+b: 'b' c 'd' ;
+c: 'c' | 'c'+ | !'c' ~ 'c' ;
+""" ;
+
+@expectedParser """
+extension Parser {
+    /// ```
+    /// start:
+    ///     | a
+    ///     ;
+    /// ```
+    @memoized("start")
+    @inlinable
+    public func __start() throws -> Node? {
+        if
+            let a = try self.a()
+        {
+            return a
+        }
+
+        return nil
+    }
+
+    /// ```
+    /// a:
+    ///     | 'a' b
+    ///     | c
+    ///     ;
+    /// ```
+    @memoized("a")
+    @inlinable
+    public func __a() throws -> Node? {
+        let mark = self.mark()
+
+        if
+            let _ = try self.expect("a"),
+            let b = try self.b()
+        {
+            return Node()
+        }
+
+        self.restore(mark)
+
+        if
+            let c = try self.c()
+        {
+            return c
+        }
+
+        return nil
+    }
+
+    /// ```
+    /// b:
+    ///     | 'b' c 'd'
+    ///     ;
+    /// ```
+    @memoized("b")
+    @inlinable
+    public func __b() throws -> Node? {
+        let mark = self.mark()
+
+        if
+            let _ = try self.expect("b"),
+            let c = try self.c(),
+            let _ = try self.expect("d")
+        {
+            return Node()
+        }
+
+        self.restore(mark)
+        return nil
+    }
+
+    /// ```
+    /// c:
+    ///     | 'c'
+    ///     | 'c'+
+    ///     | !'c' ~ 'c'
+    ///     ;
+    /// ```
+    @memoized("c")
+    @inlinable
+    public func __c() throws -> Node? {
+        var cut = CutFlag()
+
+        if
+            let _ = try self.expect("c")
+        {
+            return Node()
+        }
+
+        if
+            let _ = try self.repeatOneOrMore({
+                try self.expect("c")
+            })
+        {
+            return Node()
+        }
+
+        if
+            try self.negativeLookahead({
+                try self.expect("c")
+            }),
+            cut.toggleOn(),
+            let _ = try self.expect("c")
+        {
+            return Node()
+        }
+
+        if cut.isOn {
+            return nil
+        }
+        return nil
+    }
+}
+""" ;
+
+start: '' ;
