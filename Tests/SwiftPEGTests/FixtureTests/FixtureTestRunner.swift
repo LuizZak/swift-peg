@@ -42,7 +42,7 @@ class FixtureTestRunner {
 
         // Find all fixtures
         logger.beginLogMessageScope("Finding test files...")
-        let files = try FileManager.default.contentsOfDirectory(at: fixturesPath, includingPropertiesForKeys: nil)
+        let files = try collectFiles()
 
         logger.logMessage("Found \(files.count) test file(s)")
         let allFixtures = try collectFixtures(grammarFileUrls: files)
@@ -60,6 +60,14 @@ class FixtureTestRunner {
             \(failureCounter: parseFailures) parsing failure(s).
             """
         )
+    }
+
+    /// Collects all .gram test file fixtures in the `fixturesPath` directory.
+    func collectFiles() throws -> [URL] {
+        let files = try FileManager.default.contentsOfDirectory(at: fixturesPath, includingPropertiesForKeys: nil)
+        return files.filter { file in
+            file.pathExtension == "gram"
+        }
     }
 
     /// Collects all recognized test fixtures from all of the given grammar file
@@ -126,6 +134,15 @@ class FixtureTestRunner {
         {
             fixtures.append(test)
         }
+        if
+            let test = expectedTokenTypeTest(
+                file: grammar,
+                grammarToTest: grammarToTest,
+                diagnosticTarget: diagnostics
+            )
+        {
+            fixtures.append(test)
+        }
 
         return fixtures
     }
@@ -153,6 +170,10 @@ class FixtureTestRunner {
             "Running \(fileName: fileFixture.file)..."
         )
         defer { logger.endLogMessageScope(depth: 2) }
+
+        if fileFixture.fixtures.isEmpty {
+            logger.logMessage("\("Warning:", color: .yellow) no test fixtures found in file \(fileName: fileFixture.file)?")
+        }
 
         for fixture in fileFixture.fixtures {
             let failures: [FixtureTestFailure]

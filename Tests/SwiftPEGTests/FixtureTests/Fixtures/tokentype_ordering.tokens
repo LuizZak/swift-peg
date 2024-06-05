@@ -1,0 +1,9 @@
+$leftSquare: '[' ;
+$rightSquare: ']' ;
+$assign: '=' ;
+$logicalNot: '!' ;
+$equals: '==' ;
+$notEquals: '!=' ;
+$identical: '===' ;
+$notIdentical: '!==' ;
+$string: '"' (!'"' .)+ '"' ;

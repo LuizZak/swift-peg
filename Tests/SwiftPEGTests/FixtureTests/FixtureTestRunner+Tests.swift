@@ -5,7 +5,8 @@ extension FixtureTestRunner {
     /// a given grammar, along with a grammar to use to generate the parser code
     /// to test against.
     ///
-    /// If `file` has no `@expectedParser` meta-property, `nil` is returned, instead.
+    /// If `file` has no `@expectedParser` meta-property, `nil` is returned,
+    /// instead.
     func expectedParserTest(
         file: SwiftPEGGrammar.Grammar,
         grammarToTest: SwiftPEGGrammar.Grammar,
@@ -32,6 +33,39 @@ extension FixtureTestRunner {
             ).diff(parser)
         }
     }
+
+    /// Produces an `@expectedTokenType <value>` test based on a meta-property of
+    /// a given grammar, along with a grammar to use to generate the token type
+    /// code to test against.
+    ///
+    /// If `file` has no `@expectedTokenType` meta-property, `nil` is returned,
+    /// instead.
+    func expectedTokenTypeTest(
+        file: SwiftPEGGrammar.Grammar,
+        grammarToTest: SwiftPEGGrammar.Grammar,
+        diagnosticTarget: any LineDiagnosticTarget
+    ) -> FixtureTest? {
+
+        guard let expectedTokenTypeProp = file.test_metaProperty(named: Self.expectedTokenTypeProp) else {
+            return nil
+        }
+        guard let value = expectedTokenTypeProp.value?.test_valueString?.trimmingWhitespaceTrail() else {
+            return nil
+        }
+
+        return FixtureTest(title: "\(name: expectedTokenTypeProp)", diagnosticTarget: diagnosticTarget) { context in
+            let processed = try context.processGrammar(grammarToTest)
+            let codeGen = SwiftCodeGen(from: processed)
+            let settings = file.test_tokenTypeSettings()
+
+            let parser = try codeGen.generateTokenType(settings: settings).trimmingWhitespaceTrail()
+
+            context.diffTest(
+                expected: value,
+                lineOffset: context.sourceLine(of: expectedTokenTypeProp) - 1
+            ).diff(parser)
+        }
+    }
 }
 
 extension SwiftPEGGrammar.Grammar {
@@ -53,6 +87,13 @@ extension SwiftPEGGrammar.Grammar {
             settings.omitRedundantMarkRestores = omitRedundantMarkRestores == "true"
         }
 
+        return settings
+    }
+
+    /// Currently empty; might contain support for token type generation settings
+    /// later.
+    func test_tokenTypeSettings() -> SwiftCodeGen.TokenTypeGenSettings {
+        let settings = SwiftCodeGen.TokenTypeGenSettings.default
         return settings
     }
 }
