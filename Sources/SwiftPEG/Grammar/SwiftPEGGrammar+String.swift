@@ -103,11 +103,11 @@ extension SwiftPEGGrammar {
         }
 
         public static func fromStringToken<Location>(_ token: TokenNode<SwiftPEGGrammar.Token, Location>) throws -> Self {
-            try .fromStringToken(token.token)
+            try .fromStringToken(token.rawToken)
         }
 
-        public static func fromStringToken<Raw>(_ token: Tokenizer<Raw>.TokenResult) throws -> Self where Raw.Token == SwiftPEGGrammar.Token {
-            try .fromStringToken(token.token)
+        public static func fromStringToken<Raw>(_ token: Tokenizer<Raw>.TokenResult) throws -> Self where Raw.RawToken == SwiftPEGGrammar.Token {
+            try .fromStringToken(token.rawToken)
         }
 
         /// Describes the quotes surrounding a grammar string literal.

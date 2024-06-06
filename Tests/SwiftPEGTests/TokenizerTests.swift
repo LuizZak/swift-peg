@@ -69,9 +69,9 @@ final class TokenizerTests: XCTestCase {
         let result_1 = try sut.next()
         let result_2 = try sut.next()
 
-        assertEqual(result_0?.token, rawStub.tokens[0])
-        assertEqual(result_1?.token, rawStub.tokens[1])
-        assertEqual(result_2?.token, rawStub.tokens[2])
+        assertEqual(result_0?.rawToken, rawStub.tokens[0])
+        assertEqual(result_1?.rawToken, rawStub.tokens[1])
+        assertEqual(result_2?.rawToken, rawStub.tokens[2])
         assertEqual(rawStub.next_callCount, 3)
         assertSuccessesEqual(rawStub.next_calls, [
             .success(rawStub.tokens[0]),
@@ -90,7 +90,7 @@ final class TokenizerTests: XCTestCase {
         _=try sut.next()
         let result = try sut.next()
 
-        assertEqual(result?.token, nil)
+        assertEqual(result?.rawToken, nil)
         assertEqual(rawStub.next_callCount, 2)
         assertSuccessesEqual(rawStub.next_calls, [
             .success(rawStub.tokens[0]),

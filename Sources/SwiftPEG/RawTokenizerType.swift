@@ -3,11 +3,11 @@
 /// by a parser.
 public protocol RawTokenizerType {
     /// The token type that this tokenizer produces.
-    associatedtype Token: TokenType
+    associatedtype RawToken: TokenType
 
     /// An associated type that indicates locations of tokens that are produced
     /// by this tokenizer.
-    /// 
+    ///
     /// Normally used to diagnose parsing errors according to line/column or some
     /// other locatable, indexable value.
     associatedtype Location: Hashable, Comparable
@@ -17,7 +17,7 @@ public protocol RawTokenizerType {
 
     /// Requests the next token from this raw tokenizer, including its location.
     /// Returns `nil` to signal EOF for consumers.
-    /// 
+    ///
     /// Errors can be thrown to indicate an unknown token type.
-    mutating func next() throws -> (token: Token, location: Location)?
+    mutating func next() throws -> (rawToken: RawToken, location: Location)?
 }

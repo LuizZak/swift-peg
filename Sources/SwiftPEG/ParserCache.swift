@@ -2,7 +2,7 @@
 /// and optionally a parameter set for the arguments.
 public struct ParserCache<RawTokenizer: RawTokenizerType> {
     public typealias Mark = Tokenizer<RawTokenizer>.Mark
-    public typealias TokenKind = RawTokenizer.Token.TokenKind
+    public typealias TokenKind = RawTokenizer.RawToken.TokenKind
 
     @usableFromInline
     internal var _cache: [Key: Any] = [:]
@@ -10,7 +10,7 @@ public struct ParserCache<RawTokenizer: RawTokenizerType> {
     internal var _metadata: [String: Any] = [:]
 
     /// Dictionary to store requests for tokens within the parser.
-    /// 
+    ///
     /// Used during error recovery/syntax error generation.
     @usableFromInline
     internal var _tokenHits: [Mark: [TokenKind]] = [:]

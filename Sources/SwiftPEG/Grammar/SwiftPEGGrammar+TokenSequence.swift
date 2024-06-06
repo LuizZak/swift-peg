@@ -30,11 +30,11 @@ extension SwiftPEGGrammar {
         }
 
         public static func from<L>(_ token: TokenNode<SwiftPEGGrammar.Token, L>) -> Self {
-            .from(token.token)
+            .from(token.rawToken)
         }
 
-        public static func from<Raw>(_ token: Tokenizer<Raw>.TokenResult) -> Self where Raw.Token == SwiftPEGGrammar.Token {
-            .from(token.token)
+        public static func from<Raw>(_ token: Tokenizer<Raw>.TokenResult) -> Self where Raw.RawToken == SwiftPEGGrammar.Token {
+            .from(token.rawToken)
         }
 
         public static func from(_ segments: some Sequence<Self>) -> Self {

@@ -37,8 +37,8 @@ final class TokenizerTests_MarkRestore: XCTestCase {
         let result_6 = try sut.next()
 
         assertEqual([
-            result_0?.token, result_1?.token, result_2?.token, result_3?.token,
-            result_4?.token, result_5?.token, result_6?.token,
+            result_0?.rawToken, result_1?.rawToken, result_2?.rawToken, result_3?.rawToken,
+            result_4?.rawToken, result_5?.rawToken, result_6?.rawToken,
         ], [
             stubRaw.tokens[0],
             stubRaw.tokens[1],

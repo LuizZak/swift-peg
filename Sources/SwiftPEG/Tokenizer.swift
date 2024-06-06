@@ -2,7 +2,7 @@ import Foundation
 
 /// A tokenizer with built-in caching support.
 open class Tokenizer<Raw: RawTokenizerType> {
-    public typealias Token = Raw.Token
+    public typealias RawToken = Raw.RawToken
     public typealias Location = Raw.Location
 
 #if DEBUG
@@ -101,7 +101,7 @@ open class Tokenizer<Raw: RawTokenizerType> {
 
         // Peek raw stream
         if let nextToken = try _raw.next() {
-            let result = TokenResult(token: nextToken.token, location: nextToken.location)
+            let result = TokenResult(rawToken: nextToken.rawToken, location: nextToken.location)
             cachedTokens.append(result)
             return result
         } else {
@@ -185,12 +185,12 @@ open class Tokenizer<Raw: RawTokenizerType> {
 
     /// Type for results of parsing methods that query single tokens.
     public struct TokenResult {
-        public var token: Token
+        public var rawToken: RawToken
         public var location: Location
 
         @inlinable
-        public init(token: Token, location: Location) {
-            self.token = token
+        public init(rawToken: RawToken, location: Location) {
+            self.rawToken = rawToken
             self.location = location
         }
     }
@@ -254,10 +254,10 @@ open class Tokenizer<Raw: RawTokenizerType> {
     }
 }
 
-extension Tokenizer.TokenResult: CustomStringConvertible where Raw.Token: CustomStringConvertible {
-    /// Returns `token.description`.
+extension Tokenizer.TokenResult: CustomStringConvertible where Raw.RawToken: CustomStringConvertible {
+    /// Returns `rawToken.description`.
     @inlinable
     public var description: String {
-        token.description
+        rawToken.description
     }
 }

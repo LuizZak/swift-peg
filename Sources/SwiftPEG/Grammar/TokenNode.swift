@@ -3,28 +3,28 @@ import SwiftPEGMacros
 /// A terminal Token node.
 open class TokenNode<Token, Location>: Node where Token: TokenType, Location: Hashable & Comparable {
     /// The immutable token value associated with this node.
-    public let token: Token
+    public let rawToken: Token
 
-    public override var shortDebugDescription: String { #""\#(token.string)""# }
+    public override var shortDebugDescription: String { #""\#(rawToken.string)""# }
 
-    public init(token: Token, location: Location) {
-        self.token = token
-
-        super.init()
-
-        self.location = location
-    }
-
-    public init(_ token: (token: Token, location: Location)) {
-        self.token = token.token
+    public init(rawToken: Token, location: Location) {
+        self.rawToken = rawToken
 
         super.init()
 
         self.location = location
     }
 
-    public init<Raw>(_ token: Tokenizer<Raw>.TokenResult) where Raw.Token == Token, Raw.Location == Location {
-        self.token = token.token
+    public init(_ token: (rawToken: Token, location: Location)) {
+        self.rawToken = token.rawToken
+
+        super.init()
+
+        self.location = location
+    }
+
+    public init<Raw>(_ token: Tokenizer<Raw>.TokenResult) where Raw.RawToken == Token, Raw.Location == Location {
+        self.rawToken = token.rawToken
 
         super.init()
 

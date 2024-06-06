@@ -7,7 +7,7 @@
 
 /// A parser for SwiftPEG grammar files.
 public final class GrammarParser<RawTokenizer: RawTokenizerType>: PEGParser<RawTokenizer>
-    where RawTokenizer.Token == SwiftPEGGrammar.Token, RawTokenizer.Location == FileSourceLocation
+    where RawTokenizer.RawToken == SwiftPEGGrammar.Token, RawTokenizer.Location == FileSourceLocation
 { }
 """ ;
 
@@ -25,11 +25,11 @@ grammar[SwiftPEGGrammar.Grammar]:
     ;
 
 meta[SwiftPEGGrammar.Meta]:
-    | "@" name=IDENTIFIER value=metaValue? ';' { self.setLocation(.init(name: name.token, value: value), at: _mark) }
+    | "@" name=IDENTIFIER value=metaValue? ';' { self.setLocation(.init(name: name.rawToken, value: value), at: _mark) }
     ;
 
 metaValue[SwiftPEGGrammar.MetaValue]:
-    | ident=IDENTIFIER  { self.setLocation(SwiftPEGGrammar.MetaIdentifierValue(identifier: ident.token), at: _mark) }
+    | ident=IDENTIFIER  { self.setLocation(SwiftPEGGrammar.MetaIdentifierValue(identifier: ident.rawToken), at: _mark) }
     | string            { self.setLocation(SwiftPEGGrammar.MetaStringValue(string: string), at: _mark) }
     ;
 
@@ -38,8 +38,8 @@ rule[SwiftPEGGrammar.Rule]:
     ;
 
 ruleName[SwiftPEGGrammar.RuleName]:
-    | name=IDENTIFIER '[' ~ type=swiftType ']'  { self.setLocation(.init(name: name.token, type: type), at: _mark) }
-    | name=IDENTIFIER                           { self.setLocation(.init(name: name.token, type: nil), at: _mark) }
+    | name=IDENTIFIER '[' ~ type=swiftType ']'  { self.setLocation(.init(name: name.rawToken, type: type), at: _mark) }
+    | name=IDENTIFIER                           { self.setLocation(.init(name: name.rawToken, type: nil), at: _mark) }
     ;
 
 alts[[SwiftPEGGrammar.Alt]]:
@@ -55,8 +55,8 @@ namedItems[[SwiftPEGGrammar.NamedItem]]:
     ;
 
 namedItem[SwiftPEGGrammar.NamedItem]:
-    | name=IDENTIFIER '[' type=swiftType ']' '=' ~ item     { self.setLocation(.init(name: name.token, item: item, type: type, lookahead: nil), at: _mark) }
-    | name=IDENTIFIER '=' ~ item                            { self.setLocation(.init(name: name.token, item: item, type: nil, lookahead: nil), at: _mark) }
+    | name=IDENTIFIER '[' type=swiftType ']' '=' ~ item     { self.setLocation(.init(name: name.rawToken, item: item, type: type, lookahead: nil), at: _mark) }
+    | name=IDENTIFIER '=' ~ item                            { self.setLocation(.init(name: name.rawToken, item: item, type: nil, lookahead: nil), at: _mark) }
     | item                                                  { self.setLocation(.init(name: nil, item: item, type: nil, lookahead: nil), at: _mark) }
     | lookahead                                             { self.setLocation(.init(name: nil, item: nil, type: nil, lookahead: lookahead), at: _mark) }
     ;
@@ -83,7 +83,7 @@ repetitionMode[CommonAbstract.RepetitionMode]:
 
 atom[SwiftPEGGrammar.Atom]:
     | '(' ~ alts ')'    { self.setLocation(SwiftPEGGrammar.GroupAtom(alts: alts), at: _mark) }
-    | IDENTIFIER        { self.setLocation(SwiftPEGGrammar.IdentAtom(identifier: identifier.token, identity: .unresolved), at: _mark) }
+    | IDENTIFIER        { self.setLocation(SwiftPEGGrammar.IdentAtom(identifier: identifier.rawToken, identity: .unresolved), at: _mark) }
     | string            { self.setLocation(SwiftPEGGrammar.StringAtom(string: string), at: _mark) }
     ;
 
@@ -172,15 +172,15 @@ tokensFile[[SwiftPEGGrammar.TokenDefinition]]:
 #       Usually this can be simplified to a `.tokenReference` for TokenType/TokenType.TokenKind types that provide statically-accessible token declarations,
 #       but may be any Swift expression that resolves to the desired token when paired with an appropriate tokenizer's token type.
 tokenDefinition[SwiftPEGGrammar.TokenDefinition]:
-    | spec=tokenOrFragmentSpecifier name=IDENTIFIER '[' staticToken=string ']' ':' ~ tokenSyntax ';'    { self.setLocation(.init(name: name.token, isFragment: spec.kind == .percent, staticToken: staticToken, tokenSyntax: tokenSyntax), at: _mark) }
-    | spec=tokenOrFragmentSpecifier name=IDENTIFIER '[' staticToken=string ']' ';'                      { self.setLocation(.init(name: name.token, isFragment: spec.kind == .percent, staticToken: staticToken, tokenSyntax: nil), at: _mark) }
-    | spec=tokenOrFragmentSpecifier name=IDENTIFIER ':' ~ tokenSyntax ';'                               { self.setLocation(.init(name: name.token, isFragment: spec.kind == .percent, staticToken: nil, tokenSyntax: tokenSyntax), at: _mark) }
-    | spec=tokenOrFragmentSpecifier name=IDENTIFIER ';'                                                 { self.setLocation(.init(name: name.token, isFragment: spec.kind == .percent, staticToken: nil, tokenSyntax: nil), at: _mark) }
+    | spec=tokenOrFragmentSpecifier name=IDENTIFIER '[' staticToken=string ']' ':' ~ tokenSyntax ';'    { self.setLocation(.init(name: name.rawToken, isFragment: spec.kind == .percent, staticToken: staticToken, tokenSyntax: tokenSyntax), at: _mark) }
+    | spec=tokenOrFragmentSpecifier name=IDENTIFIER '[' staticToken=string ']' ';'                      { self.setLocation(.init(name: name.rawToken, isFragment: spec.kind == .percent, staticToken: staticToken, tokenSyntax: nil), at: _mark) }
+    | spec=tokenOrFragmentSpecifier name=IDENTIFIER ':' ~ tokenSyntax ';'                               { self.setLocation(.init(name: name.rawToken, isFragment: spec.kind == .percent, staticToken: nil, tokenSyntax: tokenSyntax), at: _mark) }
+    | spec=tokenOrFragmentSpecifier name=IDENTIFIER ';'                                                 { self.setLocation(.init(name: name.rawToken, isFragment: spec.kind == .percent, staticToken: nil, tokenSyntax: nil), at: _mark) }
     ;
 
-tokenOrFragmentSpecifier[Token]:
-    | token='$'   { token.token }
-    | token='%'   { token.token }
+tokenOrFragmentSpecifier[RawToken]:
+    | token='$'   { token.rawToken }
+    | token='%'   { token.rawToken }
     ;
 
 tokenSyntax[CommonAbstract.TokenSyntax]:

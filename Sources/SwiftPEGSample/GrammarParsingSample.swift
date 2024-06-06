@@ -68,7 +68,7 @@ class GrammarParsingSample {
 
             var tokens: [Substring] = []
             while let next = try tokenizer.next() {
-                tokens.append(next.token.string)
+                tokens.append(next.rawToken.string)
             }
 
             print(tokens, to: &standardError)

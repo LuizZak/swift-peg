@@ -18,7 +18,7 @@ class TestRawTokenizer<T: TokenType> {
     var next_calls: [Result<T?, Error>] = []
     var next_callCount: Int = 0
 
-    func next() throws -> (token: T, location: Int)? {
+    func next() throws -> (rawToken: T, location: Int)? {
         next_callCount += 1
 
         guard !isEOF else {

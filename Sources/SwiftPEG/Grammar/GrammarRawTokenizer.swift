@@ -1,7 +1,7 @@
 /// A tokenizer for SwiftPEG grammar files.
 /// Reads tokens out of a character stream.
 public class GrammarRawTokenizer: RawTokenizerType {
-    public typealias Token = GrammarParserToken
+    public typealias RawToken = GrammarParserToken
     public typealias Location = FileSourceLocation
 
     @usableFromInline
@@ -23,7 +23,7 @@ public class GrammarRawTokenizer: RawTokenizerType {
     }
 
     @inlinable
-    public func next() throws -> (token: Token, location: Location)? {
+    public func next() throws -> (rawToken: RawToken, location: Location)? {
         skipToContent()
 
         guard !_stream.isEof else {
@@ -35,7 +35,7 @@ public class GrammarRawTokenizer: RawTokenizerType {
         let state = _stream.save()
 
         guard
-            let token = Token.from(stream: &_stream),
+            let token = RawToken.from(stream: &_stream),
             token.length > 0
         else {
             _stream.restore(state)

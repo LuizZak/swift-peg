@@ -2582,7 +2582,7 @@ class SwiftCodeGenTests: XCTestCase {
         @usableFromInline
         final class TestGrammarRawTokenizer: RawTokenizerType {
             @usableFromInline
-            typealias Token = TestGrammarAST.Token
+            typealias RawToken = TestGrammarAST.Token
             @usableFromInline
             typealias Location = FileSourceLocation
 
@@ -2608,7 +2608,7 @@ class SwiftCodeGenTests: XCTestCase {
             }
 
             @inlinable
-            func next() throws -> (token: Token, location: Location)? {
+            func next() throws -> (rawToken: RawToken, location: Location)? {
                 skipToContent()
 
                 guard _index < _source.endIndex else {
@@ -2616,7 +2616,7 @@ class SwiftCodeGenTests: XCTestCase {
                 }
 
                 guard
-                    let token = Token.from(_source[_index...]),
+                    let token = RawToken.from(_source[_index...]),
                     token.length > 0
                 else {
                     throw Error.unknownToken(index: _index)
@@ -2684,7 +2684,7 @@ class SwiftCodeGenTests: XCTestCase {
             @inlinable
             func NAME() throws -> Substring? {
                 if let token = try self.expect(kind: .name) {
-                    return token.token.string
+                    return token.rawToken.string
                 }
                 return nil
             }
@@ -2693,7 +2693,7 @@ class SwiftCodeGenTests: XCTestCase {
             func NUMBER() throws -> Double? {
                 if
                     let token = try self.expect(kind: .number),
-                    case .number(let value, _) = token.token
+                    case .number(let value, _) = token.rawToken
                 {
                     return value
                 }
@@ -2703,7 +2703,7 @@ class SwiftCodeGenTests: XCTestCase {
             @inlinable
             func NEWLINE() throws -> Substring? {
                 if let token = try self.expect(kind: .newline) {
-                    return token.token.string
+                    return token.rawToken.string
                 }
                 return nil
             }

@@ -18,7 +18,7 @@ class TestGrammarTokenizer {
     var next_calls: [Result<GrammarParserToken?, Error>] = []
     var next_callCount: Int = 0
 
-    func next() throws -> (token: GrammarParserToken, location: FileSourceLocation)? {
+    func next() throws -> (rawToken: GrammarParserToken, location: FileSourceLocation)? {
         next_callCount += 1
 
         guard !isEOF else {

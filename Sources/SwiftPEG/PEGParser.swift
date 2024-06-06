@@ -1,6 +1,6 @@
 /// Base class for PEG parsers.
 open class PEGParser<RawTokenizer: RawTokenizerType> {
-    public typealias Token = RawTokenizer.Token
+    public typealias RawToken = RawTokenizer.RawToken
     public typealias Mark = Tokenizer<RawTokenizer>.Mark
     public typealias CacheEntry<T> = ParserCache<RawTokenizer>.CacheEntry<T>
     /// Alias for results of parsing methods that query single tokens.
@@ -34,7 +34,7 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
         let mark = self.mark()
         defer { self.restore(mark) }
 
-        typealias TokenKindType = Token.TokenKind
+        typealias TokenKindType = RawToken.TokenKind
 
         let errorMark = tokenizer.mark(before: self.reach)
         let errorLead = "Syntax error @ \(tokenizer.readableLocation(for: errorMark))"
@@ -50,9 +50,9 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
         }
 
         return SyntaxError.expectedToken(
-            "\(errorLead): Found \"\(actual.token.string)\" but expected: \(tokens.asNaturalLanguageList({ "\"\($0)\"" }))",
+            "\(errorLead): Found \"\(actual.rawToken.string)\" but expected: \(tokens.asNaturalLanguageList({ "\"\($0)\"" }))",
             errorMark,
-            received: actual.token,
+            received: actual.rawToken,
             expected: tokens
         )
     }
@@ -132,7 +132,7 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
         tokenizer.restore(mark)
 
         do {
-            while try tokenizer.peekToken()?.token.isWhitespace == true {
+            while try tokenizer.peekToken()?.rawToken.isWhitespace == true {
                 _=try tokenizer.next()
             }
         } catch {
@@ -146,8 +146,8 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
     ///
     /// - note: Call is not memoized.
     @inlinable
-    public func peekKind() throws -> Token.TokenKind? {
-        return try tokenizer.peekToken()?.token.kind
+    public func peekKind() throws -> RawToken.TokenKind? {
+        return try tokenizer.peekToken()?.rawToken.kind
     }
 
     /// Fetches the next token in the stream and returns it unconditionally.
@@ -174,20 +174,20 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
     ///
     /// - note: Call is not memoized.
     @inlinable
-    public func expect(_ token: Token) throws -> TokenResult? {
+    public func expect(_ token: RawToken) throws -> TokenResult? {
         let mark = self.mark()
 
         // If expected kind is not explicitly a whitespace, skip all whitespace
         // tokens first
         if !token.isWhitespace {
-            while try tokenizer.peekToken()?.token.isWhitespace == true {
+            while try tokenizer.peekToken()?.rawToken.isWhitespace == true {
                 _=try tokenizer.next()
             }
         }
 
         self.cache.storeTokenKind(at: self.mark(), token.kind)
 
-        if let next = try tokenizer.next(), next.token == token {
+        if let next = try tokenizer.next(), next.rawToken == token {
             return next
         }
         self.restore(mark)
@@ -200,20 +200,20 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
     ///
     /// - note: Call is not memoized.
     @inlinable
-    public func expect(kind: Token.TokenKind) throws -> TokenResult? {
+    public func expect(kind: RawToken.TokenKind) throws -> TokenResult? {
         let mark = self.mark()
 
         // If expected kind is not explicitly a whitespace, skip all whitespace
         // tokens first
         if kind != .whitespace {
-            while try tokenizer.peekToken()?.token.isWhitespace == true {
+            while try tokenizer.peekToken()?.rawToken.isWhitespace == true {
                 _=try tokenizer.next()
             }
         }
 
         self.cache.storeTokenKind(at: self.mark(), kind)
 
-        if let next = try tokenizer.next(), next.token.kind == kind {
+        if let next = try tokenizer.next(), next.rawToken.kind == kind {
             return next
         }
         self.restore(mark)
@@ -227,20 +227,20 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
     ///
     /// - note: Call is not memoized.
     @inlinable
-    public func expect(oneOfKind kinds: Set<Token.TokenKind>) throws -> TokenResult? {
+    public func expect(oneOfKind kinds: Set<RawToken.TokenKind>) throws -> TokenResult? {
         let mark = self.mark()
 
         // If expected kind is not explicitly a whitespace, skip all whitespace
         // tokens first
         if !kinds.contains(.whitespace) {
-            while try tokenizer.peekToken()?.token.isWhitespace == true {
+            while try tokenizer.peekToken()?.rawToken.isWhitespace == true {
                 _=try tokenizer.next()
             }
         }
 
         self.cache.storeUniqueTokenKinds(at: self.mark(), kinds)
 
-        if let next = try tokenizer.next(), kinds.contains(next.token.kind) {
+        if let next = try tokenizer.next(), kinds.contains(next.rawToken.kind) {
             return next
         }
         self.restore(mark)
@@ -252,8 +252,8 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
     ///
     /// - note: Call is not memoized.
     @inlinable
-    public func maybe(_ token: Token) throws -> Bool {
-        if try tokenizer.peekToken()?.token == token {
+    public func maybe(_ token: RawToken) throws -> Bool {
+        if try tokenizer.peekToken()?.rawToken == token {
             _ = try tokenizer.next()
             return true
         }
@@ -266,8 +266,8 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
     ///
     /// - note: Call is not memoized.
     @inlinable
-    public func maybe(kind: Token.TokenKind) throws -> Bool {
-        if try tokenizer.peekToken()?.token.kind == kind {
+    public func maybe(kind: RawToken.TokenKind) throws -> Bool {
+        if try tokenizer.peekToken()?.rawToken.kind == kind {
             _ = try tokenizer.next()
             return true
         }
@@ -431,7 +431,7 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
 
         /// Found given token kind, expected one of the following token kinds
         /// instead.
-        case expectedToken(String, _ mark: Mark, received: Token, expected: [Token.TokenKind])
+        case expectedToken(String, _ mark: Mark, received: RawToken, expected: [RawToken.TokenKind])
 
         public var description: String {
             switch self {

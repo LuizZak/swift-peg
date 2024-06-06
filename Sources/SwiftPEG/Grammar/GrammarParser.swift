@@ -2,7 +2,7 @@
 
 /// A parser for SwiftPEG grammar files.
 public final class GrammarParser<RawTokenizer: RawTokenizerType>: PEGParser<RawTokenizer>
-    where RawTokenizer.Token == SwiftPEGGrammar.Token, RawTokenizer.Location == FileSourceLocation
+    where RawTokenizer.RawToken == SwiftPEGGrammar.Token, RawTokenizer.Location == FileSourceLocation
 { }
 
 extension GrammarParser {
@@ -53,7 +53,7 @@ extension GrammarParser {
 
     /// ```
     /// meta[SwiftPEGGrammar.Meta]:
-    ///     | "@" name=IDENTIFIER value=metaValue? ';' { self.setLocation(.init(name: name.token, value: value), at: _mark) }
+    ///     | "@" name=IDENTIFIER value=metaValue? ';' { self.setLocation(.init(name: name.rawToken, value: value), at: _mark) }
     ///     ;
     /// ```
     @memoized("meta")
@@ -69,7 +69,7 @@ extension GrammarParser {
             }),
             let _ = try self.expect(kind: .semicolon)
         {
-            return self.setLocation(.init(name: name.token, value: value), at: _mark)
+            return self.setLocation(.init(name: name.rawToken, value: value), at: _mark)
         }
 
         self.restore(_mark)
@@ -78,7 +78,7 @@ extension GrammarParser {
 
     /// ```
     /// metaValue[SwiftPEGGrammar.MetaValue]:
-    ///     | ident=IDENTIFIER { self.setLocation(SwiftPEGGrammar.MetaIdentifierValue(identifier: ident.token), at: _mark) }
+    ///     | ident=IDENTIFIER { self.setLocation(SwiftPEGGrammar.MetaIdentifierValue(identifier: ident.rawToken), at: _mark) }
     ///     | string { self.setLocation(SwiftPEGGrammar.MetaStringValue(string: string), at: _mark) }
     ///     ;
     /// ```
@@ -90,7 +90,7 @@ extension GrammarParser {
         if
             let ident = try self.expect(kind: .identifier)
         {
-            return self.setLocation(SwiftPEGGrammar.MetaIdentifierValue(identifier: ident.token), at: _mark)
+            return self.setLocation(SwiftPEGGrammar.MetaIdentifierValue(identifier: ident.rawToken), at: _mark)
         }
 
         self.restore(_mark)
@@ -107,7 +107,7 @@ extension GrammarParser {
 
     /// ```
     /// rule[SwiftPEGGrammar.Rule]:
-    ///     | ruleName ":" action? failAction? '|'? alts ';' { self.setLocation(.init(name: ruleName, alts: alts), at: _mark) }
+    ///     | ruleName ":" action? failAction? '|'? alts ';' { self.setLocation(.init(name: ruleName, action: action, failAction: failAction, alts: alts), at: _mark) }
     ///     ;
     /// ```
     @memoized("rule")
@@ -139,8 +139,8 @@ extension GrammarParser {
 
     /// ```
     /// ruleName[SwiftPEGGrammar.RuleName]:
-    ///     | name=IDENTIFIER '[' ~ type=swiftType ']' { self.setLocation(.init(name: name.token, type: type), at: _mark) }
-    ///     | name=IDENTIFIER { self.setLocation(.init(name: name.token, type: nil), at: _mark) }
+    ///     | name=IDENTIFIER '[' ~ type=swiftType ']' { self.setLocation(.init(name: name.rawToken, type: type), at: _mark) }
+    ///     | name=IDENTIFIER { self.setLocation(.init(name: name.rawToken, type: nil), at: _mark) }
     ///     ;
     /// ```
     @memoized("ruleName")
@@ -156,7 +156,7 @@ extension GrammarParser {
             let type = try self.swiftType(),
             let _ = try self.expect(kind: .rightSquare)
         {
-            return self.setLocation(.init(name: name.token, type: type), at: _mark)
+            return self.setLocation(.init(name: name.rawToken, type: type), at: _mark)
         }
 
         self.restore(_mark)
@@ -168,7 +168,7 @@ extension GrammarParser {
         if
             let name = try self.expect(kind: .identifier)
         {
-            return self.setLocation(.init(name: name.token, type: nil), at: _mark)
+            return self.setLocation(.init(name: name.rawToken, type: nil), at: _mark)
         }
 
         self.restore(_mark)
@@ -249,8 +249,8 @@ extension GrammarParser {
 
     /// ```
     /// namedItem[SwiftPEGGrammar.NamedItem]:
-    ///     | name=IDENTIFIER '[' type=swiftType ']' '=' ~ item { self.setLocation(.init(name: name.token, item: item, type: type, lookahead: nil), at: _mark) }
-    ///     | name=IDENTIFIER '=' ~ item { self.setLocation(.init(name: name.token, item: item, type: nil, lookahead: nil), at: _mark) }
+    ///     | name=IDENTIFIER '[' type=swiftType ']' '=' ~ item { self.setLocation(.init(name: name.rawToken, item: item, type: type, lookahead: nil), at: _mark) }
+    ///     | name=IDENTIFIER '=' ~ item { self.setLocation(.init(name: name.rawToken, item: item, type: nil, lookahead: nil), at: _mark) }
     ///     | item { self.setLocation(.init(name: nil, item: item, type: nil, lookahead: nil), at: _mark) }
     ///     | lookahead { self.setLocation(.init(name: nil, item: nil, type: nil, lookahead: lookahead), at: _mark) }
     ///     ;
@@ -270,7 +270,7 @@ extension GrammarParser {
             _cut.toggleOn(),
             let item = try self.item()
         {
-            return self.setLocation(.init(name: name.token, item: item, type: type, lookahead: nil), at: _mark)
+            return self.setLocation(.init(name: name.rawToken, item: item, type: type, lookahead: nil), at: _mark)
         }
 
         self.restore(_mark)
@@ -285,7 +285,7 @@ extension GrammarParser {
             _cut.toggleOn(),
             let item = try self.item()
         {
-            return self.setLocation(.init(name: name.token, item: item, type: nil, lookahead: nil), at: _mark)
+            return self.setLocation(.init(name: name.rawToken, item: item, type: nil, lookahead: nil), at: _mark)
         }
 
         self.restore(_mark)
@@ -499,7 +499,7 @@ extension GrammarParser {
     /// ```
     /// atom[SwiftPEGGrammar.Atom]:
     ///     | '(' ~ alts ')' { self.setLocation(SwiftPEGGrammar.GroupAtom(alts: alts), at: _mark) }
-    ///     | IDENTIFIER { self.setLocation(SwiftPEGGrammar.IdentAtom(identifier: identifier.token, identity: .unresolved), at: _mark) }
+    ///     | IDENTIFIER { self.setLocation(SwiftPEGGrammar.IdentAtom(identifier: identifier.rawToken, identity: .unresolved), at: _mark) }
     ///     | string { self.setLocation(SwiftPEGGrammar.StringAtom(string: string), at: _mark) }
     ///     ;
     /// ```
@@ -527,7 +527,7 @@ extension GrammarParser {
         if
             let identifier = try self.expect(kind: .identifier)
         {
-            return self.setLocation(SwiftPEGGrammar.IdentAtom(identifier: identifier.token, identity: .unresolved), at: _mark)
+            return self.setLocation(SwiftPEGGrammar.IdentAtom(identifier: identifier.rawToken, identity: .unresolved), at: _mark)
         }
 
         self.restore(_mark)
@@ -1008,10 +1008,10 @@ extension GrammarParser {
 
     /// ```
     /// tokenDefinition[SwiftPEGGrammar.TokenDefinition]:
-    ///     | spec=tokenOrFragmentSpecifier name=IDENTIFIER '[' staticToken=string ']' ':' ~ tokenSyntax ';' { self.setLocation(.init(name: name.token, isFragment: spec.kind == .percent, staticToken: staticToken, tokenSyntax: tokenSyntax), at: _mark) }
-    ///     | spec=tokenOrFragmentSpecifier name=IDENTIFIER '[' staticToken=string ']' ';' { self.setLocation(.init(name: name.token, isFragment: spec.kind == .percent, staticToken: staticToken, tokenSyntax: nil), at: _mark) }
-    ///     | spec=tokenOrFragmentSpecifier name=IDENTIFIER ':' ~ tokenSyntax ';' { self.setLocation(.init(name: name.token, isFragment: spec.kind == .percent, staticToken: nil, tokenSyntax: tokenSyntax), at: _mark) }
-    ///     | spec=tokenOrFragmentSpecifier name=IDENTIFIER ';' { self.setLocation(.init(name: name.token, isFragment: spec.kind == .percent, staticToken: nil, tokenSyntax: nil), at: _mark) }
+    ///     | spec=tokenOrFragmentSpecifier name=IDENTIFIER '[' staticToken=string ']' ':' ~ tokenSyntax ';' { self.setLocation(.init(name: name.rawToken, isFragment: spec.kind == .percent, staticToken: staticToken, tokenSyntax: tokenSyntax), at: _mark) }
+    ///     | spec=tokenOrFragmentSpecifier name=IDENTIFIER '[' staticToken=string ']' ';' { self.setLocation(.init(name: name.rawToken, isFragment: spec.kind == .percent, staticToken: staticToken, tokenSyntax: nil), at: _mark) }
+    ///     | spec=tokenOrFragmentSpecifier name=IDENTIFIER ':' ~ tokenSyntax ';' { self.setLocation(.init(name: name.rawToken, isFragment: spec.kind == .percent, staticToken: nil, tokenSyntax: tokenSyntax), at: _mark) }
+    ///     | spec=tokenOrFragmentSpecifier name=IDENTIFIER ';' { self.setLocation(.init(name: name.rawToken, isFragment: spec.kind == .percent, staticToken: nil, tokenSyntax: nil), at: _mark) }
     ///     ;
     /// ```
     @memoized("tokenDefinition")
@@ -1031,7 +1031,7 @@ extension GrammarParser {
             let tokenSyntax = try self.tokenSyntax(),
             let _ = try self.expect(kind: .semicolon)
         {
-            return self.setLocation(.init(name: name.token, isFragment: spec.kind == .percent, staticToken: staticToken, tokenSyntax: tokenSyntax), at: _mark)
+            return self.setLocation(.init(name: name.rawToken, isFragment: spec.kind == .percent, staticToken: staticToken, tokenSyntax: tokenSyntax), at: _mark)
         }
 
         self.restore(_mark)
@@ -1048,7 +1048,7 @@ extension GrammarParser {
             let _ = try self.expect(kind: .rightSquare),
             let _ = try self.expect(kind: .semicolon)
         {
-            return self.setLocation(.init(name: name.token, isFragment: spec.kind == .percent, staticToken: staticToken, tokenSyntax: nil), at: _mark)
+            return self.setLocation(.init(name: name.rawToken, isFragment: spec.kind == .percent, staticToken: staticToken, tokenSyntax: nil), at: _mark)
         }
 
         self.restore(_mark)
@@ -1061,7 +1061,7 @@ extension GrammarParser {
             let tokenSyntax = try self.tokenSyntax(),
             let _ = try self.expect(kind: .semicolon)
         {
-            return self.setLocation(.init(name: name.token, isFragment: spec.kind == .percent, staticToken: nil, tokenSyntax: tokenSyntax), at: _mark)
+            return self.setLocation(.init(name: name.rawToken, isFragment: spec.kind == .percent, staticToken: nil, tokenSyntax: tokenSyntax), at: _mark)
         }
 
         self.restore(_mark)
@@ -1075,7 +1075,7 @@ extension GrammarParser {
             let name = try self.expect(kind: .identifier),
             let _ = try self.expect(kind: .semicolon)
         {
-            return self.setLocation(.init(name: name.token, isFragment: spec.kind == .percent, staticToken: nil, tokenSyntax: nil), at: _mark)
+            return self.setLocation(.init(name: name.rawToken, isFragment: spec.kind == .percent, staticToken: nil, tokenSyntax: nil), at: _mark)
         }
 
         self.restore(_mark)
@@ -1083,20 +1083,20 @@ extension GrammarParser {
     }
 
     /// ```
-    /// tokenOrFragmentSpecifier[Token]:
-    ///     | token='$' { token.token }
-    ///     | token='%' { token.token }
+    /// tokenOrFragmentSpecifier[RawToken]:
+    ///     | token='$' { token.rawToken }
+    ///     | token='%' { token.rawToken }
     ///     ;
     /// ```
     @memoized("tokenOrFragmentSpecifier")
     @inlinable
-    public func __tokenOrFragmentSpecifier() throws -> Token? {
+    public func __tokenOrFragmentSpecifier() throws -> RawToken? {
         let _mark = self.mark()
 
         if
             let token = try self.expect(kind: .dollarSign)
         {
-            return token.token
+            return token.rawToken
         }
 
         self.restore(_mark)
@@ -1104,7 +1104,7 @@ extension GrammarParser {
         if
             let token = try self.expect(kind: .percent)
         {
-            return token.token
+            return token.rawToken
         }
 
         self.restore(_mark)
