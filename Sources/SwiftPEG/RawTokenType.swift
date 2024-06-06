@@ -1,4 +1,8 @@
-/// Represents a token from a tokenizer.
+/// Represents a raw token from a raw tokenizer.
+///
+/// Raw tokens contain structural information of a token but lack location
+/// information, and can be created and used as a currency between the parser
+/// and tokenizer.
 public protocol RawTokenType: Hashable {
     /// A token kind that can be used to check the type of a token without
     /// knowing about its structural details, like its string contents.

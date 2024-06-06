@@ -183,9 +183,9 @@ open class Tokenizer<Raw: RawTokenizerType> {
         return oldReach
     }
 
-    /// Type for results of parsing methods that query single tokens.
-    /// Pairs a raw token from the tokenizer with its reported original parsing
-    /// location.
+    /// Type for tokens produced by a tokenizer.
+    ///
+    /// Pairs a raw token and location from the raw tokenizer.
     public struct Token: Hashable {
         public var rawToken: RawToken
         public var location: Location
