@@ -51,7 +51,7 @@ class SwiftCodeGen_RepetitionsTests: XCTestCase {
                     let _mark = self.mark()
 
                     if
-                        let _: TokenResult = try self.expect("a")
+                        let _: Token = try self.expect("a")
                     {
                         return A()
                     }
@@ -71,7 +71,7 @@ class SwiftCodeGen_RepetitionsTests: XCTestCase {
                     let _mark = self.mark()
 
                     if
-                        let _: TokenResult = try self.expect("b")
+                        let _: Token = try self.expect("b")
                     {
                         return B()
                     }
@@ -91,10 +91,10 @@ class SwiftCodeGen_RepetitionsTests: XCTestCase {
                     let _mark = self.mark()
 
                     if
-                        let _: TokenResult? = try self.optional({
+                        let _: Token? = try self.optional({
                             try self.expect("c")
                         }),
-                        let _: TokenResult = try self.expect("e")
+                        let _: Token = try self.expect("e")
                     {
                         return C()
                     }
@@ -208,7 +208,7 @@ class SwiftCodeGen_RepetitionsTests: XCTestCase {
                     let _mark = self.mark()
 
                     if
-                        let _: TokenResult = try self.expect("a")
+                        let _: Token = try self.expect("a")
                     {
                         return A()
                     }
@@ -228,7 +228,7 @@ class SwiftCodeGen_RepetitionsTests: XCTestCase {
                     let _mark = self.mark()
 
                     if
-                        let _: TokenResult = try self.expect("b")
+                        let _: Token = try self.expect("b")
                     {
                         return B()
                     }
@@ -248,10 +248,10 @@ class SwiftCodeGen_RepetitionsTests: XCTestCase {
                     let _mark = self.mark()
 
                     if
-                        let _: TokenResult? = try self.optional({
+                        let _: Token? = try self.optional({
                             try self.expect("c")
                         }),
-                        let _: TokenResult = try self.expect("e")
+                        let _: Token = try self.expect("e")
                     {
                         return C()
                     }
@@ -369,7 +369,7 @@ class SwiftCodeGen_RepetitionsTests: XCTestCase {
                     let _mark = self.mark()
 
                     if
-                        let _: TokenResult = try self.expect("a")
+                        let _: Token = try self.expect("a")
                     {
                         return A()
                     }
@@ -389,7 +389,7 @@ class SwiftCodeGen_RepetitionsTests: XCTestCase {
                     let _mark = self.mark()
 
                     if
-                        let _: TokenResult = try self.expect("b")
+                        let _: Token = try self.expect("b")
                     {
                         return B()
                     }
@@ -409,10 +409,10 @@ class SwiftCodeGen_RepetitionsTests: XCTestCase {
                     let _mark = self.mark()
 
                     if
-                        let _: TokenResult? = try self.optional({
+                        let _: Token? = try self.optional({
                             try self.expect("c")
                         }),
-                        let _: TokenResult = try self.expect("d")
+                        let _: Token = try self.expect("d")
                     {
                         return C()
                     }
@@ -520,7 +520,7 @@ class SwiftCodeGen_RepetitionsTests: XCTestCase {
                     let _mark = self.mark()
 
                     if
-                        let _: TokenResult = try self.expect("a")
+                        let _: Token = try self.expect("a")
                     {
                         return A()
                     }
@@ -540,7 +540,7 @@ class SwiftCodeGen_RepetitionsTests: XCTestCase {
                     let _mark = self.mark()
 
                     if
-                        let _: TokenResult = try self.expect("b")
+                        let _: Token = try self.expect("b")
                     {
                         return B()
                     }
@@ -560,10 +560,10 @@ class SwiftCodeGen_RepetitionsTests: XCTestCase {
                     let _mark = self.mark()
 
                     if
-                        let _: TokenResult? = try self.optional({
+                        let _: Token? = try self.optional({
                             try self.expect("c")
                         }),
-                        let _: TokenResult = try self.expect("e")
+                        let _: Token = try self.expect("e")
                     {
                         return C()
                     }

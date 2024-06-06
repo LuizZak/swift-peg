@@ -98,7 +98,7 @@ class BindingEngine {
     ///
     /// - note: Only valid within `PEGParser` members.
     func swiftTokenType() -> CommonAbstract.SwiftType {
-        "TokenResult"
+        "Token"
     }
 
     /// Returns the default type to use when rules specify no return type.

@@ -102,11 +102,7 @@ extension SwiftPEGGrammar {
             return .init(pieces: pieces, quote: quote)
         }
 
-        public static func fromStringToken<Location>(_ token: TokenNode<SwiftPEGGrammar.Token, Location>) throws -> Self {
-            try .fromStringToken(token.rawToken)
-        }
-
-        public static func fromStringToken<Raw>(_ token: Tokenizer<Raw>.TokenResult) throws -> Self where Raw.RawToken == SwiftPEGGrammar.Token {
+        public static func fromStringToken<Raw>(_ token: Tokenizer<Raw>.Token) throws -> Self where Raw.RawToken == SwiftPEGGrammar.Token {
             try .fromStringToken(token.rawToken)
         }
 

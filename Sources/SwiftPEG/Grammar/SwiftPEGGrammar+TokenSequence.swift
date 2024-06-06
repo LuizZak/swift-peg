@@ -29,11 +29,7 @@ extension SwiftPEGGrammar {
             .init(pieces: [.string(string)])
         }
 
-        public static func from<L>(_ token: TokenNode<SwiftPEGGrammar.Token, L>) -> Self {
-            .from(token.rawToken)
-        }
-
-        public static func from<Raw>(_ token: Tokenizer<Raw>.TokenResult) -> Self where Raw.RawToken == SwiftPEGGrammar.Token {
+        public static func from<Raw>(_ token: Tokenizer<Raw>.Token) -> Self where Raw.RawToken == SwiftPEGGrammar.Token {
             .from(token.rawToken)
         }
 

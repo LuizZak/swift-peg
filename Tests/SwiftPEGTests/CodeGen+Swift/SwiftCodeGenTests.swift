@@ -201,7 +201,7 @@ class SwiftCodeGenTests: XCTestCase {
                     let _mark = self.mark()
 
                     if
-                        let _: TokenResult = try self.expect("a")
+                        let _: Token = try self.expect("a")
                     {
                         return Node()
                     }
@@ -209,7 +209,7 @@ class SwiftCodeGenTests: XCTestCase {
                     self.restore(_mark)
 
                     if
-                        let _: TokenResult = try self.expect("b"),
+                        let _: Token = try self.expect("b"),
                         let c: [Node] = try self.repeatOneOrMore({
                             try self.c()
                         })
@@ -232,7 +232,7 @@ class SwiftCodeGenTests: XCTestCase {
                     let _mark = self.mark()
 
                     if
-                        let _: TokenResult = try self.expect("aa")
+                        let _: Token = try self.expect("aa")
                     {
                         return B()
                     }
@@ -276,7 +276,7 @@ class SwiftCodeGenTests: XCTestCase {
                     let _mark = self.mark()
 
                     if
-                        let _: TokenResult? = try self.optional({
+                        let _: Token? = try self.optional({
                             try self.expect("a")
                         }),
                         let b: B? = try self.optional({
@@ -343,7 +343,7 @@ class SwiftCodeGenTests: XCTestCase {
                     let _mark = self.mark()
 
                     if
-                        let a: TokenResult = try self.expect("a")
+                        let a: Token = try self.expect("a")
                     {
                         return a
                     }
@@ -351,7 +351,7 @@ class SwiftCodeGenTests: XCTestCase {
                     self.restore(_mark)
 
                     if
-                        let _: TokenResult = try self.expect("b"),
+                        let _: Token = try self.expect("b"),
                         let _: [Node] = try self.repeatOneOrMore({
                             try self.c()
                         })
@@ -374,7 +374,7 @@ class SwiftCodeGenTests: XCTestCase {
                     let _mark = self.mark()
 
                     if
-                        let _: TokenResult = try self.expect("aa")
+                        let _: Token = try self.expect("aa")
                     {
                         return B()
                     }
@@ -418,7 +418,7 @@ class SwiftCodeGenTests: XCTestCase {
                     let _mark = self.mark()
 
                     if
-                        let _: TokenResult? = try self.optional({
+                        let _: Token? = try self.optional({
                             try self.expect("a")
                         }),
                         let _: B? = try self.optional({
@@ -1489,7 +1489,7 @@ class SwiftCodeGenTests: XCTestCase {
                     let _mark = self.mark()
 
                     if
-                        let _: TokenResult = try self.expect("a")
+                        let _: Token = try self.expect("a")
                     {
                         return A()
                     }
@@ -1509,7 +1509,7 @@ class SwiftCodeGenTests: XCTestCase {
                     let _mark = self.mark()
 
                     if
-                        let _: TokenResult = try self.expect("b")
+                        let _: Token = try self.expect("b")
                     {
                         return B()
                     }
@@ -1529,10 +1529,10 @@ class SwiftCodeGenTests: XCTestCase {
                     let _mark = self.mark()
 
                     if
-                        let _: TokenResult? = try self.optional({
+                        let _: Token? = try self.optional({
                             try self.expect("c")
                         }),
-                        let _: TokenResult = try self.expect("e")
+                        let _: Token = try self.expect("e")
                     {
                         return C()
                     }
@@ -1556,7 +1556,7 @@ class SwiftCodeGenTests: XCTestCase {
                             try self.b()
                         }),
                         let cBind: C = try self.c(),
-                        let _: TokenResult = try self.expect("d")
+                        let _: Token = try self.expect("d")
                     {
                         return (b: b, cBind: cBind)
                     }
@@ -1618,7 +1618,7 @@ class SwiftCodeGenTests: XCTestCase {
                     let _mark = self.mark()
 
                     if
-                        let _: TokenResult = try self.expect("a")
+                        let _: Token = try self.expect("a")
                     {
                         return A()
                     }
@@ -1638,7 +1638,7 @@ class SwiftCodeGenTests: XCTestCase {
                     let _mark = self.mark()
 
                     if
-                        let _: TokenResult = try self.expect("b")
+                        let _: Token = try self.expect("b")
                     {
                         return B()
                     }
@@ -1658,10 +1658,10 @@ class SwiftCodeGenTests: XCTestCase {
                     let _mark = self.mark()
 
                     if
-                        let _: TokenResult? = try self.optional({
+                        let _: Token? = try self.optional({
                             try self.expect("c")
                         }),
-                        let _: TokenResult = try self.expect("e")
+                        let _: Token = try self.expect("e")
                     {
                         return C()
                     }
@@ -1685,7 +1685,7 @@ class SwiftCodeGenTests: XCTestCase {
                             try self.b()
                         }),
                         let cBind: C = try self.c(),
-                        let _: TokenResult = try self.expect("d")
+                        let _: Token = try self.expect("d")
                     {
                         return (b: b, cBind: cBind)
                     }
@@ -1745,7 +1745,7 @@ class SwiftCodeGenTests: XCTestCase {
                     let _mark = self.mark()
 
                     if
-                        let _: TokenResult = try self.expect("a")
+                        let _: Token = try self.expect("a")
                     {
                         return A()
                     }
@@ -1765,7 +1765,7 @@ class SwiftCodeGenTests: XCTestCase {
                     let _mark = self.mark()
 
                     if
-                        let _: TokenResult = try self.expect("b")
+                        let _: Token = try self.expect("b")
                     {
                         return B()
                     }
@@ -1785,10 +1785,10 @@ class SwiftCodeGenTests: XCTestCase {
                     let _mark = self.mark()
 
                     if
-                        let _: TokenResult? = try self.optional({
+                        let _: Token? = try self.optional({
                             try self.expect("c")
                         }),
-                        let _: TokenResult = try self.expect("e")
+                        let _: Token = try self.expect("e")
                     {
                         return C()
                     }
@@ -1813,7 +1813,7 @@ class SwiftCodeGenTests: XCTestCase {
                             try self.b()
                         }),
                         let cBind: C = try self.c(),
-                        let _: TokenResult = try self.expect("d")
+                        let _: Token = try self.expect("d")
                     {
                         return cBind
                     }
@@ -1821,7 +1821,7 @@ class SwiftCodeGenTests: XCTestCase {
                     self.restore(_mark)
 
                     if
-                        let b: TokenResult = try self.e(),
+                        let b: Token = try self.e(),
                         let cBind: C = try self.c()
                     {
                         return cBind
@@ -1884,7 +1884,7 @@ class SwiftCodeGenTests: XCTestCase {
                     let _mark = self.mark()
 
                     if
-                        let _: TokenResult = try self.expect("a")
+                        let _: Token = try self.expect("a")
                     {
                         return A()
                     }
@@ -1904,7 +1904,7 @@ class SwiftCodeGenTests: XCTestCase {
                     let _mark = self.mark()
 
                     if
-                        let _: TokenResult = try self.expect("b")
+                        let _: Token = try self.expect("b")
                     {
                         return B()
                     }
@@ -1924,10 +1924,10 @@ class SwiftCodeGenTests: XCTestCase {
                     let _mark = self.mark()
 
                     if
-                        let _: TokenResult? = try self.optional({
+                        let _: Token? = try self.optional({
                             try self.expect("c")
                         }),
-                        let _: TokenResult = try self.expect("e")
+                        let _: Token = try self.expect("e")
                     {
                         return C()
                     }
@@ -1995,7 +1995,7 @@ class SwiftCodeGenTests: XCTestCase {
                             try self.b()
                         }),
                         let cBind: C = try self.c(),
-                        let _: TokenResult = try self.expect("d")
+                        let _: Token = try self.expect("d")
                     {
                         return (b: b, cBind: cBind)
                     }
@@ -2267,13 +2267,13 @@ class SwiftCodeGenTests: XCTestCase {
                 }
 
                 /// ```
-                /// _a__opt[TokenResult]:
+                /// _a__opt[Token]:
                 ///     | '+' nameInner='\' '-' { nameInner }
                 ///     ;
                 /// ```
                 @memoized("_a__opt")
                 @inlinable
-                public func ___a__opt() throws -> TokenResult? {
+                public func ___a__opt() throws -> Token? {
                     let _mark = self.mark()
 
                     if

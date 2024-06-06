@@ -121,7 +121,7 @@ class TestInterpreterDelegate: GrammarInterpreter.Delegate {
     var produceToken_calls: [(Substring)] = []
     func produceToken(
         string: Substring
-    ) throws -> GrammarInterpreter.TokenResult? {
+    ) throws -> GrammarInterpreter.Token? {
 
         produceToken_callCount += 1
         produceToken_calls.append((string))
@@ -138,9 +138,9 @@ class TestInterpreterDelegate: GrammarInterpreter.Delegate {
     }
 
     var tokenResult_matchesTokenName_callCount: Int = 0
-    var tokenResult_matchesTokenName_calls: [(GrammarInterpreter.TokenResult, String)] = []
+    var tokenResult_matchesTokenName_calls: [(GrammarInterpreter.Token, String)] = []
     func tokenResult(
-        _ tokenResult: GrammarInterpreter.TokenResult,
+        _ tokenResult: GrammarInterpreter.Token,
         matchesTokenName tokenName: String
     ) -> Bool {
 
@@ -166,9 +166,9 @@ class TestInterpreterDelegate: GrammarInterpreter.Delegate {
     }
 
     var tokenResult_matchesTokenLiteral_callCount: Int = 0
-    var tokenResult_matchesTokenLiteral_calls: [(GrammarInterpreter.TokenResult, String)] = []
+    var tokenResult_matchesTokenLiteral_calls: [(GrammarInterpreter.Token, String)] = []
     func tokenResult(
-        _ tokenResult: GrammarInterpreter.TokenResult,
+        _ tokenResult: GrammarInterpreter.Token,
         matchesTokenLiteral tokenLiteral: String
     ) -> Bool {
 

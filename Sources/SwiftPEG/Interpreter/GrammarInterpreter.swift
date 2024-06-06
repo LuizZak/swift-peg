@@ -3,7 +3,7 @@ public class GrammarInterpreter {
     /// Type of tokens produced by delegates and consumed by the interpreter.
     /// The length of the token is measured in grapheme clusters (ie. Swift's
     /// `String.count` value).
-    public typealias TokenResult = (token: Any, length: Int)
+    public typealias Token = (token: Any, length: Int)
     typealias Mark = InterpreterTokenizer.Mark
 
     let context = InterpretedRuleContextManager()
@@ -88,7 +88,7 @@ public class GrammarInterpreter {
         tokenizer.restore(mark)
     }
 
-    func next() throws -> TokenResult? {
+    func next() throws -> Token? {
         try self.tokenizer.next(self.delegate)
     }
 
@@ -501,7 +501,7 @@ public class GrammarInterpreter {
         }
     }
 
-    func expect(tokenName: String) throws -> TokenResult? {
+    func expect(tokenName: String) throws -> Token? {
         let mark = self.mark()
 
         guard
@@ -515,7 +515,7 @@ public class GrammarInterpreter {
         return next
     }
 
-    func expect(tokenLiteral: String) throws -> TokenResult? {
+    func expect(tokenLiteral: String) throws -> Token? {
         let mark = self.mark()
 
         guard
@@ -691,7 +691,7 @@ public class GrammarInterpreter {
         /// Type of value in an alt context.
         private enum _Value: CustomStringConvertible {
             /// The value references a token construct.
-            case token(TokenResult)
+            case token(Token)
 
             /// The value is the result of an alt result value being delegated
             /// to a delegate.
@@ -708,9 +708,9 @@ public class GrammarInterpreter {
                 }
             }
 
-            /// Returns the associated value of `token(TokenResult)`, if this
+            /// Returns the associated value of `token(Token)`, if this
             /// value is one, otherwise returns `nil`.
-            public var asToken: TokenResult? {
+            public var asToken: Token? {
                 switch self {
                 case .token(let token):
                     return token
@@ -756,14 +756,14 @@ public class GrammarInterpreter {
         /// Returning `nil` indicates that end-of-file has been reached.
         func produceToken(
             string: Substring
-        ) throws -> TokenResult?
+        ) throws -> Token?
 
         /// Requests that the result of a token fetch from a tokenizer be compared
         /// to a token name found within the grammar, returning a boolean value
         /// indicating whether the interpreter should consider the token name
         /// a match.
         func tokenResult(
-            _ tokenResult: TokenResult,
+            _ tokenResult: Token,
             matchesTokenName tokenName: String
         ) -> Bool
 
@@ -772,7 +772,7 @@ public class GrammarInterpreter {
         /// indicating whether the interpreter should consider the token literal
         /// a match.
         func tokenResult(
-            _ tokenResult: TokenResult,
+            _ tokenResult: Token,
             matchesTokenLiteral tokenLiteral: String
         ) -> Bool
     }
@@ -836,10 +836,10 @@ class InterpretedRuleContextManager {
 
 /// Internal tokenizer used for interpreters.
 class InterpreterTokenizer {
-    typealias TokenResult = GrammarInterpreter.TokenResult
+    typealias Token = GrammarInterpreter.Token
     typealias Mark = Int
 
-    var cachedTokens: [TokenResult] = []
+    var cachedTokens: [Token] = []
     var cacheIndex: Int = 0
 
     let source: String
@@ -864,7 +864,7 @@ class InterpreterTokenizer {
     /// Fetches the next token in the stream, either from the currently cached
     /// token set or by requesting that a given delegate parse the next token
     /// from the stream.
-    func next(_ delegate: GrammarInterpreter.Delegate) throws -> TokenResult? {
+    func next(_ delegate: GrammarInterpreter.Delegate) throws -> Token? {
         guard cacheIndex >= cachedTokens.count else {
             defer { cacheIndex += 1 }
             return cachedTokens[cacheIndex]

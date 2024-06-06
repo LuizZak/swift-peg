@@ -4,7 +4,7 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
     public typealias Mark = Tokenizer<RawTokenizer>.Mark
     public typealias CacheEntry<T> = ParserCache<RawTokenizer>.CacheEntry<T>
     /// Alias for results of parsing methods that query single tokens.
-    public typealias TokenResult = Tokenizer<RawTokenizer>.TokenResult
+    public typealias Token = Tokenizer<RawTokenizer>.Token
 
     /// The cache associated with this parser.
     public var cache: ParserCache<RawTokenizer> = ParserCache()
@@ -154,7 +154,7 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
     ///
     /// - note: Call is not memoized.
     @inlinable
-    public func nextToken() throws -> TokenResult? {
+    public func nextToken() throws -> Token? {
         return try tokenizer.next()
     }
 
@@ -164,7 +164,7 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
     ///
     /// - note: Call is not memoized.
     @inlinable
-    public func expect() throws -> TokenResult? {
+    public func expect() throws -> Token? {
         return try nextToken()
     }
 
@@ -174,7 +174,7 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
     ///
     /// - note: Call is not memoized.
     @inlinable
-    public func expect(_ token: RawToken) throws -> TokenResult? {
+    public func expect(_ token: RawToken) throws -> Token? {
         let mark = self.mark()
 
         // If expected kind is not explicitly a whitespace, skip all whitespace
@@ -200,7 +200,7 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
     ///
     /// - note: Call is not memoized.
     @inlinable
-    public func expect(kind: RawToken.TokenKind) throws -> TokenResult? {
+    public func expect(kind: RawToken.TokenKind) throws -> Token? {
         let mark = self.mark()
 
         // If expected kind is not explicitly a whitespace, skip all whitespace
@@ -227,7 +227,7 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
     ///
     /// - note: Call is not memoized.
     @inlinable
-    public func expect(oneOfKind kinds: Set<RawToken.TokenKind>) throws -> TokenResult? {
+    public func expect(oneOfKind kinds: Set<RawToken.TokenKind>) throws -> Token? {
         let mark = self.mark()
 
         // If expected kind is not explicitly a whitespace, skip all whitespace

@@ -56,13 +56,13 @@ extension Parser {
     }
 
     /// ```
-    /// _a_nsr[([TokenResult], TokenResult)]:
+    /// _a_nsr[([Token], Token)]:
     ///     | 'b'+< _a_nsr_tail
     ///     ;
     /// ```
     @inlinable
-    public func _a_nsr() throws -> ([TokenResult]?, TokenResult?) {
-        var _current: [TokenResult] = []
+    public func _a_nsr() throws -> ([Token]?, Token?) {
+        var _current: [Token] = []
 
         while
             let _ = try self.expect("b")
@@ -83,12 +83,12 @@ extension Parser {
     }
 
     /// ```
-    /// _a_nsr_tail[TokenResult]:
+    /// _a_nsr_tail[Token]:
     ///     | 'c' { _ }
     ///     ;
     /// ```
     @inlinable
-    public func _a_nsr_tail() throws -> TokenResult? {
+    public func _a_nsr_tail() throws -> Token? {
         let _mark = self.mark()
 
         if

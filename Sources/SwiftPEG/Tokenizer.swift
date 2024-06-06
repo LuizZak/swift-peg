@@ -29,7 +29,7 @@ open class Tokenizer<Raw: RawTokenizerType> {
 
     /// Cached tokens to be returned for index-based token requests
     @usableFromInline
-    internal var cachedTokens: [TokenResult] = []
+    internal var cachedTokens: [Token] = []
 
     /// Index into `_cachedTokens` that tokens are fetched from, currently.
     @usableFromInline
@@ -86,7 +86,7 @@ open class Tokenizer<Raw: RawTokenizerType> {
     /// Peeks the next token from the underlying raw stream without advancing the
     /// token index.
     @inlinable
-    open func peekToken() throws -> TokenResult? {
+    open func peekToken() throws -> Token? {
         _reach = max(_reach, tokenIndex + 1)
 
         // Look into cached tokens
@@ -101,7 +101,7 @@ open class Tokenizer<Raw: RawTokenizerType> {
 
         // Peek raw stream
         if let nextToken = try _raw.next() {
-            let result = TokenResult(rawToken: nextToken.rawToken, location: nextToken.location)
+            let result = Token(rawToken: nextToken.rawToken, location: nextToken.location)
             cachedTokens.append(result)
             return result
         } else {
@@ -114,7 +114,7 @@ open class Tokenizer<Raw: RawTokenizerType> {
     /// forward to the next token.
     /// Returns `nil` to indicate the end of the token stream.
     @inlinable
-    open func next() throws -> TokenResult? {
+    open func next() throws -> Token? {
         if let next = try peekToken() {
             tokenIndex += 1
             _reach = max(_reach, tokenIndex)
@@ -184,7 +184,9 @@ open class Tokenizer<Raw: RawTokenizerType> {
     }
 
     /// Type for results of parsing methods that query single tokens.
-    public struct TokenResult {
+    /// Pairs a raw token from the tokenizer with its reported original parsing
+    /// location.
+    public struct Token: Hashable {
         public var rawToken: RawToken
         public var location: Location
 
@@ -254,7 +256,7 @@ open class Tokenizer<Raw: RawTokenizerType> {
     }
 }
 
-extension Tokenizer.TokenResult: CustomStringConvertible where Raw.RawToken: CustomStringConvertible {
+extension Tokenizer.Token: CustomStringConvertible where Raw.RawToken: CustomStringConvertible {
     /// Returns `rawToken.description`.
     @inlinable
     public var description: String {
