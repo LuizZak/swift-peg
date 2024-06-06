@@ -109,6 +109,10 @@ class FixtureTestRunner {
 
         queue.waitUntilAllOperationsAreFinished()
 
+        if let _error {
+            throw _error
+        }
+
         return result
     }
 
