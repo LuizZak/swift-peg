@@ -262,7 +262,8 @@ extension SwiftCodeGen {
     func generateTokenParserBody(_ tokenSyntax: CommonAbstract.TokenSyntax) throws {
         // Simplify token definitions that consist of a single literal
         if
-            let literal = tokenSyntax.staticTerminal()
+            let literal = tokenSyntax.staticTerminal(),
+            tokenSyntax.alts.allSatisfy({ $0.trailExclusions.isEmpty })
         {
             buffer.emitLine("stream.advanceIfNext(\(tok_escapeLiteral(literal)))")
             return
@@ -300,6 +301,16 @@ extension SwiftCodeGen {
         for item in alt.items {
             try generateTokenParserItem(item, bailStatement: bailStatement)
             buffer.ensureDoubleNewline()
+        }
+
+        // Generate trailing token exclusions
+        if !alt.trailExclusions.isEmpty {
+            let exclusions = try alt.trailExclusions.map(tok_conditional)
+            buffer.emit("guard ")
+            buffer.emit(exclusions.joined(separator: ", "))
+            buffer.emitBlock(" else") {
+                bailStatement.emit(into: buffer)
+            }
         }
 
         buffer.emitLine("return true")
@@ -724,7 +735,7 @@ extension SwiftCodeGen {
 
     /// Used to generate doc comments for token parsing functions.
     private func tok_describe(_ alt: CommonAbstract.TokenAlt) -> String {
-        alt.items.map({ tok_describe($0) }).joined(separator: " ")
+        (alt.items.map(tok_describe) + alt.trailExclusions.map(tok_describe)).joined(separator: " ")
     }
 
     /// Used to generate doc comments for token parsing functions.

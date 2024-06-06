@@ -475,6 +475,46 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         """#).diff(sut.buffer.finishBuffer())
     }
 
+    func testGenerateTokenParser_trailExclusions() throws {
+        let tokens = try parseTokenDefinitions(#"""
+        $for: 'for' !letter !digit ;
+        $letter: 'a'...'z' ;
+        $digit: '0'...'9' ;
+        """#)
+        let sut = makeSut(tokens)
+
+        try sut.generateTokenParser(tokens[0], settings: .default)
+
+        diffTest(expected: #"""
+        /// ```
+        /// for:
+        ///     | "for" !letter !digit
+        ///     ;
+        /// ```
+        func consume_for<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+            guard !stream.isEof else { return false }
+            let state = stream.save()
+
+            alt:
+            do {
+                guard stream.isNext("for") else {
+                    break alt
+                }
+                stream.advance(3)
+
+                guard stream.negativeLookahead(consume_letter(from:)), stream.negativeLookahead(consume_digit(from:)) else {
+                    break alt
+                }
+                return true
+            }
+
+            stream.restore(state)
+
+            return false
+        }
+        """#).diff(sut.buffer.finishBuffer())
+    }
+
     func testGenerateTokenParser_stringSyntax() throws {
         let tokens = try parseTokenDefinitions(#"""
         $stringLiteral:

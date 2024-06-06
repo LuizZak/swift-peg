@@ -346,11 +346,11 @@ extension GrammarProcessor {
             case .group(let group):
                 let atoms = group.map(CommonAbstract.TokenItem.atom)
                 return atoms.map {
-                    CommonAbstract.TokenAlt(items: [$0])
+                    CommonAbstract.TokenAlt(items: [$0], trailExclusions: [])
                 }
             case .atom(let atom):
                 return [
-                    CommonAbstract.TokenAlt(items: [.atom(atom)])
+                    CommonAbstract.TokenAlt(items: [.atom(atom)], trailExclusions: [])
                 ]
             default:
                 return nil

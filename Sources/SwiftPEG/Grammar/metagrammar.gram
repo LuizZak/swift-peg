@@ -188,7 +188,7 @@ tokenSyntax[CommonAbstract.TokenSyntax]:
     ;
 
 tokenSyntaxAlt[CommonAbstract.TokenAlt]:
-    | tokenSyntaxItem+                              { .init(items: tokenSyntaxItem) }
+    | tokenSyntaxItem+ tokenSyntaxExclusion*        { .init(items: tokenSyntaxItem, trailExclusions: tokenSyntaxExclusion) }
     ;
 
 tokenSyntaxItem[CommonAbstract.TokenItem]:

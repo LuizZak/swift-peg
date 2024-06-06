@@ -411,9 +411,7 @@ extension CommonAbstract {
                 if flatAlt.items.count == 1 && flatAlt.items[0].isGroup {
                     flattenedAlts.append(contentsOf:
                         flatAlt.items[0].atoms.map { atom in
-                            TokenAlt(items: [
-                                .atom(atom)
-                            ])
+                            TokenAlt(items: [.atom(atom)], trailExclusions: [])
                         }
                     )
                     continue
@@ -430,18 +428,20 @@ extension CommonAbstract {
     ///
     /// ```
     /// tokenSyntaxAlt:
-    ///     | tokenSyntaxItem+
+    ///     | tokenSyntaxItem+ tokenSyntaxExclusion*
     ///     ;
     /// ```
     public struct TokenAlt: Equatable, CustomStringConvertible {
         public var items: [TokenItem]
+        public var trailExclusions: [TokenExclusion]
 
         public var description: String {
-            items.map(\.description).joined(separator: " ")
+            (items.map(\.description) + trailExclusions.map(\.description)).joined(separator: " ")
         }
 
-        public init(items: [TokenItem]) {
+        public init(items: [TokenItem], trailExclusions: [TokenExclusion]) {
             self.items = items
+            self.trailExclusions = trailExclusions
         }
 
         /// Returns `true` if this alt can be considered a prefix of another,
@@ -504,7 +504,7 @@ extension CommonAbstract {
                 }
             }
 
-            return Self(items: newItems)
+            return Self(items: newItems, trailExclusions: trailExclusions)
         }
     }
 

@@ -7,7 +7,7 @@ extension CommonAbstract.TokenSyntax: ExpressibleByStringLiteral {
                 .atom(
                     .init(excluded: [], terminal: .literal(.fromCode(contents: value)))
                 )
-            ])
+            ], trailExclusions: [])
         ])
     }
 }

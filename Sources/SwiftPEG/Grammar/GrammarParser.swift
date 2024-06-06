@@ -1140,7 +1140,7 @@ extension GrammarParser {
 
     /// ```
     /// tokenSyntaxAlt[CommonAbstract.TokenAlt]:
-    ///     | tokenSyntaxItem+ { .init(items: tokenSyntaxItem) }
+    ///     | tokenSyntaxItem+ tokenSyntaxExclusion* { .init(items: tokenSyntaxItem, trailExclusions: tokenSyntaxExclusion) }
     ///     ;
     /// ```
     @memoized("tokenSyntaxAlt")
@@ -1151,9 +1151,12 @@ extension GrammarParser {
         if
             let tokenSyntaxItem = try self.repeatOneOrMore({
                 try self.tokenSyntaxItem()
+            }),
+            let tokenSyntaxExclusion = try self.repeatZeroOrMore({
+                try self.tokenSyntaxExclusion()
             })
         {
-            return .init(items: tokenSyntaxItem)
+            return .init(items: tokenSyntaxItem, trailExclusions: tokenSyntaxExclusion)
         }
 
         self.restore(_mark)
