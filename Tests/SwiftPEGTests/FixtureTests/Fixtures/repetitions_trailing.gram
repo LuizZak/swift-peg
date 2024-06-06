@@ -1,0 +1,137 @@
+# Ensure that when a non-standard repetition has a trailing that doesn't bind (like a
+# token literal), that it isn't mapped to the return type of the repetition method.
+
+@grammar """
+@token b ; @token c ; @token d ;
+start: a ;
+a: b+< c 'd' | b+> d 'c'?;
+""" ;
+
+@expectedParser """
+extension Parser {
+    /// ```
+    /// start:
+    ///     | a
+    ///     ;
+    /// ```
+    @memoized("start")
+    @inlinable
+    public func __start() throws -> Node? {
+        let _mark = self.mark()
+
+        if
+            let a = try self.a()
+        {
+            return a
+        }
+
+        self.restore(_mark)
+        return nil
+    }
+
+    /// ```
+    /// a:
+    ///     | b+< c 'd'
+    ///     | b+> d 'c'?
+    ///     ;
+    /// ```
+    @memoized("a")
+    @inlinable
+    public func __a() throws -> Node? {
+        let _mark = self.mark()
+
+        if
+            case let (b?, c?) = try self._a_nsr()
+        {
+            return Node()
+        }
+
+        self.restore(_mark)
+
+        if
+            case let (b?, d?) = try self._a_nsr1()
+        {
+            return Node()
+        }
+
+        self.restore(_mark)
+        return nil
+    }
+
+    /// ```
+    /// _a_nsr[(b: [Token], c: Token)]:
+    ///     | b+< c 'd'
+    ///     ;
+    /// ```
+    @memoized("_a_nsr")
+    @inlinable
+    public func ___a_nsr() throws -> (b: [Token]?, c: Token?) {
+        let _mark = self.mark()
+
+        var _current: [Token] = []
+
+        while
+            let b = try self.b()
+        {
+            _current.append(b)
+            let _mark1 = self.mark()
+
+            if
+                let c = try self.c(),
+                let _ = try self.expect("d")
+            {
+                return (_current, c)
+            }
+
+            self.restore(_mark1)
+        }
+
+        self.restore(_mark)
+        return (nil, nil)
+    }
+
+    /// ```
+    /// _a_nsr1[(b: [Token], d: Token)]:
+    ///     | b+> d 'c'?
+    ///     ;
+    /// ```
+    @memoized("_a_nsr1")
+    @inlinable
+    public func ___a_nsr1() throws -> (b: [Token]?, d: Token?) {
+        let _mark = self.mark()
+
+        // Start by fetching as many productions as possible
+        guard
+            var _current: [(Mark, Token)] = try self.repeatOneOrMore({
+                if let b = try self.b() { return (self.mark(), b) }
+                return nil
+            })
+        else {
+            return (nil, nil)
+        }
+
+        while let _endMark = _current.last?.0 {
+            self.restore(_endMark)
+
+            if
+                let d = try self.d(),
+                let _ = try self.optional({
+                    try self.expect("c")
+                })
+            {
+                return (_current.map(\\.1), d)
+            } else if _current.count <= 1 {
+                break
+            }
+
+            // Drop an item, backtrack the parser, and try again
+            _current.removeLast()
+        }
+
+        self.restore(_mark)
+        return (nil, nil)
+    }
+}
+""" ;
+
+start: '' ;

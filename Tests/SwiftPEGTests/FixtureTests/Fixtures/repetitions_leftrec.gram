@@ -38,7 +38,7 @@ extension Parser {
 
         if
             let a = try self.a(),
-            case let (_?, _?) = try self._a_nsr()
+            let _ = try self._a_nsr()
         {
             return Node()
         }
@@ -56,12 +56,12 @@ extension Parser {
     }
 
     /// ```
-    /// _a_nsr[([Token], Token)]:
+    /// _a_nsr[[Token]]:
     ///     | 'b'+< 'c'
     ///     ;
     /// ```
     @inlinable
-    public func _a_nsr() throws -> ([Token]?, Token?) {
+    public func _a_nsr() throws -> [Token]? {
         let _mark = self.mark()
 
         var _current: [Token] = []
@@ -82,7 +82,7 @@ extension Parser {
         }
 
         self.restore(_mark)
-        return (nil, nil)
+        return nil
     }
 }
 """ ;

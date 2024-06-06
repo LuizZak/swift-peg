@@ -1302,7 +1302,22 @@ extension SwiftCodeGen {
 
         let name = "_\(production.name)_nsr"
 
-        let bindings = bindingEngine.computeBindings(namedItems)
+        var bindings: [BindingEngine.Binding] = []
+        for (i, binding) in bindingEngine.computeBindings(namedItems).enumerated() {
+            // Always include the first binding, as it's always generated and
+            // returned by the generated repetition methods
+            guard i > 0 else {
+                bindings.append(binding)
+                continue
+            }
+
+            // Bindings that have no label cannot be bound to an identifier and
+            // thus returned from the generate repetition method; trim it from
+            // the get-go here
+            if binding.label != nil {
+                bindings.append(binding)
+            }
+        }
 
         let memoization = memoizationMode(for: production)
         var information = AuxiliaryRuleInformation(
