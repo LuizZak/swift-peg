@@ -11,6 +11,13 @@ public class SwiftCodeGen {
     public static let tokenTypeHeader: String = "tokenTypeHeader"
 
     /// Name of optional meta-property (`@<name> <value>`) from grammar file that
+    /// indicates the name of the token type to generated.
+    ///
+    /// If no explicit token type is specified, the token's typename is set to
+    /// `<@parserName>Token` by default.
+    public static let tokenTypeName: String = "tokenTypeName"
+
+    /// Name of optional meta-property (`@<name> <value>`) from grammar file that
     /// indicates the name of the parser class to extend with the parsing methods.
     /// Assumes that the type exists already.
     public static let parserName: String = "parserName"
@@ -1646,6 +1653,10 @@ extension InternalGrammar.Grammar {
 
     func tokenTypeHeader() -> String? {
         return _stringOrIdentMeta(named: SwiftCodeGen.tokenTypeHeader)
+    }
+
+    func tokenTypeName() -> String? {
+        return _stringOrIdentMeta(named: SwiftCodeGen.tokenTypeName)
     }
 
     func parserName() -> String? {

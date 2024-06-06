@@ -13,7 +13,12 @@ extension SwiftCodeGen {
             buffer.emitLine(header)
         }
 
-        let tokenName = "\(parserName)Token"
+        let tokenName: String
+        if let tokenTypeName = grammar.tokenTypeName() {
+            tokenName = tokenTypeName
+        } else {
+            tokenName = "\(parserName)Token"
+        }
 
         generateAccessLevel(settings: settings)
         try buffer.emitBlock("struct \(tokenName): TokenType, CustomStringConvertible") {
@@ -24,9 +29,11 @@ extension SwiftCodeGen {
     }
 
     func generateTokenTypeMembers(settings: TokenTypeGenSettings) throws {
+        // var kind: TokenKind
         generateAccessLevel(settings: settings)
         buffer.emitLine("var kind: TokenKind")
 
+        // var string: Substring
         generateAccessLevel(settings: settings)
         buffer.emitLine("var string: Substring")
 
