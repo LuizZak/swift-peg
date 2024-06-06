@@ -45,7 +45,18 @@ class FixtureTestRunner {
         let files = try collectFiles()
 
         logger.logMessage("Found \(files.count) test file(s)")
+        for file in files {
+            logger.beginLogMessageScope(
+                "Found fixture file \(url: file.test_relativeURL(to: basePath))"
+            )
+            logger.endLogMessageScope()
+        }
+        logger.endLogMessageScope()
+
+        logger.beginLogMessageScope("Parsing test fixtures...")
+
         let allFixtures = try collectFixtures(grammarFileUrls: files)
+
         logger.endLogMessageScope()
 
         try runTests(allFixtures)
@@ -76,12 +87,27 @@ class FixtureTestRunner {
         grammarFileUrls: [URL]
     ) throws -> [FixtureTestsFile] {
 
+        var _error: Swift.Error?
+        let queue = OperationQueue()
+
         var result: [FixtureTestsFile] = []
 
         for grammarFileUrl in grammarFileUrls {
-            let file = try collectFixtures(grammarFileUrl: grammarFileUrl)
-            result.append(file)
+            queue.addOperation {
+                do {
+                    let file = try self.collectFixtures(grammarFileUrl: grammarFileUrl)
+                    queue.addBarrierBlock {
+                        result.append(file)
+                    }
+                } catch {
+                    queue.addBarrierBlock {
+                        _error = _error ?? error
+                    }
+                }
+            }
         }
+
+        queue.waitUntilAllOperationsAreFinished()
 
         return result
     }
@@ -90,11 +116,6 @@ class FixtureTestRunner {
     func collectFixtures(
         grammarFileUrl: URL
     ) throws -> FixtureTestsFile {
-        logger.beginLogMessageScope(
-            "Collecting fixtures from \(url: grammarFileUrl.test_relativeURL(to: basePath))..."
-        )
-        defer { logger.endLogMessageScope() }
-
         let source = try String(contentsOf: grammarFileUrl)
         let grammar = try parse(source: source)
 
