@@ -45,9 +45,6 @@ class ParserMemoizeMacroImplementation {
         guard let declaration = declaration.as(FunctionDeclSyntax.self) else {
             throw MacroError.message("Only functions can be memoized with this macro")
         }
-        guard declaration.signature.effectSpecifiers?.asyncSpecifier == nil else {
-            throw MacroError.message("Memoizing asynchronous functions is not currently supported")
-        }
         guard
             let returnType = declaration.signature.returnClause?.type.trimmed,
             returnType.description != "Void" && returnType.description != "()"
@@ -78,7 +75,7 @@ class ParserMemoizeMacroImplementation {
                     .ext_errorDiagnostic(message: "Memoized method cannot have the same name as non-memoized \(nonMemoizedMethod)")
             )
         }
-        
+
         // Collect attributes to apply, as well
         let attributes = declaration.attributes.filter({
             $0.position != node.position
@@ -104,6 +101,9 @@ class ParserMemoizeMacroImplementation {
                 : "[\(raw: arguments.map({ "AnyHashable(\($0.name.description))" }).joined(separator: ", "))]"
         let nonMemoArguments = arguments.map({ $0.label != nil ? "\($0.label!): \($0.name)" : "\($0.name)" }).joined(separator: ", ")
         var invocation: ExprSyntax = "\(nonMemoizedMethod)(\(raw: nonMemoArguments))"
+        if effects?.asyncSpecifier != nil {
+            invocation = "await \(invocation)"
+        }
         if effects?.throwsSpecifier != nil {
             invocation = "try \(invocation)"
         }

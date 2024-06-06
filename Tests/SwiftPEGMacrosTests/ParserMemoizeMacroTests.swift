@@ -105,6 +105,70 @@ class ParserMemoizeMacroTests: XCTestCase {
             macros: testMacros)
     }
 
+    func testMemoizeMacro_asyncMethod() {
+        assertMacroExpansion("""
+            @memoized("method")
+            func m() async -> Any {
+                return 0
+            }
+            """,
+            expandedSource: """
+            func m() async -> Any {
+                return 0
+            }
+
+            /// Memoized version of `m`.
+            func method() async -> Any {
+                let key = makeKey("method", arguments: nil)
+                if let cached: CacheEntry<Any> = self.cache[key] {
+                    self.restore(cached.mark)
+                    return cached.result
+                }
+                let result = await m()
+                let mark = self.mark()
+                let priorReach = self.resetReach(mark)
+                self.cache[key] = CacheEntry(mark: mark, reach: self.reach, result: result)
+                let reach = self.resetReach(priorReach)
+                self.updateReach(reach)
+
+                return result
+            }
+            """,
+            macros: testMacros)
+    }
+
+    func testMemoizeMacro_asyncThrowingMethod_tryPrecedesAwait() {
+        assertMacroExpansion("""
+            @memoized("method")
+            func m() async throws -> Any {
+                return 0
+            }
+            """,
+            expandedSource: """
+            func m() async throws -> Any {
+                return 0
+            }
+
+            /// Memoized version of `m`.
+            func method() async throws -> Any {
+                let key = makeKey("method", arguments: nil)
+                if let cached: CacheEntry<Any> = self.cache[key] {
+                    self.restore(cached.mark)
+                    return cached.result
+                }
+                let result = try await m()
+                let mark = self.mark()
+                let priorReach = self.resetReach(mark)
+                self.cache[key] = CacheEntry(mark: mark, reach: self.reach, result: result)
+                let reach = self.resetReach(priorReach)
+                self.updateReach(reach)
+
+                return result
+            }
+            """,
+            macros: testMacros)
+    }
+
     func testMemoizeMacro_nonThrowing() {
         assertMacroExpansion("""
             @memoized("method")
@@ -407,27 +471,6 @@ class ParserMemoizeMacroTests: XCTestCase {
                     line: 1,
                     column: 11,
                     highlights: ["\"m\""]
-                ),
-            ])
-    }
-
-    /// Asynchronous methods cannot be memoized
-    func testMemoizeMacro_diagnostic_asyncNotSupported() {
-        assertDiagnostics("""
-            @memoized("method")
-            func m() async -> Any {
-                return 0
-            }
-            """,
-            expandedSource: """
-            func m() async -> Any {
-                return 0
-            }
-            """, [
-                DiagnosticSpec(
-                    message: "Memoizing asynchronous functions is not currently supported",
-                    line: 1,
-                    column: 1
                 ),
             ])
     }
