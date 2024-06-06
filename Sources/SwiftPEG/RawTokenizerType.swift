@@ -3,7 +3,7 @@
 /// by a parser.
 public protocol RawTokenizerType {
     /// The token type that this tokenizer produces.
-    associatedtype RawToken: TokenType
+    associatedtype RawToken: RawTokenType
 
     /// An associated type that indicates locations of tokens that are produced
     /// by this tokenizer.

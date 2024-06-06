@@ -1,5 +1,5 @@
 /// Represents a token from a tokenizer.
-public protocol TokenType: Hashable {
+public protocol RawTokenType: Hashable {
     /// A token kind that can be used to check the type of a token without
     /// knowing about its structural details, like its string contents.
     associatedtype TokenKind: TokenKindType
@@ -25,14 +25,14 @@ public protocol TokenType: Hashable {
     var isWhitespace: Bool { get }
 
     /// Produces a dummy token construction of a given type.
-    /// The construction must have `TokenType.kind` be the same as the provided
+    /// The construction must have `RawTokenType.kind` be the same as the provided
     /// `kind`.
     ///
-    /// The `TokenType.string` may be any arbitrary value.
+    /// The `RawTokenType.string` may be any arbitrary value.
     static func produceDummy(_ kind: TokenKind) -> Self
 }
 
-extension TokenType {
+extension RawTokenType {
     /// Returns `true` if `self.kind == TokenKind.whitespace`.
     @inlinable
     public var isWhitespace: Bool {

@@ -4,7 +4,7 @@
 @tokensFile "tokentype_ordering.tokens" ;
 
 @expectedTokenType """
-struct ParserToken: TokenType, CustomStringConvertible {
+struct ParserToken: RawTokenType, CustomStringConvertible {
     var kind: TokenKind
     var string: Substring
 

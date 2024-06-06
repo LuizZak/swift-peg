@@ -1,4 +1,4 @@
-public struct GrammarParserToken: TokenType, CustomStringConvertible {
+public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
     public var kind: TokenKind
     public var string: Substring
 

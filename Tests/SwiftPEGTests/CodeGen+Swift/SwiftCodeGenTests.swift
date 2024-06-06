@@ -2359,7 +2359,7 @@ class SwiftCodeGenTests: XCTestCase {
             }
 
             @usableFromInline
-            enum Token: TokenType, ExpressibleByStringLiteral {
+            enum Token: RawTokenType, ExpressibleByStringLiteral {
                 @usableFromInline
                 typealias TokenKind = TestGrammarAST.TokenKind
                 @usableFromInline

@@ -1,7 +1,7 @@
 import SwiftPEG
 
 /// Raw tokenizer that sources tokens from a backing array.
-class ArrayRawTokenizer<T: TokenType> {
+class ArrayRawTokenizer<T: RawTokenType> {
     let tokens: [T]
     var index: Int = 0
 

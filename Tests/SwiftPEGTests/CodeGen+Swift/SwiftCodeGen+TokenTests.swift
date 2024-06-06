@@ -611,7 +611,7 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         // Token header content
         import SwiftPEG
 
-        struct ParserToken: TokenType, CustomStringConvertible {
+        struct ParserToken: RawTokenType, CustomStringConvertible {
             var kind: TokenKind
             var string: Substring
 
@@ -678,7 +678,7 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         let result = try sut.generateTokenType()
 
         diffTest(expected: #"""
-        struct CustomTypeName: TokenType, CustomStringConvertible {
+        struct CustomTypeName: RawTokenType, CustomStringConvertible {
             var kind: TokenKind
             var string: Substring
 
@@ -738,7 +738,7 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         let result = try sut.generateTokenType()
 
         diffTest(expected: #"""
-        struct ParserToken: TokenType, CustomStringConvertible {
+        struct ParserToken: RawTokenType, CustomStringConvertible {
             var kind: TokenKind
             var string: Substring
 
@@ -828,7 +828,7 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         let result = try sut.generateTokenType()
 
         diffTest(expected: #"""
-        struct ParserToken: TokenType, CustomStringConvertible {
+        struct ParserToken: RawTokenType, CustomStringConvertible {
             var kind: TokenKind
             var string: Substring
 
@@ -921,7 +921,7 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         let result = try sut.generateTokenType(settings: settings)
 
         diffTest(expected: #"""
-        struct ParserToken: TokenType, CustomStringConvertible {
+        struct ParserToken: RawTokenType, CustomStringConvertible {
             var kind: TokenKind
             var string: Substring
 
@@ -988,7 +988,7 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         let result = try sut.generateTokenType(settings: settings)
 
         diffTest(expected: #"""
-        public struct ParserToken: TokenType, CustomStringConvertible {
+        public struct ParserToken: RawTokenType, CustomStringConvertible {
             public var kind: TokenKind
             public var string: Substring
 
@@ -1055,7 +1055,7 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         let result = try sut.generateTokenType(settings: settings)
 
         diffTest(expected: #"""
-        public struct ParserToken: TokenType, CustomStringConvertible {
+        public struct ParserToken: RawTokenType, CustomStringConvertible {
             public var kind: TokenKind
             public var string: Substring
 

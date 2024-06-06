@@ -1,6 +1,6 @@
 import SwiftPEG
 
-class TestRawTokenizer<T: TokenType> {
+class TestRawTokenizer<T: RawTokenType> {
     let tokens: [T]
     var index: Int = 0
 
@@ -47,7 +47,7 @@ extension TestRawTokenizer: RawTokenizerType {
     var isEOF: Bool { index >= tokens.count }
 }
 
-extension Int: TokenType {
+extension Int: RawTokenType {
     public var kind: Int {
         return self
     }

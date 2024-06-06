@@ -21,7 +21,7 @@ extension SwiftCodeGen {
         }
 
         generateAccessLevel(settings: settings)
-        try buffer.emitBlock("struct \(tokenName): TokenType, CustomStringConvertible") {
+        try buffer.emitBlock("struct \(tokenName): RawTokenType, CustomStringConvertible") {
             try generateTokenTypeMembers(settings: settings)
         }
 
