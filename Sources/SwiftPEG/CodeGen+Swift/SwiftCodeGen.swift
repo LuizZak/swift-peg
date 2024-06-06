@@ -1312,7 +1312,7 @@ extension SwiftCodeGen {
             }
 
             // Bindings that have no label cannot be bound to an identifier and
-            // thus returned from the generate repetition method; trim it from
+            // thus returned from the generated repetition method; trim it from
             // the get-go here
             if binding.label != nil {
                 bindings.append(binding)
