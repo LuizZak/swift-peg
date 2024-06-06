@@ -21,6 +21,24 @@ class GrammarProcessor_TokenSyntaxTests: XCTestCase {
         """)
     }
 
+    func testDiagnoseRepeatedTokenName_fragmentsCountAsTokens() throws {
+        let delegate = stubDelegate(tokensFile: """
+        $token1 ;
+        %token2: 'a' ;
+        %token1: 'b' ;
+        """)
+        let grammar = makeGrammar()
+        let sut = makeSut(delegate)
+
+        let error = try assertUnwrap(assertThrows(errorType: GrammarProcessor.GrammarProcessorError.self) {
+            try sut.process(grammar)
+        })
+
+        assertEqual(error.description, """
+        Token 'token1' re-declared @ line 3 column 1. Original declaration @ line 1 column 1.
+        """)
+    }
+
     func testDiagnoseReentrantToken() throws {
         let delegate = stubDelegate(tokensFile: """
         $a: b 'c' d ;

@@ -8,8 +8,6 @@ extension GrammarProcessor {
         _ tokens: [SwiftPEGGrammar.TokenDefinition]
     ) throws -> [InternalGrammar.TokenDefinition] {
 
-        // TODO: Throw error on repeated fragment/token declarations
-
         var fragmentReferenceCount: [String: Int] =
             Dictionary(grouping: tokens.filter(\.isFragment)) {
                 String($0.name.string)
