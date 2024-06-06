@@ -98,6 +98,9 @@ extension SwiftPEGGrammar.Grammar {
         if let omitRedundantMarkRestores = test_stringOrIdentMetaValue(named: "omitRedundantMarkRestores") {
             settings.omitRedundantMarkRestores = omitRedundantMarkRestores == "true"
         }
+        if let emitTypesInBindings = test_stringOrIdentMetaValue(named: "emitTypesInBindings") {
+            settings.emitTypesInBindings = emitTypesInBindings == "true"
+        }
 
         return settings
     }
