@@ -57,48 +57,32 @@ extension Parser {
 
     /// ```
     /// _a_nsr[([Token], Token)]:
-    ///     | 'b'+< _a_nsr_tail
+    ///     | 'b'+< 'c'
     ///     ;
     /// ```
     @inlinable
     public func _a_nsr() throws -> ([Token]?, Token?) {
+        let _mark = self.mark()
+
         var _current: [Token] = []
 
         while
             let _ = try self.expect("b")
         {
             _current.append(())
-            let _mark = self.mark()
+            let _mark1 = self.mark()
 
             if
-                let _a_nsr_tail = try self._a_nsr_tail()
+                let _ = try self.expect("c")
             {
-                return (_current, _a_nsr_tail)
+                return _current
             }
 
-            self.restore(_mark)
-        }
-
-        return (nil, nil)
-    }
-
-    /// ```
-    /// _a_nsr_tail[Token]:
-    ///     | 'c' { _ }
-    ///     ;
-    /// ```
-    @inlinable
-    public func _a_nsr_tail() throws -> Token? {
-        let _mark = self.mark()
-
-        if
-            let _ = try self.expect("c")
-        {
-            return _
+            self.restore(_mark1)
         }
 
         self.restore(_mark)
-        return nil
+        return (nil, nil)
     }
 }
 """ ;

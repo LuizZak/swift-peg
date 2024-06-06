@@ -2,6 +2,8 @@ import XCTest
 
 @testable import SwiftPEG
 
+// TODO: Deprecate this suite of tests in favor of the test fixtures
+
 class SwiftCodeGen_RepetitionsTests: XCTestCase {
     func testGenerateParser_zeroOrMore_minimal() throws {
         let grammar = try parseGrammar("""
@@ -105,24 +107,26 @@ class SwiftCodeGen_RepetitionsTests: XCTestCase {
 
                 /// ```
                 /// _start_nsr[(b: [B], c: C)]:
-                ///     | b*< _start_nsr_tail
+                ///     | b*< c
                 ///     ;
                 /// ```
                 @memoized("_start_nsr")
                 @inlinable
                 public func ___start_nsr() throws -> (b: [B]?, c: C?) {
+                    let _mark = self.mark()
+
                     var _current: [B] = []
 
                     while true {
-                        let _mark = self.mark()
+                        let _mark1 = self.mark()
 
                         if
-                            let c: C = try self._start_nsr_tail()
+                            let c: C = try self.c()
                         {
                             return (_current, c)
                         }
 
-                        self.restore(_mark)
+                        self.restore(_mark1)
 
                         // Collect an extra item and try again
                         if
@@ -134,27 +138,8 @@ class SwiftCodeGen_RepetitionsTests: XCTestCase {
                         }
                     }
 
-                    return (nil, nil)
-                }
-
-                /// ```
-                /// _start_nsr_tail[C]:
-                ///     | c { c }
-                ///     ;
-                /// ```
-                @memoized("_start_nsr_tail")
-                @inlinable
-                public func ___start_nsr_tail() throws -> C? {
-                    let _mark = self.mark()
-
-                    if
-                        let c: C = try self.c()
-                    {
-                        return c
-                    }
-
                     self.restore(_mark)
-                    return nil
+                    return (nil, nil)
                 }
             }
             """).diff(result)
@@ -262,7 +247,7 @@ class SwiftCodeGen_RepetitionsTests: XCTestCase {
 
                 /// ```
                 /// _start_nsr[(b: [B], c: C)]:
-                ///     | b*> _start_nsr_tail
+                ///     | b*> c
                 ///     ;
                 /// ```
                 @memoized("_start_nsr")
@@ -285,38 +270,19 @@ class SwiftCodeGen_RepetitionsTests: XCTestCase {
                         self.restore(_endMark)
 
                         if
-                            let c: C = try self._start_nsr_tail()
+                            let c: C = try self.c()
                         {
                             return (_current.map(\.1), c)
                         } else if _current.isEmpty {
-                            return (nil, nil)
+                            break
                         }
 
                         // Drop an item, backtrack the parser, and try again
                         _current.removeLast()
                     }
 
-                    return (nil, nil)
-                }
-
-                /// ```
-                /// _start_nsr_tail[C]:
-                ///     | c { c }
-                ///     ;
-                /// ```
-                @memoized("_start_nsr_tail")
-                @inlinable
-                public func ___start_nsr_tail() throws -> C? {
-                    let _mark = self.mark()
-
-                    if
-                        let c: C = try self.c()
-                    {
-                        return c
-                    }
-
                     self.restore(_mark)
-                    return nil
+                    return (nil, nil)
                 }
             }
             """#).diff(result)
@@ -423,50 +389,33 @@ class SwiftCodeGen_RepetitionsTests: XCTestCase {
 
                 /// ```
                 /// _start_nsr[(b: [B], c: C)]:
-                ///     | b+< _start_nsr_tail
+                ///     | b+< c
                 ///     ;
                 /// ```
                 @memoized("_start_nsr")
                 @inlinable
                 public func ___start_nsr() throws -> (b: [B]?, c: C?) {
+                    let _mark = self.mark()
+
                     var _current: [B] = []
 
                     while
                         let b: B = try self.b()
                     {
                         _current.append(b)
-                        let _mark = self.mark()
+                        let _mark1 = self.mark()
 
                         if
-                            let c: C = try self._start_nsr_tail()
+                            let c: C = try self.c()
                         {
                             return (_current, c)
                         }
 
-                        self.restore(_mark)
-                    }
-
-                    return (nil, nil)
-                }
-
-                /// ```
-                /// _start_nsr_tail[C]:
-                ///     | c { c }
-                ///     ;
-                /// ```
-                @memoized("_start_nsr_tail")
-                @inlinable
-                public func ___start_nsr_tail() throws -> C? {
-                    let _mark = self.mark()
-
-                    if
-                        let c: C = try self.c()
-                    {
-                        return c
+                        self.restore(_mark1)
                     }
 
                     self.restore(_mark)
-                    return nil
+                    return (nil, nil)
                 }
             }
             """).diff(result)
@@ -574,15 +523,17 @@ class SwiftCodeGen_RepetitionsTests: XCTestCase {
 
                 /// ```
                 /// _start_nsr[(b: [B], c: C)]:
-                ///     | b+> _start_nsr_tail
+                ///     | b+> c
                 ///     ;
                 /// ```
                 @memoized("_start_nsr")
                 @inlinable
                 public func ___start_nsr() throws -> (b: [B]?, c: C?) {
+                    let _mark = self.mark()
+
                     // Start by fetching as many productions as possible
                     guard
-                        var _current: [(Mark, B)] = try self.repeatZeroOrMore({
+                        var _current: [(Mark, B)] = try self.repeatOneOrMore({
                             if let b: B = try self.b() { return (self.mark(), b) }
                             return nil
                         })
@@ -590,42 +541,23 @@ class SwiftCodeGen_RepetitionsTests: XCTestCase {
                         return (nil, nil)
                     }
 
-                    while let _end = _current.last {
-                        self.restore(_end.0)
+                    while let _endMark = _current.last?.0 {
+                        self.restore(_endMark)
 
                         if
-                            let c: C = try self._start_nsr_tail()
+                            let c: C = try self.c()
                         {
                             return (_current.map(\.1), c)
                         } else if _current.count <= 1 {
-                            return (nil, nil)
+                            break
                         }
 
                         // Drop an item, backtrack the parser, and try again
                         _current.removeLast()
                     }
 
-                    return (nil, nil)
-                }
-
-                /// ```
-                /// _start_nsr_tail[C]:
-                ///     | c { c }
-                ///     ;
-                /// ```
-                @memoized("_start_nsr_tail")
-                @inlinable
-                public func ___start_nsr_tail() throws -> C? {
-                    let _mark = self.mark()
-
-                    if
-                        let c: C = try self.c()
-                    {
-                        return c
-                    }
-
                     self.restore(_mark)
-                    return nil
+                    return (nil, nil)
                 }
             }
             """#).diff(result)

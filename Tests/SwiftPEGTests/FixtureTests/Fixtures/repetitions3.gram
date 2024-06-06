@@ -1,7 +1,10 @@
+# Validate behavior of trail item collecting in non-standard repetitions that
+# happen with more than one bound item after the repetition
+
 @grammar """
 @token B ; @token C ; @token D ;
 start: a ;
-a: b+< c*> d ;
+a: b+< c ~ d | b+> c ~ d ;
 b[TokenType]: B ;
 c[TokenType]: C ;
 d[TokenType]: D ;
@@ -31,7 +34,8 @@ extension Parser {
 
     /// ```
     /// a:
-    ///     | b+< c*> d
+    ///     | b+< c ~ d
+    ///     | b+> c ~ d
     ///     ;
     /// ```
     @memoized("a")
@@ -41,6 +45,14 @@ extension Parser {
 
         if
             case let (b?, c?, d?) = try self._a_nsr()
+        {
+            return Node()
+        }
+
+        self.restore(_mark)
+
+        if
+            case let (b?, c?, d?) = try self._a_nsr1()
         {
             return Node()
         }
@@ -110,25 +122,28 @@ extension Parser {
     }
 
     /// ```
-    /// _a_nsr[(b: [TokenType], c: [TokenType], d: TokenType)]:
-    ///     | b+< c*> d
+    /// _a_nsr[(b: [TokenType], c: TokenType, d: TokenType)]:
+    ///     | b+< c ~ d
     ///     ;
     /// ```
     @memoized("_a_nsr")
     @inlinable
-    public func ___a_nsr() throws -> (b: [TokenType]?, c: [TokenType]?, d: TokenType?) {
+    public func ___a_nsr() throws -> (b: [TokenType]?, c: TokenType?, d: TokenType?) {
         let _mark = self.mark()
+        var _cut = CutFlag()
 
         var _current: [TokenType] = []
 
-        while
+        while !_cut.isOn,
             let b = try self.b()
         {
             _current.append(b)
             let _mark1 = self.mark()
 
             if
-                case let (c?, d?) = try self.__a_nsr_nsr()
+                let c = try self.c(),
+                _cut.toggleOn(),
+                let d = try self.d()
             {
                 return (_current, c, d)
             }
@@ -141,34 +156,36 @@ extension Parser {
     }
 
     /// ```
-    /// __a_nsr_nsr[(c: [TokenType], d: TokenType)]:
-    ///     | c*> d
+    /// _a_nsr1[(b: [TokenType], c: TokenType, d: TokenType)]:
+    ///     | b+> c ~ d
     ///     ;
     /// ```
-    @memoized("__a_nsr_nsr")
+    @memoized("_a_nsr1")
     @inlinable
-    public func ____a_nsr_nsr() throws -> (c: [TokenType]?, d: TokenType?) {
+    public func ___a_nsr1() throws -> (b: [TokenType]?, c: TokenType?, d: TokenType?) {
         let _mark = self.mark()
+        var _cut = CutFlag()
 
         // Start by fetching as many productions as possible
         guard
-            var _current: [(Mark, TokenType)] = try self.repeatZeroOrMore({
-                if let c = try self.c() { return (self.mark(), c) }
+            var _current: [(Mark, TokenType)] = try self.repeatOneOrMore({
+                if let b = try self.b() { return (self.mark(), b) }
                 return nil
             })
         else {
-            return (nil, nil)
+            return (nil, nil, nil)
         }
 
-        while true {
-            let _endMark = _current.last?.0 ?? _mark
+        while !_cut.isOn, let _endMark = _current.last?.0 {
             self.restore(_endMark)
 
             if
+                let c = try self.c(),
+                _cut.toggleOn(),
                 let d = try self.d()
             {
-                return (_current.map(\\.1), d)
-            } else if _current.isEmpty {
+                return (_current.map(\\.1), c, d)
+            } else if _current.count <= 1 {
                 break
             }
 
@@ -177,7 +194,7 @@ extension Parser {
         }
 
         self.restore(_mark)
-        return (nil, nil)
+        return (nil, nil, nil)
     }
 }
 """ ;

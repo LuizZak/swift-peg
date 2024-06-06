@@ -72,7 +72,7 @@ public final class DeclarationsContext {
             )
         }
 
-        let decl = Declaration(name: fixedName, kind: .method)
+        let decl = Declaration(name: fixedName, type: .none, kind: .method)
         _methods.append(decl)
 
         return decl
@@ -80,10 +80,10 @@ public final class DeclarationsContext {
 
     /// Defines an arbitrarily-named local with a given optional type associated
     /// with it.
-    /// 
+    ///
     /// The name of the local is guaranteed to be a valid Swift variable name,
     /// and to not be in duplicated in this declaration context.
-    public func defineTemporaryLocal(type: String? = nil) -> Declaration {
+    public func defineTemporaryLocal(type: Declaration.DeclType = .none) -> Declaration {
         let baseName = "__localTemp\(_nonce)"
         _nonce += 1
 
@@ -91,10 +91,10 @@ public final class DeclarationsContext {
     }
 
     /// Defines an arbitrarily-named auxiliary method.
-    /// 
+    ///
     /// The name of the method is guaranteed to be a valid Swift method name,
     /// and to not be in duplicated in this declaration context.
-    public func defineAuxiliaryMethod(type: String? = nil) -> Declaration {
+    public func defineAuxiliaryMethod(type: Declaration.DeclType = .none) -> Declaration {
         let baseName = "__auxMethod\(_nonce)"
         _nonce += 1
 
@@ -103,14 +103,14 @@ public final class DeclarationsContext {
 
     /// Creates a new local with a given suggested name on the topmost local
     /// variable context.
-    /// 
-    /// The real name to use should be the one from the returned `Declaration`'s 
+    ///
+    /// The real name to use should be the one from the returned `Declaration`'s
     /// `name` property, as the suggested name may be altered to ensure it is
     /// unique within the current context.
-    /// 
+    ///
     /// Suggested names may be altered with numeric suffixes.
     @discardableResult
-    public func defineLocal(suggestedName: String, type: String? = nil) -> Declaration {
+    public func defineLocal(suggestedName: String, type: Declaration.DeclType = .none) -> Declaration {
         let name = deduplicateLocal(suggestedName)
         let local = Declaration(name: name, type: type, kind: .local)
 
@@ -120,8 +120,8 @@ public final class DeclarationsContext {
     }
 
     /// Creates a new method with a given suggested name on the global context.
-    /// 
-    /// The real name to use should be the one from the returned `Declaration`'s 
+    ///
+    /// The real name to use should be the one from the returned `Declaration`'s
     /// `name` property, as the suggested name may be altered to ensure it is
     /// unique within the current context.
     ///
@@ -129,39 +129,46 @@ public final class DeclarationsContext {
     @discardableResult
     public func defineMethod(suggestedName: String) -> Declaration {
         let name = deduplicateMethod(suggestedName)
-        let local = Declaration(name: name, type: nil, kind: .method)
+        let local = Declaration(name: name, type: .none, kind: .method)
 
         _methods.append(local)
 
         return local
     }
 
-    /// Returns the first declaration with a given name, searching from the topmost
-    /// local stack first, optionally specifying the kind of declaration to search
-    /// for.
+    /// Returns the latest declaration with a given set of parameters name, searching
+    /// from the topmost local stack first.
     ///
-    /// Returns `nil`, if no declaration could be found.
+    /// If all parameters are `nil`, the latest declaration on the top of the
+    /// stack is returned.
+    ///
+    /// Returns `nil`, if no declaration matching the provided parameters could
+    /// be found.
     public func declaration(
-        named name: String,
+        named name: String? = nil,
+        typed type: Declaration.DeclType? = nil,
         ofKind kind: Declaration.Kind? = nil
     ) -> Declaration? {
+        let filter: (Declaration) -> Bool = { decl in
+            if let name, decl.name != name {
+                false
+            } else if let type, decl.type != type {
+                false
+            } else if let kind, decl.kind != kind {
+                false
+            } else {
+                true
+            }
+        }
 
         for level in _stack.reversed() {
-            if let declaration = level.first(where: { $0.name == name }) {
-                guard kind == nil || declaration.kind == kind else {
-                    continue
-                }
-
+            if let declaration = level.last(where: filter) {
                 return declaration
             }
         }
 
         for method in _methods {
-            guard kind == nil || method.kind == kind else {
-                continue
-            }
-
-            if method.name == name {
+            if filter(method) {
                 return method
             }
         }
@@ -175,17 +182,29 @@ public final class DeclarationsContext {
         public var name: String
 
         /// The type of the declaration, if available.
-        public var type: String?
+        public var type: DeclType
 
         /// The kind of the declaration.
         public var kind: Kind
 
         public enum Kind: Hashable {
-            /// A local variable declaration
+            /// A local variable declaration.
             case local
 
-            /// A method within a type context
+            /// A method within a type context.
             case method
+        }
+
+        /// Specifies type information for a declaration
+        public enum DeclType: Hashable {
+            /// No type was specified.
+            case none
+
+            /// A marker type.
+            case marker
+
+            /// A cut flag type.
+            case cutFlag
         }
     }
 }

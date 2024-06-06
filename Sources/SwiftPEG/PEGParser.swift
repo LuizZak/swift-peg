@@ -126,10 +126,10 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
             return node
         }
 
-        let prevMark = tokenizer.mark()
-        defer { tokenizer.restore(prevMark) }
+        let prevMark = self.mark()
+        defer { restore(prevMark) }
 
-        tokenizer.restore(mark)
+        restore(mark)
 
         do {
             while try tokenizer.peekToken()?.rawToken.isWhitespace == true {
@@ -138,7 +138,7 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
         } catch {
         }
 
-        node.location = tokenizer.location(at: tokenizer.mark())
+        node.location = tokenizer.location(at: self.mark())
         return node
     }
 

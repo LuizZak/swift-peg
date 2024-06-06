@@ -109,6 +109,7 @@ class FixtureTestRunner {
 
         return FixtureTestsFile(
             file: grammarFileUrl,
+            grammar: grammar,
             fixtures: fixtures,
             flags: flags
         )
@@ -155,6 +156,14 @@ class FixtureTestRunner {
             for fileFixture in focused {
                 try runTests(in: fileFixture)
             }
+
+            let focusMeta = focused[0].grammar.test_focus_meta()
+            recordFailure(
+                "Failing tests while @focus flag is enabled in one or more files.",
+                file: focused[0].file.path,
+                line: focusMeta.map(_line(of:)) ?? 1,
+                expected: true
+            )
             return
         }
 
@@ -275,6 +284,10 @@ class FixtureTestRunner {
     /// Creates a test context for a given fixture test.
     func makeTestContext(for test: FixtureTest) -> TestContext {
         TestContext(runner: self, diagnosticsTarget: test.diagnosticTarget)
+    }
+
+    func recordFailure(_ message: String, file: URL, line: Int, expected: Bool) {
+        recordFailure(message, file: file.path, line: line, expected: expected)
     }
 
     func recordFailure(_ message: String, file: String, line: Int, expected: Bool) {
@@ -415,6 +428,11 @@ private extension SwiftPEGGrammar.Grammar {
 
     /// `@focus`
     func test_focus() -> Bool {
-        return test_metaProperty(named: FixtureTestRunner.focusProp) != nil
+        return test_focus_meta() != nil
+    }
+
+    /// `@focus`
+    func test_focus_meta() -> SwiftPEGGrammar.Meta? {
+        return test_metaProperty(named: FixtureTestRunner.focusProp)
     }
 }

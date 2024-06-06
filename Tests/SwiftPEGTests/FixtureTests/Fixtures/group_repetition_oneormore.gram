@@ -134,43 +134,48 @@ extension Parser {
 
     /// ```
     /// _a_nsr[([(b: Node, d: TokenType)], c: [TokenType])]:
-    ///     | (b d)+< _a_nsr_tail
+    ///     | (b d)+< c
     ///     ;
     /// ```
     @memoized("_a_nsr")
     @inlinable
     public func ___a_nsr() throws -> ([(b: Node, d: TokenType)]?, c: [TokenType]?) {
+        let _mark = self.mark()
+
         var _current: [(b: Node, d: TokenType)] = []
 
         while
             case let (b?, d?) = try self.__a_nsr__group_()
         {
             _current.append((b, d))
-            let _mark = self.mark()
+            let _mark1 = self.mark()
 
             if
-                let c = try self._a_nsr_tail()
+                let c = try self.c()
             {
                 return (_current, c)
             }
 
-            self.restore(_mark)
+            self.restore(_mark1)
         }
 
+        self.restore(_mark)
         return (nil, nil)
     }
 
     /// ```
     /// _e_nsr[([(b: Node, d: TokenType)], c: [TokenType])]:
-    ///     | (b d)+> _a_nsr_tail
+    ///     | (b d)+> c
     ///     ;
     /// ```
     @memoized("_e_nsr")
     @inlinable
     public func ___e_nsr() throws -> ([(b: Node, d: TokenType)]?, c: [TokenType]?) {
+        let _mark = self.mark()
+
         // Start by fetching as many productions as possible
         guard
-            var _current: [(Mark, (b: Node, d: TokenType))] = try self.repeatZeroOrMore({
+            var _current: [(Mark, (b: Node, d: TokenType))] = try self.repeatOneOrMore({
                 if case let (b?, d?) = try self.__a_nsr__group_() { return (self.mark(), (b, d)) }
                 return nil
             })
@@ -178,42 +183,23 @@ extension Parser {
             return (nil, nil)
         }
 
-        while let _end = _current.last {
-            self.restore(_end.0)
+        while let _endMark = _current.last?.0 {
+            self.restore(_endMark)
 
             if
-                let c = try self._a_nsr_tail()
+                let c = try self.c()
             {
                 return (_current.map(\\.1), c)
             } else if _current.count <= 1 {
-                return (nil, nil)
+                break
             }
 
             // Drop an item, backtrack the parser, and try again
             _current.removeLast()
         }
 
-        return (nil, nil)
-    }
-
-    /// ```
-    /// _a_nsr_tail[[TokenType]]:
-    ///     | c { c }
-    ///     ;
-    /// ```
-    @memoized("_a_nsr_tail")
-    @inlinable
-    public func ___a_nsr_tail() throws -> [TokenType]? {
-        let _mark = self.mark()
-
-        if
-            let c = try self.c()
-        {
-            return c
-        }
-
         self.restore(_mark)
-        return nil
+        return (nil, nil)
     }
 
     /// ```

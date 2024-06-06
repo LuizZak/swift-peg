@@ -20,7 +20,13 @@ extension FixtureTestRunner {
             return nil
         }
 
-        return FixtureTest(title: "\(name: expectedParserProp)", diagnosticTarget: diagnosticTarget) { context in
+        let target = GrammarLineContext.grammarMetaProperty(
+            self,
+            diagnosticTarget.fileUrl,
+            expectedParserProp
+        )
+
+        return FixtureTest(title: "\(name: expectedParserProp)", diagnosticTarget: target) { context in
             let processed = try context.processGrammar(grammarToTest)
             let codeGen = SwiftCodeGen(from: processed)
             let settings = file.test_parserSettings()
@@ -29,7 +35,7 @@ extension FixtureTestRunner {
 
             context.diffTest(
                 expected: value,
-                lineOffset: context.sourceLine(of: expectedParserProp) - 1
+                lineOffset: 0
             ).diff(parser)
         }
     }
@@ -53,7 +59,13 @@ extension FixtureTestRunner {
             return nil
         }
 
-        return FixtureTest(title: "\(name: expectedTokenTypeProp)", diagnosticTarget: diagnosticTarget) { context in
+        let target = GrammarLineContext.grammarMetaProperty(
+            self,
+            diagnosticTarget.fileUrl,
+            expectedTokenTypeProp
+        )
+
+        return FixtureTest(title: "\(name: expectedTokenTypeProp)", diagnosticTarget: target) { context in
             let processed = try context.processGrammar(grammarToTest)
             let codeGen = SwiftCodeGen(from: processed)
             let settings = file.test_tokenTypeSettings()
@@ -62,7 +74,7 @@ extension FixtureTestRunner {
 
             context.diffTest(
                 expected: value,
-                lineOffset: context.sourceLine(of: expectedTokenTypeProp) - 1
+                lineOffset: 0
             ).diff(parser)
         }
     }

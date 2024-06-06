@@ -1,6 +1,7 @@
 @grammar """
+@token b ; @token c ; @token d ;
 start: a ;
-a: 'b'+< 'c' | 'b'+< 'd' ;
+a: b+< c | b+< d ;
 """ ;
 
 @expectedParser """
@@ -27,8 +28,8 @@ extension Parser {
 
     /// ```
     /// a:
-    ///     | 'b'+< 'c'
-    ///     | 'b'+< 'd'
+    ///     | b+< c
+    ///     | b+< d
     ///     ;
     /// ```
     @memoized("a")
@@ -37,7 +38,7 @@ extension Parser {
         let _mark = self.mark()
 
         if
-            case let (_?, _?) = try self._a_nsr()
+            case let (b?, c?) = try self._a_nsr()
         {
             return Node()
         }
@@ -45,7 +46,7 @@ extension Parser {
         self.restore(_mark)
 
         if
-            case let (_?, _?) = try self._a_nsr1()
+            case let (b?, d?) = try self._a_nsr1()
         {
             return Node()
         }
@@ -55,99 +56,65 @@ extension Parser {
     }
 
     /// ```
-    /// _a_nsr[([Token], Token)]:
-    ///     | 'b'+< _a_nsr_tail
+    /// _a_nsr[(b: [Token], c: Token)]:
+    ///     | b+< c
     ///     ;
     /// ```
     @memoized("_a_nsr")
     @inlinable
-    public func ___a_nsr() throws -> ([Token]?, Token?) {
+    public func ___a_nsr() throws -> (b: [Token]?, c: Token?) {
+        let _mark = self.mark()
+
         var _current: [Token] = []
 
         while
-            let _ = try self.expect("b")
+            let b = try self.b()
         {
-            _current.append(())
-            let _mark = self.mark()
+            _current.append(b)
+            let _mark1 = self.mark()
 
             if
-                let _a_nsr_tail = try self._a_nsr_tail()
+                let c = try self.c()
             {
-                return (_current, _a_nsr_tail)
+                return (_current, c)
             }
 
-            self.restore(_mark)
+            self.restore(_mark1)
         }
 
+        self.restore(_mark)
         return (nil, nil)
     }
 
     /// ```
-    /// _a_nsr1[([Token], Token)]:
-    ///     | 'b'+< _a_nsr1_tail
+    /// _a_nsr1[(b: [Token], d: Token)]:
+    ///     | b+< d
     ///     ;
     /// ```
     @memoized("_a_nsr1")
     @inlinable
-    public func ___a_nsr1() throws -> ([Token]?, Token?) {
+    public func ___a_nsr1() throws -> (b: [Token]?, d: Token?) {
+        let _mark = self.mark()
+
         var _current: [Token] = []
 
         while
-            let _ = try self.expect("b")
+            let b = try self.b()
         {
-            _current.append(())
-            let _mark = self.mark()
+            _current.append(b)
+            let _mark1 = self.mark()
 
             if
-                let _a_nsr1_tail = try self._a_nsr1_tail()
+                let d = try self.d()
             {
-                return (_current, _a_nsr1_tail)
+                return (_current, d)
             }
 
-            self.restore(_mark)
+            self.restore(_mark1)
         }
 
+        self.restore(_mark)
         return (nil, nil)
-    }
-
-    /// ```
-    /// _a_nsr_tail[Token]:
-    ///     | 'c' { _ }
-    ///     ;
-    /// ```
-    @memoized("_a_nsr_tail")
-    @inlinable
-    public func ___a_nsr_tail() throws -> Token? {
-        let _mark = self.mark()
-
-        if
-            let _ = try self.expect("c")
-        {
-            return _
-        }
-
-        self.restore(_mark)
-        return nil
-    }
-
-    /// ```
-    /// _a_nsr1_tail[Token]:
-    ///     | 'd' { _ }
-    ///     ;
-    /// ```
-    @memoized("_a_nsr1_tail")
-    @inlinable
-    public func ___a_nsr1_tail() throws -> Token? {
-        let _mark = self.mark()
-
-        if
-            let _ = try self.expect("d")
-        {
-            return _
-        }
-
-        self.restore(_mark)
-        return nil
     }
 }
 """ ;

@@ -81,13 +81,6 @@ public class SwiftCodeGen {
     /// Maps grammar rule name -> generate code name.
     var ruleAliases: [String: String] = [:]
 
-    /// Name of mark declaration generated within parser methods to do backtracking
-    /// when an alternative fails.
-    var markVarName: String = "_mark"
-    /// Name of cut flag declaration generated within parser methods to perform
-    /// cut flag verifications in alternatives that make use of cut (`~`) items.
-    var cutVarName: String = "_cut"
-
     var implicitReturns: Bool = true
     var implicitBindings: Bool = true
     var bindTokenLiterals: Bool = false
@@ -262,34 +255,45 @@ public class SwiftCodeGen {
             // return nil
             let failReturnExpression = _failReturnExpression(for: rule.type)
 
-            try generateRuleBody(
-                hasCut: hasCut(rule),
-                usesMarks: requiresMarkers(rule),
-                failReturnExpression: failReturnExpression
-            ) { conditional in
-                if let action = rule.action {
-                    generateAction(action)
-                }
+            declContext.push()
+            defer { declContext.pop() }
 
-                for alt in rule.alts {
-                    conditional.ensureEmptyLine()
-                    try generateAlt(
-                        alt,
-                        in: production,
-                        backtrackToMark: requiresMarkers(rule),
-                        failBlock: {
-                            if let action = rule.failAction {
-                                generateAction(action)
-                            }
-                            buffer.emitLine("return \(failReturnExpression)")
-                        }
-                    )
-                }
-
+            let bailBlock = {
                 if let action = rule.failAction {
-                    generateAction(action)
+                    self.generateAction(action)
+                }
+                self.buffer.emitLine("return \(failReturnExpression)")
+            }
+
+            let conditional = buffer.startConditionalEmitter()
+            let requiresMarkers = self.requiresMarkers(rule)
+            let requiresCutFlag = self.requiresCutFlag(rule)
+            var markerBlock: () -> Void = { }
+            var cutBlock: () -> Void = { }
+
+            if requiresMarkers {
+                let backtrackMarkerName = generateMarkDeclaration()
+                markerBlock = {
+                    self.generateMarkRestore(markVarName: backtrackMarkerName)
                 }
             }
+            if requiresCutFlag {
+                let cutFlagName = generateCutFlagDeclaration()
+                cutBlock = {
+                    self.generateCutFlagBailStatement(cutVarName: cutFlagName, bailBlock)
+                }
+            }
+
+            if let action = rule.action {
+                generateAction(action)
+            }
+
+            for alt in rule.alts {
+                conditional.ensureEmptyLine()
+                try generateAlt(alt, in: production, backtrackBlock: markerBlock, cutFlagBlock: cutBlock)
+            }
+
+            bailBlock()
         }
     }
 
@@ -301,38 +305,15 @@ public class SwiftCodeGen {
         for production: RemainingProduction
     ) throws {
 
-        // Preparation
+        // Production
 
         let ruleName = info.name
         let ruleType = info.bindings.be_asTupleType().be_optionalWrapped()
         let returnType = ruleType.scg_asValidSwiftType()
 
-        let trailName = ruleName + "_tail"
-        let remainingElements = bindingEngine.computeBindings(repetitionInfo.trail)
-        let trailInformation = AuxiliaryRuleInformation(
-            name: trailName,
-            bindings: remainingElements,
-            memoizationMode: info.memoizationMode == .memoizedLeftRecursive ? .none : info.memoizationMode
-        )
-
-        let trailAction = defaultReturnAction(for: remainingElements)
-        let trailProductionName = enqueueAuxiliaryRule(
-            InternalGrammar.Rule(
-                name: trailName,
-                type: remainingElements.be_asTupleType(),
-                alts: [
-                    .init(namedItems: repetitionInfo.trail, action: trailAction)
-                ]
-            ),
-            trailInformation
-        )
-
-        let syntheticItem: InternalGrammar.Item =
-            .atom(.ruleName(trailProductionName))
-
         // Synthesize method
         generateRuleDocComment(ruleName, info.bindings.be_asTupleType(), nil, nil, [
-            .init(namedItems: [repetitionInfo.repetition, .item(syntheticItem)])
+            .init(namedItems: [repetitionInfo.repetition] + repetitionInfo.trail)
         ])
 
         // @memoized/@memoizedLeftRecursive
@@ -363,8 +344,6 @@ public class SwiftCodeGen {
                 ruleInfo: info,
                 repetitionAtom: repetitionAtom(),
                 repetitionInfo: repetitionInfo,
-                trailName: trailProductionName,
-                trailInfo: trailInformation,
                 failReturnExpression: failReturnExpression,
                 repetitionAtomType: repetitionType()
             )
@@ -496,6 +475,7 @@ public class SwiftCodeGen {
         buffer.emitLine("@inlinable")
     }
 
+    /*
     /// Generates a preamble and default tail-end of a rule-like method body that
     /// has an optional return type and backtracks the parser, and optionally
     /// has access to a cut flag.
@@ -504,40 +484,43 @@ public class SwiftCodeGen {
     ///
     /// ```
     /// let _mark = self.mark() (only if usesMarks == true)
-    /// var _cut = CutFlag()   (only if hasCut == true)
+    /// var _cut = CutFlag()   (only if requiresCutFlag == true)
     /// <generator()>
     /// return <failReturnExpression>
     /// ```
     func generateRuleBody(
-        hasCut: Bool,
+        requiresCutFlag: Bool,
         usesMarks: Bool,
         failReturnExpression: String,
-        _ generator: (CodeStringBuffer.ConditionalEmitter) throws -> Void
+        _ generator: (CodeStringBuffer.ConditionalEmitter, _ backtrackMarkerName: String?, _ cutFlagName: String?) throws -> Void
     ) throws {
         declContext.push()
         defer { declContext.pop() }
 
         let conditional = buffer.startConditionalEmitter()
+        var backtrackMarkerName: String?
+        var cutFlagName: String?
 
         if usesMarks {
-            buffer.emitLine("let \(markVarName) = self.mark()")
-            declContext.defineLocal(suggestedName: markVarName)
+
+            //buffer.emitLine("let \(markVarName) = self.mark()")
+            //declContext.defineLocal(suggestedName: markVarName)
         }
-        if hasCut {
-            buffer.emitLine("var \(cutVarName) = CutFlag()")
-            declContext.defineLocal(suggestedName: cutVarName)
+        if requiresCutFlag {
+            generateCutFlagDeclaration()
         }
 
         try generator(conditional)
 
         buffer.emitLine("return \(failReturnExpression)")
     }
+    */
 
     func generateAlt(
         _ alt: InternalGrammar.Alt,
         in production: RemainingProduction,
-        backtrackToMark: Bool,
-        failBlock: () -> Void
+        backtrackBlock: () -> Void,
+        cutFlagBlock: () -> Void
     ) throws {
         if alt.namedItems.isEmpty { return }
 
@@ -559,9 +542,9 @@ public class SwiftCodeGen {
 
         buffer.emitNewline()
 
-        if backtrackToMark && requiresMarkers(alt) {
+        if requiresMarkers(alt) {
             // Alt failure results in a restore to a previous mark
-            buffer.emitLine("self.restore(\(markVarName))")
+            backtrackBlock()
         }
 
         // Generate fail action, if present
@@ -569,12 +552,9 @@ public class SwiftCodeGen {
             generateAction(failAction)
         }
 
-        if hasCut(alt) {
+        if requiresCutFlag(alt) {
             buffer.ensureDoubleNewline()
-            buffer.emit("if \(cutVarName).isOn ")
-            buffer.emitBlock {
-                failBlock()
-            }
+            cutFlagBlock()
         }
     }
 
@@ -626,11 +606,16 @@ public class SwiftCodeGen {
 
     /// Generates items as a sequence of if-let segments from a given sequence of
     /// named items, separated by commas.
+    ///
+    /// Returns an array of arrays containing the deduplicated names of all named
+    /// bindings created. Return is empty if no named bindings where created.
+    @discardableResult
     func generateNamedItems(
         _ namedItems: [InternalGrammar.NamedItem],
         in production: RemainingProduction
-    ) throws {
+    ) throws -> [[String]] {
 
+        var result: [[String]] = []
         let nonStandardIndex = Self.nonStandardRepetitionIndex(in: namedItems)
 
         let commaEmitter = buffer.startConditionalEmitter()
@@ -648,16 +633,22 @@ public class SwiftCodeGen {
 
                 // Emit a dummy item that binds the repetition's results
                 let item: InternalGrammar.Item = .atom(.ruleName(auxInfo.name))
-                let bindings = auxInfo.bindings
 
-                try generateBindingsToItem(item, bindings, in: production)
+                let bindings = try generateBindingsToItem(
+                    item, auxInfo.bindings,
+                    in: production
+                )
+                result.append(bindings)
 
                 // Stop emitting items after the repetition binding is emitted
                 break
             } else {
-                try generateNamedItem(namedItem, in: production)
+                let bindings = try generateNamedItem(namedItem, in: production)
+                result.append(bindings)
             }
         }
+
+        return result
     }
 
     /// `let <bind>[: <BindingType>] = <production>`
@@ -793,7 +784,7 @@ public class SwiftCodeGen {
             buffer.emit(")")
 
         case .cut:
-            buffer.emit("\(cutVarName).toggleOn()")
+            generateCutFlagToggle()
         }
     }
 
@@ -880,7 +871,7 @@ public class SwiftCodeGen {
             let bindingType = binding.type
 
             if bindingName != "_" {
-                bindingName = declContext.defineLocal(suggestedName: bindingName, type: nil).name
+                bindingName = declContext.defineLocal(suggestedName: bindingName).name
                 deduplicatedBindings.append(bindingName)
             }
 
@@ -941,6 +932,8 @@ public class SwiftCodeGen {
             return info.memoizationMode
         }
     }
+
+    // MARK: - Auxiliary structures
 
     enum TokenCallKind: String {
         /// "self.expect(<token value>)"
@@ -1182,7 +1175,7 @@ public class SwiftCodeGen {
     }
 }
 
-// MARK: Auxiliary method management
+// MARK: - Auxiliary method management
 
 extension SwiftCodeGen {
     /// Attempts to compute a default return action for a given set of return
@@ -1431,7 +1424,7 @@ extension SwiftCodeGen {
     }
 }
 
-// MARK: Identifier/token management
+// MARK: - Identifier/token management
 
 extension SwiftCodeGen {
     /// Escapes the given identifier to something that can be declared as a local
@@ -1563,24 +1556,39 @@ extension SwiftCodeGen {
 extension SwiftCodeGen {
     /// Returns `true` if the rule makes use of cut (`~`) in one of its primary
     /// alts.
-    func hasCut(_ node: InternalGrammar.Rule) -> Bool {
-        hasCut(node.alts)
+    func requiresCutFlag(_ node: InternalGrammar.Rule) -> Bool {
+        requiresCutFlag(node.alts)
     }
 
     /// Returns `true` if one of the given alts makes use of cut (`~`) in one of
     /// its primary items.
-    func hasCut(_ node: [InternalGrammar.Alt]) -> Bool {
-        node.contains(where: hasCut)
+    func requiresCutFlag(_ node: [InternalGrammar.Alt]) -> Bool {
+        node.contains(where: requiresCutFlag)
     }
 
     /// Returns `true` if the given alt makes use of cut (`~`) in one of its
     /// primary items.
-    func hasCut(_ node: InternalGrammar.Alt) -> Bool {
-        node.namedItems.contains(where: hasCut)
+    ///
+    /// If a cut happens after a non-standard repetition (repetitions with `<`/`>`
+    /// suffix), the cut is not considered part of the alternative.
+    func requiresCutFlag(_ node: InternalGrammar.Alt) -> Bool {
+        requiresCutFlag(node.namedItems)
+    }
+
+    /// Returns `true` if the given named items makes use of cut (`~`).
+    ///
+    /// If a cut happens after a non-standard repetition (repetitions with `<`/`>`
+    /// suffix), the cut is not considered part of the items.
+    func requiresCutFlag(_ nodes: some BidirectionalCollection<InternalGrammar.NamedItem>) -> Bool {
+        if let nonStandardIndex = Self.nonStandardRepetitionIndex(in: nodes) {
+            return nodes[..<nonStandardIndex].contains(where: requiresCutFlag)
+        }
+
+        return nodes.contains(where: requiresCutFlag)
     }
 
     /// Returns `true` if the given named item makes use of cut (`~`).
-    func hasCut(_ node: InternalGrammar.NamedItem) -> Bool {
+    func requiresCutFlag(_ node: InternalGrammar.NamedItem) -> Bool {
         switch node {
         case .lookahead(.cut):
             return true

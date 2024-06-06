@@ -5,6 +5,7 @@ import SwiftPEG
 /// A collection of test fixtures that came from a single file.
 struct FixtureTestsFile {
     var file: URL
+    var grammar: SwiftPEGGrammar.Grammar
     var fixtures: [FixtureTest]
 
     /// Flags for a fixture test file
