@@ -101,7 +101,7 @@ open class Tokenizer<Raw: RawTokenizerType> {
 
         // Peek raw stream
         if let nextToken = try _raw.next() {
-            let result = Token(rawToken: nextToken.rawToken, location: nextToken.location)
+            let result = Token(nextToken)
             cachedTokens.append(result)
             return result
         } else {
@@ -194,6 +194,11 @@ open class Tokenizer<Raw: RawTokenizerType> {
         public init(rawToken: RawToken, location: Location) {
             self.rawToken = rawToken
             self.location = location
+        }
+
+        @inlinable
+        public init(_ token: (rawToken: RawToken, location: Location)) {
+            self.init(rawToken: token.rawToken, location: token.location)
         }
     }
 
