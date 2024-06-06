@@ -86,10 +86,13 @@ public class GrammarProcessor {
 
         let (tokenNames, fragments) = try collectTokenNames(in: grammar, tokensFile: tokensFile)
         try validateReferences(in: grammar, tokens: tokenNames, fragments: fragments)
+        try validateNamedItems(in: grammar)
 
         diagnoseAltOrder(in: grammar)
         try computeNullables(in: grammar, knownRules)
         try diagnoseUnreachableRules(in: grammar, knownRules, entryRuleName: entryRuleName)
+
+        try diagnoseNonStandardRepetitions(in: grammar)
 
         return ProcessedGrammar(
             grammar: .from(grammar),
@@ -123,7 +126,7 @@ public class GrammarProcessor {
     }
 
     func validateRuleName(_ rule: SwiftPEGGrammar.Rule) throws -> String {
-        let ruleName = String(rule.name.name.string)
+        let ruleName = String(rule.ruleName)
         if ruleName.isEmpty {
             throw recordAndReturn(.invalidRuleName(desc: "Rule name cannot be empty", rule))
         }
@@ -215,7 +218,7 @@ public class GrammarProcessor {
             ($0, .token)
         }
         for rule in grammar.rules {
-            let name = String(rule.name.name.string)
+            let name = String(rule.ruleName)
             knownNames.append(
                 (name, .ruleName)
             )
@@ -292,6 +295,21 @@ public class GrammarProcessor {
         }
     }
 
+    func diagnoseNonStandardRepetitions(in grammar: SwiftPEGGrammar.Grammar) throws {
+        let visitor = NonStandardRepetitionVisitor { (rule, item, repetitionMode) in
+            guard repetitionMode != .standard else {
+                return
+            }
+
+            self.diagnostics.append(
+                .nonStandardRepetitionAsLastItem(rule, item, repetitionMode)
+            )
+        }
+
+        let walker = NodeWalker(visitor: visitor)
+        try walker.walk(grammar)
+    }
+
     /// Gets all @token meta-properties in the grammar.
     func tokenMetaProperties(in grammar: SwiftPEGGrammar.Grammar) -> [SwiftPEGGrammar.Meta] {
         metaPropertyManager.propertiesValidating(knownProperty: tokenProp).map(\.node)
@@ -361,7 +379,7 @@ public class GrammarProcessor {
                 return "Token '\(name)' re-declared @ \(token.location). Original declaration @ \(prior.location)."
 
             case .invalidRuleName(let desc, let rule):
-                return "Rule name '\(rule.name.name.string)' @ \(rule.location) is not valid: \(desc)"
+                return "Rule name '\(rule.ruleName)' @ \(rule.location) is not valid: \(desc)"
 
             case .invalidNamedItem(let desc, let item):
                 return "Named item '\(item.name?.string ?? "<nil>")' @ \(item.location) is not valid: \(desc)"
@@ -404,6 +422,8 @@ public class GrammarProcessor {
 
     /// A non-fatal GrammarProcessor diagnostic.
     public enum GrammarProcessorDiagnostic {
+        // MARK: - Grammar file diagnostics
+
         /// An alt that executes before another, if it succeeds, will always
         /// prevent the other alt from being attempted.
         case altOrderIssue(
@@ -418,8 +438,14 @@ public class GrammarProcessor {
         /// Diagnostic reported by meta-property manager.
         case metaPropertyDiagnostic(SwiftPEGGrammar.Meta, String)
 
-        /// A fragment token definition specifies a static token, which is not
-        /// used.
+        /// A non-standard repetition (`<`/`>`) was found at the end of an
+        /// alternative.
+        case nonStandardRepetitionAsLastItem(SwiftPEGGrammar.Rule, SwiftPEGGrammar.Item, CommonAbstract.RepetitionMode)
+
+        // MARK: - Tokens file diagnostics
+
+        /// A fragment token definition declares a static token for the fragment,
+        /// which is never used by code processors or code generators.
         case fragmentSpecifiesStaticToken(
             token: SwiftPEGGrammar.TokenDefinition
         )
@@ -454,7 +480,22 @@ public class GrammarProcessor {
                 return """
                     Alt \(describe(priorInt)) @ \(prior.location) always succeeds \
                     before \(describe(formerInt)) @ \(former.location) can be tried \
-                    in rule \(rule.name.name.string) @ \(rule.location).
+                    in rule \(rule.ruleName) @ \(rule.location).
+                    """
+
+            case .unreachableRule(let rule, let startRuleName):
+                return "Rule '\(rule.ruleName)' @ \(rule.location) is not reachable from the set start rule '\(startRuleName)'."
+
+            case .metaPropertyDiagnostic(_, let message):
+                return message
+
+            case .nonStandardRepetitionAsLastItem(_, let item, let mode):
+                let itemInt = InternalGrammar.Item.from(item)
+                let modeString = mode == .minimal ? "Minimal" : "Maximal"
+
+                return """
+                    \(modeString) repetition '\(itemInt)' @ \(item.location) at \
+                    the end of an alternative will behave as a standard repetition.
                     """
 
             case .fragmentSpecifiesStaticToken(let token):
@@ -485,12 +526,6 @@ public class GrammarProcessor {
                     before \(describe(former)) can be tried \
                     in token definition \(token.name.string) @ \(token.location).
                     """
-
-            case .unreachableRule(let rule, let startRuleName):
-                return "Rule '\(rule.name.name.string)' @ \(rule.location) is not reachable from the set start rule '\(startRuleName)'."
-
-            case .metaPropertyDiagnostic(_, let message):
-                return message
             }
         }
     }
@@ -549,6 +584,50 @@ private extension GrammarProcessor {
             }
 
             return .visitChildren
+        }
+    }
+
+    /// Visitor used to diagnose non-standard repetitions (`<`/`>`) at the end
+    /// of alternatives.
+    final class NonStandardRepetitionVisitor: SwiftPEGGrammar.GrammarNodeVisitorType {
+        typealias Callback = (SwiftPEGGrammar.Rule, SwiftPEGGrammar.Item, CommonAbstract.RepetitionMode) throws -> Void
+
+        var currentRule: SwiftPEGGrammar.Rule?
+        var callback: Callback
+
+        init(_ callback: @escaping Callback) {
+            self.callback = callback
+        }
+
+        func willVisit(_ node: Node) {
+            if let rule = node as? SwiftPEGGrammar.Rule {
+                currentRule = rule
+            }
+        }
+
+        func visit(_ node: SwiftPEGGrammar.Alt) throws -> NodeVisitChildrenResult {
+            guard let currentRule, let lastItem = node.namedItems.last?.item else {
+                return .visitChildren
+            }
+
+            switch lastItem {
+            case let node as SwiftPEGGrammar.ZeroOrMoreItem:
+                try callback(currentRule, node, node.repetitionMode)
+            case let node as SwiftPEGGrammar.OneOrMoreItem:
+                try callback(currentRule, node, node.repetitionMode)
+            case let node as SwiftPEGGrammar.GatherItem:
+                try callback(currentRule, node, node.repetitionMode)
+            default:
+                break
+            }
+
+            return .visitChildren
+        }
+
+        func didVisit(_ node: Node) {
+            if node === currentRule {
+                currentRule = nil
+            }
         }
     }
 }

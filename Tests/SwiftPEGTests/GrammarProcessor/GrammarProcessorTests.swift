@@ -28,6 +28,26 @@ class GrammarProcessorTests: XCTestCase {
         }
     }
 
+    func testInvalidNamedItemError() throws {
+        let start = makeRule(name: "start", [
+            makeAlt([ makeNamedItem(name: "_a", "a") ]),
+        ])
+        let grammar = makeGrammar(
+            metas: [
+                makeMeta(name: "token", identifier: "a"),
+            ],
+            [start]
+        )
+        let sut = makeSut()
+
+        assertThrows({ try sut.process(grammar) })
+
+        assertCount(sut.errors, 1)
+        assertEqual(sut.test_errorMessages(), """
+            Named item '_a' @ 0 is not valid: Names cannot start with '_'
+            """)
+    }
+
     func testUnknownReferenceError() throws {
         let start = makeRule(name: "start", [
             makeAlt([ makeNamedItem("a") ]),
@@ -171,6 +191,43 @@ class GrammarProcessorTests: XCTestCase {
             @token with value 'b' @ line 6 column 1 has been declared at least once @ line 2 column 1.
             """)
     }
+
+    func testNonStandardRepetitionAsLastItem() throws {
+        let grammarString = """
+        @token A ; @token B ; @token C ;
+        start:
+            | a b c d a+>
+            | a b c d (a b c d a+< | a b c a+> | a b a*< | a a*>)
+            | a b c a+<
+            | a b c [a b c d a+< | a b c a+> | a b a*< | a a*>]
+            | a b a*>
+            | a a*<
+            ;
+        a: A ;
+        b: B ;
+        c: C ;
+        d: c C ;
+        """
+        let grammar = try parseGrammar(grammarString)
+        let sut = makeSut()
+
+        _ = try sut.process(grammar)
+
+        assertEqual(sut.test_diagnosticMessages(), """
+            Maximal repetition 'a+>' @ line 3 column 15 at the end of an alternative will behave as a standard repetition.
+            Minimal repetition 'a+<' @ line 4 column 24 at the end of an alternative will behave as a standard repetition.
+            Maximal repetition 'a+>' @ line 4 column 36 at the end of an alternative will behave as a standard repetition.
+            Minimal repetition 'a*<' @ line 4 column 46 at the end of an alternative will behave as a standard repetition.
+            Maximal repetition 'a*>' @ line 4 column 54 at the end of an alternative will behave as a standard repetition.
+            Minimal repetition 'a+<' @ line 5 column 13 at the end of an alternative will behave as a standard repetition.
+            Minimal repetition 'a+<' @ line 6 column 22 at the end of an alternative will behave as a standard repetition.
+            Maximal repetition 'a+>' @ line 6 column 34 at the end of an alternative will behave as a standard repetition.
+            Minimal repetition 'a*<' @ line 6 column 44 at the end of an alternative will behave as a standard repetition.
+            Maximal repetition 'a*>' @ line 6 column 52 at the end of an alternative will behave as a standard repetition.
+            Maximal repetition 'a*>' @ line 7 column 11 at the end of an alternative will behave as a standard repetition.
+            Minimal repetition 'a*<' @ line 8 column 9 at the end of an alternative will behave as a standard repetition.
+            """)
+    }
 }
 
 // MARK: - Test internals
@@ -233,8 +290,9 @@ private func makeAlt(_ items: [SwiftPEGGrammar.NamedItem]) -> SwiftPEGGrammar.Al
     )
 }
 
-private func makeNamedItem(_ ident: String, identity: SwiftPEGGrammar.IdentAtom.Identity = .ruleName) -> SwiftPEGGrammar.NamedItem {
+private func makeNamedItem(name: String? = nil, _ ident: String, identity: SwiftPEGGrammar.IdentAtom.Identity = .ruleName) -> SwiftPEGGrammar.NamedItem {
     makeNamedItem(
+        name: name,
         atom: SwiftPEGGrammar.IdentAtom(
             identifier: makeIdent(ident),
             identity: identity
@@ -242,9 +300,9 @@ private func makeNamedItem(_ ident: String, identity: SwiftPEGGrammar.IdentAtom.
     )
 }
 
-private func makeNamedItem(atom: SwiftPEGGrammar.Atom) -> SwiftPEGGrammar.NamedItem {
+private func makeNamedItem(name: String? = nil, atom: SwiftPEGGrammar.Atom) -> SwiftPEGGrammar.NamedItem {
     .init(
-        name: nil,
+        name: name.map(makeIdent),
         item: SwiftPEGGrammar.AtomItem(
             atom: atom
         ),

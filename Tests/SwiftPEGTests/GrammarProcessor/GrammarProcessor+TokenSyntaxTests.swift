@@ -45,6 +45,21 @@ class GrammarProcessor_TokenSyntaxTests: XCTestCase {
         )
     }
 
+    func testMergesSequentialTokenTerminals() throws {
+        let delegate = stubDelegate(tokensFile: """
+        $a: 'a' 'b' | 'c'+ 'd' 'e' | 'f' 'g'+ 'h';
+        """)
+        let expected = try parseTokenDefinitions(#"""
+        $a: 'ab' | 'c'+ 'de' | 'f' 'g'+ 'h';
+        """#)
+        let grammar = makeGrammar()
+        let sut = makeSut(delegate)
+
+        let processed = try sut.process(grammar)
+
+        assertEqualUnordered(processed.tokens, expected)
+    }
+
     func testInlineFragments_literalTerminals() throws {
         let delegate = stubDelegate(tokensFile: """
         $a: b "c" !d e;

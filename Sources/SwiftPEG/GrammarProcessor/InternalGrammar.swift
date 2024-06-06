@@ -247,7 +247,7 @@ public enum InternalGrammar {
         ) -> Self {
 
             .init(
-                name: String(node.name.name.string),
+                name: String(node.ruleName),
                 type: node.name.type,
                 action: node.action.map(Action.from),
                 failAction: node.failAction.map(Action.from),

@@ -88,9 +88,9 @@ class GrammarParsingSample {
 
                 for rule in grammar.rules {
                     if let type = rule.name.type {
-                        print("\(rule.name.name.string) (of type \(type.description))")
+                        print("\(rule.ruleName) (of type \(type.description))")
                     } else {
-                        print("\(rule.name.name.string)")
+                        print("\(rule.ruleName)")
                     }
                 }
             }

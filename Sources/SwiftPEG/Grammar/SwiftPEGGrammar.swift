@@ -172,8 +172,13 @@ extension SwiftPEGGrammar {
         /// from a chosen starting rule.
         var isReachable: Bool = true
 
+        /// Convenience for `String(name.name.string)`
+        public var ruleName: String {
+            String(name.name.string)
+        }
+
         public var description: String {
-            "\(type(of: self))(ruleName: \(name.name.string))"
+            "\(type(of: self))(ruleName: \(ruleName))"
         }
 
         /// Accepts a given grammar-node visitor into this node.

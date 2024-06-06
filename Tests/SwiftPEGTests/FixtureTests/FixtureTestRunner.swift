@@ -47,7 +47,7 @@ class FixtureTestRunner {
         logger.logMessage("Found \(files.count) test file(s)")
         for file in files {
             logger.beginLogMessageScope(
-                "Found fixture file \(url: file.test_relativeURL(to: basePath))"
+                "\(url: file.test_relativeURL(to: basePath))"
             )
             logger.endLogMessageScope()
         }
