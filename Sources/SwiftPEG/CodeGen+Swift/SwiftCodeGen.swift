@@ -269,13 +269,14 @@ public class SwiftCodeGen {
                     try generateAlt(
                         alt,
                         in: production,
-                        backtrackToMark: requiresMarkers(rule)
-                    ) {
-                        if let action = rule.failAction {
-                            generateAction(action)
+                        backtrackToMark: requiresMarkers(rule),
+                        failBlock: {
+                            if let action = rule.failAction {
+                                generateAction(action)
+                            }
+                            buffer.emitLine("return \(failReturnExpression)")
                         }
-                        buffer.emitLine("return \(failReturnExpression)")
-                    }
+                    )
                 }
 
                 if let action = rule.failAction {
@@ -335,13 +336,14 @@ public class SwiftCodeGen {
                     try generateAlt(
                         alt,
                         in: production,
-                        backtrackToMark: requiresMarkers(rule)
-                    ) {
-                        if let action = rule.failAction {
-                            generateAction(action)
+                        backtrackToMark: requiresMarkers(rule),
+                        failBlock: {
+                            if let action = rule.failAction {
+                                generateAction(action)
+                            }
+                            buffer.emitLine("return \(failReturnExpression)")
                         }
-                        buffer.emitLine("return \(failReturnExpression)")
-                    }
+                    )
                 }
 
                 if let action = rule.failAction {
@@ -350,6 +352,7 @@ public class SwiftCodeGen {
             }
         }
     }
+
     // MARK: Production: Non-standard repetition with trailing cases
 
     func generateNonStandardRepetition(
@@ -413,12 +416,6 @@ public class SwiftCodeGen {
             func repetitionType() -> CommonAbstract.SwiftType {
                 return bindingEngine.typeForAtom(repetitionAtom())
             }
-            func trailType() -> CommonAbstract.SwiftType {
-                trailInformation.bindings.be_asTupleType()
-            }
-            func fullType() -> CommonAbstract.SwiftType {
-                info.bindings.be_asTupleType()
-            }
 
             let failReturnExpression = _failReturnExpression(for: ruleType)
             let info = RepetitionBodyGenInfo(
@@ -429,9 +426,7 @@ public class SwiftCodeGen {
                 trailName: trailProductionName,
                 trailInfo: trailInformation,
                 failReturnExpression: failReturnExpression,
-                repetitionAtomType: repetitionType(),
-                trailType: trailType(),
-                fullType: fullType()
+                repetitionAtomType: repetitionType()
             )
 
             declContext.push()
@@ -1810,29 +1805,6 @@ extension InternalGrammar.Item {
 }
 
 internal extension CommonAbstract.SwiftType {
-    /// Returns `self` unwrapped of an optional layer, unless `self` is a tuple
-    /// type, in which case returns a tuple of each element unwrapped by one
-    /// optional layer.
-    func be_unwrapped() -> Self {
-        switch self {
-        case .tuple(let types):
-            return .tuple(types.map(\.unwrapped))
-        default:
-            return self.unwrapped
-        }
-    }
-
-    /// Returns `self` wrapped in an optional layer, unless `self` is a tuple type,
-    /// in which case returns a tuple of optional elements of the tuple type.
-    func be_optionalWrapped() -> Self {
-        switch self {
-        case .tuple(let types):
-            return .tuple(types.map(\.optionalWrapped))
-        default:
-            return .optional(self)
-        }
-    }
-
     /// Returns a string representation of this Swift type that can be used as a
     /// valid Swift type in code.
     func scg_asValidSwiftType() -> String {

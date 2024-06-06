@@ -452,3 +452,28 @@ internal extension Sequence where Element == BindingEngine.Binding {
         }
     }
 }
+
+internal extension CommonAbstract.SwiftType {
+    /// Returns `self` unwrapped of an optional layer, unless `self` is a tuple
+    /// type, in which case returns a tuple of each element unwrapped by one
+    /// optional layer.
+    func be_unwrapped() -> Self {
+        switch self {
+        case .tuple(let types):
+            return .tuple(types.map(\.unwrapped))
+        default:
+            return self.unwrapped
+        }
+    }
+
+    /// Returns `self` wrapped in an optional layer, unless `self` is a tuple type,
+    /// in which case returns a tuple of optional elements of the tuple type.
+    func be_optionalWrapped() -> Self {
+        switch self {
+        case .tuple(let types):
+            return .tuple(types.map(\.optionalWrapped))
+        default:
+            return .optional(self)
+        }
+    }
+}

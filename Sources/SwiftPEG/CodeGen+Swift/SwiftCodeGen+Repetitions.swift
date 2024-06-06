@@ -484,24 +484,6 @@ extension SwiftCodeGen {
 
         /// Storage type for each repetition item produced.
         var repetitionAtomType: CommonAbstract.SwiftType
-        /// Storage type for the trailing of the repetition.
-        var trailType: CommonAbstract.SwiftType
-        /// The full type produced when emitting the successful result of a
-        /// non-standard repetition operation.
-        var fullType: CommonAbstract.SwiftType
-
-        /// Convenience for `repetitionAtomType.be_unwrapped().scg_asValidSwiftType()`
-        var repetitionAtomTypeString: String {
-            repetitionAtomType.be_unwrapped().scg_asValidSwiftType()
-        }
-        /// Convenience for `trailType.scg_asValidSwiftType()`
-        var trailTypeString: String {
-            trailType.be_unwrapped().scg_asValidSwiftType()
-        }
-        /// Convenience for `fullType.scg_asValidSwiftType()`
-        var fullTypeString: String {
-            fullType.be_unwrapped().scg_asValidSwiftType()
-        }
 
         /// Convenience for `.atom(.ruleName(trailName))`.
         var trailItem: InternalGrammar.Item {

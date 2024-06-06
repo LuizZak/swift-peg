@@ -3,8 +3,6 @@ import SwiftPEGMacros
 /// Namespace for SwiftPEG grammar grammar objects.
 public enum SwiftPEGGrammar {}
 
-#if true
-
 extension SwiftPEGGrammar {
     public typealias Token = GrammarParserToken
 
@@ -1088,5 +1086,3 @@ public extension SwiftPEGGrammar.GrammarNodeVisitorType where VisitResult == Nod
     func visit(_ node: SwiftPEGGrammar.IdentAtom) throws -> NodeVisitChildrenResult { .visitChildren }
     func visit(_ node: SwiftPEGGrammar.Action) throws -> NodeVisitChildrenResult { .visitChildren }
 }
-
-#endif
