@@ -253,7 +253,7 @@ extension SwiftCodeGen {
     /// at the top of the function, before the initial production is emitted.
     ///   - initialProduction: A block that generates the expression that gets
     /// bound to the array of initial productions. Must emit an optional expression
-    /// type to be bound.
+    /// type to be bound to a variable.
     ///   - whileCondition: A block that generates the condition for the main
     /// while loop. Must emit its own whitespace separating the `while` keyword
     /// and the opening brace of the subsequent block.
@@ -547,7 +547,7 @@ extension SwiftCodeGen {
 }
 
 private extension Sequence where Element == String {
-    /// Returns a tuple expression seque ce with this sequence of string elements,
+    /// Returns a tuple expression sequence with this sequence of string elements,
     /// where the labels are all `nil`.
     func scgr_asTupleExpr() -> [(label: String?, identifier: String)] {
         map {
