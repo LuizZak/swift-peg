@@ -208,8 +208,8 @@ public class SwiftCodeGen {
         case .rule(let rule):
             try generateRule(rule, for: production)
 
-        case .auxiliary(let rule, let info):
-            try generateAuxiliaryRule(rule, info, for: production)
+        case .auxiliary(let rule, _):
+            try generateRule(rule, for: production)
 
         case .nonStandardRepetition(let auxInfo, let repetition):
             try generateNonStandardRepetition(
@@ -220,7 +220,7 @@ public class SwiftCodeGen {
         }
     }
 
-    // MARK: Production: Rule
+    // MARK: Production: Rule/Auxiliary rule
 
     func generateRule(
         _ rule: InternalGrammar.Rule,
@@ -235,74 +235,7 @@ public class SwiftCodeGen {
         // @memoized/@memoizedLeftRecursive
         // @inlinable
         let name = bindingEngine.alias(for: rule)
-        let memoizationMode = memoizationMode(for: rule)
-        generateRuleMethodAttributes(
-            memoization: memoizationMode,
-            memoizedName: name
-        )
-
-        // func <rule>() -> <return type>
-        let fName = memoizationMode == .none ? name : "__\(name)"
-        let returnType = bindingEngine.returnTypeForRule(rule)
-
-        buffer.emit("public func \(fName)() throws -> \(returnType) ")
-        try buffer.emitBlock {
-            // let mark = self.mark()
-            // var cut = CutFlag()
-            //
-            // ...if-let alt patterns...
-            //
-            // return nil
-            let failReturnExpression = _failReturnExpression(for: rule.type)
-
-            try generateRuleBody(
-                hasCut: hasCut(rule),
-                usesMarks: requiresMarkers(rule),
-                failReturnExpression: failReturnExpression
-            ) { conditional in
-                if let action = rule.action {
-                    generateAction(action)
-                }
-
-                for alt in rule.alts {
-                    conditional.ensureEmptyLine()
-                    try generateAlt(
-                        alt,
-                        in: production,
-                        backtrackToMark: requiresMarkers(rule),
-                        failBlock: {
-                            if let action = rule.failAction {
-                                generateAction(action)
-                            }
-                            buffer.emitLine("return \(failReturnExpression)")
-                        }
-                    )
-                }
-
-                if let action = rule.failAction {
-                    generateAction(action)
-                }
-            }
-        }
-    }
-
-    // MARK: Production: Auxiliary rule
-
-    func generateAuxiliaryRule(
-        _ rule: InternalGrammar.Rule,
-        _ info: AuxiliaryRuleInformation,
-        for production: RemainingProduction
-    ) throws {
-        if latestSettings.omitUnreachable && !rule.isReachable {
-            return
-        }
-
-        generateRuleDocComment(rule)
-
-        // @memoized/@memoizedLeftRecursive
-        // @inlinable
-        let name = bindingEngine.alias(for: rule)
-        let memoizationMode = info.memoizationMode
+        let memoizationMode = memoizationMode(for: production)
         generateRuleMethodAttributes(
             memoization: memoizationMode,
             memoizedName: name
@@ -995,9 +928,9 @@ public class SwiftCodeGen {
 
     private func memoizationMode(for production: RemainingProduction) -> MemoizationMode {
         switch production {
-        case .rule(let rule), .auxiliary(let rule, _):
+        case .rule(let rule):
             return memoizationMode(for: rule)
-        case .nonStandardRepetition(let info, _):
+        case .auxiliary(_, let info), .nonStandardRepetition(let info, _):
             return info.memoizationMode
         }
     }
