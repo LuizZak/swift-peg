@@ -475,47 +475,6 @@ public class SwiftCodeGen {
         buffer.emitLine("@inlinable")
     }
 
-    /*
-    /// Generates a preamble and default tail-end of a rule-like method body that
-    /// has an optional return type and backtracks the parser, and optionally
-    /// has access to a cut flag.
-    ///
-    /// Pushes a new declaration context for the duration of the method.
-    ///
-    /// ```
-    /// let _mark = self.mark() (only if usesMarks == true)
-    /// var _cut = CutFlag()   (only if requiresCutFlag == true)
-    /// <generator()>
-    /// return <failReturnExpression>
-    /// ```
-    func generateRuleBody(
-        requiresCutFlag: Bool,
-        usesMarks: Bool,
-        failReturnExpression: String,
-        _ generator: (CodeStringBuffer.ConditionalEmitter, _ backtrackMarkerName: String?, _ cutFlagName: String?) throws -> Void
-    ) throws {
-        declContext.push()
-        defer { declContext.pop() }
-
-        let conditional = buffer.startConditionalEmitter()
-        var backtrackMarkerName: String?
-        var cutFlagName: String?
-
-        if usesMarks {
-
-            //buffer.emitLine("let \(markVarName) = self.mark()")
-            //declContext.defineLocal(suggestedName: markVarName)
-        }
-        if requiresCutFlag {
-            generateCutFlagDeclaration()
-        }
-
-        try generator(conditional)
-
-        buffer.emitLine("return \(failReturnExpression)")
-    }
-    */
-
     func generateAlt(
         _ alt: InternalGrammar.Alt,
         in production: RemainingProduction,
