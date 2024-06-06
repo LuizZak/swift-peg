@@ -227,6 +227,7 @@ extension GrammarProcessor {
 
         func visit(_ node: CommonAbstract.TokenAlt) {
             node.items.forEach(visit)
+            node.trailExclusions.forEach(visit)
         }
 
         func visit(_ node: CommonAbstract.TokenItem) {
@@ -406,6 +407,7 @@ extension GrammarProcessor {
         func visit(_ node: CommonAbstract.TokenAlt) -> CommonAbstract.TokenAlt {
             var node = node
             node.items = node.items.flatMap(visit)
+            node.trailExclusions = node.trailExclusions.map(visit)
             return node.flattened()
         }
 

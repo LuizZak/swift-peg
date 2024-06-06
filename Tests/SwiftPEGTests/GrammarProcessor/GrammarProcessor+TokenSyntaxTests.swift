@@ -217,6 +217,26 @@ class GrammarProcessor_TokenSyntaxTests: XCTestCase {
         assertEqualUnordered(processed.tokens, expected)
     }
 
+    func testInlineFragments_altTrails() throws {
+        let delegate = stubDelegate(tokensFile: """
+        $a: b d !e ;
+        $b: "b" ;
+        %d: d { d.isLetter } ;
+        %e: "e"..."g" ;
+        """)
+        let expected = try parseTokenDefinitions(#"""
+        $a: b d { d.isLetter } !e ;
+        $b: "b" ;
+        %e: "e"..."g" ;
+        """#)
+        let grammar = makeGrammar()
+        let sut = makeSut(delegate)
+
+        let processed = try sut.process(grammar)
+
+        assertEqualUnordered(processed.tokens, expected)
+    }
+
     func testSortTokens() throws {
         let delegate = stubDelegate(tokensFile: #"""
         $a: 'a'+ ;
