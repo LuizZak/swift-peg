@@ -277,13 +277,17 @@ extension SwiftCodeGen {
         // TODO: item, and remove the nesting altogether if there is only one alt
 
         let emitter = buffer.startConditionalEmitter()
-        for alt in tokenSyntax.alts {
+        for (i, alt) in tokenSyntax.alts.enumerated() {
             emitter.emit("\n")
 
             buffer.emitLine("alt:")
             buffer.emit("do ")
             try buffer.emitBlock {
-                try generateTokenParserAlt(alt, bailStatement: .break(label: "alt"))
+                try generateTokenParserAlt(
+                    alt,
+                    canReturnAsBail: i == tokenSyntax.alts.count - 1,
+                    bailStatement: .break(label: "alt")
+                )
             }
 
             buffer.emitNewline()
@@ -296,10 +300,14 @@ extension SwiftCodeGen {
 
     func generateTokenParserAlt(
         _ alt: CommonAbstract.TokenAlt,
+        canReturnAsBail: Bool,
         bailStatement: BailStatement
     ) throws {
-        for item in alt.items {
-            try generateTokenParserItem(item, bailStatement: bailStatement)
+        for (i, item) in alt.items.enumerated() {
+            try generateTokenParserItem(
+                item,
+                bailStatement: canReturnAsBail && i == 0 ? .return : bailStatement
+            )
             buffer.ensureDoubleNewline()
         }
 
@@ -905,6 +913,12 @@ extension SwiftCodeGen {
 
         /// Indicates that the bail statement should expand to:
         /// ```
+        /// return false
+        /// ```
+        case `return`
+
+        /// Indicates that the bail statement should expand to:
+        /// ```
         /// stream.restore(state)
         /// return false
         /// ```
@@ -923,6 +937,9 @@ extension SwiftCodeGen {
 
             case .break(let label?):
                 buffer.emitLine("break \(label)")
+
+            case .return:
+                buffer.emitLine("return false")
 
             case .restoreAndReturn(let state):
                 buffer.emitLine("stream.restore(\(state))")

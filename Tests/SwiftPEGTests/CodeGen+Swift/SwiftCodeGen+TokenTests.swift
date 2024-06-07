@@ -64,7 +64,7 @@ class SwiftCodeGen_TokenTests: XCTestCase {
             alt:
             do {
                 guard stream.isNext("[") else {
-                    break alt
+                    return false
                 }
                 stream.advance()
 
@@ -111,7 +111,7 @@ class SwiftCodeGen_TokenTests: XCTestCase {
             alt:
             do {
                 guard stream.isNext("[") else {
-                    break alt
+                    return false
                 }
                 stream.advance()
 
@@ -158,7 +158,7 @@ class SwiftCodeGen_TokenTests: XCTestCase {
             alt:
             do {
                 guard stream.isNext("[") else {
-                    break alt
+                    return false
                 }
                 stream.advance()
 
@@ -202,7 +202,7 @@ class SwiftCodeGen_TokenTests: XCTestCase {
             alt:
             do {
                 guard stream.isNext("a") else {
-                    break alt
+                    return false
                 }
                 stream.advance()
 
@@ -256,7 +256,7 @@ class SwiftCodeGen_TokenTests: XCTestCase {
             alt:
             do {
                 guard stream.isNext("a") else {
-                    break alt
+                    return false
                 }
                 stream.advance()
 
@@ -312,7 +312,7 @@ class SwiftCodeGen_TokenTests: XCTestCase {
             alt:
             do {
                 guard stream.isNext("a") else {
-                    break alt
+                    return false
                 }
                 stream.advance()
 
@@ -367,7 +367,7 @@ class SwiftCodeGen_TokenTests: XCTestCase {
                 case "a"..."j", "_", "j"..."z":
                     stream.advance()
                 default:
-                    break alt
+                    return false
                 }
 
                 return true
@@ -406,7 +406,7 @@ class SwiftCodeGen_TokenTests: XCTestCase {
                 case "A"..."Z", "a"..."z", "_":
                     stream.advance()
                 default:
-                    break alt
+                    return false
                 }
 
                 loop:
@@ -452,7 +452,7 @@ class SwiftCodeGen_TokenTests: XCTestCase {
             alt:
             do {
                 guard let c = stream.safePeek(), c.isLetter || c == "_" else {
-                    break alt
+                    return false
                 }
                 stream.advance()
 
@@ -499,7 +499,7 @@ class SwiftCodeGen_TokenTests: XCTestCase {
             alt:
             do {
                 guard let c = stream.safePeek(), c.isLetter || c == "_" else {
-                    break alt
+                    return false
                 }
                 stream.advance()
 
@@ -550,7 +550,7 @@ class SwiftCodeGen_TokenTests: XCTestCase {
             alt:
             do {
                 guard stream.isNext("for") else {
-                    break alt
+                    return false
                 }
                 stream.advance(3)
 
@@ -653,7 +653,7 @@ class SwiftCodeGen_TokenTests: XCTestCase {
             alt:
             do {
                 guard stream.isNext("\"") else {
-                    break alt
+                    return false
                 }
                 stream.advance()
 
@@ -880,7 +880,7 @@ class SwiftCodeGen_TokenTests: XCTestCase {
                 alt:
                 do {
                     guard stream.isNext("a") else {
-                        break alt
+                        return false
                     }
                     stream.advance()
 

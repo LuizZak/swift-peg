@@ -182,7 +182,7 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
         alt:
         do {
             guard stream.isNext("\\"") else {
-                break alt
+                return false
             }
             stream.advance()
 
