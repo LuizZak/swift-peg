@@ -270,7 +270,9 @@ extension SwiftCodeGen {
         }
 
         buffer.emitLine("guard !stream.isEof else { return false }")
-        buffer.emitLine("let state = stream.save()")
+        let delayedState = buffer.startDelayedEmission { buffer in
+            buffer.emitLine("let state = stream.save()")
+        }
         buffer.emitNewline()
 
         // TODO: Alternate do statement for an if statement depending on leading
@@ -300,6 +302,8 @@ extension SwiftCodeGen {
             }
 
             if !canReturnAsBail || hasFallthroughPath {
+                delayedState.emit()
+
                 buffer.emitNewline()
                 buffer.emitLine("stream.restore(state)")
             }
@@ -969,12 +973,12 @@ extension SwiftCodeGen {
 
         /// Indicates that the bail statement should expand to:
         /// ```
-        /// stream.restore(state)
+        /// stream.restore(stateIdentifier)
         /// return false
         /// ```
         ///
         /// Convenience for `BailStatementMonitor(kind: .restoreAndReturn(stateIdentifier: stateIdentifier))`
-        static func restoreAndReturn(stateIdentifier: String = "state") -> BailStatementMonitor {
+        static func restoreAndReturn(stateIdentifier: String) -> BailStatementMonitor {
             BailStatementMonitor(kind: .restoreAndReturn(stateIdentifier: stateIdentifier))
         }
     }
@@ -1001,10 +1005,10 @@ extension SwiftCodeGen {
 
         /// Indicates that the bail statement should expand to:
         /// ```
-        /// stream.restore(state)
+        /// stream.restore(stateIdentifier)
         /// return false
         /// ```
-        case restoreAndReturn(stateIdentifier: String = "state")
+        case restoreAndReturn(stateIdentifier: String)
 
         func emit(into buffer: CodeStringBuffer) {
             switch self {
@@ -1023,8 +1027,8 @@ extension SwiftCodeGen {
             case .return:
                 buffer.emitLine("return false")
 
-            case .restoreAndReturn(let state):
-                buffer.emitLine("stream.restore(\(state))")
+            case .restoreAndReturn(let stateIdentifier):
+                buffer.emitLine("stream.restore(\(stateIdentifier))")
                 buffer.emitLine("return false")
             }
         }

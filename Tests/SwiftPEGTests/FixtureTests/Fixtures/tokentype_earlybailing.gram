@@ -201,7 +201,6 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     static func consume_c<StringType>(from stream: inout StringStream<StringType>) -> Bool {
         guard !stream.isEof else { return false }
-        let state = stream.save()
 
         alt:
         do {
@@ -233,7 +232,6 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     static func consume_d<StringType>(from stream: inout StringStream<StringType>) -> Bool {
         guard !stream.isEof else { return false }
-        let state = stream.save()
 
         alt:
         do {
@@ -259,7 +257,6 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     static func consume_e<StringType>(from stream: inout StringStream<StringType>) -> Bool {
         guard !stream.isEof else { return false }
-        let state = stream.save()
 
         alt:
         do {
@@ -279,7 +276,6 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     static func consume_f<StringType>(from stream: inout StringStream<StringType>) -> Bool {
         guard !stream.isEof else { return false }
-        let state = stream.save()
 
         alt:
         do {

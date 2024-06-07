@@ -153,7 +153,6 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         /// ```
         func consume_syntax<StringType>(from stream: inout StringStream<StringType>) -> Bool {
             guard !stream.isEof else { return false }
-            let state = stream.save()
 
             alt:
             do {
@@ -355,7 +354,6 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         /// ```
         func consume_identifier<StringType>(from stream: inout StringStream<StringType>) -> Bool {
             guard !stream.isEof else { return false }
-            let state = stream.save()
 
             alt:
             do {
@@ -390,7 +388,6 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         /// ```
         func consume_identifier<StringType>(from stream: inout StringStream<StringType>) -> Bool {
             guard !stream.isEof else { return false }
-            let state = stream.save()
 
             alt:
             do {
@@ -435,7 +432,6 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         /// ```
         func consume_identifier<StringType>(from stream: inout StringStream<StringType>) -> Bool {
             guard !stream.isEof else { return false }
-            let state = stream.save()
 
             alt:
             do {
@@ -478,7 +474,6 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         /// ```
         func consume_identifier<StringType>(from stream: inout StringStream<StringType>) -> Bool {
             guard !stream.isEof else { return false }
-            let state = stream.save()
 
             alt:
             do {

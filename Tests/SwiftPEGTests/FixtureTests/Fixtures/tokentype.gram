@@ -193,7 +193,6 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     static func consume_whitespace<StringType>(from stream: inout StringStream<StringType>) -> Bool {
         guard !stream.isEof else { return false }
-        let state = stream.save()
 
         alt:
         do {
