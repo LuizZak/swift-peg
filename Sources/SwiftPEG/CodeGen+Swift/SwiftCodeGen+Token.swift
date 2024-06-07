@@ -780,7 +780,7 @@ extension SwiftCodeGen {
             return "!\(tok_escapeLiteral(literal))"
 
         case .rangeLiteral(let start, let end):
-            return "\(tok_escapeLiteral(start))...\(tok_escapeLiteral(end))"
+            return "!\(tok_escapeLiteral(start))...\(tok_escapeLiteral(end))"
         }
     }
 

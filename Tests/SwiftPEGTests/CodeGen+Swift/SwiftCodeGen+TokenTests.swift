@@ -302,7 +302,7 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         diffTest(expected: #"""
         /// ```
         /// syntax:
-        ///     | "a" ("b"..."d" e | f)+
+        ///     | "a" (!"b"..."d" e | f)+
         ///     ;
         /// ```
         func consume_syntax<StringType>(from stream: inout StringStream<StringType>) -> Bool {
