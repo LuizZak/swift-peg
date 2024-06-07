@@ -23,7 +23,7 @@ open class TokenNode<RawTokenizer>: Node where RawTokenizer: RawTokenizerType {
 
         super.init()
 
-        self.location = location
+        self.location = token.location
     }
 
     public init(_ token: Tokenizer<RawTokenizer>.Token) {
@@ -31,6 +31,6 @@ open class TokenNode<RawTokenizer>: Node where RawTokenizer: RawTokenizerType {
 
         super.init()
 
-        self.location = location
+        self.location = token.location
     }
 }

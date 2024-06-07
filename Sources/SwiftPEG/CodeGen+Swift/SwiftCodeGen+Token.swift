@@ -270,6 +270,8 @@ extension SwiftCodeGen {
         }
 
         buffer.emitLine("guard !stream.isEof else { return false }")
+        // TODO: It may be better to create reusable methods that can detect state
+        // TODO: usage in token syntaxes
         let delayedState = buffer.startDelayedEmission { buffer in
             buffer.emitLine("let state = stream.save()")
         }
