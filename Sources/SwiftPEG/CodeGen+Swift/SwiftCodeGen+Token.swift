@@ -663,6 +663,9 @@ extension SwiftCodeGen {
 
         case .identifier(let ident):
             return "stream.negativeLookahead(\(parseMethodName(for: ident))(from:))"
+
+        case .rangeLiteral(let start, let end):
+            return "!stream.isNextInRange(\(tok_escapeLiteral(start))...\(tok_escapeLiteral(end)))"
         }
     }
 
@@ -775,6 +778,9 @@ extension SwiftCodeGen {
 
         case .string(let literal):
             return "!\(tok_escapeLiteral(literal))"
+
+        case .rangeLiteral(let start, let end):
+            return "\(tok_escapeLiteral(start))...\(tok_escapeLiteral(end))"
         }
     }
 

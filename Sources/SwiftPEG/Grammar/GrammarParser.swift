@@ -1301,6 +1301,7 @@ extension GrammarParser {
 
     /// ```
     /// tokenSyntaxExclusion[CommonAbstract.TokenExclusion]:
+    ///     | '!' start=string '...' end=string { .rangeLiteral(.from(start), .from(end)) }
     ///     | '!' string { .string(.from(string)) }
     ///     | '!' IDENTIFIER { .identifier("\(identifier)") }
     ///     ;
@@ -1309,6 +1310,17 @@ extension GrammarParser {
     @inlinable
     public func __tokenSyntaxExclusion() throws -> CommonAbstract.TokenExclusion? {
         let _mark = self.mark()
+
+        if
+            let _ = try self.expect(kind: .exclamationMark),
+            let start = try self.string(),
+            let _ = try self.expect(kind: .ellipsis),
+            let end = try self.string()
+        {
+            return .rangeLiteral(.from(start), .from(end))
+        }
+
+        self.restore(_mark)
 
         if
             let _ = try self.expect(kind: .exclamationMark),

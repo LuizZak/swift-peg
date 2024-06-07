@@ -240,10 +240,10 @@ class GrammarProcessor_TokenSyntaxTests: XCTestCase {
         let delegate = stubDelegate(tokensFile: """
         $a: b !d "c";
         $b: "b" ;
-        %d: "d" | "e" ;
+        %d: "d" | "e" | "f"..."h" ;
         """)
         let expected = try parseTokenDefinitions(#"""
-        $a: b !"d" !"e" "c";
+        $a: b !"d" !"e" !"f"..."h" "c";
         $b: "b" ;
         """#)
         let grammar = makeGrammar()
@@ -280,9 +280,8 @@ class GrammarProcessor_TokenSyntaxTests: XCTestCase {
         %e: "e"..."g" ;
         """)
         let expected = try parseTokenDefinitions(#"""
-        $a: b d { d.isLetter } !e ;
+        $a: b d { d.isLetter } !"e"..."g" ;
         $b: "b" ;
-        %e: "e"..."g" ;
         """#)
         let grammar = makeGrammar()
         let sut = makeSut(delegate)

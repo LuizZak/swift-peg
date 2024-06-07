@@ -425,7 +425,9 @@ extension GrammarProcessor {
                 return [.identifier(identifier)]
             case .literal(let literal):
                 return [.string(literal)]
-            case .any, .characterPredicate, .rangeLiteral:
+            case .rangeLiteral(let start, let end):
+                return [.rangeLiteral(start, end)]
+            case .any, .characterPredicate:
                 return nil
             }
         }
@@ -636,7 +638,7 @@ extension GrammarProcessor {
                 incrementReference(identifier)
 
                 identifiers.insert(identifier)
-            case .string:
+            case .string, .rangeLiteral:
                 break
             }
         }

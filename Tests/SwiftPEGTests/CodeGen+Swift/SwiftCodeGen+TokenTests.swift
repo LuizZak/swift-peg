@@ -289,6 +289,58 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         """#).diff(sut.buffer.finishBuffer())
     }
 
+    func testGenerateTokenParser_rangeExclusion() throws {
+        let tokens = try parseTokenDefinitions(#"""
+        $syntax:
+            | 'a' (!"b"..."d" e | f)+
+            ;
+        """#)
+        let sut = makeSut(tokens)
+
+        try sut.generateTokenParser(tokens[0], settings: .default)
+
+        diffTest(expected: #"""
+        /// ```
+        /// syntax:
+        ///     | "a" ("b"..."d" e | f)+
+        ///     ;
+        /// ```
+        func consume_syntax<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+            guard !stream.isEof else { return false }
+            let state = stream.save()
+
+            alt:
+            do {
+                guard stream.isNext("a") else {
+                    break alt
+                }
+                stream.advance()
+
+                if !stream.isNextInRange("b"..."d"), consume_e(from: &stream) {
+                } else if consume_f(from: &stream) {
+                } else {
+                    break alt
+                }
+
+                loop:
+                while !stream.isEof {
+                    if !stream.isNextInRange("b"..."d"), consume_e(from: &stream) {
+                    } else if consume_f(from: &stream) {
+                    } else {
+                        break loop
+                    }
+                }
+
+                return true
+            }
+
+            stream.restore(state)
+
+            return false
+        }
+        """#).diff(sut.buffer.finishBuffer())
+    }
+
     func testGenerateTokenParser_mergeAtoms() throws {
         let tokens = try parseTokenDefinitions(#"""
         $identifier:

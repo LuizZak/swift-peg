@@ -849,12 +849,14 @@ extension CommonAbstract {
     /// tokenSyntaxExclusion:
     ///     | '!' STRING
     ///     | '!' IDENTIFIER
+    ///     | '!' STRING '...' STRING
     ///     ;
     /// ```
     @GeneratedCaseChecks(accessLevel: "public")
     public enum TokenExclusion: Hashable, CustomStringConvertible {
         case string(DualString)
         case identifier(String)
+        case rangeLiteral(DualString, DualString)
 
         var asString: String? {
             switch self {
@@ -872,6 +874,9 @@ extension CommonAbstract {
 
             case .identifier(let ident):
                 return "!\(ident)"
+
+            case .rangeLiteral(let start, let end):
+                return "!\(start)...\(end)"
             }
         }
     }
