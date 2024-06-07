@@ -1,6 +1,44 @@
+import Foundation
+
 @testable import SwiftPEG
 
 extension FixtureTestRunner {
+    /// Collects all recognized test fixtures from a given grammar object, parsed
+    /// from a given file URL.
+    func collectFixtures(
+        from grammar: SwiftPEGGrammar.Grammar,
+        grammarFileUrl: URL
+    ) throws -> [FixtureTest] {
+        // Figure out if the test grammar is the file itself or if a provided
+        // grammar source should be used, instead.
+        let (grammarToTest, diagnostics) = try resolveGrammar(
+            grammar,
+            url: grammarFileUrl
+        )
+        var fixtures: [FixtureTest] = []
+
+        if
+            let test = expectedParserTest(
+                file: grammar,
+                grammarToTest: grammarToTest,
+                diagnosticTarget: diagnostics
+            )
+        {
+            fixtures.append(test)
+        }
+        if
+            let test = expectedTokenTypeTest(
+                file: grammar,
+                grammarToTest: grammarToTest,
+                diagnosticTarget: diagnostics
+            )
+        {
+            fixtures.append(test)
+        }
+
+        return fixtures
+    }
+
     /// Produces an `@expectedParser <value>` test based on a meta-property of
     /// a given grammar, along with a grammar to use to generate the parser code
     /// to test against.

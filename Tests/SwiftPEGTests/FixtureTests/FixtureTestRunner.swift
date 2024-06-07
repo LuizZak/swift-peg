@@ -75,10 +75,33 @@ class FixtureTestRunner {
 
     /// Collects all .gram test file fixtures in the `fixturesPath` directory.
     func collectFiles() throws -> [URL] {
-        let files = try FileManager.default.contentsOfDirectory(at: fixturesPath, includingPropertiesForKeys: nil)
-        return files.filter { file in
-            file.pathExtension == "gram"
+        guard
+            let enumerator = FileManager.default.enumerator(
+                at: fixturesPath,
+                includingPropertiesForKeys: [.isSymbolicLinkKey, .isDirectoryKey],
+                options: .skipsHiddenFiles
+            )
+        else {
+            return []
         }
+
+        var result: [URL] = []
+
+        for case let url as URL in enumerator {
+            if (try? url.resourceValues(forKeys: [.isSymbolicLinkKey]))?.isDirectory == true {
+                continue
+            }
+            if (try? url.resourceValues(forKeys: [.isSymbolicLinkKey]))?.isSymbolicLink == true {
+                continue
+            }
+            guard url.pathExtension == "gram" else {
+                continue
+            }
+
+            result.append(url)
+        }
+
+        return result
     }
 
     /// Collects all recognized test fixtures from all of the given grammar file
@@ -138,39 +161,6 @@ class FixtureTestRunner {
             fixtures: fixtures,
             flags: flags
         )
-    }
-
-    /// Collects all recognized test fixtures from a given grammar object, parsed
-    /// from a given file URL.
-    func collectFixtures(
-        from grammar: SwiftPEGGrammar.Grammar,
-        grammarFileUrl: URL
-    ) throws -> [FixtureTest] {
-        // Figure out if the test grammar is the file itself or if a provided
-        // grammar source should be used, instead.
-        let (grammarToTest, diagnostics) = try resolveGrammar(grammar, url: grammarFileUrl)
-        var fixtures: [FixtureTest] = []
-
-        if
-            let test = expectedParserTest(
-                file: grammar,
-                grammarToTest: grammarToTest,
-                diagnosticTarget: diagnostics
-            )
-        {
-            fixtures.append(test)
-        }
-        if
-            let test = expectedTokenTypeTest(
-                file: grammar,
-                grammarToTest: grammarToTest,
-                diagnosticTarget: diagnostics
-            )
-        {
-            fixtures.append(test)
-        }
-
-        return fixtures
     }
 
     /// Runs all provided file fixtures.
@@ -243,9 +233,16 @@ class FixtureTestRunner {
     }
 
     /// Processes a grammar object using a `GrammarProcessor`.
-    func processGrammar(_ grammar: SwiftPEGGrammar.Grammar) throws -> ProcessedGrammar {
-        let processor = GrammarProcessor(delegate: self)
-        return try processor.process(grammar)
+    func processGrammar(
+        _ grammar: SwiftPEGGrammar.Grammar,
+        basePath: URL
+    ) throws -> ProcessedGrammar {
+        let delegate = GrammarProcessorDelegate(basePath: basePath)
+        let processor = GrammarProcessor(delegate: delegate)
+
+        return try withExtendedLifetime(delegate) {
+            return try processor.process(grammar)
+        }
     }
 
     // MARK: -
@@ -412,7 +409,10 @@ class FixtureTestRunner {
         }
 
         func processGrammar(_ grammar: SwiftPEGGrammar.Grammar) throws -> ProcessedGrammar {
-            try runner.processGrammar(grammar)
+            try runner.processGrammar(
+                grammar,
+                basePath: diagnosticsTarget.fileUrl.deletingLastPathComponent()
+            )
         }
 
         func diagnoseError(message: String, line: Int) {
@@ -428,17 +428,23 @@ class FixtureTestRunner {
             runner._line(of: node)
         }
     }
-}
 
-extension FixtureTestRunner: GrammarProcessor.Delegate {
-    func grammarProcessor(
-        _ processor: GrammarProcessor,
-        loadTokensFileNamed name: String,
-        ofGrammar grammar: SwiftPEGGrammar.Grammar
-    ) throws -> String {
+    class GrammarProcessorDelegate: GrammarProcessor.Delegate {
+        let basePath: URL
 
-        let url = fixturesPath.appendingPathComponent(name)
-        return try String(contentsOf: url)
+        init(basePath: URL) {
+            self.basePath = basePath
+        }
+
+        func grammarProcessor(
+            _ processor: GrammarProcessor,
+            loadTokensFileNamed name: String,
+            ofGrammar grammar: SwiftPEGGrammar.Grammar
+        ) throws -> String {
+
+            let url = basePath.appendingPathComponent(name)
+            return try String(contentsOf: url)
+        }
     }
 }
 
