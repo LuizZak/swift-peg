@@ -364,6 +364,9 @@ extension CommonAbstract {
             guard let alt = self.alts.first, self.alts.count == 1 else {
                 return nil
             }
+            guard alt.trailExclusions.isEmpty else {
+                return nil
+            }
             guard let item = alt.items.first, alt.items.count == 1 else {
                 return nil
             }

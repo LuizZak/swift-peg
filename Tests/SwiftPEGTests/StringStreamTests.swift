@@ -83,7 +83,7 @@ class StringStreamTests: XCTestCase {
         var sut = makeSut("a")
 
         assertFalse(sut.isEofPast(0))
-        
+
         sut.advance()
 
         assertTrue(sut.isEofPast(0))
@@ -93,7 +93,7 @@ class StringStreamTests: XCTestCase {
         var sut = makeSut("ab")
 
         assertFalse(sut.isEofPast(1))
-        
+
         sut.advance()
 
         assertTrue(sut.isEofPast(1))
@@ -159,6 +159,28 @@ class StringStreamTests: XCTestCase {
         assertTrue(sut.isNext(""))
         assertFalse(sut.isNext("a"))
         assertFalse(sut.isNext("b"))
+    }
+
+    func testIsNextInRange_openRange() {
+        let sut = makeSut("J")
+
+        assertTrue(sut.isNextInRange("J"..<"Z"))
+        assertTrue(sut.isNextInRange("A"..<"Z"))
+        assertFalse(sut.isNextInRange("A"..<"J"))
+        assertFalse(sut.isNextInRange("a"..<"j"))
+        assertFalse(sut.isNextInRange("j"..<"z"))
+        assertFalse(sut.isNextInRange("a"..<"z"))
+    }
+
+    func testIsNextInRange_closedRange() {
+        let sut = makeSut("J")
+
+        assertTrue(sut.isNextInRange("A"..."J"))
+        assertTrue(sut.isNextInRange("J"..."Z"))
+        assertTrue(sut.isNextInRange("A"..."Z"))
+        assertFalse(sut.isNextInRange("a"..."j"))
+        assertFalse(sut.isNextInRange("j"..."z"))
+        assertFalse(sut.isNextInRange("a"..."z"))
     }
 
     func testAdvanceIfNext_advancesOnMatch() {

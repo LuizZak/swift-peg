@@ -643,7 +643,7 @@ extension SwiftCodeGen {
             return "let \(ident) = stream.safePeek(), \(action.trimmingWhitespace())"
 
         case .rangeLiteral(let start, let end):
-            return "!stream.isEof, (\(tok_escapeLiteral(start))...\(tok_escapeLiteral(end))).contains(stream.peek())"
+            return "!stream.isEof, stream.isNextInRange(\(tok_escapeLiteral(start))...\(tok_escapeLiteral(end)))"
 
         case .literal(let literal):
             return "stream.isNext(\(tok_escapeLiteral(literal)))"

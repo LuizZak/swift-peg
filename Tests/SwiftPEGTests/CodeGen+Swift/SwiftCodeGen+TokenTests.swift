@@ -115,7 +115,7 @@ class SwiftCodeGen_TokenTests: XCTestCase {
                 }
                 stream.advance()
 
-                if !stream.isNext("5"), !stream.isEof, ("0"..."9").contains(stream.peek()) {
+                if !stream.isNext("5"), !stream.isEof, stream.isNextInRange("0"..."9") {
                     stream.advance()
                 }
 

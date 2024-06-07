@@ -153,6 +153,25 @@ class GrammarProcessor_TokenSyntaxTests: XCTestCase {
         assertEqualUnordered(processed.tokens, expected)
     }
 
+    func testInlineFragments_alts_copiesTrailExclusions() throws {
+        let delegate = stubDelegate(tokensFile: """
+        $a: b | "c" | d | f !"j" ;
+        $b: "b" ;
+        %d: "d" !"d" | "e" !"e" ;
+        %f: "f" "g" !"h" ;
+        """)
+        let expected = try parseTokenDefinitions(#"""
+        $a: b | "c" | "d" !"d" | "e" !"e" | "fg" !"h" !"j";
+        $b: "b" ;
+        """#)
+        let grammar = makeGrammar()
+        let sut = makeSut(delegate)
+
+        let processed = try sut.process(grammar)
+
+        assertEqualUnordered(processed.tokens, expected)
+    }
+
     func testInlineFragments_repeatedFragments() throws {
         let delegate = stubDelegate(tokensFile: #"""
         $STRING[".string"]:
@@ -217,7 +236,43 @@ class GrammarProcessor_TokenSyntaxTests: XCTestCase {
         assertEqualUnordered(processed.tokens, expected)
     }
 
-    func testInlineFragments_altTrails() throws {
+    func testInlineFragments_exclusions() throws {
+        let delegate = stubDelegate(tokensFile: """
+        $a: b !d "c";
+        $b: "b" ;
+        %d: "d" | "e" ;
+        """)
+        let expected = try parseTokenDefinitions(#"""
+        $a: b !"d" !"e" "c";
+        $b: "b" ;
+        """#)
+        let grammar = makeGrammar()
+        let sut = makeSut(delegate)
+
+        let processed = try sut.process(grammar)
+
+        assertEqualUnordered(processed.tokens, expected)
+    }
+
+    func testInlineFragments_exclusions_expandsGroups() throws {
+        let delegate = stubDelegate(tokensFile: """
+        $a: b !d "c";
+        $b: "b" ;
+        %d: "d" | "e" | "f" ("g") "h";
+        """)
+        let expected = try parseTokenDefinitions(#"""
+        $a: b !"d" !"e" !"fgh" "c";
+        $b: "b" ;
+        """#)
+        let grammar = makeGrammar()
+        let sut = makeSut(delegate)
+
+        let processed = try sut.process(grammar)
+
+        assertEqualUnordered(processed.tokens, expected)
+    }
+
+    func testInlineFragments_altTrailExclusions() throws {
         let delegate = stubDelegate(tokensFile: """
         $a: b d !e ;
         $b: "b" ;

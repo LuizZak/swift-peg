@@ -102,6 +102,18 @@ public struct StringStream<StringType: StringProtocol> {
         return source[index...].hasPrefix(match)
     }
 
+    /// Checks that the next character in the stream is within a given range.
+    @inlinable
+    public func isNextInRange(_ range: Range<Character>) -> Bool {
+        return range.contains(source[index])
+    }
+
+    /// Checks that the next character in the stream is within a given range.
+    @inlinable
+    public func isNextInRange(_ range: ClosedRange<Character>) -> Bool {
+        return range.contains(source[index])
+    }
+
     @inlinable
     public func isNext(where predicate: (StringType.Element) -> Bool) -> Bool {
         if isEof { return false }

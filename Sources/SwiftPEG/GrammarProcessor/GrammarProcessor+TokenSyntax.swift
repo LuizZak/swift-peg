@@ -258,51 +258,6 @@ extension GrammarProcessor {
             self.onInlineFragment = onInlineFragment
         }
 
-        // MARK: Inline as atom
-
-        private func _inlinedAsAtoms(_ node: InternalGrammar.TokenDefinition) -> [CommonAbstract.TokenAtom]? {
-            node.tokenSyntax.flatMap(_inlinedAsAtoms)
-        }
-
-        private func _inlinedAsAtoms(_ node: CommonAbstract.TokenSyntax) -> [CommonAbstract.TokenAtom]? {
-            var result: [CommonAbstract.TokenAtom] = []
-            for alt in node.alts {
-                guard let asAtoms = _inlinedAsAtoms(alt) else {
-                    // If one alt cannot be turned into an atom, then the syntax
-                    // is not atom-able
-                    return nil
-                }
-
-                result.append(contentsOf: asAtoms)
-            }
-            return result
-        }
-
-        private func _inlinedAsAtoms(_ node: CommonAbstract.TokenAlt) -> [CommonAbstract.TokenAtom]? {
-            var result: [CommonAbstract.TokenAtom] = []
-            for item in node.items {
-                guard let asAtoms = _inlinedAsAtoms(item) else {
-                    // If one item cannot be turned into an atom, then the syntax
-                    // is not atom-able
-                    return nil
-                }
-
-                result.append(contentsOf: asAtoms)
-            }
-            return result
-        }
-
-        private func _inlinedAsAtoms(_ node: CommonAbstract.TokenItem) -> [CommonAbstract.TokenAtom]? {
-            switch node {
-            case .group(let group):
-                return group
-            case .atom(let atom):
-                return [atom]
-            default:
-                return nil
-            }
-        }
-
         // MARK: Inline as alt
 
         private func _inlinedAsAlts(_ node: InternalGrammar.TokenDefinition) -> [CommonAbstract.TokenAlt]? {
@@ -331,11 +286,12 @@ extension GrammarProcessor {
 
             var result: [CommonAbstract.TokenAlt] = []
             for item in node.items {
-                guard let asAlt = _inlinedAsAlts(item) else {
+                guard var asAlt = _inlinedAsAlts(item) else {
                     // If one item cannot be turned into an alt, then the alt
                     // is not alt-able
                     return nil
                 }
+                asAlt = _appendTrailExclusions(asAlt, node)
 
                 result.append(contentsOf: asAlt)
             }
@@ -354,6 +310,122 @@ extension GrammarProcessor {
                     CommonAbstract.TokenAlt(items: [.atom(atom)], trailExclusions: [])
                 ]
             default:
+                return nil
+            }
+        }
+
+        private func _appendTrailExclusions(_ alts: [CommonAbstract.TokenAlt], _ node: CommonAbstract.TokenAlt) -> [CommonAbstract.TokenAlt] {
+            alts.map {
+                .init(items: $0.items, trailExclusions: $0.trailExclusions + node.trailExclusions)
+            }
+        }
+
+        // MARK: Inline as atom
+
+        private func _inlinedAsAtoms(_ node: InternalGrammar.TokenDefinition) -> [CommonAbstract.TokenAtom]? {
+            node.tokenSyntax.flatMap(_inlinedAsAtoms)
+        }
+
+        private func _inlinedAsAtoms(_ node: CommonAbstract.TokenSyntax) -> [CommonAbstract.TokenAtom]? {
+            var result: [CommonAbstract.TokenAtom] = []
+            for alt in node.alts {
+                guard let asAtoms = _inlinedAsAtoms(alt) else {
+                    // If one alt cannot be turned into an atom, then the syntax
+                    // is not atom-able
+                    return nil
+                }
+
+                result.append(contentsOf: asAtoms)
+            }
+            return result
+        }
+
+        private func _inlinedAsAtoms(_ node: CommonAbstract.TokenAlt) -> [CommonAbstract.TokenAtom]? {
+            guard node.trailExclusions.isEmpty else {
+                return nil
+            }
+
+            var result: [CommonAbstract.TokenAtom] = []
+            for item in node.items {
+                guard let asAtoms = _inlinedAsAtoms(item) else {
+                    // If one item cannot be turned into an atom, then the syntax
+                    // is not atom-able
+                    return nil
+                }
+
+                result.append(contentsOf: asAtoms)
+            }
+            return result
+        }
+
+        private func _inlinedAsAtoms(_ node: CommonAbstract.TokenItem) -> [CommonAbstract.TokenAtom]? {
+            switch node {
+            case .group(let group):
+                return group
+            case .atom(let atom):
+                return [atom]
+            default:
+                return nil
+            }
+        }
+
+        // MARK: Inline as token exclusion
+
+        private func _inlinedAsTokenExclusions(_ node: InternalGrammar.TokenDefinition) -> [CommonAbstract.TokenExclusion]? {
+            node.tokenSyntax.flatMap(_inlinedAsTokenExclusions)
+        }
+
+        private func _inlinedAsTokenExclusions(_ node: CommonAbstract.TokenSyntax) -> [CommonAbstract.TokenExclusion]? {
+            var result: [CommonAbstract.TokenExclusion] = []
+            for alt in node.alts {
+                guard let asExclusions = _inlinedAsTokenExclusions(alt) else {
+                    // If one alt cannot be turned into an exclusion, then the
+                    // syntax is not convertible to a sequence of exclusions
+                    return nil
+                }
+
+                result.append(contentsOf: asExclusions)
+            }
+            return result
+        }
+
+        private func _inlinedAsTokenExclusions(_ node: CommonAbstract.TokenAlt) -> [CommonAbstract.TokenExclusion]? {
+            guard node.trailExclusions.isEmpty else {
+                return nil
+            }
+            guard node.items.count == 1 else {
+                return nil
+            }
+
+            return _inlinedAsTokenExclusions(node.items[0])
+        }
+
+        private func _inlinedAsTokenExclusions(_ node: CommonAbstract.TokenItem) -> [CommonAbstract.TokenExclusion]? {
+            switch node {
+            case .atom(let atom):
+                return _inlinedAsTokenExclusions(atom)
+            case .group(let atoms) where atoms.count == 1:
+                return _inlinedAsTokenExclusions(atoms[0])
+            default:
+                return nil
+            }
+        }
+
+        private func _inlinedAsTokenExclusions(_ node: CommonAbstract.TokenAtom) -> [CommonAbstract.TokenExclusion]? {
+            guard node.excluded.isEmpty else {
+                return nil
+            }
+
+            return _inlinedAsTokenExclusions(node.terminal)
+        }
+
+        private func _inlinedAsTokenExclusions(_ node: CommonAbstract.TokenTerminal) -> [CommonAbstract.TokenExclusion]? {
+            switch node {
+            case .identifier(let identifier):
+                return [.identifier(identifier)]
+            case .literal(let literal):
+                return [.string(literal)]
+            case .any, .characterPredicate, .rangeLiteral:
                 return nil
             }
         }
@@ -392,7 +464,7 @@ extension GrammarProcessor {
                         let alts = _inlinedAsAlts(fragment)
                     {
                         onInlineFragment(fragment)
-                        result.append(contentsOf: alts)
+                        result.append(contentsOf: _appendTrailExclusions(alts, alt))
                     } else {
                         result.append(reducedAlt)
                     }
@@ -407,7 +479,7 @@ extension GrammarProcessor {
         func visit(_ node: CommonAbstract.TokenAlt) -> CommonAbstract.TokenAlt {
             var node = node
             node.items = node.items.flatMap(visit)
-            node.trailExclusions = node.trailExclusions.map(visit)
+            node.trailExclusions = node.trailExclusions.flatMap(visit)
             return node.flattened()
         }
 
@@ -478,26 +550,36 @@ extension GrammarProcessor {
 
         func visit(_ node: CommonAbstract.TokenAtom) -> CommonAbstract.TokenAtom {
             var node = node
-            node.excluded = node.excluded.map(visit)
+            node.excluded = node.excluded.flatMap(visit)
             node.terminal = visit(node.terminal)
             return node
         }
 
-        func visit(_ node: CommonAbstract.TokenExclusion) -> CommonAbstract.TokenExclusion {
+        func visit(_ node: CommonAbstract.TokenExclusion) -> [CommonAbstract.TokenExclusion] {
             switch node {
             case .identifier(let identifier):
                 guard let fragment = fragments[identifier] else {
-                    return node
+                    return [node]
+                }
+                guard let fragmentSyntax = fragment.tokenSyntax else {
+                    return [node]
                 }
 
-                if let staticTerminal = fragment.tokenSyntax?.staticTerminal() {
+                if let staticTerminal = fragmentSyntax.staticTerminal() {
                     onInlineFragment(fragment)
-                    return .string(staticTerminal)
+                    return [.string(staticTerminal)]
                 }
 
-                return node
+                // If an exclusion is a sequence of alts with simple terminals,
+                // unpack the terminals and return them
+                if let expanded = _inlinedAsTokenExclusions(fragment) {
+                    onInlineFragment(fragment)
+                    return expanded
+                }
+
+                return [node]
             default:
-                return node
+                return [node]
             }
         }
 
