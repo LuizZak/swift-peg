@@ -276,37 +276,61 @@ extension SwiftCodeGen {
         // TODO: Alternate do statement for an if statement depending on leading
         // TODO: item, and remove the nesting altogether if there is only one alt
 
+        var usedReturnBail = false
+        var hasFallthroughPath: Bool {
+            !usedReturnBail
+        }
+
         let emitter = buffer.startConditionalEmitter()
         for (i, alt) in tokenSyntax.alts.enumerated() {
+            let canReturnAsBail = i == tokenSyntax.alts.count - 1
+
             emitter.emit("\n")
 
             buffer.emitLine("alt:")
             buffer.emit("do ")
             try buffer.emitBlock {
-                try generateTokenParserAlt(
+                usedReturnBail = try generateTokenParserAlt(
                     alt,
-                    canReturnAsBail: i == tokenSyntax.alts.count - 1,
+                    canReturnAsBail: canReturnAsBail,
                     bailStatement: .break(label: "alt")
                 )
             }
 
-            buffer.emitNewline()
-            buffer.emitLine("stream.restore(state)")
+            if hasFallthroughPath {
+                buffer.emitNewline()
+                buffer.emitLine("stream.restore(state)")
+            }
         }
 
-        emitter.emit("\n")
-        buffer.emitLine("return false")
+        if hasFallthroughPath {
+            emitter.emit("\n")
+            buffer.emitLine("return false")
+        }
     }
 
+    /// Returns `true` if the alternative made use of a return as a bail expression
+    /// in all bail execution paths.
     func generateTokenParserAlt(
         _ alt: CommonAbstract.TokenAlt,
         canReturnAsBail: Bool,
         bailStatement: BailStatement
-    ) throws {
+    ) throws -> Bool {
+        var usedReturnBail = false
+
         for (i, item) in alt.items.enumerated() {
+            var bailStatement = bailStatement
+            if canReturnAsBail && i == 0 {
+                bailStatement = .return
+
+                if alt.items.count == 1 {
+                    usedReturnBail = true
+                }
+            }
+
             try generateTokenParserItem(
                 item,
-                bailStatement: canReturnAsBail && i == 0 ? .return : bailStatement
+                bailStatement: bailStatement
             )
             buffer.ensureDoubleNewline()
         }
@@ -319,9 +343,13 @@ extension SwiftCodeGen {
             buffer.emitBlock(" else") {
                 bailStatement.emit(into: buffer)
             }
+
+            usedReturnBail = false
         }
 
         buffer.emitLine("return true")
+
+        return usedReturnBail
     }
 
     /// Generates token parser items as sequences of checks against the input

@@ -1,0 +1,263 @@
+@tokensFile "tokentype_earlybailing.tokens" ;
+
+@expectedTokenType """
+struct ParserToken: RawTokenType, CustomStringConvertible {
+    var kind: TokenKind
+    var string: Substring
+
+    var length: Int {
+        string.count
+    }
+
+    var description: String {
+        String(string)
+    }
+
+    static func produceDummy(_ kind: TokenKind) -> Self {
+        .init(kind: kind, string: "<dummy>")
+    }
+
+    static func from<StringType>(stream: inout StringStream<StringType>) -> Self? where StringType.SubSequence == Substring {
+        guard !stream.isEof else { return nil }
+        stream.markSubstringStart()
+
+        if consume_a(from: &stream) {
+            return .init(kind: .a, string: stream.substring)
+        }
+        if consume_c(from: &stream) {
+            return .init(kind: .c, string: stream.substring)
+        }
+        if consume_d(from: &stream) {
+            return .init(kind: .d, string: stream.substring)
+        }
+        if consume_e(from: &stream) {
+            return .init(kind: .e, string: stream.substring)
+        }
+        if consume_b(from: &stream) {
+            return .init(kind: .b, string: stream.substring)
+        }
+
+        return nil
+    }
+
+    enum TokenKind: TokenKindType {
+        /// `"\\"" (!"\\"" .)+ "\\""`
+        case a
+
+        /// `("c")+`
+        case c
+
+        /// `("d")*`
+        case d
+
+        /// `!"f" "a"..."g"`
+        case e
+
+        /// ```
+        /// b:
+        ///     | "a"
+        ///     | "b" ("c")+
+        ///     | "d"
+        ///     ;
+        /// ```
+        case b
+
+        var description: String {
+            switch self {
+            case .a: "a"
+            case .b: "b"
+            case .c: "c"
+            case .d: "d"
+            case .e: "e"
+            }
+        }
+    }
+
+    /// ```
+    /// a:
+    ///     | "\\"" (!"\\"" .)+ "\\""
+    ///     ;
+    /// ```
+    static func consume_a<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+        let state = stream.save()
+
+        alt:
+        do {
+            guard stream.isNext("\\"") else {
+                return false
+            }
+            stream.advance()
+
+            if !stream.isNext("\\""), !stream.isEof {
+                stream.advance()
+            } else {
+                break alt
+            }
+
+            loop:
+            while !stream.isEof {
+                if !stream.isNext("\\""), !stream.isEof {
+                    stream.advance()
+                } else {
+                    break loop
+                }
+            }
+
+            guard stream.isNext("\\"") else {
+                break alt
+            }
+            stream.advance()
+
+            return true
+        }
+
+        stream.restore(state)
+
+        return false
+    }
+
+    /// ```
+    /// b:
+    ///     | "a"
+    ///     | "b" ("c")+
+    ///     | "d"
+    ///     ;
+    /// ```
+    static func consume_b<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+        let state = stream.save()
+
+        alt:
+        do {
+            guard stream.isNext("a") else {
+                break alt
+            }
+            stream.advance()
+
+            return true
+        }
+
+        stream.restore(state)
+
+        alt:
+        do {
+            guard stream.isNext("b") else {
+                break alt
+            }
+            stream.advance()
+
+            switch stream.peek() {
+            case "c":
+                stream.advance()
+            default:
+                break alt
+            }
+
+            loop:
+            while !stream.isEof {
+                switch stream.peek() {
+                case "c":
+                    stream.advance()
+                default:
+                    break loop
+                }
+            }
+
+            return true
+        }
+
+        stream.restore(state)
+
+        alt:
+        do {
+            guard stream.isNext("d") else {
+                return false
+            }
+            stream.advance()
+
+            return true
+        }
+    }
+
+    /// ```
+    /// c:
+    ///     | ("c")+
+    ///     ;
+    /// ```
+    static func consume_c<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+        let state = stream.save()
+
+        alt:
+        do {
+            switch stream.peek() {
+            case "c":
+                stream.advance()
+            default:
+                return false
+            }
+
+            loop:
+            while !stream.isEof {
+                switch stream.peek() {
+                case "c":
+                    stream.advance()
+                default:
+                    break loop
+                }
+            }
+
+            return true
+        }
+    }
+
+    /// ```
+    /// d:
+    ///     | ("d")*
+    ///     ;
+    /// ```
+    static func consume_d<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+        let state = stream.save()
+
+        alt:
+        do {
+
+            loop:
+            while !stream.isEof {
+                switch stream.peek() {
+                case "d":
+                    stream.advance()
+                default:
+                    break loop
+                }
+            }
+
+            return true
+        }
+    }
+
+    /// ```
+    /// e:
+    ///     | !"f" "a"..."g"
+    ///     ;
+    /// ```
+    static func consume_e<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+        let state = stream.save()
+
+        alt:
+        do {
+            guard !stream.isNext("f"), !stream.isEof, stream.isNextInRange("a"..."g") else {
+                return false
+            }
+            stream.advance()
+
+            return true
+        }
+    }
+}
+""" ;
+
+start: '' ;

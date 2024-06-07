@@ -216,10 +216,6 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
 
             return true
         }
-
-        stream.restore(state)
-
-        return false
     }
 }
 """ ;
