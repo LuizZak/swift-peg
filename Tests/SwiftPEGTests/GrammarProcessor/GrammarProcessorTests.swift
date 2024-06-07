@@ -3,6 +3,33 @@ import XCTest
 @testable import SwiftPEG
 
 class GrammarProcessorTests: XCTestCase {
+    func testRuleDependencyGraph() throws {
+        let grammar = try parseGrammar("""
+        start: a ;
+        a: b | c ;
+        b: 'b' c ;
+        c: a 'c' | 'c' ;
+        d: e d | 'd' ;
+        e: 'e' ;
+        """)
+        let sut = makeSut()
+
+        let result = try sut.process(grammar)
+
+        assertEqual(result.ruleDependencyGraph.nodes, [
+            "start", "a", "b", "c", "d", "e",
+        ])
+        assertEqual(result.ruleDependencyGraph.edges, [
+            makeEdge("start", "a"),
+            makeEdge("a", "b"),
+            makeEdge("b", "c"),
+            makeEdge("c", "a"),
+            makeEdge("a", "c"),
+            makeEdge("d", "e"),
+            makeEdge("d", "d"),
+        ])
+    }
+
     func testAnyToken() throws {
         let atom = makeAtom(ident: "ANY", identity: .unresolved)
         let start = makeRule(name: "start", [
@@ -28,7 +55,7 @@ class GrammarProcessorTests: XCTestCase {
         }
     }
 
-    func testInvalidNamedItemError() throws {
+    func testErrorInvalidNamedItem() throws {
         let start = makeRule(name: "start", [
             makeAlt([ makeNamedItem(name: "_a", "a") ]),
         ])
@@ -48,7 +75,7 @@ class GrammarProcessorTests: XCTestCase {
             """)
     }
 
-    func testUnknownReferenceError() throws {
+    func testErrorUnknownReference() throws {
         let start = makeRule(name: "start", [
             makeAlt([ makeNamedItem("a") ]),
         ])
@@ -68,7 +95,7 @@ class GrammarProcessorTests: XCTestCase {
             """)
     }
 
-    func testFragmentReferenceInParserError() throws {
+    func testErrorFragmentReferenceInParser() throws {
         let delegate = stubDelegate(tokensFile: """
         %a: 'a' ;
         """)
@@ -92,7 +119,7 @@ class GrammarProcessorTests: XCTestCase {
             """)
     }
 
-    func testFragmentSpecifiesStaticTokenDiagnostic() throws {
+    func testDiagnoseFragmentSpecifiesStaticToken() throws {
         let delegate = stubDelegate(tokensFile: """
         $a: 'a' ;
         %b[".b"]: 'b' ;
@@ -116,7 +143,7 @@ class GrammarProcessorTests: XCTestCase {
             """)
     }
 
-    func testAnyToken_noValue_diagnostics() throws {
+    func testDiagnoseAnyToken_noValue() throws {
         let start = makeRule(name: "start", [
             makeAlt([ makeNamedItem("a") ]),
         ])
@@ -138,7 +165,7 @@ class GrammarProcessorTests: XCTestCase {
             """)
     }
 
-    func testAnyToken_stringValue_diagnostics() throws {
+    func testDiagnoseAnyToken_stringValue() throws {
         let start = makeRule(name: "start", [
             makeAlt([ makeNamedItem("a") ]),
         ])
@@ -160,7 +187,7 @@ class GrammarProcessorTests: XCTestCase {
             """)
     }
 
-    func testRedefinedTokenDiagnostics() throws {
+    func testDiagnoseRedefinedToken() throws {
         let grammarString = """
         @token a ;
         @token b ;
@@ -192,7 +219,7 @@ class GrammarProcessorTests: XCTestCase {
             """)
     }
 
-    func testNonStandardRepetitionAsLastItem() throws {
+    func testDiagnoseNonStandardRepetitionAsLastItem() throws {
         let grammarString = """
         @token A ; @token B ; @token C ;
         start:
@@ -321,6 +348,10 @@ private func makeIdent(_ ident: String) -> SwiftPEGGrammar.Token {
 
 private func makeString(_ string: String) -> SwiftPEGGrammar.GrammarString {
     .init(pieces: [.literal(string)], quote: .doubleQuote)
+}
+
+private func makeEdge(_ start: String, _ end: String) -> RuleDependencyGraph.Edge {
+    .init(start: start, end: end)
 }
 
 private func parseGrammar(

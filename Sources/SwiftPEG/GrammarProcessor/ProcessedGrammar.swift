@@ -4,10 +4,18 @@ public struct ProcessedGrammar {
     public var grammar: InternalGrammar.Grammar
 
     /// The token definitions that where loaded from an associated tokens file.
-    public let tokens: [InternalGrammar.TokenDefinition]
+    public var tokens: [InternalGrammar.TokenDefinition]
 
-    internal init(grammar: InternalGrammar.Grammar, tokens: [InternalGrammar.TokenDefinition]) {
+    /// The rule dependency graph for the grammar.
+    public var ruleDependencyGraph: RuleDependencyGraph
+
+    internal init(
+        grammar: InternalGrammar.Grammar,
+        tokens: [InternalGrammar.TokenDefinition],
+        ruleDependencyGraph: RuleDependencyGraph
+    ) {
         self.grammar = grammar
         self.tokens = tokens
+        self.ruleDependencyGraph = ruleDependencyGraph
     }
 }

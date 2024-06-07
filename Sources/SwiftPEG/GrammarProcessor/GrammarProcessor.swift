@@ -81,6 +81,7 @@ public class GrammarProcessor {
         }
 
         let knownRules = try validateRuleNames(in: grammar)
+        let dependencyGraph = generateDependencyGraph(for: grammar, knownRules: knownRules)
         let tokensFile = try loadTokensFile(from: grammar)
         let processedTokens = try validateTokenSyntaxes(tokensFile)
 
@@ -96,7 +97,8 @@ public class GrammarProcessor {
 
         return ProcessedGrammar(
             grammar: .from(grammar),
-            tokens: processedTokens
+            tokens: processedTokens,
+            ruleDependencyGraph: dependencyGraph
         )
     }
 
@@ -107,6 +109,28 @@ public class GrammarProcessor {
 
     func record(_ errors: [GrammarProcessorError]) {
         self.errors.append(contentsOf: errors)
+    }
+
+    func generateDependencyGraph(
+        for grammar: SwiftPEGGrammar.Grammar,
+        knownRules: [String: SwiftPEGGrammar.Rule]
+    ) -> RuleDependencyGraph {
+        var graph = RuleDependencyGraph(nodes: [], edges: [])
+
+        for rule in grammar.rules {
+            graph.nodes.insert(rule.ruleName)
+
+            for name in rule.allNames() {
+                guard let endRule = knownRules[name] else {
+                    continue
+                }
+
+                let edge = RuleDependencyGraph.Edge(start: rule.ruleName, end: endRule.ruleName)
+                graph.edges.insert(edge)
+            }
+        }
+
+        return graph
     }
 
     func validateRuleNames(in grammar: SwiftPEGGrammar.Grammar) throws -> [String: SwiftPEGGrammar.Rule] {

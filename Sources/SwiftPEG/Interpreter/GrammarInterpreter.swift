@@ -52,7 +52,11 @@ public class GrammarInterpreter {
         delegate: Delegate?
     ) {
         self.init(
-            processedGrammar: .init(grammar: grammar, tokens: tokens),
+            processedGrammar: .init(
+                grammar: grammar,
+                tokens: tokens,
+                ruleDependencyGraph: .init(nodes: [], edges: [])
+            ),
             source: source,
             delegate: delegate
         )
