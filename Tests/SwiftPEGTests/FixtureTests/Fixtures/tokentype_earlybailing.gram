@@ -36,6 +36,12 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
         if consume_b(from: &stream) {
             return .init(kind: .b, string: stream.substring)
         }
+        if consume_f(from: &stream) {
+            return .init(kind: .f, string: stream.substring)
+        }
+        if consume_g(from: &stream) {
+            return .init(kind: .g, string: stream.substring)
+        }
 
         return nil
     }
@@ -62,6 +68,12 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
         /// ```
         case b
 
+        /// `"1"..."9" (g)*`
+        case f
+
+        /// `"'"? "g"`
+        case g
+
         var description: String {
             switch self {
             case .a: "a"
@@ -69,6 +81,8 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
             case .c: "c"
             case .d: "d"
             case .e: "e"
+            case .f: "f"
+            case .g: "g"
             }
         }
     }
@@ -256,6 +270,62 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
 
             return true
         }
+    }
+
+    /// ```
+    /// f:
+    ///     | "1"..."9" (g)*
+    ///     ;
+    /// ```
+    static func consume_f<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+        let state = stream.save()
+
+        alt:
+        do {
+            guard !stream.isEof, stream.isNextInRange("1"..."9") else {
+                return false
+            }
+            stream.advance()
+
+            loop:
+            while !stream.isEof {
+                if consume_g(from: &stream) {
+                } else {
+                    break loop
+                }
+            }
+
+            return true
+        }
+    }
+
+    /// ```
+    /// g:
+    ///     | "'"? "g"
+    ///     ;
+    /// ```
+    static func consume_g<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+        let state = stream.save()
+
+        alt:
+        do {
+            if stream.isNext("'") {
+                stream.advance()
+            }
+
+            guard stream.isNext("g") else {
+                break alt
+            }
+            stream.advance()
+
+            return true
+        }
+
+        stream.restore(state)
+
+        return false
     }
 }
 """ ;

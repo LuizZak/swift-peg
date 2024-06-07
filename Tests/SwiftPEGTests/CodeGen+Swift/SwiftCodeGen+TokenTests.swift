@@ -171,10 +171,6 @@ class SwiftCodeGen_TokenTests: XCTestCase {
 
                 return true
             }
-
-            stream.restore(state)
-
-            return false
         }
         """#).diff(sut.buffer.finishBuffer())
     }
@@ -417,10 +413,6 @@ class SwiftCodeGen_TokenTests: XCTestCase {
 
                 return true
             }
-
-            stream.restore(state)
-
-            return false
         }
         """#).diff(sut.buffer.finishBuffer())
     }
@@ -464,10 +456,6 @@ class SwiftCodeGen_TokenTests: XCTestCase {
 
                 return true
             }
-
-            stream.restore(state)
-
-            return false
         }
         """#).diff(sut.buffer.finishBuffer())
     }
@@ -515,10 +503,6 @@ class SwiftCodeGen_TokenTests: XCTestCase {
 
                 return true
             }
-
-            stream.restore(state)
-
-            return false
         }
         """#).diff(sut.buffer.finishBuffer())
     }

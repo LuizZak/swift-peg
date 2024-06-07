@@ -276,13 +276,15 @@ extension SwiftCodeGen {
         // TODO: Alternate do statement for an if statement depending on leading
         // TODO: item, and remove the nesting altogether if there is only one alt
 
-        var usedReturnBail = false
+        var bailStatement = BailStatementMonitor.break(label: "alt")
         var hasFallthroughPath: Bool {
-            !usedReturnBail
+            bailStatement.emitted
         }
 
         let emitter = buffer.startConditionalEmitter()
         for (i, alt) in tokenSyntax.alts.enumerated() {
+            bailStatement = BailStatementMonitor.break(label: "alt")
+
             let canReturnAsBail = i == tokenSyntax.alts.count - 1
 
             emitter.emit("\n")
@@ -290,14 +292,14 @@ extension SwiftCodeGen {
             buffer.emitLine("alt:")
             buffer.emit("do ")
             try buffer.emitBlock {
-                usedReturnBail = try generateTokenParserAlt(
+                try generateTokenParserAlt(
                     alt,
                     canReturnAsBail: canReturnAsBail,
-                    bailStatement: .break(label: "alt")
+                    bailStatement: bailStatement
                 )
             }
 
-            if hasFallthroughPath {
+            if !canReturnAsBail || hasFallthroughPath {
                 buffer.emitNewline()
                 buffer.emitLine("stream.restore(state)")
             }
@@ -309,23 +311,15 @@ extension SwiftCodeGen {
         }
     }
 
-    /// Returns `true` if the alternative made use of a return as a bail expression
-    /// in all bail execution paths.
     func generateTokenParserAlt(
         _ alt: CommonAbstract.TokenAlt,
         canReturnAsBail: Bool,
-        bailStatement: BailStatement
-    ) throws -> Bool {
-        var usedReturnBail = false
-
+        bailStatement: BailStatementMonitor
+    ) throws {
         for (i, item) in alt.items.enumerated() {
             var bailStatement = bailStatement
             if canReturnAsBail && i == 0 {
                 bailStatement = .return
-
-                if alt.items.count == 1 {
-                    usedReturnBail = true
-                }
             }
 
             try generateTokenParserItem(
@@ -343,13 +337,9 @@ extension SwiftCodeGen {
             buffer.emitBlock(" else") {
                 bailStatement.emit(into: buffer)
             }
-
-            usedReturnBail = false
         }
 
         buffer.emitLine("return true")
-
-        return usedReturnBail
     }
 
     /// Generates token parser items as sequences of checks against the input
@@ -357,7 +347,7 @@ extension SwiftCodeGen {
     /// or fail with a `break alt` statement.
     func generateTokenParserItem(
         _ item: CommonAbstract.TokenItem,
-        bailStatement: BailStatement
+        bailStatement: BailStatementMonitor
     ) throws {
 
         switch item {
@@ -396,7 +386,7 @@ extension SwiftCodeGen {
     /// Within the body of the guard, the provided a bail statement is issued.
     func generateGuardAtom(
         _ atom: CommonAbstract.TokenAtom,
-        bailStatement: BailStatement
+        bailStatement: BailStatementMonitor
     ) throws {
 
         buffer.emit("guard \(try tok_conditional(for: atom)) else ")
@@ -411,7 +401,7 @@ extension SwiftCodeGen {
     /// Within the body of the if, the provided a bail statement is issued.
     func generateIfAtom(
         _ atom: CommonAbstract.TokenAtom,
-        bailStatement: BailStatement
+        bailStatement: BailStatementMonitor
     ) throws {
 
         buffer.emit("if \(try tok_conditional(for: atom)) ")
@@ -438,7 +428,7 @@ extension SwiftCodeGen {
     /// Used to generate zero-or-more and one-or-more constructions.
     func generateAtomAlts(
         _ alts: [CommonAbstract.TokenAtom],
-        bailStatement: BailStatement
+        bailStatement: BailStatementMonitor
     ) throws {
         // TODO: Perform switch statement emission
 
@@ -471,7 +461,7 @@ extension SwiftCodeGen {
     /// is untouched and `false` is returned.
     private func tryGenerateAsSwitch(
         _ alts: [CommonAbstract.TokenAtom],
-        bailStatement: BailStatement
+        bailStatement: BailStatementMonitor
     ) throws -> Bool {
 
         guard canSimplifyAsSwitch(alts) else {
@@ -925,7 +915,71 @@ extension SwiftCodeGen {
         return sorted.map(\.value)
     }
 
-    enum BailStatement {
+    /// Monitor for bail statements and whether they where invoked.
+    class BailStatementMonitor {
+        private var kind: BailStatementKind
+
+        /// Whether the `emit(into:)` method has been invoked for this bail
+        /// statement monitor.
+        private(set) var emitted: Bool = false
+
+        init(kind: BailStatementKind) {
+            self.kind = kind
+        }
+
+        func emit(into buffer: CodeStringBuffer) {
+            self.emitted = true
+            kind.emit(into: buffer)
+        }
+
+        /// Indicates that the bail statement should expand to a no-op, non
+        /// control-flow-altering statement.
+        ///
+        /// Convenience for `BailStatementMonitor(kind: .none)`
+        static var none: BailStatementMonitor {
+            BailStatementMonitor(kind: .none)
+        }
+
+        /// Provides a custom expansion for the bail statement.
+        ///
+        /// Convenience for `BailStatementMonitor(kind: .custom(raw))`
+        static func custom(_ raw: String) -> BailStatementMonitor {
+            BailStatementMonitor(kind: .custom(raw))
+        }
+
+        /// Indicates that the bail statement should expand to:
+        /// ```
+        /// break [label]
+        /// ```
+        ///
+        /// Convenience for `BailStatementMonitor(kind: .break(label: label))`
+        static func `break`(label: String? = nil) -> BailStatementMonitor {
+            BailStatementMonitor(kind: .break(label: label))
+        }
+
+        /// Indicates that the bail statement should expand to:
+        /// ```
+        /// return false
+        /// ```
+        ///
+        /// Convenience for `BailStatementMonitor(kind: .`return`)`
+        static var `return`: BailStatementMonitor {
+            BailStatementMonitor(kind: .`return`)
+        }
+
+        /// Indicates that the bail statement should expand to:
+        /// ```
+        /// stream.restore(state)
+        /// return false
+        /// ```
+        ///
+        /// Convenience for `BailStatementMonitor(kind: .restoreAndReturn(stateIdentifier: stateIdentifier))`
+        static func restoreAndReturn(stateIdentifier: String = "state") -> BailStatementMonitor {
+            BailStatementMonitor(kind: .restoreAndReturn(stateIdentifier: stateIdentifier))
+        }
+    }
+
+    enum BailStatementKind {
         /// Indicates that the bail statement should expand to a no-op, non
         /// control-flow-altering statement.
         case none

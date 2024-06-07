@@ -210,14 +210,7 @@ class FixtureTestRunner {
         }
 
         for fixture in fileFixture.fixtures {
-            let failures: [FixtureTestFailure]
-            do {
-                failures = try runTest(fixture)
-            } catch {
-                failures = [
-                    .init(message: "Error running test: \(error)", file: fileFixture.file, line: 1)
-                ]
-            }
+            let failures = runTest(fixture, file: fileFixture.file)
 
             let result = FixtureTestResults(title: fixture.title, failures: failures)
             self.testResults.append(result)
@@ -225,12 +218,18 @@ class FixtureTestRunner {
     }
 
     /// Runs a test fixture, returning the test failures.
-    func runTest(_ test: FixtureTest) throws -> [FixtureTestFailure] {
+    func runTest(_ test: FixtureTest, file: URL) -> [FixtureTestFailure] {
         let context = makeTestContext(for: test)
 
         logger.logMessage("Test \(formatted: test.title)... ", terminator: "")
 
-        try test.testFunction(context)
+        do {
+            try test.testFunction(context)
+        } catch {
+            context.failures.append(
+                .init(message: "Error running test: \(error)", file: file, line: 1)
+            )
+        }
 
         if context.failed {
             logger.logMessage("\("Failed", color: .red)")
