@@ -540,7 +540,7 @@ public class SwiftCodeGen {
         if alt.namedItems.count == 1 {
             let bindings = bindingEngine.computeBindings(alt)
             if bindings.count == 1, let label = bindings[0].label {
-                buffer.emitLine(label)
+                buffer.emitLine(escapeIdentifier(label))
                 return
             }
         }

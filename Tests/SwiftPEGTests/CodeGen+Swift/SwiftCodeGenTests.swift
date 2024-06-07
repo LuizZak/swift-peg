@@ -617,6 +617,13 @@ class SwiftCodeGenTests: XCTestCase {
                     #"'\'"#,
                     .item("switch"),
                 ]),
+                .init(namedItems: [
+                    .item("default"),
+                ]),
+                .init(namedItems: [
+                    .item(.oneOrMore("default", repetitionMode: .minimal)),
+                    #"'\'"#,
+                ]),
             ]),
         ])
         let sut = makeSut(grammar)
@@ -629,6 +636,8 @@ class SwiftCodeGenTests: XCTestCase {
                 /// ```
                 /// a:
                 ///     | default '\' switch
+                ///     | default
+                ///     | default+< '\'
                 ///     ;
                 /// ```
                 @memoized("a")
@@ -642,6 +651,53 @@ class SwiftCodeGenTests: XCTestCase {
                         let `switch` = try self.`switch`()
                     {
                         return Node()
+                    }
+
+                    self.restore(_mark)
+
+                    if
+                        let `default` = try self.`default`()
+                    {
+                        return `default`
+                    }
+
+                    self.restore(_mark)
+
+                    if
+                        let `default` = try self._a_nsr()
+                    {
+                        return Node()
+                    }
+
+                    self.restore(_mark)
+                    return nil
+                }
+
+                /// ```
+                /// _a_nsr[[Node]]:
+                ///     | default+< '\'
+                ///     ;
+                /// ```
+                @memoized("_a_nsr")
+                @inlinable
+                public func ___a_nsr() throws -> [Node]? {
+                    let _mark = self.mark()
+
+                    var _current: [Node] = []
+
+                    while
+                        let `default` = try self.`default`()
+                    {
+                        _current.append(`default`)
+                        let _mark1 = self.mark()
+
+                        if
+                            let _ = try self.expect("\\")
+                        {
+                            return _current
+                        }
+
+                        self.restore(_mark1)
                     }
 
                     self.restore(_mark)
