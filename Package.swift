@@ -13,6 +13,7 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/apple/swift-syntax.git", exact: "510.0.0"),
         .package(url: "https://github.com/LuizZak/Console.git", exact: "0.12.1"),
+        .package(url: "https://github.com/LuizZak/MiniDigraph.git", exact: "0.2.0"),
     ],
     targets: [
         .macro(
@@ -31,6 +32,7 @@ let package = Package(
             name: "SwiftPEG",
             dependencies: [
                 "SwiftPEGMacros",
+                .product(name: "MiniDigraph", package: "MiniDigraph"),
             ],
             resources: [
                 .copy("Grammar/metagrammar.gram"),

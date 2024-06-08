@@ -1,3 +1,5 @@
+import MiniDigraph
+
 extension GrammarProcessor {
     /// Validates token syntaxes, ensuring that the identifiers contained within
     /// point to other token syntaxes, and the rules are not implemented in a
@@ -112,14 +114,12 @@ extension GrammarProcessor {
         byName: [String: SwiftPEGGrammar.TokenDefinition],
         fragmentReferenceCount: inout [String: Int]
     ) throws -> [SwiftPEGGrammar.TokenDefinition] {
-        typealias Graph = GenericDirectedGraph<SwiftPEGGrammar.TokenDefinition>
 
-        let graph = Graph()
-        var nodesByName: [String: Graph.Node] = [:]
+        var graph = StringDirectedGraph()
 
         for token in tokens {
             let name = String(token.name.string)
-            nodesByName[name] = graph.addNode(token)
+            graph.addNode(name)
         }
 
         for token in tokens {
@@ -129,12 +129,12 @@ extension GrammarProcessor {
 
             fragmentReferenceCount = collector.fragmentReferenceCount
 
-            guard let tokenNode = graph.nodes.first(where: { $0.value === token }) else {
+            guard let tokenNode = graph.nodes.first(where: { $0 == token.name.string }) else {
                 break
             }
 
             for identifier in collector.identifiers {
-                guard let referenceNode = nodesByName[identifier] else {
+                guard let referenceNode = byName[identifier] else {
                     throw recordAndReturn(
                         .unknownReferenceInToken(
                             identifier,
@@ -143,7 +143,7 @@ extension GrammarProcessor {
                     )
                 }
 
-                graph.addEdge(from: tokenNode, to: referenceNode)
+                graph.addEdge(from: tokenNode, to: String(referenceNode.name.string))
             }
         }
 
@@ -156,9 +156,12 @@ extension GrammarProcessor {
                         continue
                     }
 
-                    let diagnoseCycle = cycle[nodeBack...]
+                    let diagnoseCycle = cycle[nodeBack...].compactMap({
+                        byName[$0]
+                    })
+
                     throw recordAndReturn(
-                        .recursivityInTokens(diagnoseCycle.map(\.value))
+                        .recursivityInTokens(diagnoseCycle)
                     )
                 }
             }
@@ -170,7 +173,7 @@ extension GrammarProcessor {
             )
         }
 
-        return sorted.map(\.value)
+        return sorted.compactMap { byName[$0] }
     }
 
     /// Applies inlining of fragments into token definitions wherever they may

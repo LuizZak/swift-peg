@@ -10,7 +10,7 @@ extension GrammarProcessor {
 
         printIfVerbose("Computing initial names...")
 
-        let graph = StringDirectedGraph()
+        var graph = StringDirectedGraph()
         graph.addNodes(rules.keys)
 
         for (ruleName, rule) in rules {
@@ -37,14 +37,14 @@ extension GrammarProcessor {
             if component.count == 1, let first = component.first {
                 // Check if the rule is re-entrant into itself
                 if graph.edge(from: first, to: first) != nil {
-                    guard let rule = rules[first.value] else { continue }
+                    guard let rule = rules[first] else { continue }
 
                     rule.isLeftRecursive = true
                     rule.isLeftRecursiveLead = true
                 }
             } else {
                 for ruleName in component {
-                    guard let rule = rules[ruleName.value] else { continue }
+                    guard let rule = rules[ruleName] else { continue }
 
                     rule.isLeftRecursive = true
                 }
@@ -58,12 +58,12 @@ extension GrammarProcessor {
                 }
 
                 if let first = leaders.first {
-                    guard let rule = rules[first.value] else { continue }
+                    guard let rule = rules[first] else { continue }
 
                     rule.isLeftRecursiveLead = true
                 } else {
                     throw recordAndReturn(
-                        .unresolvedLeftRecursion(ruleNames: component.map(\.value))
+                        .unresolvedLeftRecursion(ruleNames: Array(component))
                     )
                 }
             }

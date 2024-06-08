@@ -874,14 +874,19 @@ extension SwiftCodeGen {
     /// prefix of other tokens come later in parsing attempts.
     private func sortedTokens(_ tokens: [InternalGrammar.TokenDefinition]) -> [InternalGrammar.TokenDefinition] {
         // Generate a graph of prefix-dependencies
-        let graph = GenericDirectedGraph<InternalGrammar.TokenDefinition>()
-        graph.addNodes(tokens)
+        var byName: [String: InternalGrammar.TokenDefinition] = [:]
+        for token in tokens {
+            byName[token.name] = token
+        }
+
+        var graph = StringDirectedGraph()
+        graph.addNodes(byName.keys)
 
         for token in tokens {
             guard let tokenSyntax = token.tokenSyntax else {
                 continue
             }
-            guard let tokenNode = graph.nodes.first(where: { $0.value.name == token.name }) else {
+            guard let tokenNode = graph.nodes.first(where: { $0 == token.name }) else {
                 continue
             }
 
@@ -889,7 +894,7 @@ extension SwiftCodeGen {
                 guard let otherSyntax = other.tokenSyntax else {
                     continue
                 }
-                guard let otherNode = graph.nodes.first(where: { $0.value.name == other.name }) else {
+                guard let otherNode = graph.nodes.first(where: { $0 == other.name }) else {
                     continue
                 }
 
@@ -907,18 +912,18 @@ extension SwiftCodeGen {
             }
         }
 
-        guard var sorted = graph.topologicalSorted() else {
+        guard var sorted = graph.topologicalSorted(breakTiesWith: <)?.compactMap({ byName[$0] }) else {
             // TODO: Apply some fallback strategy
             return tokens
         }
 
         // Favor whitespace token to be first
-        if let index = sorted.firstIndex(where: \.value.isWhitespace) {
+        if let index = sorted.firstIndex(where: \.isWhitespace) {
             let token = sorted.remove(at: index)
             sorted.insert(token, at: 0)
         }
 
-        return sorted.map(\.value)
+        return sorted
     }
 
     /// Monitor for bail statements and whether they where invoked.
