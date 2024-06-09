@@ -115,9 +115,7 @@ extension Parser {
 
             if
                 let d = try self.d(),
-                let _ = try self.optional({
-                    try self.expect("c")
-                })
+                case _ = try self.expect("c")
             {
                 return (_current.map(\\.1), d)
             } else if _current.count <= 1 {

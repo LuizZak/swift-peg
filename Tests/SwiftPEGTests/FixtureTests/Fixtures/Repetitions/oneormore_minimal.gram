@@ -81,9 +81,7 @@ extension Parser {
         let _mark = self.mark()
 
         if
-            let _: Token? = try self.optional({
-                try self.expect("c")
-            }),
+            case _: Token? = try self.expect("c"),
             let _: Token = try self.expect("e")
         {
             return C()

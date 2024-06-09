@@ -412,6 +412,12 @@ class BindingEngine {
 }
 
 internal extension Sequence where Element == BindingEngine.Binding {
+    /// Returns `true` if at least one of the bindings in this sequence has a
+    /// non-nil label.
+    func be_hasBindings() -> Bool {
+        contains { $0.label != nil && $0.label != "_" }
+    }
+
     /// Applies an optional type layer to bindings on this sequence.
     ///
     /// If the binding represents a tuple, with multiple bindings, each type

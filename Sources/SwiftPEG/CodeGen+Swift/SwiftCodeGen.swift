@@ -653,7 +653,13 @@ public class SwiftCodeGen {
     ) throws -> [String] {
 
         // Emit bindings
-        let bindingNames = try generatePatternBinds(bindings, in: production)
+        let isOptionalItem = item.isOptional || item.isOptionalItems
+        let bindingNames = try generatePatternBinds(
+            bindings,
+            forceCase: isOptionalItem,
+            performUnwrap: !isOptionalItem,
+            in: production
+        )
 
         buffer.emit(" = ")
 
@@ -668,23 +674,15 @@ public class SwiftCodeGen {
     ) throws {
         switch item {
         case .optional(let atom):
-            buffer.emit("try self.optional(")
-            try buffer.emitInlinedBlock {
-                try generateAtom(atom, in: production)
-            }
-            buffer.emit(")")
+            try generateAtom(atom, in: production)
 
         case .optionalItems(let alts):
-            buffer.emit("try self.optional(")
-            buffer.emitInlinedBlock {
-                let aux = enqueueAuxiliaryRule(
-                    for: production,
-                    suffix: "_opt",
-                    alts: alts
-                )
-                buffer.emit("try self.\(aux)()")
-            }
-            buffer.emit(")")
+            let aux = enqueueAuxiliaryRule(
+                for: production,
+                suffix: "_opt",
+                alts: alts
+            )
+            buffer.emit("try self.\(aux)()")
 
         case .gather(let sep, let item, _):
             buffer.emit("try self.gather(separator: ")
@@ -794,11 +792,17 @@ public class SwiftCodeGen {
     /// `case let (<bind1>?, <bind2?>, ...)`
     /// Depending on how many bindings exist in `bindings`.
     ///
+    /// If `forceCase` is `true`, the pattern always leads with a 'case', which
+    /// has the side effect of requiring optional unwrapping to be explicit on
+    /// the patterns.
+    ///
     /// Returns an array containing the deduplicated names of all named bindings
     /// created. Return is empty if no named bindings where created.
     @discardableResult
     func generatePatternBinds(
         _ bindings: [BindingEngine.Binding],
+        forceCase: Bool = false,
+        performUnwrap: Bool = true,
         in production: RemainingProduction
     ) throws -> [String] {
 
@@ -810,11 +814,20 @@ public class SwiftCodeGen {
             isCasePatternBind = true
         }
 
-        if isCasePatternBind {
+        if isCasePatternBind || forceCase {
             buffer.emit("case ")
         }
 
-        buffer.emit("let ")
+        // Skip 'let' for 'case' patterns with no named bindings
+        let emitLet =
+            if (forceCase || isCasePatternBind) && !bindings.be_hasBindings() {
+                false
+            } else {
+                true
+            }
+        if emitLet {
+            buffer.emit("let ")
+        }
 
         var deduplicatedBindings: [String] = []
 
@@ -841,7 +854,7 @@ public class SwiftCodeGen {
 
             bindingNames += escapeIdentifier(bindingName)
             // Emit unwrap pattern
-            if isCasePatternBind {
+            if isCasePatternBind && performUnwrap {
                 bindingNames += "?"
             }
 

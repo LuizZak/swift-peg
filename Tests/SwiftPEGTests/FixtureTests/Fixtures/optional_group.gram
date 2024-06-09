@@ -1,0 +1,136 @@
+@grammar """
+start: a (b c? d?)? ;
+a: 'a' ;
+b: 'b' ;
+c: 'c' ;
+d: 'd' ;
+""" ;
+
+@expectedParser """
+extension Parser {
+    /// ```
+    /// start:
+    ///     | a (b c? d?)?
+    ///     ;
+    /// ```
+    @memoized("start")
+    @inlinable
+    public func __start() throws -> Node? {
+        let _mark = self.mark()
+
+        if
+            let a = try self.a(),
+            case let (b, c, d) = try self._start__group_()
+        {
+            return Node()
+        }
+
+        self.restore(_mark)
+        return nil
+    }
+
+    /// ```
+    /// a:
+    ///     | 'a'
+    ///     ;
+    /// ```
+    @memoized("a")
+    @inlinable
+    public func __a() throws -> Node? {
+        let _mark = self.mark()
+
+        if
+            let _ = try self.expect("a")
+        {
+            return Node()
+        }
+
+        self.restore(_mark)
+        return nil
+    }
+
+    /// ```
+    /// b:
+    ///     | 'b'
+    ///     ;
+    /// ```
+    @memoized("b")
+    @inlinable
+    public func __b() throws -> Node? {
+        let _mark = self.mark()
+
+        if
+            let _ = try self.expect("b")
+        {
+            return Node()
+        }
+
+        self.restore(_mark)
+        return nil
+    }
+
+    /// ```
+    /// c:
+    ///     | 'c'
+    ///     ;
+    /// ```
+    @memoized("c")
+    @inlinable
+    public func __c() throws -> Node? {
+        let _mark = self.mark()
+
+        if
+            let _ = try self.expect("c")
+        {
+            return Node()
+        }
+
+        self.restore(_mark)
+        return nil
+    }
+
+    /// ```
+    /// d:
+    ///     | 'd'
+    ///     ;
+    /// ```
+    @memoized("d")
+    @inlinable
+    public func __d() throws -> Node? {
+        let _mark = self.mark()
+
+        if
+            let _ = try self.expect("d")
+        {
+            return Node()
+        }
+
+        self.restore(_mark)
+        return nil
+    }
+
+    /// ```
+    /// _start__group_[(b: Node, c: Node?, d: Node?)]:
+    ///     | b c? d? { (b: b, c: c, d: d) }
+    ///     ;
+    /// ```
+    @memoized("_start__group_")
+    @inlinable
+    public func ___start__group_() throws -> (b: Node?, c: Node??, d: Node??) {
+        let _mark = self.mark()
+
+        if
+            let b = try self.b(),
+            case let c = try self.c(),
+            case let d = try self.d()
+        {
+            return (b: b, c: c, d: d)
+        }
+
+        self.restore(_mark)
+        return (nil, nil, nil)
+    }
+}
+""" ;
+
+start: '' ;

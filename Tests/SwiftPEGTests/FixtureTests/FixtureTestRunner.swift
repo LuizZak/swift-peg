@@ -114,10 +114,19 @@ class FixtureTestRunner {
         grammarFileUrls: [URL]
     ) throws -> [FixtureTestsFile] {
 
+        var result: [FixtureTestsFile] = []
+
+        /*
+        for grammarFileUrl in grammarFileUrls {
+            let file = try self.collectFixtures(grammarFileUrl: grammarFileUrl)
+            result.append(file)
+        }
+        // */
+
+        //*
         var _error: Swift.Error?
         let queue = OperationQueue()
 
-        var result: [FixtureTestsFile] = []
 
         for grammarFileUrl in grammarFileUrls {
             queue.addOperation {
@@ -139,6 +148,7 @@ class FixtureTestRunner {
         if let _error {
             throw _error
         }
+        // */
 
         return result
     }

@@ -276,12 +276,8 @@ class SwiftCodeGenTests: XCTestCase {
                     let _mark = self.mark()
 
                     if
-                        let _: Token? = try self.optional({
-                            try self.expect("a")
-                        }),
-                        let b: B? = try self.optional({
-                            try self.b()
-                        })
+                        case _: Token? = try self.expect("a"),
+                        case let b: B? = try self.b()
                     {
                         return D()
                     }
@@ -418,12 +414,8 @@ class SwiftCodeGenTests: XCTestCase {
                     let _mark = self.mark()
 
                     if
-                        let _: Token? = try self.optional({
-                            try self.expect("a")
-                        }),
-                        let _: B? = try self.optional({
-                            try self.b()
-                        })
+                        case _: Token? = try self.expect("a"),
+                        case _: B? = try self.b()
                     {
                         return D()
                     }
@@ -1424,9 +1416,7 @@ class SwiftCodeGenTests: XCTestCase {
                     if
                         let b = try self.b(),
                         let c = try self.c(),
-                        let d = try self.optional({
-                            try self.d()
-                        })
+                        case let d = try self.d()
                     {
                         return ANode()
                     }
@@ -1585,9 +1575,7 @@ class SwiftCodeGenTests: XCTestCase {
                     let _mark = self.mark()
 
                     if
-                        let _: Token? = try self.optional({
-                            try self.expect("c")
-                        }),
+                        case _: Token? = try self.expect("c"),
                         let _: Token = try self.expect("e")
                     {
                         return C()
@@ -1652,9 +1640,7 @@ class SwiftCodeGenTests: XCTestCase {
 
                     if
                         let a: A = try self.a(),
-                        case let (b?, cBind?) = try self.optional({
-                            try self._start__group_()
-                        })
+                        case let (b, cBind) = try self._start__group_()
                     {
                         return Node()
                     }
@@ -1714,9 +1700,7 @@ class SwiftCodeGenTests: XCTestCase {
                     let _mark = self.mark()
 
                     if
-                        let _: Token? = try self.optional({
-                            try self.expect("c")
-                        }),
+                        case _: Token? = try self.expect("c"),
                         let _: Token = try self.expect("e")
                     {
                         return C()
@@ -1841,9 +1825,7 @@ class SwiftCodeGenTests: XCTestCase {
                     let _mark = self.mark()
 
                     if
-                        let _: Token? = try self.optional({
-                            try self.expect("c")
-                        }),
+                        case _: Token? = try self.expect("c"),
                         let _: Token = try self.expect("e")
                     {
                         return C()
@@ -1918,9 +1900,7 @@ class SwiftCodeGenTests: XCTestCase {
 
                     if
                         let a: A = try self.a(),
-                        case let (b?, cBind?) = try self.optional({
-                            try self._start__group_()
-                        })
+                        case let (b, cBind) = try self._start__group_()
                     {
                         return Node()
                     }
@@ -1980,9 +1960,7 @@ class SwiftCodeGenTests: XCTestCase {
                     let _mark = self.mark()
 
                     if
-                        let _: Token? = try self.optional({
-                            try self.expect("c")
-                        }),
+                        case _: Token? = try self.expect("c"),
                         let _: Token = try self.expect("e")
                     {
                         return C()
@@ -2003,9 +1981,7 @@ class SwiftCodeGenTests: XCTestCase {
                     let _mark = self.mark()
 
                     if
-                        case let (b?, cBind?) = try self.optional({
-                            try self.__start__group___group_()
-                        })
+                        case let (b, cBind) = try self.__start__group___group_()
                     {
                         return (b: b, cBind: cBind)
                     }
@@ -2025,9 +2001,7 @@ class SwiftCodeGenTests: XCTestCase {
                     let _mark = self.mark()
 
                     if
-                        case let (b?, cBind?) = try self.optional({
-                            try self.___start__group___group___group_()
-                        })
+                        case let (b, cBind) = try self.___start__group___group___group_()
                     {
                         return (b: b, cBind: cBind)
                     }
@@ -2243,9 +2217,7 @@ class SwiftCodeGenTests: XCTestCase {
                     let _mark = self.mark()
 
                     if
-                        case let (b?, c?) = try self.optional({
-                            try self._a__opt()
-                        })
+                        case let (b, c) = try self._a__opt()
                     {
                         return Node()
                     }
@@ -2311,9 +2283,7 @@ class SwiftCodeGenTests: XCTestCase {
                     let _mark = self.mark()
 
                     if
-                        let name = try self.optional({
-                            try self._a__opt()
-                        })
+                        case let name = try self._a__opt()
                     {
                         return name
                     }
@@ -2821,9 +2791,7 @@ class SwiftCodeGenTests: XCTestCase {
 
                     if
                         let expr = try self.expr(),
-                        let _ = try self.optional({
-                            try self.NEWLINE()
-                        })
+                        case _ = try self.NEWLINE()
                     {
                         return expr
                     }
