@@ -1,0 +1,154 @@
+$WHITESPACE[".whitespace"]:
+    | (" " | "\n" | "\t" | "\r")+
+    ;
+$_Atomic["._Atomic"]: '_Atomic' !identifierContinuation ;
+$_BitInt["._BitInt"]: '_BitInt' !identifierContinuation ;
+$_Complex["._Complex"]: '_Complex' !identifierContinuation ;
+$_Decimal128["._Decimal128"]: '_Decimal128' !identifierContinuation ;
+$_Decimal32["._Decimal32"]: '_Decimal32' !identifierContinuation ;
+$_Decimal64["._Decimal64"]: '_Decimal64' !identifierContinuation ;
+$_Generic["._Generic"]: '_Generic' !identifierContinuation ;
+$_Imaginary["._Imaginary"]: '_Imaginary' !identifierContinuation ;
+$_Noreturn["._Noreturn"]: '_Noreturn' !identifierContinuation ;
+$alignas[".alignas"]: 'alignas' !identifierContinuation ;
+$alignof[".alignof"]: 'alignof' !identifierContinuation ;
+$auto[".auto"]: 'auto' !identifierContinuation ;
+$bool[".bool"]: 'bool' !identifierContinuation ;
+$break[".break"]: 'break' !identifierContinuation ;
+$case[".case"]: 'case' !identifierContinuation ;
+$char[".char"]: 'char' !identifierContinuation ;
+$const[".const"]: 'const' !identifierContinuation ;
+$constexpr[".constexpr"]: 'constexpr' !identifierContinuation ;
+$continue[".continue"]: 'continue' !identifierContinuation ;
+$default[".default"]: 'default' !identifierContinuation ;
+$do[".do"]: 'do' !identifierContinuation ;
+$typeof[".typeof"]: 'typeof' !identifierContinuation ;
+$union[".union"]: 'union' !identifierContinuation ;
+$void[".void"]: 'void' !identifierContinuation ;
+$volatile[".volatile"]: 'volatile' !identifierContinuation ;
+$while[".while"]: 'while' !identifierContinuation ;
+$unsigned[".unsigned"]: 'unsigned' !identifierContinuation ;
+$identifier[".identifier"]:
+    | ('a'...'z' | 'A'...'Z' | '_') identifierContinuation*
+    ;
+%identifierContinuation:
+    | digit | 'a'...'z' | 'A'...'Z' | '_'
+    ;
+%digit:
+    | '0'...'9'
+    ;
+$integerConstant[".integerConstant"]:
+    | hexadecimal_constant
+    | decimal_constant
+    ;
+%hexadecimal_constant:
+    | hexadecimal_prefix hexadecimal_digit_sequence
+    ;
+%decimal_constant:
+    | nonzero_digit _decimal_digit*
+    ;
+%hexadecimal_prefix:
+    | '0x' | '0X'
+    ;
+%nonzero_digit:
+    | '1'...'9'
+    ;
+%_decimal_digit:
+    | "'"? digit
+    ;
+%hexadecimal_digit:
+    | '0'...'9'
+    | 'a'...'f'
+    | 'A'...'F'
+    ;
+%_hexadecimal_digit:
+    | "'"? hexadecimal_digit
+    ;
+%hexadecimal_digit_sequence:
+    | hexadecimal_digit _hexadecimal_digit*
+    ;
+$floatingConstant[".floatingConstant"]:
+    | decimal_floating_constant
+    | hexadecimal_floating_constant
+    ;
+%decimal_floating_constant:
+    | fractional_constant exponent_part?
+    | digit_sequence exponent_part
+    ;
+%hexadecimal_floating_constant:
+    | hexadecimal_prefix hexadecimal_fractional_constant binary_exponent_part
+    | hexadecimal_prefix hexadecimal_digit_sequence binary_exponent_part
+    ;
+%fractional_constant:
+    | digit_sequence? '.' digit_sequence
+    | digit_sequence '.'
+    ;
+%exponent_part:
+    | 'e' sign? digit_sequence
+    | 'E' sign? digit_sequence
+    ;
+%sign:
+    | '+' | '-'
+    ;
+%digit_sequence:
+    | digit _decimal_digit*
+    ;
+%hexadecimal_fractional_constant:
+    | hexadecimal_digit_sequence? '.' hexadecimal_digit_sequence
+    | hexadecimal_digit_sequence '.'
+    ;
+%binary_exponent_part:
+    | 'p' sign? digit_sequence
+    | 'P' sign? digit_sequence
+    ;
+$OPENSQUARE[".openSquare"]: "[" ;
+$CLOSESQUARE[".closeSquare"]: "]" ;
+$OPENPARENS[".openParens"]: "(" ;
+$CLOSEPARENS[".closeParens"]: ")" ;
+$OPENBRACE[".openBrace"]: "{" ;
+$CLOSEBRACE[".closeBrace"]: "}" ;
+$DOT[".dot"]: "." ;
+$ARROW[".arrow"]: "->" ;
+$INCREMENT[".increment"]: "++" ;
+$DECREMENT[".decrement"]: "--" ;
+$BITWISEAND[".bitwiseAnd"]: "&" ;
+$ASTERISK[".asterisk"]: "*" ;
+$PLUS[".plus"]: "+" ;
+$MINUS[".minus"]: "-" ;
+$TILDE[".tilde"]: "~" ;
+$EXCLAMATION[".exclamation"]: "!" ;
+$FORWARDSLASH[".forwardSlash"]: "/" ;
+$PERCENT[".percent"]: "%" ;
+$LEFTSHIFT[".leftShift"]: "<<" ;
+$RIGHTSHIFT[".rightShift"]: ">>" ;
+$LESSTHAN[".lessThan"]: "<" ;
+$GREATERTHAN[".greaterThan"]: ">" ;
+$LESSTHANOREQUAL[".lessThanOrEqual"]: "<=" ;
+$GREATERTHANOREQUAL[".greaterThanOrEqual"]: ">=" ;
+$EQUALS[".equals"]: "==" ;
+$NOTEQUALS[".notEquals"]: "!=" ;
+$BITWISEXOR[".bitwiseXor"]: "^" ;
+$BITWISEOR[".bitwiseOr"]: "|" ;
+$LOGICALAND[".logicalAnd"]: "&&" ;
+$LOGICALOR[".logicalOr"]: "||" ;
+$QUESTIONMARK[".questionMark"]: "?" ;
+$COLON[".colon"]: ":" ;
+$DOUBLECOLON[".doubleColon"]: "::" ;
+$SEMICOLON[".semicolon"]: ";" ;
+$ELLIPSIS[".ellipsis"]: "..." ;
+$ASSIGNMENT[".assignment"]: "=" ;
+$MULTIPLYASSIGN[".multiplyAssign"]: "*=" ;
+$DIVIDEASSIGN[".divideAssign"]: "/=" ;
+$MODULOASSIGN[".moduloAssign"]: "%=" ;
+$PLUSASSIGN[".plusAssign"]: "+=" ;
+$MINUSASSIGN[".minusAssign"]: "-=" ;
+$LEFTSHIFTASSIGN[".leftShiftAssign"]: "<<=" ;
+$RIGHTSHIFTASSIGN[".rightShiftAssign"]: ">>=" ;
+$ANDASSIGN[".andAssign"]: "&=" ;
+$XORASSIGN[".xorAssign"]: "^=" ;
+$ORASSIGN[".orAssign"]: "|=" ;
+$COMMA[".comma"]: "," ;
+$HASH[".hash"]: "#" ;
+$DOUBLEHASH[".doubleHash"]: "##" ;
+$PERCENTCOLON[".percentColon"]: "%:" ;
+$PERCENTDOUBLECOLON[".percentDoubleColon"]: "%:%:" ;

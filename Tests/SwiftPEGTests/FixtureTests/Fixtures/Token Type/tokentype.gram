@@ -76,6 +76,7 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
 
         var description: String {
             switch self {
+            case .whitespace: "whitespace"
             case .equals: "=="
             case .assign: "="
             case .leftSquare: "["
@@ -83,8 +84,38 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
             case .logicalNot: "!"
             case .rightSquare: "]"
             case .string: "string"
-            case .whitespace: "whitespace"
             }
+        }
+    }
+
+    /// ```
+    /// whitespace:
+    ///     | (" " | "\\n")+
+    ///     ;
+    /// ```
+    static func consume_whitespace<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+
+        alt:
+        do {
+            switch stream.peek() {
+            case " ", "\\n":
+                stream.advance()
+            default:
+                return false
+            }
+
+            loop:
+            while !stream.isEof {
+                switch stream.peek() {
+                case " ", "\\n":
+                    stream.advance()
+                default:
+                    break loop
+                }
+            }
+
+            return true
         }
     }
 
@@ -184,37 +215,6 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
         stream.restore(state)
 
         return false
-    }
-
-    /// ```
-    /// whitespace:
-    ///     | (" " | "\\n")+
-    ///     ;
-    /// ```
-    static func consume_whitespace<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-
-        alt:
-        do {
-            switch stream.peek() {
-            case " ", "\\n":
-                stream.advance()
-            default:
-                return false
-            }
-
-            loop:
-            while !stream.isEof {
-                switch stream.peek() {
-                case " ", "\\n":
-                    stream.advance()
-                default:
-                    break loop
-                }
-            }
-
-            return true
-        }
     }
 }
 """ ;

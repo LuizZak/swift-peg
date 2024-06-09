@@ -77,10 +77,10 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
         var description: String {
             switch self {
             case .a: "a"
-            case .b: "b"
             case .c: "c"
             case .d: "d"
             case .e: "e"
+            case .b: "b"
             case .f: "f"
             case .g: "g"
             }
@@ -129,69 +129,6 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
         stream.restore(state)
 
         return false
-    }
-
-    /// ```
-    /// b:
-    ///     | "a"
-    ///     | "b" ("c")+
-    ///     | "d"
-    ///     ;
-    /// ```
-    static func consume_b<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
-
-        alt:
-        do {
-            guard stream.isNext("a") else {
-                break alt
-            }
-            stream.advance()
-
-            return true
-        }
-
-        stream.restore(state)
-
-        alt:
-        do {
-            guard stream.isNext("b") else {
-                break alt
-            }
-            stream.advance()
-
-            switch stream.peek() {
-            case "c":
-                stream.advance()
-            default:
-                break alt
-            }
-
-            loop:
-            while !stream.isEof {
-                switch stream.peek() {
-                case "c":
-                    stream.advance()
-                default:
-                    break loop
-                }
-            }
-
-            return true
-        }
-
-        stream.restore(state)
-
-        alt:
-        do {
-            guard stream.isNext("d") else {
-                return false
-            }
-            stream.advance()
-
-            return true
-        }
     }
 
     /// ```
@@ -261,6 +198,69 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
         alt:
         do {
             guard !stream.isNext("f"), !stream.isEof, stream.isNextInRange("a"..."g") else {
+                return false
+            }
+            stream.advance()
+
+            return true
+        }
+    }
+
+    /// ```
+    /// b:
+    ///     | "a"
+    ///     | "b" ("c")+
+    ///     | "d"
+    ///     ;
+    /// ```
+    static func consume_b<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+        let state = stream.save()
+
+        alt:
+        do {
+            guard stream.isNext("a") else {
+                break alt
+            }
+            stream.advance()
+
+            return true
+        }
+
+        stream.restore(state)
+
+        alt:
+        do {
+            guard stream.isNext("b") else {
+                break alt
+            }
+            stream.advance()
+
+            switch stream.peek() {
+            case "c":
+                stream.advance()
+            default:
+                break alt
+            }
+
+            loop:
+            while !stream.isEof {
+                switch stream.peek() {
+                case "c":
+                    stream.advance()
+                default:
+                    break loop
+                }
+            }
+
+            return true
+        }
+
+        stream.restore(state)
+
+        alt:
+        do {
+            guard stream.isNext("d") else {
                 return false
             }
             stream.advance()

@@ -42,7 +42,7 @@ struct FixtureTestResults {
     var title: ConsoleString
     var failures: [FixtureTestFailure]
 
-    var failed: Bool {
+    var hasFailures: Bool {
         !failures.isEmpty
     }
 }
@@ -54,6 +54,9 @@ struct FixtureTestFailure {
 }
 
 protocol FixtureTestContext {
+    /// Whether this test context has failures registered.
+    var hasFailures: Bool { get }
+
     /// Requests the beginning of a diff test.
     func diffTest(
         expected input: String,

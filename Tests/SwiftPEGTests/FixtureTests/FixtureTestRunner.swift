@@ -37,6 +37,8 @@ class FixtureTestRunner {
     /// Starts fixture testing by finding all grammar files in the expected directory
     /// path, deriving test fixtures from their contents, and running each fixture.
     func runFixtures(file: StaticString = #file, line: UInt = #line) throws {
+        defer { logger.logResetToStandardOutput() }
+
         logger.beginLogMessageScope("SwiftPEG Test Fixtures")
         defer { logger.endLogMessageScope() }
 
@@ -64,7 +66,7 @@ class FixtureTestRunner {
         try runTests(allFixtures)
 
         // Log results
-        let failed = testResults.filter(\.failed).count
+        let failed = testResults.filter(\.hasFailures).count
         let parseFailures = fixtureParseFailures.count
         logger.logMessage(
             """
@@ -163,77 +165,6 @@ class FixtureTestRunner {
             fixtures: fixtures,
             flags: flags
         )
-    }
-
-    /// Runs all provided file fixtures.
-    func runTests(_ fileFixtures: [FixtureTestsFile]) throws {
-        // Detect focused files
-        let focused = fileFixtures.filter({ $0.flags.contains(.focus) })
-        guard focused.isEmpty else {
-            for fileFixture in focused {
-                try runTests(in: fileFixture)
-            }
-
-            let focusMeta = focused[0].grammar.test_focus_meta()
-            recordFailure(
-                "Failing tests while @focus flag is enabled in one or more files.",
-                file: focused[0].file.path,
-                line: focusMeta.map(_line(of:)) ?? 1,
-                expected: true
-            )
-            return
-        }
-
-        for fileFixture in fileFixtures {
-            try runTests(in: fileFixture)
-        }
-    }
-
-    /// Run fixtures from a set of file fixtures.
-    func runTests(in fileFixture: FixtureTestsFile) throws {
-        logger.beginLogMessageScope(
-            depth: 2,
-            "Running \(fileName: fileFixture.file)..."
-        )
-        defer { logger.endLogMessageScope(depth: 2) }
-
-        if fileFixture.fixtures.isEmpty {
-            logger.logMessage("\("Warning:", color: .yellow) no test fixtures found in file \(fileName: fileFixture.file)?")
-        }
-
-        for fixture in fileFixture.fixtures {
-            let failures = runTest(fixture, file: fileFixture.file)
-
-            let result = FixtureTestResults(title: fixture.title, failures: failures)
-            self.testResults.append(result)
-        }
-    }
-
-    /// Runs a test fixture, returning the test failures.
-    func runTest(_ test: FixtureTest, file: URL) -> [FixtureTestFailure] {
-        let context = makeTestContext(for: test)
-
-        logger.logMessage("Test \(formatted: test.title)... ", terminator: "")
-
-        let stopwatch = Stopwatch.startNew()
-
-        do {
-            try test.testFunction(context)
-        } catch {
-            context.failures.append(
-                .init(message: "Error running test: \(error)", file: file, line: 1)
-            )
-        }
-
-        if context.failed {
-            logger.logMessage("\("Failed", color: .red) in \(elapsed: stopwatch)")
-        } else {
-            logger.logMessage("\("Passed", color: .green) in \(elapsed: stopwatch)")
-        }
-
-        context.flushFailureMessages()
-
-        return context.failures
     }
 
     /// Processes a grammar object using a `GrammarProcessor`.
@@ -377,7 +308,7 @@ class FixtureTestRunner {
         var runner: FixtureTestRunner
         var diagnosticsTarget: LineDiagnosticTarget
         var failures: [FixtureTestFailure] = []
-        var failed: Bool { !failures.isEmpty }
+        var hasFailures: Bool { !failures.isEmpty }
 
         var fileUrl: URL { diagnosticsTarget.fileUrl }
 
@@ -454,7 +385,7 @@ class FixtureTestRunner {
 
 // MARK: - Test internals
 
-private extension SwiftPEGGrammar.Grammar {
+extension SwiftPEGGrammar.Grammar {
     /// `@grammar <value>`
     func test_grammar() -> String? {
         return test_stringOrIdentMetaValue(named: FixtureTestRunner.grammarProp)

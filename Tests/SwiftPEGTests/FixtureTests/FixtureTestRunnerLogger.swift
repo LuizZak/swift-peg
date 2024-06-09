@@ -10,6 +10,18 @@ class FixtureTestRunnerLogger {
     private var indentationString: String {
         String(repeating: indentation, count: scopeStackDepth)
     }
+    private var useAnsiSequences: Bool {
+        let noColor = ProcessInfo.processInfo.environment["NO_COLOR"]
+        return noColor == nil || noColor == ""
+    }
+
+    /// Issues a color/formatting reset ANSI terminal command into the standard
+    /// output.
+    func logResetToStandardOutput() {
+        if useAnsiSequences {
+            print(ConsoleFormat.reset.ansi, terminator: "")
+        }
+    }
 
     //
 
@@ -44,6 +56,10 @@ class FixtureTestRunnerLogger {
     }
 
     private func _log(_ string: ConsoleString, terminator: String = "\n") {
-        print(string.terminalFormatted(), terminator: terminator)
+        if useAnsiSequences {
+            print(string.terminalFormatted(), terminator: terminator)
+        } else {
+            print(string.unformatted(), terminator: terminator)
+        }
     }
 }

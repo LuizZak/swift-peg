@@ -844,6 +844,15 @@ class SwiftCodeGen_TokenTests: XCTestCase {
             }
 
             /// ```
+            /// frag:
+            ///     | "bcd"
+            ///     ;
+            /// ```
+            static func consume_frag<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+                stream.advanceIfNext("bcd")
+            }
+
+            /// ```
             /// tok:
             ///     | "a" frag
             ///     ;
@@ -870,15 +879,6 @@ class SwiftCodeGen_TokenTests: XCTestCase {
                 stream.restore(state)
 
                 return false
-            }
-
-            /// ```
-            /// frag:
-            ///     | "bcd"
-            ///     ;
-            /// ```
-            static func consume_frag<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-                stream.advanceIfNext("bcd")
             }
         }
         """#).diff(result)

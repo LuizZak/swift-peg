@@ -20,15 +20,21 @@ extension SwiftCodeGen {
             tokenName = "\(parserName)Token"
         }
 
+        let sortedTokens = Self._sortTokens(tokenDefinitions)
+
         generateAccessLevel(settings: settings)
         try buffer.emitBlock("struct \(tokenName): RawTokenType, CustomStringConvertible") {
-            try generateTokenTypeMembers(settings: settings)
+            try generateTokenTypeMembers(settings: settings, sortedTokens: sortedTokens)
         }
 
         return buffer.finishBuffer()
     }
 
-    func generateTokenTypeMembers(settings: TokenTypeGenSettings) throws {
+    func generateTokenTypeMembers(
+        settings: TokenTypeGenSettings,
+        sortedTokens: [InternalGrammar.TokenDefinition]
+    ) throws {
+
         // var kind: TokenKind
         generateAccessLevel(settings: settings)
         buffer.emitLine("var kind: TokenKind")
@@ -55,17 +61,27 @@ extension SwiftCodeGen {
 
         // func from<StringType>(stream: inout StringStream<StringType>) -> Self? where StringType.SubSequence == Substring
         buffer.ensureDoubleNewline()
-        try generateTokenTypeParser(settings: settings, modifiers: ["static"])
+        try generateTokenTypeParser(
+            settings: settings,
+            sortedTokens: sortedTokens,
+            modifiers: ["static"]
+        )
 
         // enum TokenKind
         buffer.ensureDoubleNewline()
-        try generateTokenKindEnum(settings: settings)
+        try generateTokenKindEnum(
+            settings: settings,
+            sortedTokens: sortedTokens
+        )
 
         // func consume_<TOKEN1>
         // func consume_<TOKEN2>
         //   ...
         buffer.ensureDoubleNewline()
-        try generateTokenParsers(settings: settings)
+        try generateTokenParsers(
+            settings: settings,
+            sortedTokens: sortedTokens
+        )
     }
 
     /// `var length: Int`
@@ -112,16 +128,20 @@ extension SwiftCodeGen {
     }
 
     /// `func from<StringType>(stream: inout StringStream<StringType>) -> Self? where StringType.SubSequence == Substring`
-    func generateTokenTypeParser(settings: TokenTypeGenSettings, modifiers: [String] = []) throws {
+    func generateTokenTypeParser(
+        settings: TokenTypeGenSettings,
+        sortedTokens: [InternalGrammar.TokenDefinition],
+        modifiers: [String] = []
+    ) throws {
         generateInlinableAttribute(settings: settings)
         generateAccessLevel(settings: settings)
         buffer.emitWithSeparators(modifiers + ["func"], separator: " ")
         try buffer.emitBlock(" from<StringType>(stream: inout StringStream<StringType>) -> Self? where StringType.SubSequence == Substring") {
-            try generateTokenTypeParserBody()
+            try generateTokenTypeParserBody(sortedTokens: sortedTokens)
         }
     }
 
-    func generateTokenTypeParserBody() throws {
+    func generateTokenTypeParserBody(sortedTokens: [InternalGrammar.TokenDefinition]) throws {
         buffer.emitLine("guard !stream.isEof else { return nil }")
         buffer.emitLine("stream.markSubstringStart()")
         buffer.ensureDoubleNewline()
@@ -129,10 +149,7 @@ extension SwiftCodeGen {
         // TODO: Attempt to generate a switch over the first peeked character
         // TODO: like in SwiftPEGGrammar's Token parser?
 
-        let tokensToEmit = tokenDefinitions.filter(showEmitInTokenParser)
-        let sorted = self.sortedTokens(tokensToEmit)
-
-        for token in sorted {
+        for token in sortedTokens.filter(showEmitInTokenParser) {
             let tokenName = caseName(for: token)
             let method = parseMethodName(for: token)
             let parseInvocation = "\(method)(from: &stream)"
@@ -148,19 +165,23 @@ extension SwiftCodeGen {
 
     // MARK: TokenKind generation
 
-    func generateTokenKindEnum(settings: TokenTypeGenSettings) throws {
+    func generateTokenKindEnum(
+        settings: TokenTypeGenSettings,
+        sortedTokens: [InternalGrammar.TokenDefinition]
+    ) throws {
         generateAccessLevel(settings: settings)
         try buffer.emitBlock("enum TokenKind: TokenKindType") {
             let emitter = buffer.startConditionalEmitter()
 
-            let tokensToEmit = self.tokenDefinitions.filter(self.showEmitInTokenType)
-            let sorted = self.sortedTokens(tokensToEmit)
-            for token in sorted {
+            for token in sortedTokens.filter(self.showEmitInTokenType) {
                 try generateTokenKindEnumCase(token, prevCaseSeparator: emitter)
             }
 
             buffer.ensureDoubleNewline()
-            try generateTokenKindDescription(settings: settings)
+            try generateTokenKindDescription(
+                settings: settings,
+                sortedTokens: sortedTokens
+            )
         }
     }
 
@@ -179,7 +200,8 @@ extension SwiftCodeGen {
     }
 
     func generateTokenKindDescription(
-        settings: TokenTypeGenSettings
+        settings: TokenTypeGenSettings,
+        sortedTokens: [InternalGrammar.TokenDefinition]
     ) throws {
 
         generateInlinableAttribute(settings: settings)
@@ -187,7 +209,7 @@ extension SwiftCodeGen {
         buffer.emitBlock("var description: String") {
             buffer.emitLine("switch self {")
 
-            for token in tokenDefinitions where showEmitInTokenType(token) {
+            for token in sortedTokens where showEmitInTokenType(token) {
                 guard let syntax = token.tokenSyntax else {
                     continue
                 }
@@ -206,8 +228,12 @@ extension SwiftCodeGen {
 
     // MARK: - consume_ method generation
 
-    func generateTokenParsers(settings: TokenTypeGenSettings) throws {
-        for token in tokenDefinitions {
+    func generateTokenParsers(
+        settings: TokenTypeGenSettings,
+        sortedTokens: [InternalGrammar.TokenDefinition]
+    ) throws {
+
+        for token in sortedTokens {
             buffer.ensureDoubleNewline()
             try generateTokenParser(token, settings: settings, modifiers: ["static"])
         }
@@ -870,9 +896,7 @@ extension SwiftCodeGen {
         return "consume_\(identifier)"
     }
 
-    /// Returns the input set of tokens, sorted so that tokens that compute as
-    /// prefix of other tokens come later in parsing attempts.
-    private func sortedTokens(_ tokens: [InternalGrammar.TokenDefinition]) -> [InternalGrammar.TokenDefinition] {
+    private static func _sortTokens(_ tokens: [InternalGrammar.TokenDefinition]) -> [InternalGrammar.TokenDefinition] {
         // Generate a graph of prefix-dependencies
         var byName: [String: InternalGrammar.TokenDefinition] = [:]
         for token in tokens {

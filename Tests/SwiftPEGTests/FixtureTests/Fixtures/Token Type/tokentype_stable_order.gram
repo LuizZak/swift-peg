@@ -1,0 +1,2446 @@
+# Validate ordering of token type strings to be stable across multiple invocations.
+
+@tokensFile "tokentype_stable_order.tokens" ;
+@expectedTokenType """
+struct ParserToken: RawTokenType, CustomStringConvertible {
+    var kind: TokenKind
+    var string: Substring
+
+    var length: Int {
+        string.count
+    }
+
+    var description: String {
+        String(string)
+    }
+
+    static func produceDummy(_ kind: TokenKind) -> Self {
+        .init(kind: kind, string: "<dummy>")
+    }
+
+    static func from<StringType>(stream: inout StringStream<StringType>) -> Self? where StringType.SubSequence == Substring {
+        guard !stream.isEof else { return nil }
+        stream.markSubstringStart()
+
+        if consume_WHITESPACE(from: &stream) {
+            return .init(kind: .whitespace, string: stream.substring)
+        }
+        if consume_ANDASSIGN(from: &stream) {
+            return .init(kind: .andAssign, string: stream.substring)
+        }
+        if consume_ARROW(from: &stream) {
+            return .init(kind: .arrow, string: stream.substring)
+        }
+        if consume_CLOSEBRACE(from: &stream) {
+            return .init(kind: .closeBrace, string: stream.substring)
+        }
+        if consume_CLOSEPARENS(from: &stream) {
+            return .init(kind: .closeParens, string: stream.substring)
+        }
+        if consume_CLOSESQUARE(from: &stream) {
+            return .init(kind: .closeSquare, string: stream.substring)
+        }
+        if consume_COMMA(from: &stream) {
+            return .init(kind: .comma, string: stream.substring)
+        }
+        if consume_DECREMENT(from: &stream) {
+            return .init(kind: .decrement, string: stream.substring)
+        }
+        if consume_DIVIDEASSIGN(from: &stream) {
+            return .init(kind: .divideAssign, string: stream.substring)
+        }
+        if consume_DOUBLECOLON(from: &stream) {
+            return .init(kind: .doubleColon, string: stream.substring)
+        }
+        if consume_COLON(from: &stream) {
+            return .init(kind: .colon, string: stream.substring)
+        }
+        if consume_DOUBLEHASH(from: &stream) {
+            return .init(kind: .doubleHash, string: stream.substring)
+        }
+        if consume_ELLIPSIS(from: &stream) {
+            return .init(kind: .ellipsis, string: stream.substring)
+        }
+        if consume_DOT(from: &stream) {
+            return .init(kind: .dot, string: stream.substring)
+        }
+        if consume_EQUALS(from: &stream) {
+            return .init(kind: .equals, string: stream.substring)
+        }
+        if consume_ASSIGNMENT(from: &stream) {
+            return .init(kind: .assignment, string: stream.substring)
+        }
+        if consume_FORWARDSLASH(from: &stream) {
+            return .init(kind: .forwardSlash, string: stream.substring)
+        }
+        if consume_GREATERTHANOREQUAL(from: &stream) {
+            return .init(kind: .greaterThanOrEqual, string: stream.substring)
+        }
+        if consume_HASH(from: &stream) {
+            return .init(kind: .hash, string: stream.substring)
+        }
+        if consume_INCREMENT(from: &stream) {
+            return .init(kind: .increment, string: stream.substring)
+        }
+        if consume_LEFTSHIFTASSIGN(from: &stream) {
+            return .init(kind: .leftShiftAssign, string: stream.substring)
+        }
+        if consume_LEFTSHIFT(from: &stream) {
+            return .init(kind: .leftShift, string: stream.substring)
+        }
+        if consume_LESSTHANOREQUAL(from: &stream) {
+            return .init(kind: .lessThanOrEqual, string: stream.substring)
+        }
+        if consume_LESSTHAN(from: &stream) {
+            return .init(kind: .lessThan, string: stream.substring)
+        }
+        if consume_LOGICALAND(from: &stream) {
+            return .init(kind: .logicalAnd, string: stream.substring)
+        }
+        if consume_BITWISEAND(from: &stream) {
+            return .init(kind: .bitwiseAnd, string: stream.substring)
+        }
+        if consume_LOGICALOR(from: &stream) {
+            return .init(kind: .logicalOr, string: stream.substring)
+        }
+        if consume_MINUSASSIGN(from: &stream) {
+            return .init(kind: .minusAssign, string: stream.substring)
+        }
+        if consume_MINUS(from: &stream) {
+            return .init(kind: .minus, string: stream.substring)
+        }
+        if consume_MODULOASSIGN(from: &stream) {
+            return .init(kind: .moduloAssign, string: stream.substring)
+        }
+        if consume_MULTIPLYASSIGN(from: &stream) {
+            return .init(kind: .multiplyAssign, string: stream.substring)
+        }
+        if consume_ASTERISK(from: &stream) {
+            return .init(kind: .asterisk, string: stream.substring)
+        }
+        if consume_NOTEQUALS(from: &stream) {
+            return .init(kind: .notEquals, string: stream.substring)
+        }
+        if consume_EXCLAMATION(from: &stream) {
+            return .init(kind: .exclamation, string: stream.substring)
+        }
+        if consume_OPENBRACE(from: &stream) {
+            return .init(kind: .openBrace, string: stream.substring)
+        }
+        if consume_OPENPARENS(from: &stream) {
+            return .init(kind: .openParens, string: stream.substring)
+        }
+        if consume_OPENSQUARE(from: &stream) {
+            return .init(kind: .openSquare, string: stream.substring)
+        }
+        if consume_ORASSIGN(from: &stream) {
+            return .init(kind: .orAssign, string: stream.substring)
+        }
+        if consume_BITWISEOR(from: &stream) {
+            return .init(kind: .bitwiseOr, string: stream.substring)
+        }
+        if consume_PERCENTDOUBLECOLON(from: &stream) {
+            return .init(kind: .percentDoubleColon, string: stream.substring)
+        }
+        if consume_PERCENTCOLON(from: &stream) {
+            return .init(kind: .percentColon, string: stream.substring)
+        }
+        if consume_PERCENT(from: &stream) {
+            return .init(kind: .percent, string: stream.substring)
+        }
+        if consume_PLUSASSIGN(from: &stream) {
+            return .init(kind: .plusAssign, string: stream.substring)
+        }
+        if consume_PLUS(from: &stream) {
+            return .init(kind: .plus, string: stream.substring)
+        }
+        if consume_QUESTIONMARK(from: &stream) {
+            return .init(kind: .questionMark, string: stream.substring)
+        }
+        if consume_RIGHTSHIFTASSIGN(from: &stream) {
+            return .init(kind: .rightShiftAssign, string: stream.substring)
+        }
+        if consume_RIGHTSHIFT(from: &stream) {
+            return .init(kind: .rightShift, string: stream.substring)
+        }
+        if consume_GREATERTHAN(from: &stream) {
+            return .init(kind: .greaterThan, string: stream.substring)
+        }
+        if consume_SEMICOLON(from: &stream) {
+            return .init(kind: .semicolon, string: stream.substring)
+        }
+        if consume_TILDE(from: &stream) {
+            return .init(kind: .tilde, string: stream.substring)
+        }
+        if consume_XORASSIGN(from: &stream) {
+            return .init(kind: .xorAssign, string: stream.substring)
+        }
+        if consume_BITWISEXOR(from: &stream) {
+            return .init(kind: .bitwiseXor, string: stream.substring)
+        }
+        if consume__Atomic(from: &stream) {
+            return .init(kind: ._Atomic, string: stream.substring)
+        }
+        if consume__BitInt(from: &stream) {
+            return .init(kind: ._BitInt, string: stream.substring)
+        }
+        if consume__Complex(from: &stream) {
+            return .init(kind: ._Complex, string: stream.substring)
+        }
+        if consume__Decimal128(from: &stream) {
+            return .init(kind: ._Decimal128, string: stream.substring)
+        }
+        if consume__Decimal32(from: &stream) {
+            return .init(kind: ._Decimal32, string: stream.substring)
+        }
+        if consume__Decimal64(from: &stream) {
+            return .init(kind: ._Decimal64, string: stream.substring)
+        }
+        if consume__Generic(from: &stream) {
+            return .init(kind: ._Generic, string: stream.substring)
+        }
+        if consume__Imaginary(from: &stream) {
+            return .init(kind: ._Imaginary, string: stream.substring)
+        }
+        if consume__Noreturn(from: &stream) {
+            return .init(kind: ._Noreturn, string: stream.substring)
+        }
+        if consume_alignas(from: &stream) {
+            return .init(kind: .alignas, string: stream.substring)
+        }
+        if consume_alignof(from: &stream) {
+            return .init(kind: .alignof, string: stream.substring)
+        }
+        if consume_auto(from: &stream) {
+            return .init(kind: .auto, string: stream.substring)
+        }
+        if consume_bool(from: &stream) {
+            return .init(kind: .bool, string: stream.substring)
+        }
+        if consume_break(from: &stream) {
+            return .init(kind: .break, string: stream.substring)
+        }
+        if consume_case(from: &stream) {
+            return .init(kind: .case, string: stream.substring)
+        }
+        if consume_char(from: &stream) {
+            return .init(kind: .char, string: stream.substring)
+        }
+        if consume_constexpr(from: &stream) {
+            return .init(kind: .constexpr, string: stream.substring)
+        }
+        if consume_const(from: &stream) {
+            return .init(kind: .const, string: stream.substring)
+        }
+        if consume_continue(from: &stream) {
+            return .init(kind: .continue, string: stream.substring)
+        }
+        if consume_default(from: &stream) {
+            return .init(kind: .default, string: stream.substring)
+        }
+        if consume_do(from: &stream) {
+            return .init(kind: .do, string: stream.substring)
+        }
+        if consume_typeof(from: &stream) {
+            return .init(kind: .typeof, string: stream.substring)
+        }
+        if consume_union(from: &stream) {
+            return .init(kind: .union, string: stream.substring)
+        }
+        if consume_unsigned(from: &stream) {
+            return .init(kind: .unsigned, string: stream.substring)
+        }
+        if consume_void(from: &stream) {
+            return .init(kind: .void, string: stream.substring)
+        }
+        if consume_volatile(from: &stream) {
+            return .init(kind: .volatile, string: stream.substring)
+        }
+        if consume_while(from: &stream) {
+            return .init(kind: .while, string: stream.substring)
+        }
+        if consume_floatingConstant(from: &stream) {
+            return .init(kind: .floatingConstant, string: stream.substring)
+        }
+        if consume_identifier(from: &stream) {
+            return .init(kind: .identifier, string: stream.substring)
+        }
+        if consume_integerConstant(from: &stream) {
+            return .init(kind: .integerConstant, string: stream.substring)
+        }
+
+        return nil
+    }
+
+    enum TokenKind: TokenKindType {
+        /// `(" " | "\\n" | "\\t" | "\\r")+`
+        case whitespace
+
+        /// `"&="`
+        case andAssign
+
+        /// `"->"`
+        case arrow
+
+        /// `"}"`
+        case closeBrace
+
+        /// `")"`
+        case closeParens
+
+        /// `"]"`
+        case closeSquare
+
+        /// `","`
+        case comma
+
+        /// `"--"`
+        case decrement
+
+        /// `"/="`
+        case divideAssign
+
+        /// `"::"`
+        case doubleColon
+
+        /// `":"`
+        case colon
+
+        /// `"##"`
+        case doubleHash
+
+        /// `"..."`
+        case ellipsis
+
+        /// `"."`
+        case dot
+
+        /// `"=="`
+        case equals
+
+        /// `"="`
+        case assignment
+
+        /// `"/"`
+        case forwardSlash
+
+        /// `">="`
+        case greaterThanOrEqual
+
+        /// `"#"`
+        case hash
+
+        /// `"++"`
+        case increment
+
+        /// `"<<="`
+        case leftShiftAssign
+
+        /// `"<<"`
+        case leftShift
+
+        /// `"<="`
+        case lessThanOrEqual
+
+        /// `"<"`
+        case lessThan
+
+        /// `"&&"`
+        case logicalAnd
+
+        /// `"&"`
+        case bitwiseAnd
+
+        /// `"||"`
+        case logicalOr
+
+        /// `"-="`
+        case minusAssign
+
+        /// `"-"`
+        case minus
+
+        /// `"%="`
+        case moduloAssign
+
+        /// `"*="`
+        case multiplyAssign
+
+        /// `"*"`
+        case asterisk
+
+        /// `"!="`
+        case notEquals
+
+        /// `"!"`
+        case exclamation
+
+        /// `"{"`
+        case openBrace
+
+        /// `"("`
+        case openParens
+
+        /// `"["`
+        case openSquare
+
+        /// `"|="`
+        case orAssign
+
+        /// `"|"`
+        case bitwiseOr
+
+        /// `"%:%:"`
+        case percentDoubleColon
+
+        /// `"%:"`
+        case percentColon
+
+        /// `"%"`
+        case percent
+
+        /// `"+="`
+        case plusAssign
+
+        /// `"+"`
+        case plus
+
+        /// `"?"`
+        case questionMark
+
+        /// `">>="`
+        case rightShiftAssign
+
+        /// `">>"`
+        case rightShift
+
+        /// `">"`
+        case greaterThan
+
+        /// `";"`
+        case semicolon
+
+        /// `"~"`
+        case tilde
+
+        /// `"^="`
+        case xorAssign
+
+        /// `"^"`
+        case bitwiseXor
+
+        /// `"_Atomic" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        case _Atomic
+
+        /// `"_BitInt" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        case _BitInt
+
+        /// `"_Complex" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        case _Complex
+
+        /// `"_Decimal128" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        case _Decimal128
+
+        /// `"_Decimal32" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        case _Decimal32
+
+        /// `"_Decimal64" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        case _Decimal64
+
+        /// `"_Generic" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        case _Generic
+
+        /// `"_Imaginary" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        case _Imaginary
+
+        /// `"_Noreturn" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        case _Noreturn
+
+        /// `"alignas" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        case alignas
+
+        /// `"alignof" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        case alignof
+
+        /// `"auto" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        case auto
+
+        /// `"bool" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        case bool
+
+        /// `"break" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        case `break`
+
+        /// `"case" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        case `case`
+
+        /// `"char" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        case char
+
+        /// `"constexpr" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        case constexpr
+
+        /// `"const" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        case const
+
+        /// `"continue" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        case `continue`
+
+        /// `"default" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        case `default`
+
+        /// `"do" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        case `do`
+
+        /// `"typeof" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        case typeof
+
+        /// `"union" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        case union
+
+        /// `"unsigned" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        case unsigned
+
+        /// `"void" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        case void
+
+        /// `"volatile" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        case volatile
+
+        /// `"while" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        case `while`
+
+        /// ```
+        /// floatingConstant[".floatingConstant"]:
+        ///     | fractional_constant exponent_part?
+        ///     | digit_sequence exponent_part
+        ///     | hexadecimal_prefix hexadecimal_fractional_constant binary_exponent_part
+        ///     | hexadecimal_prefix hexadecimal_digit_sequence binary_exponent_part
+        ///     ;
+        /// ```
+        case floatingConstant
+
+        /// `("a"..."z" | "A"..."Z" | "_") ("0"..."9" | "a"..."z" | "A"..."Z" | "_")*`
+        case identifier
+
+        /// ```
+        /// integerConstant[".integerConstant"]:
+        ///     | hexadecimal_prefix hexadecimal_digit_sequence
+        ///     | "1"..."9" (_decimal_digit)*
+        ///     ;
+        /// ```
+        case integerConstant
+
+        var description: String {
+            switch self {
+            case .whitespace: "WHITESPACE"
+            case .andAssign: "&="
+            case .arrow: "->"
+            case .closeBrace: "}"
+            case .closeParens: ")"
+            case .closeSquare: "]"
+            case .comma: ","
+            case .decrement: "--"
+            case .divideAssign: "/="
+            case .doubleColon: "::"
+            case .colon: ":"
+            case .doubleHash: "##"
+            case .ellipsis: "..."
+            case .dot: "."
+            case .equals: "=="
+            case .assignment: "="
+            case .forwardSlash: "/"
+            case .greaterThanOrEqual: ">="
+            case .hash: "#"
+            case .increment: "++"
+            case .leftShiftAssign: "<<="
+            case .leftShift: "<<"
+            case .lessThanOrEqual: "<="
+            case .lessThan: "<"
+            case .logicalAnd: "&&"
+            case .bitwiseAnd: "&"
+            case .logicalOr: "||"
+            case .minusAssign: "-="
+            case .minus: "-"
+            case .moduloAssign: "%="
+            case .multiplyAssign: "*="
+            case .asterisk: "*"
+            case .notEquals: "!="
+            case .exclamation: "!"
+            case .openBrace: "{"
+            case .openParens: "("
+            case .openSquare: "["
+            case .orAssign: "|="
+            case .bitwiseOr: "|"
+            case .percentDoubleColon: "%:%:"
+            case .percentColon: "%:"
+            case .percent: "%"
+            case .plusAssign: "+="
+            case .plus: "+"
+            case .questionMark: "?"
+            case .rightShiftAssign: ">>="
+            case .rightShift: ">>"
+            case .greaterThan: ">"
+            case .semicolon: ";"
+            case .tilde: "~"
+            case .xorAssign: "^="
+            case .bitwiseXor: "^"
+            case ._Atomic: "_Atomic"
+            case ._BitInt: "_BitInt"
+            case ._Complex: "_Complex"
+            case ._Decimal128: "_Decimal128"
+            case ._Decimal32: "_Decimal32"
+            case ._Decimal64: "_Decimal64"
+            case ._Generic: "_Generic"
+            case ._Imaginary: "_Imaginary"
+            case ._Noreturn: "_Noreturn"
+            case .alignas: "alignas"
+            case .alignof: "alignof"
+            case .auto: "auto"
+            case .bool: "bool"
+            case .break: "break"
+            case .case: "case"
+            case .char: "char"
+            case .constexpr: "constexpr"
+            case .const: "const"
+            case .continue: "continue"
+            case .default: "default"
+            case .do: "do"
+            case .typeof: "typeof"
+            case .union: "union"
+            case .unsigned: "unsigned"
+            case .void: "void"
+            case .volatile: "volatile"
+            case .while: "while"
+            case .floatingConstant: "floatingConstant"
+            case .identifier: "identifier"
+            case .integerConstant: "integerConstant"
+            }
+        }
+    }
+
+    /// ```
+    /// WHITESPACE[".whitespace"]:
+    ///     | (" " | "\\n" | "\\t" | "\\r")+
+    ///     ;
+    /// ```
+    static func consume_WHITESPACE<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+
+        alt:
+        do {
+            switch stream.peek() {
+            case " ", "\\n", "\\t", "\\r":
+                stream.advance()
+            default:
+                return false
+            }
+
+            loop:
+            while !stream.isEof {
+                switch stream.peek() {
+                case " ", "\\n", "\\t", "\\r":
+                    stream.advance()
+                default:
+                    break loop
+                }
+            }
+
+            return true
+        }
+    }
+
+    /// ```
+    /// ANDASSIGN[".andAssign"]:
+    ///     | "&="
+    ///     ;
+    /// ```
+    static func consume_ANDASSIGN<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("&=")
+    }
+
+    /// ```
+    /// ARROW[".arrow"]:
+    ///     | "->"
+    ///     ;
+    /// ```
+    static func consume_ARROW<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("->")
+    }
+
+    /// ```
+    /// CLOSEBRACE[".closeBrace"]:
+    ///     | "}"
+    ///     ;
+    /// ```
+    static func consume_CLOSEBRACE<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("}")
+    }
+
+    /// ```
+    /// CLOSEPARENS[".closeParens"]:
+    ///     | ")"
+    ///     ;
+    /// ```
+    static func consume_CLOSEPARENS<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext(")")
+    }
+
+    /// ```
+    /// CLOSESQUARE[".closeSquare"]:
+    ///     | "]"
+    ///     ;
+    /// ```
+    static func consume_CLOSESQUARE<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("]")
+    }
+
+    /// ```
+    /// COMMA[".comma"]:
+    ///     | ","
+    ///     ;
+    /// ```
+    static func consume_COMMA<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext(",")
+    }
+
+    /// ```
+    /// DECREMENT[".decrement"]:
+    ///     | "--"
+    ///     ;
+    /// ```
+    static func consume_DECREMENT<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("--")
+    }
+
+    /// ```
+    /// DIVIDEASSIGN[".divideAssign"]:
+    ///     | "/="
+    ///     ;
+    /// ```
+    static func consume_DIVIDEASSIGN<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("/=")
+    }
+
+    /// ```
+    /// DOUBLECOLON[".doubleColon"]:
+    ///     | "::"
+    ///     ;
+    /// ```
+    static func consume_DOUBLECOLON<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("::")
+    }
+
+    /// ```
+    /// COLON[".colon"]:
+    ///     | ":"
+    ///     ;
+    /// ```
+    static func consume_COLON<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext(":")
+    }
+
+    /// ```
+    /// DOUBLEHASH[".doubleHash"]:
+    ///     | "##"
+    ///     ;
+    /// ```
+    static func consume_DOUBLEHASH<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("##")
+    }
+
+    /// ```
+    /// ELLIPSIS[".ellipsis"]:
+    ///     | "..."
+    ///     ;
+    /// ```
+    static func consume_ELLIPSIS<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("...")
+    }
+
+    /// ```
+    /// DOT[".dot"]:
+    ///     | "."
+    ///     ;
+    /// ```
+    static func consume_DOT<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext(".")
+    }
+
+    /// ```
+    /// EQUALS[".equals"]:
+    ///     | "=="
+    ///     ;
+    /// ```
+    static func consume_EQUALS<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("==")
+    }
+
+    /// ```
+    /// ASSIGNMENT[".assignment"]:
+    ///     | "="
+    ///     ;
+    /// ```
+    static func consume_ASSIGNMENT<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("=")
+    }
+
+    /// ```
+    /// FORWARDSLASH[".forwardSlash"]:
+    ///     | "/"
+    ///     ;
+    /// ```
+    static func consume_FORWARDSLASH<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("/")
+    }
+
+    /// ```
+    /// GREATERTHANOREQUAL[".greaterThanOrEqual"]:
+    ///     | ">="
+    ///     ;
+    /// ```
+    static func consume_GREATERTHANOREQUAL<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext(">=")
+    }
+
+    /// ```
+    /// HASH[".hash"]:
+    ///     | "#"
+    ///     ;
+    /// ```
+    static func consume_HASH<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("#")
+    }
+
+    /// ```
+    /// INCREMENT[".increment"]:
+    ///     | "++"
+    ///     ;
+    /// ```
+    static func consume_INCREMENT<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("++")
+    }
+
+    /// ```
+    /// LEFTSHIFTASSIGN[".leftShiftAssign"]:
+    ///     | "<<="
+    ///     ;
+    /// ```
+    static func consume_LEFTSHIFTASSIGN<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("<<=")
+    }
+
+    /// ```
+    /// LEFTSHIFT[".leftShift"]:
+    ///     | "<<"
+    ///     ;
+    /// ```
+    static func consume_LEFTSHIFT<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("<<")
+    }
+
+    /// ```
+    /// LESSTHANOREQUAL[".lessThanOrEqual"]:
+    ///     | "<="
+    ///     ;
+    /// ```
+    static func consume_LESSTHANOREQUAL<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("<=")
+    }
+
+    /// ```
+    /// LESSTHAN[".lessThan"]:
+    ///     | "<"
+    ///     ;
+    /// ```
+    static func consume_LESSTHAN<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("<")
+    }
+
+    /// ```
+    /// LOGICALAND[".logicalAnd"]:
+    ///     | "&&"
+    ///     ;
+    /// ```
+    static func consume_LOGICALAND<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("&&")
+    }
+
+    /// ```
+    /// BITWISEAND[".bitwiseAnd"]:
+    ///     | "&"
+    ///     ;
+    /// ```
+    static func consume_BITWISEAND<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("&")
+    }
+
+    /// ```
+    /// LOGICALOR[".logicalOr"]:
+    ///     | "||"
+    ///     ;
+    /// ```
+    static func consume_LOGICALOR<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("||")
+    }
+
+    /// ```
+    /// MINUSASSIGN[".minusAssign"]:
+    ///     | "-="
+    ///     ;
+    /// ```
+    static func consume_MINUSASSIGN<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("-=")
+    }
+
+    /// ```
+    /// MINUS[".minus"]:
+    ///     | "-"
+    ///     ;
+    /// ```
+    static func consume_MINUS<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("-")
+    }
+
+    /// ```
+    /// MODULOASSIGN[".moduloAssign"]:
+    ///     | "%="
+    ///     ;
+    /// ```
+    static func consume_MODULOASSIGN<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("%=")
+    }
+
+    /// ```
+    /// MULTIPLYASSIGN[".multiplyAssign"]:
+    ///     | "*="
+    ///     ;
+    /// ```
+    static func consume_MULTIPLYASSIGN<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("*=")
+    }
+
+    /// ```
+    /// ASTERISK[".asterisk"]:
+    ///     | "*"
+    ///     ;
+    /// ```
+    static func consume_ASTERISK<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("*")
+    }
+
+    /// ```
+    /// NOTEQUALS[".notEquals"]:
+    ///     | "!="
+    ///     ;
+    /// ```
+    static func consume_NOTEQUALS<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("!=")
+    }
+
+    /// ```
+    /// EXCLAMATION[".exclamation"]:
+    ///     | "!"
+    ///     ;
+    /// ```
+    static func consume_EXCLAMATION<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("!")
+    }
+
+    /// ```
+    /// OPENBRACE[".openBrace"]:
+    ///     | "{"
+    ///     ;
+    /// ```
+    static func consume_OPENBRACE<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("{")
+    }
+
+    /// ```
+    /// OPENPARENS[".openParens"]:
+    ///     | "("
+    ///     ;
+    /// ```
+    static func consume_OPENPARENS<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("(")
+    }
+
+    /// ```
+    /// OPENSQUARE[".openSquare"]:
+    ///     | "["
+    ///     ;
+    /// ```
+    static func consume_OPENSQUARE<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("[")
+    }
+
+    /// ```
+    /// ORASSIGN[".orAssign"]:
+    ///     | "|="
+    ///     ;
+    /// ```
+    static func consume_ORASSIGN<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("|=")
+    }
+
+    /// ```
+    /// BITWISEOR[".bitwiseOr"]:
+    ///     | "|"
+    ///     ;
+    /// ```
+    static func consume_BITWISEOR<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("|")
+    }
+
+    /// ```
+    /// PERCENTDOUBLECOLON[".percentDoubleColon"]:
+    ///     | "%:%:"
+    ///     ;
+    /// ```
+    static func consume_PERCENTDOUBLECOLON<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("%:%:")
+    }
+
+    /// ```
+    /// PERCENTCOLON[".percentColon"]:
+    ///     | "%:"
+    ///     ;
+    /// ```
+    static func consume_PERCENTCOLON<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("%:")
+    }
+
+    /// ```
+    /// PERCENT[".percent"]:
+    ///     | "%"
+    ///     ;
+    /// ```
+    static func consume_PERCENT<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("%")
+    }
+
+    /// ```
+    /// PLUSASSIGN[".plusAssign"]:
+    ///     | "+="
+    ///     ;
+    /// ```
+    static func consume_PLUSASSIGN<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("+=")
+    }
+
+    /// ```
+    /// PLUS[".plus"]:
+    ///     | "+"
+    ///     ;
+    /// ```
+    static func consume_PLUS<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("+")
+    }
+
+    /// ```
+    /// QUESTIONMARK[".questionMark"]:
+    ///     | "?"
+    ///     ;
+    /// ```
+    static func consume_QUESTIONMARK<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("?")
+    }
+
+    /// ```
+    /// RIGHTSHIFTASSIGN[".rightShiftAssign"]:
+    ///     | ">>="
+    ///     ;
+    /// ```
+    static func consume_RIGHTSHIFTASSIGN<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext(">>=")
+    }
+
+    /// ```
+    /// RIGHTSHIFT[".rightShift"]:
+    ///     | ">>"
+    ///     ;
+    /// ```
+    static func consume_RIGHTSHIFT<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext(">>")
+    }
+
+    /// ```
+    /// GREATERTHAN[".greaterThan"]:
+    ///     | ">"
+    ///     ;
+    /// ```
+    static func consume_GREATERTHAN<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext(">")
+    }
+
+    /// ```
+    /// SEMICOLON[".semicolon"]:
+    ///     | ";"
+    ///     ;
+    /// ```
+    static func consume_SEMICOLON<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext(";")
+    }
+
+    /// ```
+    /// TILDE[".tilde"]:
+    ///     | "~"
+    ///     ;
+    /// ```
+    static func consume_TILDE<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("~")
+    }
+
+    /// ```
+    /// XORASSIGN[".xorAssign"]:
+    ///     | "^="
+    ///     ;
+    /// ```
+    static func consume_XORASSIGN<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("^=")
+    }
+
+    /// ```
+    /// BITWISEXOR[".bitwiseXor"]:
+    ///     | "^"
+    ///     ;
+    /// ```
+    static func consume_BITWISEXOR<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("^")
+    }
+
+    /// ```
+    /// _Atomic["._Atomic"]:
+    ///     | "_Atomic" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     ;
+    /// ```
+    static func consume__Atomic<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+        let state = stream.save()
+
+        alt:
+        do {
+            guard stream.isNext("_Atomic") else {
+                return false
+            }
+            stream.advance(7)
+
+            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+                break alt
+            }
+            return true
+        }
+
+        stream.restore(state)
+
+        return false
+    }
+
+    /// ```
+    /// _BitInt["._BitInt"]:
+    ///     | "_BitInt" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     ;
+    /// ```
+    static func consume__BitInt<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+        let state = stream.save()
+
+        alt:
+        do {
+            guard stream.isNext("_BitInt") else {
+                return false
+            }
+            stream.advance(7)
+
+            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+                break alt
+            }
+            return true
+        }
+
+        stream.restore(state)
+
+        return false
+    }
+
+    /// ```
+    /// _Complex["._Complex"]:
+    ///     | "_Complex" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     ;
+    /// ```
+    static func consume__Complex<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+        let state = stream.save()
+
+        alt:
+        do {
+            guard stream.isNext("_Complex") else {
+                return false
+            }
+            stream.advance(8)
+
+            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+                break alt
+            }
+            return true
+        }
+
+        stream.restore(state)
+
+        return false
+    }
+
+    /// ```
+    /// _Decimal128["._Decimal128"]:
+    ///     | "_Decimal128" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     ;
+    /// ```
+    static func consume__Decimal128<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+        let state = stream.save()
+
+        alt:
+        do {
+            guard stream.isNext("_Decimal128") else {
+                return false
+            }
+            stream.advance(11)
+
+            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+                break alt
+            }
+            return true
+        }
+
+        stream.restore(state)
+
+        return false
+    }
+
+    /// ```
+    /// _Decimal32["._Decimal32"]:
+    ///     | "_Decimal32" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     ;
+    /// ```
+    static func consume__Decimal32<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+        let state = stream.save()
+
+        alt:
+        do {
+            guard stream.isNext("_Decimal32") else {
+                return false
+            }
+            stream.advance(10)
+
+            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+                break alt
+            }
+            return true
+        }
+
+        stream.restore(state)
+
+        return false
+    }
+
+    /// ```
+    /// _Decimal64["._Decimal64"]:
+    ///     | "_Decimal64" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     ;
+    /// ```
+    static func consume__Decimal64<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+        let state = stream.save()
+
+        alt:
+        do {
+            guard stream.isNext("_Decimal64") else {
+                return false
+            }
+            stream.advance(10)
+
+            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+                break alt
+            }
+            return true
+        }
+
+        stream.restore(state)
+
+        return false
+    }
+
+    /// ```
+    /// _Generic["._Generic"]:
+    ///     | "_Generic" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     ;
+    /// ```
+    static func consume__Generic<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+        let state = stream.save()
+
+        alt:
+        do {
+            guard stream.isNext("_Generic") else {
+                return false
+            }
+            stream.advance(8)
+
+            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+                break alt
+            }
+            return true
+        }
+
+        stream.restore(state)
+
+        return false
+    }
+
+    /// ```
+    /// _Imaginary["._Imaginary"]:
+    ///     | "_Imaginary" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     ;
+    /// ```
+    static func consume__Imaginary<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+        let state = stream.save()
+
+        alt:
+        do {
+            guard stream.isNext("_Imaginary") else {
+                return false
+            }
+            stream.advance(10)
+
+            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+                break alt
+            }
+            return true
+        }
+
+        stream.restore(state)
+
+        return false
+    }
+
+    /// ```
+    /// _Noreturn["._Noreturn"]:
+    ///     | "_Noreturn" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     ;
+    /// ```
+    static func consume__Noreturn<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+        let state = stream.save()
+
+        alt:
+        do {
+            guard stream.isNext("_Noreturn") else {
+                return false
+            }
+            stream.advance(9)
+
+            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+                break alt
+            }
+            return true
+        }
+
+        stream.restore(state)
+
+        return false
+    }
+
+    /// ```
+    /// alignas[".alignas"]:
+    ///     | "alignas" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     ;
+    /// ```
+    static func consume_alignas<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+        let state = stream.save()
+
+        alt:
+        do {
+            guard stream.isNext("alignas") else {
+                return false
+            }
+            stream.advance(7)
+
+            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+                break alt
+            }
+            return true
+        }
+
+        stream.restore(state)
+
+        return false
+    }
+
+    /// ```
+    /// alignof[".alignof"]:
+    ///     | "alignof" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     ;
+    /// ```
+    static func consume_alignof<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+        let state = stream.save()
+
+        alt:
+        do {
+            guard stream.isNext("alignof") else {
+                return false
+            }
+            stream.advance(7)
+
+            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+                break alt
+            }
+            return true
+        }
+
+        stream.restore(state)
+
+        return false
+    }
+
+    /// ```
+    /// auto[".auto"]:
+    ///     | "auto" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     ;
+    /// ```
+    static func consume_auto<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+        let state = stream.save()
+
+        alt:
+        do {
+            guard stream.isNext("auto") else {
+                return false
+            }
+            stream.advance(4)
+
+            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+                break alt
+            }
+            return true
+        }
+
+        stream.restore(state)
+
+        return false
+    }
+
+    /// ```
+    /// bool[".bool"]:
+    ///     | "bool" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     ;
+    /// ```
+    static func consume_bool<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+        let state = stream.save()
+
+        alt:
+        do {
+            guard stream.isNext("bool") else {
+                return false
+            }
+            stream.advance(4)
+
+            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+                break alt
+            }
+            return true
+        }
+
+        stream.restore(state)
+
+        return false
+    }
+
+    /// ```
+    /// break[".break"]:
+    ///     | "break" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     ;
+    /// ```
+    static func consume_break<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+        let state = stream.save()
+
+        alt:
+        do {
+            guard stream.isNext("break") else {
+                return false
+            }
+            stream.advance(5)
+
+            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+                break alt
+            }
+            return true
+        }
+
+        stream.restore(state)
+
+        return false
+    }
+
+    /// ```
+    /// case[".case"]:
+    ///     | "case" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     ;
+    /// ```
+    static func consume_case<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+        let state = stream.save()
+
+        alt:
+        do {
+            guard stream.isNext("case") else {
+                return false
+            }
+            stream.advance(4)
+
+            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+                break alt
+            }
+            return true
+        }
+
+        stream.restore(state)
+
+        return false
+    }
+
+    /// ```
+    /// char[".char"]:
+    ///     | "char" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     ;
+    /// ```
+    static func consume_char<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+        let state = stream.save()
+
+        alt:
+        do {
+            guard stream.isNext("char") else {
+                return false
+            }
+            stream.advance(4)
+
+            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+                break alt
+            }
+            return true
+        }
+
+        stream.restore(state)
+
+        return false
+    }
+
+    /// ```
+    /// constexpr[".constexpr"]:
+    ///     | "constexpr" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     ;
+    /// ```
+    static func consume_constexpr<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+        let state = stream.save()
+
+        alt:
+        do {
+            guard stream.isNext("constexpr") else {
+                return false
+            }
+            stream.advance(9)
+
+            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+                break alt
+            }
+            return true
+        }
+
+        stream.restore(state)
+
+        return false
+    }
+
+    /// ```
+    /// const[".const"]:
+    ///     | "const" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     ;
+    /// ```
+    static func consume_const<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+        let state = stream.save()
+
+        alt:
+        do {
+            guard stream.isNext("const") else {
+                return false
+            }
+            stream.advance(5)
+
+            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+                break alt
+            }
+            return true
+        }
+
+        stream.restore(state)
+
+        return false
+    }
+
+    /// ```
+    /// continue[".continue"]:
+    ///     | "continue" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     ;
+    /// ```
+    static func consume_continue<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+        let state = stream.save()
+
+        alt:
+        do {
+            guard stream.isNext("continue") else {
+                return false
+            }
+            stream.advance(8)
+
+            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+                break alt
+            }
+            return true
+        }
+
+        stream.restore(state)
+
+        return false
+    }
+
+    /// ```
+    /// default[".default"]:
+    ///     | "default" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     ;
+    /// ```
+    static func consume_default<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+        let state = stream.save()
+
+        alt:
+        do {
+            guard stream.isNext("default") else {
+                return false
+            }
+            stream.advance(7)
+
+            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+                break alt
+            }
+            return true
+        }
+
+        stream.restore(state)
+
+        return false
+    }
+
+    /// ```
+    /// do[".do"]:
+    ///     | "do" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     ;
+    /// ```
+    static func consume_do<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+        let state = stream.save()
+
+        alt:
+        do {
+            guard stream.isNext("do") else {
+                return false
+            }
+            stream.advance(2)
+
+            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+                break alt
+            }
+            return true
+        }
+
+        stream.restore(state)
+
+        return false
+    }
+
+    /// ```
+    /// typeof[".typeof"]:
+    ///     | "typeof" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     ;
+    /// ```
+    static func consume_typeof<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+        let state = stream.save()
+
+        alt:
+        do {
+            guard stream.isNext("typeof") else {
+                return false
+            }
+            stream.advance(6)
+
+            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+                break alt
+            }
+            return true
+        }
+
+        stream.restore(state)
+
+        return false
+    }
+
+    /// ```
+    /// union[".union"]:
+    ///     | "union" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     ;
+    /// ```
+    static func consume_union<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+        let state = stream.save()
+
+        alt:
+        do {
+            guard stream.isNext("union") else {
+                return false
+            }
+            stream.advance(5)
+
+            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+                break alt
+            }
+            return true
+        }
+
+        stream.restore(state)
+
+        return false
+    }
+
+    /// ```
+    /// unsigned[".unsigned"]:
+    ///     | "unsigned" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     ;
+    /// ```
+    static func consume_unsigned<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+        let state = stream.save()
+
+        alt:
+        do {
+            guard stream.isNext("unsigned") else {
+                return false
+            }
+            stream.advance(8)
+
+            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+                break alt
+            }
+            return true
+        }
+
+        stream.restore(state)
+
+        return false
+    }
+
+    /// ```
+    /// void[".void"]:
+    ///     | "void" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     ;
+    /// ```
+    static func consume_void<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+        let state = stream.save()
+
+        alt:
+        do {
+            guard stream.isNext("void") else {
+                return false
+            }
+            stream.advance(4)
+
+            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+                break alt
+            }
+            return true
+        }
+
+        stream.restore(state)
+
+        return false
+    }
+
+    /// ```
+    /// volatile[".volatile"]:
+    ///     | "volatile" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     ;
+    /// ```
+    static func consume_volatile<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+        let state = stream.save()
+
+        alt:
+        do {
+            guard stream.isNext("volatile") else {
+                return false
+            }
+            stream.advance(8)
+
+            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+                break alt
+            }
+            return true
+        }
+
+        stream.restore(state)
+
+        return false
+    }
+
+    /// ```
+    /// while[".while"]:
+    ///     | "while" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     ;
+    /// ```
+    static func consume_while<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+        let state = stream.save()
+
+        alt:
+        do {
+            guard stream.isNext("while") else {
+                return false
+            }
+            stream.advance(5)
+
+            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+                break alt
+            }
+            return true
+        }
+
+        stream.restore(state)
+
+        return false
+    }
+
+    /// ```
+    /// _decimal_digit:
+    ///     | "'"? "0"..."9"
+    ///     ;
+    /// ```
+    static func consume__decimal_digit<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+        let state = stream.save()
+
+        alt:
+        do {
+            if stream.isNext("'") {
+                stream.advance()
+            }
+
+            guard !stream.isEof, stream.isNextInRange("0"..."9") else {
+                break alt
+            }
+            stream.advance()
+
+            return true
+        }
+
+        stream.restore(state)
+
+        return false
+    }
+
+    /// ```
+    /// _hexadecimal_digit:
+    ///     | "'"? hexadecimal_digit
+    ///     ;
+    /// ```
+    static func consume__hexadecimal_digit<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+        let state = stream.save()
+
+        alt:
+        do {
+            if stream.isNext("'") {
+                stream.advance()
+            }
+
+            guard consume_hexadecimal_digit(from: &stream) else {
+                break alt
+            }
+
+
+            return true
+        }
+
+        stream.restore(state)
+
+        return false
+    }
+
+    /// ```
+    /// digit_sequence:
+    ///     | "0"..."9" (_decimal_digit)*
+    ///     ;
+    /// ```
+    static func consume_digit_sequence<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+
+        alt:
+        do {
+            guard !stream.isEof, stream.isNextInRange("0"..."9") else {
+                return false
+            }
+            stream.advance()
+
+            loop:
+            while !stream.isEof {
+                if consume__decimal_digit(from: &stream) {
+                } else {
+                    break loop
+                }
+            }
+
+            return true
+        }
+    }
+
+    /// ```
+    /// floatingConstant[".floatingConstant"]:
+    ///     | fractional_constant exponent_part?
+    ///     | digit_sequence exponent_part
+    ///     | hexadecimal_prefix hexadecimal_fractional_constant binary_exponent_part
+    ///     | hexadecimal_prefix hexadecimal_digit_sequence binary_exponent_part
+    ///     ;
+    /// ```
+    static func consume_floatingConstant<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+        let state = stream.save()
+
+        alt:
+        do {
+            guard consume_fractional_constant(from: &stream) else {
+                break alt
+            }
+
+
+            if consume_exponent_part(from: &stream) {
+
+            }
+
+            return true
+        }
+
+        stream.restore(state)
+
+        alt:
+        do {
+            guard consume_digit_sequence(from: &stream) else {
+                break alt
+            }
+
+
+            guard consume_exponent_part(from: &stream) else {
+                break alt
+            }
+
+
+            return true
+        }
+
+        stream.restore(state)
+
+        alt:
+        do {
+            guard consume_hexadecimal_prefix(from: &stream) else {
+                break alt
+            }
+
+
+            guard consume_hexadecimal_fractional_constant(from: &stream) else {
+                break alt
+            }
+
+
+            guard consume_binary_exponent_part(from: &stream) else {
+                break alt
+            }
+
+
+            return true
+        }
+
+        stream.restore(state)
+
+        alt:
+        do {
+            guard consume_hexadecimal_prefix(from: &stream) else {
+                return false
+            }
+
+
+            guard consume_hexadecimal_digit_sequence(from: &stream) else {
+                break alt
+            }
+
+
+            guard consume_binary_exponent_part(from: &stream) else {
+                break alt
+            }
+
+
+            return true
+        }
+
+        stream.restore(state)
+
+        return false
+    }
+
+    /// ```
+    /// fractional_constant:
+    ///     | digit_sequence? "." digit_sequence
+    ///     | digit_sequence "."
+    ///     ;
+    /// ```
+    static func consume_fractional_constant<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+        let state = stream.save()
+
+        alt:
+        do {
+            if consume_digit_sequence(from: &stream) {
+
+            }
+
+            guard stream.isNext(".") else {
+                break alt
+            }
+            stream.advance()
+
+            guard consume_digit_sequence(from: &stream) else {
+                break alt
+            }
+
+
+            return true
+        }
+
+        stream.restore(state)
+
+        alt:
+        do {
+            guard consume_digit_sequence(from: &stream) else {
+                return false
+            }
+
+
+            guard stream.isNext(".") else {
+                break alt
+            }
+            stream.advance()
+
+            return true
+        }
+
+        stream.restore(state)
+
+        return false
+    }
+
+    /// ```
+    /// hexadecimal_digit:
+    ///     | "0"..."9"
+    ///     | "a"..."f"
+    ///     | "A"..."F"
+    ///     ;
+    /// ```
+    static func consume_hexadecimal_digit<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+        let state = stream.save()
+
+        alt:
+        do {
+            guard !stream.isEof, stream.isNextInRange("0"..."9") else {
+                break alt
+            }
+            stream.advance()
+
+            return true
+        }
+
+        stream.restore(state)
+
+        alt:
+        do {
+            guard !stream.isEof, stream.isNextInRange("a"..."f") else {
+                break alt
+            }
+            stream.advance()
+
+            return true
+        }
+
+        stream.restore(state)
+
+        alt:
+        do {
+            guard !stream.isEof, stream.isNextInRange("A"..."F") else {
+                return false
+            }
+            stream.advance()
+
+            return true
+        }
+    }
+
+    /// ```
+    /// hexadecimal_digit_sequence:
+    ///     | hexadecimal_digit (_hexadecimal_digit)*
+    ///     ;
+    /// ```
+    static func consume_hexadecimal_digit_sequence<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+
+        alt:
+        do {
+            guard consume_hexadecimal_digit(from: &stream) else {
+                return false
+            }
+
+
+            loop:
+            while !stream.isEof {
+                if consume__hexadecimal_digit(from: &stream) {
+                } else {
+                    break loop
+                }
+            }
+
+            return true
+        }
+    }
+
+    /// ```
+    /// hexadecimal_fractional_constant:
+    ///     | hexadecimal_digit_sequence? "." hexadecimal_digit_sequence
+    ///     | hexadecimal_digit_sequence "."
+    ///     ;
+    /// ```
+    static func consume_hexadecimal_fractional_constant<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+        let state = stream.save()
+
+        alt:
+        do {
+            if consume_hexadecimal_digit_sequence(from: &stream) {
+
+            }
+
+            guard stream.isNext(".") else {
+                break alt
+            }
+            stream.advance()
+
+            guard consume_hexadecimal_digit_sequence(from: &stream) else {
+                break alt
+            }
+
+
+            return true
+        }
+
+        stream.restore(state)
+
+        alt:
+        do {
+            guard consume_hexadecimal_digit_sequence(from: &stream) else {
+                return false
+            }
+
+
+            guard stream.isNext(".") else {
+                break alt
+            }
+            stream.advance()
+
+            return true
+        }
+
+        stream.restore(state)
+
+        return false
+    }
+
+    /// ```
+    /// hexadecimal_prefix:
+    ///     | "0x"
+    ///     | "0X"
+    ///     ;
+    /// ```
+    static func consume_hexadecimal_prefix<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+        let state = stream.save()
+
+        alt:
+        do {
+            guard stream.isNext("0x") else {
+                break alt
+            }
+            stream.advance(2)
+
+            return true
+        }
+
+        stream.restore(state)
+
+        alt:
+        do {
+            guard stream.isNext("0X") else {
+                return false
+            }
+            stream.advance(2)
+
+            return true
+        }
+    }
+
+    /// ```
+    /// identifier[".identifier"]:
+    ///     | ("a"..."z" | "A"..."Z" | "_") ("0"..."9" | "a"..."z" | "A"..."Z" | "_")*
+    ///     ;
+    /// ```
+    static func consume_identifier<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+
+        alt:
+        do {
+            switch stream.peek() {
+            case "a"..."z", "A"..."Z", "_":
+                stream.advance()
+            default:
+                return false
+            }
+
+            loop:
+            while !stream.isEof {
+                switch stream.peek() {
+                case "0"..."9", "a"..."z", "A"..."Z", "_":
+                    stream.advance()
+                default:
+                    break loop
+                }
+            }
+
+            return true
+        }
+    }
+
+    /// ```
+    /// binary_exponent_part:
+    ///     | "p" sign? digit_sequence
+    ///     | "P" sign? digit_sequence
+    ///     ;
+    /// ```
+    static func consume_binary_exponent_part<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+        let state = stream.save()
+
+        alt:
+        do {
+            guard stream.isNext("p") else {
+                break alt
+            }
+            stream.advance()
+
+            if consume_sign(from: &stream) {
+
+            }
+
+            guard consume_digit_sequence(from: &stream) else {
+                break alt
+            }
+
+
+            return true
+        }
+
+        stream.restore(state)
+
+        alt:
+        do {
+            guard stream.isNext("P") else {
+                return false
+            }
+            stream.advance()
+
+            if consume_sign(from: &stream) {
+
+            }
+
+            guard consume_digit_sequence(from: &stream) else {
+                break alt
+            }
+
+
+            return true
+        }
+
+        stream.restore(state)
+
+        return false
+    }
+
+    /// ```
+    /// exponent_part:
+    ///     | "e" sign? digit_sequence
+    ///     | "E" sign? digit_sequence
+    ///     ;
+    /// ```
+    static func consume_exponent_part<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+        let state = stream.save()
+
+        alt:
+        do {
+            guard stream.isNext("e") else {
+                break alt
+            }
+            stream.advance()
+
+            if consume_sign(from: &stream) {
+
+            }
+
+            guard consume_digit_sequence(from: &stream) else {
+                break alt
+            }
+
+
+            return true
+        }
+
+        stream.restore(state)
+
+        alt:
+        do {
+            guard stream.isNext("E") else {
+                return false
+            }
+            stream.advance()
+
+            if consume_sign(from: &stream) {
+
+            }
+
+            guard consume_digit_sequence(from: &stream) else {
+                break alt
+            }
+
+
+            return true
+        }
+
+        stream.restore(state)
+
+        return false
+    }
+
+    /// ```
+    /// integerConstant[".integerConstant"]:
+    ///     | hexadecimal_prefix hexadecimal_digit_sequence
+    ///     | "1"..."9" (_decimal_digit)*
+    ///     ;
+    /// ```
+    static func consume_integerConstant<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+        let state = stream.save()
+
+        alt:
+        do {
+            guard consume_hexadecimal_prefix(from: &stream) else {
+                break alt
+            }
+
+
+            guard consume_hexadecimal_digit_sequence(from: &stream) else {
+                break alt
+            }
+
+
+            return true
+        }
+
+        stream.restore(state)
+
+        alt:
+        do {
+            guard !stream.isEof, stream.isNextInRange("1"..."9") else {
+                return false
+            }
+            stream.advance()
+
+            loop:
+            while !stream.isEof {
+                if consume__decimal_digit(from: &stream) {
+                } else {
+                    break loop
+                }
+            }
+
+            return true
+        }
+    }
+
+    /// ```
+    /// sign:
+    ///     | "+"
+    ///     | "-"
+    ///     ;
+    /// ```
+    static func consume_sign<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+        let state = stream.save()
+
+        alt:
+        do {
+            guard stream.isNext("+") else {
+                break alt
+            }
+            stream.advance()
+
+            return true
+        }
+
+        stream.restore(state)
+
+        alt:
+        do {
+            guard stream.isNext("-") else {
+                return false
+            }
+            stream.advance()
+
+            return true
+        }
+    }
+}
+""" ;
+
+start: '' ;
