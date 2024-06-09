@@ -240,6 +240,7 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
         @inlinable
         public var description: String {
             switch self {
+            case .whitespace: "WHITESPACE"
             case .ampersand: "&"
             case .at: "@"
             case .backslash: "\\"
@@ -272,8 +273,39 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
             case .digits: "DIGITS"
             case .identifier: "IDENTIFIER"
             case .string: "STRING"
-            case .whitespace: "WHITESPACE"
             }
+        }
+    }
+
+    /// ```
+    /// WHITESPACE[".whitespace"]:
+    ///     | (" " | "\t" | "\n" | "\r")+
+    ///     ;
+    /// ```
+    @inlinable
+    public static func consume_WHITESPACE<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+
+        alt:
+        do {
+            switch stream.peek() {
+            case " ", "\t", "\n", "\r":
+                stream.advance()
+            default:
+                return false
+            }
+
+            loop:
+            while !stream.isEof {
+                switch stream.peek() {
+                case " ", "\t", "\n", "\r":
+                    stream.advance()
+                default:
+                    break loop
+                }
+            }
+
+            return true
         }
     }
 
@@ -575,7 +607,6 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
     @inlinable
     public static func consume_DIGITS<StringType>(from stream: inout StringStream<StringType>) -> Bool {
         guard !stream.isEof else { return false }
-        let state = stream.save()
 
         alt:
         do {
@@ -583,7 +614,7 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
             case "0"..."9":
                 stream.advance()
             default:
-                break alt
+                return false
             }
 
             loop:
@@ -598,10 +629,6 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
 
             return true
         }
-
-        stream.restore(state)
-
-        return false
     }
 
     /// ```
@@ -612,7 +639,6 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
     @inlinable
     public static func consume_IDENTIFIER<StringType>(from stream: inout StringStream<StringType>) -> Bool {
         guard !stream.isEof else { return false }
-        let state = stream.save()
 
         alt:
         do {
@@ -620,7 +646,7 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
             case "a"..."z", "A"..."Z", "_":
                 stream.advance()
             default:
-                break alt
+                return false
             }
 
             loop:
@@ -635,10 +661,6 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
 
             return true
         }
-
-        stream.restore(state)
-
-        return false
     }
 
     /// ```
@@ -720,7 +742,7 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
         alt:
         do {
             guard stream.isNext("'") else {
-                break alt
+                return false
             }
             stream.advance()
 
@@ -743,43 +765,6 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
                 break alt
             }
             stream.advance()
-
-            return true
-        }
-
-        stream.restore(state)
-
-        return false
-    }
-
-    /// ```
-    /// WHITESPACE[".whitespace"]:
-    ///     | (" " | "\t" | "\n" | "\r")+
-    ///     ;
-    /// ```
-    @inlinable
-    public static func consume_WHITESPACE<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
-
-        alt:
-        do {
-            switch stream.peek() {
-            case " ", "\t", "\n", "\r":
-                stream.advance()
-            default:
-                break alt
-            }
-
-            loop:
-            while !stream.isEof {
-                switch stream.peek() {
-                case " ", "\t", "\n", "\r":
-                    stream.advance()
-                default:
-                    break loop
-                }
-            }
 
             return true
         }

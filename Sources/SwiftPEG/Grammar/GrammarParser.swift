@@ -64,9 +64,7 @@ extension GrammarParser {
         if
             let _ = try self.expect(kind: .at),
             let name = try self.expect(kind: .identifier),
-            let value = try self.optional({
-                try self.metaValue()
-            }),
+            case let value = try self.metaValue(),
             let _ = try self.expect(kind: .semicolon)
         {
             return self.setLocation(.init(name: name.rawToken, value: value), at: _mark)
@@ -118,15 +116,9 @@ extension GrammarParser {
         if
             let ruleName = try self.ruleName(),
             let _ = try self.expect(kind: .colon),
-            let action = try self.optional({
-                try self.action()
-            }),
-            let failAction = try self.optional({
-                try self.failAction()
-            }),
-            let _ = try self.optional({
-                try self.expect(kind: .bar)
-            }),
+            case let action = try self.action(),
+            case let failAction = try self.failAction(),
+            case _ = try self.expect(kind: .bar),
             let alts = try self.alts(),
             let _ = try self.expect(kind: .semicolon)
         {
@@ -211,12 +203,8 @@ extension GrammarParser {
 
         if
             let namedItems = try self.namedItems(),
-            let action = try self.optional({
-                try self.action()
-            }),
-            let failAction = try self.optional({
-                try self.failAction()
-            })
+            case let action = try self.action(),
+            case let failAction = try self.failAction()
         {
             return self.setLocation(.init(namedItems: namedItems, action: action, failAction: failAction), at: _mark)
         }
@@ -422,9 +410,7 @@ extension GrammarParser {
         if
             let atom = try self.atom(),
             let _ = try self.expect(kind: .star),
-            let repetitionMode = try self.optional({
-                try self.repetitionMode()
-            })
+            case let repetitionMode = try self.repetitionMode()
         {
             return self.setLocation(SwiftPEGGrammar.ZeroOrMoreItem(atom: atom, repetitionMode: repetitionMode ?? .standard), at: _mark)
         }
@@ -434,9 +420,7 @@ extension GrammarParser {
         if
             let atom = try self.atom(),
             let _ = try self.expect(kind: .plus),
-            let repetitionMode = try self.optional({
-                try self.repetitionMode()
-            })
+            case let repetitionMode = try self.repetitionMode()
         {
             return self.setLocation(SwiftPEGGrammar.OneOrMoreItem(atom: atom, repetitionMode: repetitionMode ?? .standard), at: _mark)
         }
@@ -448,9 +432,7 @@ extension GrammarParser {
             let _ = try self.expect(kind: .period),
             let node = try self.atom(),
             let _ = try self.expect(kind: .plus),
-            let repetitionMode = try self.optional({
-                try self.repetitionMode()
-            })
+            case let repetitionMode = try self.repetitionMode()
         {
             return self.setLocation(SwiftPEGGrammar.GatherItem(sep: sep, item: node, repetitionMode: repetitionMode ?? .standard), at: _mark)
         }
@@ -562,9 +544,7 @@ extension GrammarParser {
 
         if
             let _ = try self.expect(kind: .leftParen),
-            let swiftTupleTypeList = try self.optional({
-                try self.swiftTupleTypeList()
-            }),
+            case let swiftTupleTypeList = try self.swiftTupleTypeList(),
             let _ = try self.expect(kind: .rightParen)
         {
             return .tuple(swiftTupleTypeList ?? [])
@@ -1122,9 +1102,7 @@ extension GrammarParser {
         let _mark = self.mark()
 
         if
-            let _ = try self.optional({
-                try self.expect(kind: .bar)
-            }),
+            case _ = try self.expect(kind: .bar),
             let tokenSyntaxAlt = try self.gather(separator: {
                 try self.expect(kind: .bar)
             }, item: {
