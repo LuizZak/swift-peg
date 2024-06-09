@@ -199,11 +199,11 @@ public enum InternalGrammar {
         public var isReachable: Bool = true
 
         /// Whether this rule is contained within a left-recursive chain.
-        public var isRecursive: Bool = false
+        public var isLeftRecursive: Bool = false
 
         /// Whether this rule has been selected among its left-recursive chain
         /// to be memoized as a left-recursive lead.
-        public var isRecursiveLeader: Bool = false
+        public var isLeftRecursiveLeader: Bool = false
 
         /// Returns `true` if `self` and `other` are equivalent in terms of the
         /// productions they reference, except for their name.
@@ -253,8 +253,8 @@ public enum InternalGrammar {
                 failAction: node.failAction.map(Action.from),
                 alts: node.alts.map(Alt.from),
                 isReachable: node.isReachable,
-                isRecursive: node.isLeftRecursive,
-                isRecursiveLeader: node.isLeftRecursiveLead
+                isLeftRecursive: node.isLeftRecursive,
+                isLeftRecursiveLeader: node.isLeftRecursiveLead
             )
         }
     }

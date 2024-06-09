@@ -113,7 +113,7 @@ public class GrammarInterpreter {
     }
 
     func produce(_ rule: InternalGrammar.Rule) throws -> Any? {
-        if rule.isRecursiveLeader {
+        if rule.isLeftRecursiveLeader {
             return try produceRecursive(rule)
         }
 

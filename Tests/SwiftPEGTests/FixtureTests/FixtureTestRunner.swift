@@ -59,6 +59,8 @@ class FixtureTestRunner {
 
         logger.endLogMessageScope()
 
+        let stopwatch = Stopwatch.startNew()
+
         try runTests(allFixtures)
 
         // Log results
@@ -68,7 +70,7 @@ class FixtureTestRunner {
             """
             Ran \(testResults.count, color: .cyan) test(s), \
             \(failureCounter: failed) failed and \
-            \(failureCounter: parseFailures) parsing failure(s).
+            \(failureCounter: parseFailures) parsing failure(s) in \(elapsed: stopwatch).
             """
         )
     }
@@ -213,6 +215,8 @@ class FixtureTestRunner {
 
         logger.logMessage("Test \(formatted: test.title)... ", terminator: "")
 
+        let stopwatch = Stopwatch.startNew()
+
         do {
             try test.testFunction(context)
         } catch {
@@ -222,9 +226,9 @@ class FixtureTestRunner {
         }
 
         if context.failed {
-            logger.logMessage("\("Failed", color: .red)")
+            logger.logMessage("\("Failed", color: .red) in \(elapsed: stopwatch)")
         } else {
-            logger.logMessage("\("Passed", color: .green)")
+            logger.logMessage("\("Passed", color: .green) in \(elapsed: stopwatch)")
         }
 
         context.flushFailureMessages()

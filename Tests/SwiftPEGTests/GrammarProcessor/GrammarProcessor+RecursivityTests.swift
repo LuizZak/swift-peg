@@ -59,7 +59,7 @@ class GrammarProcessor_RecursivityTests: XCTestCase {
 
         assertEqual(sut.test_diagnosticMessages(), "")
         assertEqualUnordered(
-            result.grammar.rules.map({ ($0.name, $0.isRecursive) }), [
+            result.grammar.rules.map({ ($0.name, $0.isLeftRecursive) }), [
                 ("start", false),
                 ("rule1", false),
                 ("rule2", true),

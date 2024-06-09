@@ -36,4 +36,9 @@ extension ConsoleString.Interpolation {
     mutating func appendInterpolation(fileName: URL) {
         appendInterpolation(fileName.lastPathComponent, color: .cyan)
     }
+
+    /// Interpolates the elapsed time of a given stopwatch.
+    mutating func appendInterpolation(elapsed stopwatch: Stopwatch) {
+        appendInterpolation(stopwatch.intervalString, color: .cyan)
+    }
 }

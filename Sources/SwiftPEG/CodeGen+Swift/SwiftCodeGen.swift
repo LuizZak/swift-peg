@@ -874,9 +874,9 @@ public class SwiftCodeGen {
 
     private func memoizationMode(for rule: InternalGrammar.Rule) -> MemoizationMode {
         return
-            if rule.isRecursiveLeader {
+            if rule.isLeftRecursiveLeader {
                 .memoizedLeftRecursive
-            } else if !rule.isRecursive {
+            } else if !rule.isLeftRecursive {
                 .memoized
             } else {
                 .none

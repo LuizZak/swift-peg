@@ -2121,7 +2121,7 @@ class SwiftCodeGenTests: XCTestCase {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
                 .init(namedItems: ["b"])
-            ]).with(\.isRecursiveLeader, value: true)
+            ]).with(\.isLeftRecursiveLeader, value: true)
         ])
         let sut = makeSut(grammar)
 
@@ -2157,10 +2157,10 @@ class SwiftCodeGenTests: XCTestCase {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
                 .init(namedItems: ["b"])
-            ]).with(\.isRecursive, value: true).with(\.isRecursiveLeader, value: true),
+            ]).with(\.isLeftRecursive, value: true).with(\.isLeftRecursiveLeader, value: true),
             .init(name: "b", alts: [
                 .init(namedItems: ["a"])
-            ]).with(\.isRecursive, value: true).with(\.isRecursiveLeader, value: false),
+            ]).with(\.isLeftRecursive, value: true).with(\.isLeftRecursiveLeader, value: false),
         ])
         let sut = makeSut(grammar)
 

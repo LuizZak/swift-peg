@@ -143,7 +143,7 @@ class GrammarInterpreterTests: XCTestCase {
             .init(name: "ruleA", alts: [
                 .init(namedItems: ["ruleA", "','", "A"], action: "ruleA_alt0"),
                 .init(namedItems: ["A"], action: "ruleA_alt1"),
-            ]).with(\.isRecursive, value: true).with(\.isRecursiveLeader, value: true),
+            ]).with(\.isLeftRecursive, value: true).with(\.isLeftRecursiveLeader, value: true),
         ])
         let delegate = mockDelegate()
         delegate
