@@ -116,9 +116,7 @@ extension TestGrammarParser {
 
         if
             let expr = try self.expr(),
-            let _ = try self.optional({
-                try self.NEWLINE()
-            })
+            case _ = try self.NEWLINE()
         {
             return expr
         }
