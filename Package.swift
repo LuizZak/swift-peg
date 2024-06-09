@@ -13,7 +13,7 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/apple/swift-syntax.git", exact: "510.0.0"),
         .package(url: "https://github.com/LuizZak/Console.git", exact: "0.13.0"),
-        .package(url: "https://github.com/LuizZak/MiniDigraph.git", exact: "0.2.0"),
+        .package(url: "https://github.com/LuizZak/MiniDigraph.git", exact: "0.2.1"),
     ],
     targets: [
         .macro(
