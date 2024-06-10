@@ -83,39 +83,11 @@ class EnumIsCaseGeneratorImplementationBase {
         return result
     }
 
-    struct MacroArguments {
+    struct MacroArguments: Decodable {
         var accessLevel: String?
 
         static func from(_ node: AttributeSyntax) throws -> MacroArguments {
-            var accessLevel: String? = nil
-            if let arguments = node.arguments {
-                switch arguments {
-                case .argumentList(let list):
-                    for expr in list {
-                        guard let label = expr.label?.trimmed else {
-                            throw MacroError.message("Unexpected argument \(expr).")
-                        }
-
-                        if label.trimmedDescription == "accessLevel" {
-                            guard let string = expr.expression.as(StringLiteralExprSyntax.self) else {
-                                throw MacroError.message(
-                                    "Expected 'accessLevel' argument to have a string value of one of Swift's access level modifiers."
-                                )
-                            }
-
-                            accessLevel = string.segments.description
-                        } else {
-                            throw MacroError.message(
-                                "Unexpected argument \(expr)."
-                            )
-                        }
-                    }
-                default:
-                    throw MacroError.message("Unsupported argument set \(arguments).")
-                }
-            }
-
-            return Self(accessLevel: accessLevel)
+            try MacroArgumentParser.parse(self, attributeSyntax: node)
         }
     }
 }

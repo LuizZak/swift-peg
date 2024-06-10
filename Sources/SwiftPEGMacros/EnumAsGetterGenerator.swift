@@ -75,45 +75,32 @@ class EnumAsGetterGeneratorImplementationBase {
     fileprivate func fetchEntries(from decl: EnumCaseDeclSyntax) throws -> [CaseEntry] {
         var result: [CaseEntry] = []
         for element in decl.elements {
-            let entry = CaseEntry(element: element)
+            guard
+                let parameterClause = element.parameterClause,
+                !parameterClause.parameters.isEmpty
+            else {
+                let name = element.name.description
+                throw MacroError.diagnostic(
+                    element.ext_errorDiagnostic(
+                        message: "Cannot synthesize var as\(name.uppercasedFirstLetter) for case with no parameters"
+                    )
+                )
+            }
+
+            let entry = CaseEntry(
+                element: element,
+                parameterClause: parameterClause
+            )
             result.append(entry)
         }
         return result
     }
 
-    struct MacroArguments {
+    struct MacroArguments: Decodable {
         var accessLevel: String?
 
         static func from(_ node: AttributeSyntax) throws -> MacroArguments {
-            var accessLevel: String? = nil
-            if let arguments = node.arguments {
-                switch arguments {
-                case .argumentList(let list):
-                    for expr in list {
-                        guard let label = expr.label?.trimmed else {
-                            throw MacroError.message("Unexpected argument \(expr).")
-                        }
-
-                        if label.trimmedDescription == "accessLevel" {
-                            guard let string = expr.expression.as(StringLiteralExprSyntax.self) else {
-                                throw MacroError.message(
-                                    "Expected 'accessLevel' argument to have a string value of one of Swift's access level modifiers."
-                                )
-                            }
-
-                            accessLevel = string.segments.description
-                        } else {
-                            throw MacroError.message(
-                                "Unexpected argument \(expr)."
-                            )
-                        }
-                    }
-                default:
-                    throw MacroError.message("Unsupported argument set \(arguments).")
-                }
-            }
-
-            return Self(accessLevel: accessLevel)
+            try MacroArgumentParser.parse(self, attributeSyntax: node)
         }
     }
 }
@@ -147,6 +134,14 @@ class EnumAsGetterMemberImplementation: EnumAsGetterGeneratorImplementationBase 
         var decls: [DeclSyntax] = []
 
         let entries = fetchEntries()
+        if entries.isEmpty {
+            context.diagnose(
+                node.ext_warningDiagnostic(message: """
+                Enumeration with no cases with associated values generates no members with \(EnumAsGetterGenerator.self)
+                """)
+            )
+        }
+
         for entry in entries {
             decls.append(entry.asGetterDeclSyntax(arguments: args))
         }
@@ -210,7 +205,7 @@ class EnumAsGetterPeerImplementation: EnumAsGetterGeneratorImplementationBase {
 
 fileprivate struct CaseEntry {
     var element: EnumCaseElementSyntax
-    var parameters: EnumCaseParameterClauseSyntax
+    var parameterClause: EnumCaseParameterClauseSyntax
     var caseName: TokenSyntax {
         element.name
     }
@@ -221,21 +216,88 @@ fileprivate struct CaseEntry {
         arguments: EnumAsGetterGeneratorImplementationBase.MacroArguments
     ) -> DeclSyntax {
         let varName = TokenSyntax.identifier(
-            "is\(caseName.trimmedDescription.uppercasedFirstLetter)"
+            "as\(caseName.trimmedDescription.uppercasedFirstLetter)"
         )
         let accessLevelToken = arguments.accessLevel.map {
             TokenSyntax.identifier($0).withTrailingSpace()
         }
 
+        let type = synthesizeType()
+
         return """
-        \(accessLevelToken)var \(varName): Bool {
+        \(accessLevelToken)var \(varName): \(type) {
             switch self {
-            case .\(caseName):
-                return true
+            case .\(caseName)\(raw: synthesizePattern()):
+                return \(synthesizeReturnExpression())
             default:
-                return false
+                return nil
             }
         }
         """
+    }
+
+    func synthesizeType() -> OptionalTypeSyntax {
+        OptionalTypeSyntax(wrappedType: patternType())
+    }
+
+    func patternType() -> TypeSyntax {
+        if
+            parameterClause.parameters.count == 1,
+            let param = parameterClause.parameters.first
+        {
+            return param.type
+        }
+
+        let tupleType = tupleType(from: parameterClause.parameters)
+        return TypeSyntax(tupleType)
+    }
+
+    func synthesizePattern() -> String {
+        let identifiers = synthesizePatternIdentifiers()
+        let binds = identifiers.map({ "let \($0)" })
+
+        return "(\(binds.joined(separator: ", ")))"
+    }
+
+    func synthesizeReturnExpression() -> ExprSyntax {
+        let identifiers = synthesizePatternIdentifiers()
+        if identifiers.count == 1 {
+            return "\(raw: identifiers[0])"
+        }
+
+        return "(\(raw: identifiers.joined(separator: ", ")))"
+    }
+
+    func synthesizePatternIdentifiers() -> [String] {
+        let count = parameterClause.parameters.count
+        guard count > 0 else {
+            return []
+        }
+
+        let identifiers = (0..<count).map(nameForPattern)
+        return identifiers
+    }
+
+    func nameForPattern(index: Int) -> String {
+        "_\(index)"
+    }
+
+    func tupleType(from params: EnumCaseParameterListSyntax) -> TupleTypeSyntax {
+        var elements: [TupleTypeElementSyntax] = []
+        for param in params {
+            let element = TupleTypeElementSyntax(
+                firstName: param.firstName,
+                secondName: param.secondName,
+                colon: param.colon,
+                type: param.type,
+                trailingComma: param.trailingComma
+            )
+
+            elements.append(element)
+        }
+
+        return TupleTypeSyntax(
+            elements: .init(elements)
+        )
     }
 }

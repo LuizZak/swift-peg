@@ -8,5 +8,6 @@ struct Macros: CompilerPlugin {
         ParserMemoizeLeftRecursiveMacro.self,
         NodeTypeMacro.self,
         EnumIsCaseGenerator.self,
+        EnumAsGetterGenerator.self,
     ]
 }
