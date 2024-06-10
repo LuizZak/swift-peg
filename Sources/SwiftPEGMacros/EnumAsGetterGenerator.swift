@@ -2,9 +2,9 @@ import SwiftSyntax
 import SwiftSyntaxMacros
 import SwiftSyntaxMacroExpansion
 
-/// Macro used to generate boilerplate `var is<Case>: Bool` for enumerations that
-/// have associated values.
-public struct EnumIsCaseGenerator: MemberMacro, PeerMacro {
+/// Macro used to generate boilerplate `var as<Case>: <AssociatedValueType>?`
+/// for enumerations that have associated values.
+public struct EnumAsGetterGenerator: MemberMacro, PeerMacro {
     public static func expansion(
         of node: AttributeSyntax,
         providingMembersOf declaration: some DeclGroupSyntax,
@@ -12,7 +12,7 @@ public struct EnumIsCaseGenerator: MemberMacro, PeerMacro {
         in context: some MacroExpansionContext
     ) throws -> [DeclSyntax] {
 
-        let impl = EnumIsCaseMemberImplementation(
+        let impl = EnumAsGetterMemberImplementation(
             node: node,
             declaration: declaration,
             protocols: protocols,
@@ -28,7 +28,7 @@ public struct EnumIsCaseGenerator: MemberMacro, PeerMacro {
         in context: some MacroExpansionContext
     ) throws -> [DeclSyntax] {
 
-        let impl = EnumIsCasePeerImplementation(
+        let impl = EnumAsGetterPeerImplementation(
             node: node,
             declaration: declaration,
             context: context
@@ -38,7 +38,7 @@ public struct EnumIsCaseGenerator: MemberMacro, PeerMacro {
     }
 
     private static func runImplementation(
-        _ impl: EnumIsCaseGeneratorImplementationBase
+        _ impl: EnumAsGetterGeneratorImplementationBase
     ) throws -> [DeclSyntax] {
 
         do {
@@ -52,7 +52,7 @@ public struct EnumIsCaseGenerator: MemberMacro, PeerMacro {
     }
 }
 
-class EnumIsCaseGeneratorImplementationBase {
+class EnumAsGetterGeneratorImplementationBase {
     var node: AttributeSyntax
     var context: any MacroExpansionContext
 
@@ -72,14 +72,12 @@ class EnumIsCaseGeneratorImplementationBase {
         try MacroArguments.from(node)
     }
 
-    fileprivate func fetchEntries(from caseDecl: EnumCaseDeclSyntax) -> [CaseEntry] {
+    fileprivate func fetchEntries(from decl: EnumCaseDeclSyntax) throws -> [CaseEntry] {
         var result: [CaseEntry] = []
-
-        for element in caseDecl.elements {
+        for element in decl.elements {
             let entry = CaseEntry(element: element)
             result.append(entry)
         }
-
         return result
     }
 
@@ -120,8 +118,8 @@ class EnumIsCaseGeneratorImplementationBase {
     }
 }
 
-/// To be attached to entire `enum` declarations.
-class EnumIsCaseMemberImplementation: EnumIsCaseGeneratorImplementationBase {
+/// To be attached to `enum` declarations.
+class EnumAsGetterMemberImplementation: EnumAsGetterGeneratorImplementationBase {
     var declaration: any DeclGroupSyntax
     var protocols: [TypeSyntax]
 
@@ -150,7 +148,7 @@ class EnumIsCaseMemberImplementation: EnumIsCaseGeneratorImplementationBase {
 
         let entries = fetchEntries()
         for entry in entries {
-            decls.append(entry.isCaseDeclSyntax(arguments: args))
+            decls.append(entry.asGetterDeclSyntax(arguments: args))
         }
 
         return decls
@@ -164,7 +162,11 @@ class EnumIsCaseMemberImplementation: EnumIsCaseGeneratorImplementationBase {
                 continue
             }
 
-            result.append(contentsOf: fetchEntries(from: caseDecl))
+            do {
+                result.append(contentsOf: try fetchEntries(from: caseDecl))
+            } catch {
+                // Silently ignore failed cases so macro is more ergonomic
+            }
         }
 
         return result
@@ -172,7 +174,7 @@ class EnumIsCaseMemberImplementation: EnumIsCaseGeneratorImplementationBase {
 }
 
 /// To be attached to individual `case`s of an enum declaration.
-class EnumIsCasePeerImplementation: EnumIsCaseGeneratorImplementationBase {
+class EnumAsGetterPeerImplementation: EnumAsGetterGeneratorImplementationBase {
     var declaration: any DeclSyntaxProtocol
 
     init(
@@ -192,13 +194,14 @@ class EnumIsCasePeerImplementation: EnumIsCaseGeneratorImplementationBase {
             throw MacroError.message("Macro can only be attached to enum or enum case declarations.")
         }
 
+        let entries = try fetchEntries(from: caseDecl)
+
         let args = try parseArguments()
 
         var decls: [DeclSyntax] = []
 
-        let entries = fetchEntries(from: caseDecl)
         for entry in entries {
-            decls.append(entry.isCaseDeclSyntax(arguments: args))
+            decls.append(entry.asGetterDeclSyntax(arguments: args))
         }
 
         return decls
@@ -207,14 +210,15 @@ class EnumIsCasePeerImplementation: EnumIsCaseGeneratorImplementationBase {
 
 fileprivate struct CaseEntry {
     var element: EnumCaseElementSyntax
+    var parameters: EnumCaseParameterClauseSyntax
     var caseName: TokenSyntax {
         element.name
     }
 
-    /// Synthesize a `var is<CaseName>: Bool` declaration for the enum case
+    /// Synthesize a `var as<CaseName>: <AssociatedValueType>` declaration for the enum case
     /// element associated with this case entry.
-    func isCaseDeclSyntax(
-        arguments: EnumIsCaseGeneratorImplementationBase.MacroArguments
+    func asGetterDeclSyntax(
+        arguments: EnumAsGetterGeneratorImplementationBase.MacroArguments
     ) -> DeclSyntax {
         let varName = TokenSyntax.identifier(
             "is\(caseName.trimmedDescription.uppercasedFirstLetter)"
