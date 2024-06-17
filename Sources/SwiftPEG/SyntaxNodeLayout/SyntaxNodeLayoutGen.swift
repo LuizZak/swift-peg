@@ -111,7 +111,7 @@ public class SyntaxNodeLayoutGen {
             .oneOrMore(let atom, _),
             .gather(_, let atom, _):
             var layout = try layoutForAtom(atom, lookup: lookup)
-            layout.layout = .arrayOf(layout.layout)
+            layout.layout = .collectionOf(layout.layout)
 
             return layout
         }

@@ -13,7 +13,7 @@ indirect enum SyntaxNodeLayout: Equatable {
     case oneOf([SyntaxNodeLayout])
 
     /// Indicates that the layout is a collection of the given layout.
-    case arrayOf(SyntaxNodeLayout)
+    case collectionOf(SyntaxNodeLayout)
 
     /// Indicates a fixed structure, containing a set of member layouts that are
     /// distinguished by identifiers.
@@ -47,9 +47,9 @@ indirect enum SyntaxNodeLayout: Equatable {
         }
     }
 
-    var isArrayOf: Bool {
+    var isCollectionOf: Bool {
         switch self {
-        case .arrayOf: true
+        case .collectionOf: true
         default: false
         }
     }
@@ -81,8 +81,8 @@ indirect enum SyntaxNodeLayout: Equatable {
         case .optional(let inner):
             return .optional(inner.flattened())
 
-        case .arrayOf(let inner):
-            return .arrayOf(inner.flattened())
+        case .collectionOf(let inner):
+            return .collectionOf(inner.flattened())
 
         case .token, .rule:
             return self
@@ -124,9 +124,9 @@ indirect enum SyntaxNodeLayout: Equatable {
             let layout = layout.deduplicating(with: delegate)
             return .optional(layout)
 
-        case .arrayOf(let layout):
+        case .collectionOf(let layout):
             let layout = layout.deduplicating(with: delegate)
-            return .arrayOf(layout)
+            return .collectionOf(layout)
 
         case .token, .rule:
             return self
@@ -145,7 +145,7 @@ indirect enum SyntaxNodeLayout: Equatable {
         case .fixed(let members):
             result = members.count
 
-        case .arrayOf:
+        case .collectionOf:
             result = 1
 
         case .oneOf(let layouts):
@@ -316,8 +316,8 @@ extension SyntaxNodeLayout {
                 layout.debugPrint(to: output)
             }
 
-        case .arrayOf(let layout):
-            line("arrayOf:")
+        case .collectionOf(let layout):
+            line("collectionOf:")
             output.indented(hasSiblings: false) {
                 layout.debugPrint(to: output)
             }
@@ -353,8 +353,8 @@ extension SyntaxNode: CustomDebugStringConvertible {
     }
 
     fileprivate func debugPrint(to output: DebugPrinter) {
-        output.line(hasSiblings: true, "name: \(name)")
-        output.line(hasSiblings: true, "ruleName: \(ruleName)")
+        output.line(hasSiblings: true, "name: \(name.debugDescription)")
+        output.line(hasSiblings: true, "ruleName: \(ruleName.debugDescription)")
         output.line(hasSiblings: true, "layout:")
 
         output.indented(hasSiblings: false) {

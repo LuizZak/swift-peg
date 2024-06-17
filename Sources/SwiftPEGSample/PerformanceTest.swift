@@ -44,7 +44,7 @@ class PerformanceTest {
     func runParser<R: RawTokenizerType>(_ parser: GrammarParser<R>) throws {
         let stopwatch = Stopwatch.start()
 
-        guard let result = try parser.grammar(), parser.tokenizer.isEOF else {
+        guard let result = try parser.grammar(), try parser.isEOF() else {
             throw parser.makeSyntaxError()
         }
 

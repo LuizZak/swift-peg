@@ -28,7 +28,7 @@ class SyntaxNodeLayoutGenTests: XCTestCase {
             ])),
             .init(name: "b", layout: .oneOf([
                 .makeFixed(["B": .token("B")]),
-                .makeFixed(["c": .arrayOf(.rule("c"))]),
+                .makeFixed(["c": .collectionOf(.rule("c"))]),
             ])),
             .init(name: "c", layout: .makeFixed([
                 "C": .token("C"),
@@ -95,7 +95,34 @@ class SyntaxNodeLayoutGenTests: XCTestCase {
         ])
     }
 
-    func testGenerateSyntaxLayout_complete() throws {
+    func testGenerateSyntaxLayout_gather() throws {
+        let processed = try processGrammar(tokens: #"""
+        $A: 'a' ; $B: 'b' ; $C: 'c' ;
+        """#, grammar: #"""
+        @tokensFile "tokens.tokens" ;
+
+        a: b.c+ ;
+        b: 'b' ;
+        c: 'c' ;
+        """#, entryRuleName: "a")
+        let sut = makeSut(processed)
+
+        let result = try sut.generateSyntaxNodes()
+
+        assertSyntaxNodesEqual(result, [
+            .init(name: "a", layout: .makeFixed([
+                "c": .collectionOf(.rule("c"))
+            ])),
+            .init(name: "b", layout: .makeFixed([
+                "B": .token("B"),
+            ])),
+            .init(name: "c", layout: .makeFixed([
+                "C": .token("C"),
+            ])),
+        ])
+    }
+
+    func testGenerateSyntaxLayout_sample_tokenSyntaxAtom() throws {
         let processed = try processGrammar(tokens: #"""
         $IDENTIFIER: 'a'...'z'+ ;
         $STRING: '"' (!'"' .)+ '"' ;
@@ -140,10 +167,10 @@ class SyntaxNodeLayoutGenTests: XCTestCase {
 
         assertSyntaxNodesEqual(result, [
             .init(name: "start", layout: .makeFixed([
-                "tokenSyntaxAtom": .arrayOf(.rule("tokenSyntaxAtom")),
+                "tokenSyntaxAtom": .collectionOf(.rule("tokenSyntaxAtom")),
             ])),
             .init(name: "tokenSyntaxAtom", layout: .makeFixed([
-                "tokenSyntaxExclusion": .arrayOf(.rule("tokenSyntaxExclusion")),
+                "tokenSyntaxExclusion": .collectionOf(.rule("tokenSyntaxExclusion")),
                 "tokenSyntaxTerminal": .rule("tokenSyntaxTerminal"),
             ])),
             .init(name: "tokenSyntaxExclusion", layout: .makeFixed([

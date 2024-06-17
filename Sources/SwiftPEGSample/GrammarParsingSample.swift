@@ -7,6 +7,7 @@ class GrammarParsingSample {
     var verbose: Bool = false
     var useBuiltInFiles: Bool = false
     var emitTokenType: Bool = false
+    var emitSyntaxNodeLayout: Bool = false
     var omitRedundantMarkRestores: Bool = false
 
     func run() throws {
@@ -55,7 +56,7 @@ class GrammarParsingSample {
             print("Success! Parsed in \(String(format: "%.2lf", duration))s")
         }
 
-        if !tokenizer.isEOF {
+        if try !parser.isEOF() {
             let visitor = PrintingNodeVisitor()
             let walker = NodeWalker(visitor: visitor)
             try walker.walk(grammar)
@@ -111,7 +112,15 @@ class GrammarParsingSample {
                 code = try swiftCodeGen.generateTokenType(
                     settings: .init(emitInlinable: true, accessLevel: "public")
                 )
-                codeKind = "token type"
+
+                codeKind = "token type code"
+            } else if emitSyntaxNodeLayout {
+                let gen = SyntaxNodeLayoutGen(processedGrammar: result)
+                let layouts = try gen.generateSyntaxNodes()
+
+                code = layouts.map(\.debugDescription).joined(separator: "\n\n")
+
+                codeKind = "syntax node layout"
             } else {
                 code = try swiftCodeGen.generateParser(
                     settings: .default.with(
@@ -119,11 +128,11 @@ class GrammarParsingSample {
                         value: omitRedundantMarkRestores
                     )
                 )
-                codeKind = "parser"
+                codeKind = "parser code"
             }
 
             if verbose {
-                print("Generated \(codeKind) code:")
+                print("Generated \(codeKind):")
                 print("-------------------------------------------------")
             }
             print(code)
