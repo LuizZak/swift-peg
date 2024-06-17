@@ -212,6 +212,28 @@ class SyntaxNodeLayoutGenTests: XCTestCase {
             ])),
         ])
     }
+
+    func testGenerateSyntaxLayout_error_unrecognizedTokenLiteral() throws {
+        let processed = try processGrammar(tokens: #"""
+        """#, grammar: #"""
+        @tokensFile "tokens.tokens" ;
+
+        start: a ;
+        a: 'a' ;
+        """#)
+        let sut = makeSut(processed)
+
+        let error = assertThrows(errorType: SyntaxNodeLayoutGen.Error.self) {
+            try sut.generateSyntaxNodes()
+        }
+
+        switch error {
+        case .unknownTokenLiteral(trimmedLiteral: "a"):
+            success()
+        default:
+            fail("Expected to throw error")
+        }
+    }
 }
 
 // MARK: - Test internals

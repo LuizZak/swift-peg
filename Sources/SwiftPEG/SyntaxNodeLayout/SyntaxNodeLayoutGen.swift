@@ -159,8 +159,10 @@ public class SyntaxNodeLayoutGen {
             return LabeledLayout(name: tok, layout: layout)
 
         case .string(_, let trimmed):
-            let name = lookup.tokenForTrimmedLiteral(trimmed)
-            let layout = SyntaxNodeLayout.token(name ?? trimmed)
+            guard let name = lookup.tokenForTrimmedLiteral(trimmed) else {
+                throw Error.unknownTokenLiteral(trimmedLiteral: trimmed)
+            }
+            let layout = SyntaxNodeLayout.token(name)
 
             return LabeledLayout(name: name, layout: layout)
         }
@@ -197,6 +199,20 @@ public class SyntaxNodeLayoutGen {
             }
 
             return nil
+        }
+    }
+
+    /// Errors raised during syntax node layout generation.
+    public enum Error: Swift.Error, CustomStringConvertible {
+        /// Error raised when a token literal was found that could not be mapped
+        /// to a token.
+        case unknownTokenLiteral(trimmedLiteral: String)
+
+        public var description: String {
+            switch self {
+            case .unknownTokenLiteral(let trimmedLiteral):
+                return "Unrecognized string literal could not be mapped to any known token: \(trimmedLiteral.debugDescription)"
+            }
         }
     }
 }
