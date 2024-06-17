@@ -22,11 +22,15 @@ final class TokenizerTests: XCTestCase {
         assertFalse(sut.isEOF)
     }
 
-    /// On initialization, `isEOF` must be `true` if the raw tokenizer's own
-    /// `isEOF` is `true`.
-    func testIsEOF_onInit_atEof_returnsTrue() throws {
+    /// On initialization, `isEOF` must be `false` even if the raw tokenizer's own
+    /// `isEOF` is `true` until the tokenizer attempts to parse a token.
+    func testIsEOF_onInit_atEof_returnsFalseUntilPeekToken() throws {
         let rawStub = stubTestRawTokenizer(Array<Int>())
         let sut = makeSut(rawStub)
+
+        assertFalse(sut.isEOF)
+
+        _=try sut.peekToken()
 
         assertTrue(sut.isEOF)
     }
@@ -91,10 +95,9 @@ final class TokenizerTests: XCTestCase {
         let result = try sut.next()
 
         assertEqual(result?.rawToken, nil)
-        assertEqual(rawStub.next_callCount, 2)
+        assertEqual(rawStub.next_callCount, 1)
         assertSuccessesEqual(rawStub.next_calls, [
             .success(rawStub.tokens[0]),
-            .success(nil),
         ])
     }
 

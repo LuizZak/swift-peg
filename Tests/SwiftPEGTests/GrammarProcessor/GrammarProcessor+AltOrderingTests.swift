@@ -296,19 +296,3 @@ private func makeAtom(group: [SwiftPEGGrammar.Alt]) -> SwiftPEGGrammar.Atom {
 private func makeIdent(_ ident: String) -> SwiftPEGGrammar.Token {
     .identifier(Substring(ident))
 }
-
-private func parseGrammar(
-    _ grammar: String,
-    file: StaticString = #file,
-    line: UInt = #line
-) throws -> SwiftPEGGrammar.Grammar {
-
-    let tokenizer = GrammarRawTokenizer(source: grammar)
-    let parser = GrammarParser(raw: tokenizer)
-
-    guard let grammar = try parser.start() else {
-        throw parser.makeSyntaxError()
-    }
-
-    return grammar
-}

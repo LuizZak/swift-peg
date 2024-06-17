@@ -167,7 +167,7 @@ class GrammarInterpreterTests: XCTestCase {
         let source = """
         a, b, c, and d
         """
-        let grammar = try parseGrammar("""
+        let grammar = try parseInternalGrammar("""
         @token IDENT ;
 
         start: oxford_list ;
@@ -220,7 +220,7 @@ class GrammarInterpreterTests: XCTestCase {
         let source = """
         a, b, c, and d
         """
-        let grammar = try parseGrammar("""
+        let grammar = try parseInternalGrammar("""
         @token IDENT ;
 
         start: oxford_list ;
@@ -279,7 +279,7 @@ private func mockDelegate() -> TestInterpreterDelegate {
     return TestInterpreterDelegate()
 }
 
-private func parseGrammar(
+private func parseInternalGrammar(
     _ grammar: String,
     file: StaticString = #file,
     line: UInt = #line

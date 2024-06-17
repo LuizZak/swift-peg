@@ -223,22 +223,6 @@ private func makeIdent(_ ident: String) -> SwiftPEGGrammar.Token {
     .identifier(Substring(ident))
 }
 
-private func parseGrammar(
-    _ grammar: String,
-    file: StaticString = #file,
-    line: UInt = #line
-) throws -> SwiftPEGGrammar.Grammar {
-
-    let tokenizer = GrammarRawTokenizer(source: grammar)
-    let parser = GrammarParser(raw: tokenizer)
-
-    guard let grammar = try parser.start() else {
-        throw parser.makeSyntaxError()
-    }
-
-    return grammar
-}
-
 private struct _RuleGen {
     var rules: [String] = []
 

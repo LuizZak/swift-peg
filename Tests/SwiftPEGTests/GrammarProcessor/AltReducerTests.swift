@@ -219,7 +219,7 @@ private func assertEqual(
             .first {
                 $0.element.0 != $0.element.1
             }?.offset
-    
+
     let diffAtMessage =
         diffAt.map({ "First mismatch at index \($0)." })
             ?? "Lengths are unequal."
@@ -257,20 +257,4 @@ private func parseAlt(
     }
 
     return InternalGrammar.Alt.from(alt)
-}
-
-private func parseGrammar(
-    _ grammar: String,
-    file: StaticString = #file,
-    line: UInt = #line
-) throws -> SwiftPEGGrammar.Grammar {
-
-    let tokenizer = GrammarRawTokenizer(source: grammar)
-    let parser = GrammarParser(raw: tokenizer)
-
-    guard let grammar = try parser.start() else {
-        throw parser.makeSyntaxError()
-    }
-
-    return grammar
 }

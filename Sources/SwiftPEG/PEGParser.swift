@@ -43,18 +43,47 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
             return SyntaxError.invalidSyntax(errorLead, errorMark)
         }
 
+        let expectedTokensMsg = tokens.asNaturalLanguageList({ "\"\($0)\"" })
+
         // Check EOF
         tokenizer.restore(errorMark)
         guard let actual = try? tokenizer.peekToken() else {
-            return SyntaxError.unexpectedEof("\(errorLead): Unexpected end-of-stream", errorMark)
+            return SyntaxError.unexpectedEof("\(errorLead): Unexpected end-of-stream but expected: \(expectedTokensMsg)", errorMark, expected: tokens)
         }
 
         return SyntaxError.expectedToken(
-            "\(errorLead): Found \"\(actual.rawToken.string)\" but expected: \(tokens.asNaturalLanguageList({ "\"\($0)\"" }))",
+            "\(errorLead): Found \"\(actual.rawToken.string)\" but expected: \(expectedTokensMsg)",
             errorMark,
             received: actual.rawToken,
             expected: tokens
         )
+    }
+
+    /// Returns `true` if the tokenizer has reached the end of the relevant,
+    /// non-whitespace tokens in the stream.
+    ///
+    /// Checking end-of-stream with the parser is preferred over checking the
+    /// tokenizer since the parser is able to syntactically analyze trailing
+    /// whitespace.
+    ///
+    /// Implicates that the underlying raw tokenizer also has reached the end of
+    /// its stream.
+    ///
+    /// Method can throw as any remaining tokens are parsed by the tokenizer.
+    open func isEOF() throws -> Bool {
+        guard tokenizer._raw.isEOF else {
+            return false
+        }
+
+        // Attempt to skip whitespace
+        let mark = self.mark()
+        defer { self.restore(mark) }
+
+        while try tokenizer.peekToken()?.rawToken.isWhitespace == true {
+            _=try tokenizer.next()
+        }
+
+        return tokenizer.isEOF
     }
 
     /// Convenience for `self.tokenizer.mark()`.
@@ -424,7 +453,7 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
         case invalidSyntax(String, _ mark: Mark)
 
         /// Found end-of-stream unexpectedly.
-        case unexpectedEof(String, _ mark: Mark)
+        case unexpectedEof(String, _ mark: Mark, expected: [RawToken.TokenKind])
 
         /// An `expectForced` check failed at a given point.
         case expectedForcedFailed(String, _ mark: Mark)
@@ -436,7 +465,7 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
         public var description: String {
             switch self {
             case .invalidSyntax(let desc, _),
-                .unexpectedEof(let desc, _),
+                .unexpectedEof(let desc, _, _),
                 .expectedForcedFailed(let desc, _),
                 .expectedToken(let desc, _, _, _):
                 return desc
@@ -447,8 +476,8 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
             switch self {
             case .invalidSyntax(let desc, let mark):
                 return "\(Self.self).invalidSyntax(\"\(desc)\", \(mark))"
-            case .unexpectedEof(let desc, let mark):
-                return "\(Self.self).unexpectedEof(\"\(desc)\", \(mark))"
+            case .unexpectedEof(let desc, let mark, let expected):
+                return "\(Self.self).unexpectedEof(\"\(desc)\", \(mark), expected: \(expected))"
             case .expectedForcedFailed(let desc, let mark):
                 return "\(Self.self).expectedForcedFailed(\"\(desc)\", \(mark))"
             case .expectedToken(let desc, let mark, let received, let expected):

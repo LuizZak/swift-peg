@@ -95,8 +95,10 @@ public class GrammarProcessor {
 
         try diagnoseNonStandardRepetitions(in: grammar)
 
+        let internalGrammar = InternalGrammar.Grammar.from(grammar)
+
         return ProcessedGrammar(
-            grammar: .from(grammar),
+            grammar: internalGrammar,
             tokens: processedTokens,
             ruleDependencyGraph: dependencyGraph
         )
@@ -179,7 +181,7 @@ public class GrammarProcessor {
         let parser = GrammarParser(raw: GrammarRawTokenizer(source: fileContents))
 
         do {
-            guard let tokens = try parser.tokensFile(), parser.tokenizer.isEOF else {
+            guard let tokens = try parser.tokensFile(), try parser.isEOF() else {
                 throw recordAndReturn(.tokensFileSyntaxError(tokensMeta.node, parser.makeSyntaxError()))
             }
 

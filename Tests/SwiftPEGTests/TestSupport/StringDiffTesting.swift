@@ -327,3 +327,15 @@ extension XCTestCase: DiffTestCaseFailureReporter {
         #endif // #if os(macOS)
     }
 }
+
+struct StandardOutputDiffTestCaseFailureReporter: DiffTestCaseFailureReporter {
+
+    func _recordFailure(
+        withDescription description: String,
+        inFile filePath: StaticString,
+        atLine lineNumber: UInt,
+        expected: Bool
+    ) {
+        print("\(filePath):\(lineNumber): \(description)")
+    }
+}

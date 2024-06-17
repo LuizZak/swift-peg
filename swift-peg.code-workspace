@@ -36,6 +36,7 @@
                 "args": [
                     "build",
                     "--build-tests",
+                    "-Xswiftc", "-diagnostic-style=llvm" // To prevent builds from vscode-swift invalidating builds from this task
                 ]
             },
             {
@@ -44,6 +45,7 @@
                 "command": "swift",
                 "args": [
                     "test",
+                    "-Xswiftc", "-diagnostic-style=llvm" // To prevent builds from vscode-swift invalidating builds from this task
                 ]
             },
         ]

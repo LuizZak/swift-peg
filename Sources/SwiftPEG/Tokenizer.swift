@@ -41,7 +41,7 @@ open class Tokenizer<Raw: RawTokenizerType> {
     /// When at EOF, invocations of `next()` return `nil`.
     @inlinable
     public var isEOF: Bool {
-        return _raw.isEOF || tokenIndex == _rawEOFIndex
+        return tokenIndex == _rawEOFIndex
     }
 
     /// Gets the reach of this tokenizer's internal buffer.
@@ -55,6 +55,14 @@ open class Tokenizer<Raw: RawTokenizerType> {
     @inlinable
     public init(rawTokenizer: Raw) {
         self._raw = rawTokenizer
+    }
+
+    /// Updates `_rawEOFIndex` depending on the current state of the raw tokenizer.
+    @inlinable
+    func updateRawEOFIndex() {
+        if !isEOF && _raw.isEOF {
+            _rawEOFIndex = cachedTokens.count
+        }
     }
 
     /// Returns a human-readable location for a specified mark.
@@ -95,7 +103,8 @@ open class Tokenizer<Raw: RawTokenizerType> {
         }
 
         // Prevent probing raw tokenizer past its EOF.
-        if tokenIndex == _rawEOFIndex {
+        updateRawEOFIndex()
+        if isEOF {
             return nil
         }
 
@@ -103,6 +112,9 @@ open class Tokenizer<Raw: RawTokenizerType> {
         if let nextToken = try _raw.next() {
             let result = Token(nextToken)
             cachedTokens.append(result)
+
+            updateRawEOFIndex()
+
             return result
         } else {
             _rawEOFIndex = tokenIndex

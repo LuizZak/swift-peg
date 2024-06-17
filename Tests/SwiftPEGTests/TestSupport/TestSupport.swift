@@ -354,7 +354,11 @@ func assertSuccessesEqual<T>(
     let rhsArray = Array(rhs)
 
     guard lhsArray.count == rhsArray.count else {
-        fail("Expected lhs and rhs to have same count, got: lhs = \(lhsArray.count) / rhs = \(rhsArray.count)")
+        fail(
+            "Expected lhs and rhs to have same count, got: lhs = \(lhsArray.count) / rhs = \(rhsArray.count)",
+            file: file,
+            line: line
+        )
         return
     }
 

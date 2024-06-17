@@ -154,7 +154,7 @@ class SwiftCodeGenTests: XCTestCase {
     }
 
     func testGenerateParser_emitTypesInBindings() throws {
-        let grammar = try parseGrammar("""
+        let grammar = try parseInternalGrammar("""
         start: a ;
         a: 'a' | 'b' c+ ;
         b[B]: 'aa' ;
@@ -290,7 +290,7 @@ class SwiftCodeGenTests: XCTestCase {
     }
 
     func testGenerateParser_implicitBindings_false() throws {
-        let grammar = try parseGrammar("""
+        let grammar = try parseInternalGrammar("""
         @implicitBindings "false" ;
 
         start: a ;
@@ -1326,7 +1326,7 @@ class SwiftCodeGenTests: XCTestCase {
     }
 
     func testGenerateParser_expectForced() throws {
-        let grammar = try parseGrammar("""
+        let grammar = try parseInternalGrammar("""
         start:
             | &&('a' | 'b')
             ;
@@ -1488,7 +1488,7 @@ class SwiftCodeGenTests: XCTestCase {
     }
 
     func testGenerateParser_groupInAtom_exposesBindings() throws {
-        let grammar = try parseGrammar("""
+        let grammar = try parseInternalGrammar("""
         @token d; @tokenCallKind "expectKind" ;
         start: a (b+ cBind=c 'd') ;
         a[A]: 'a' ;
@@ -1613,7 +1613,7 @@ class SwiftCodeGenTests: XCTestCase {
     }
 
     func testGenerateParser_optionalAtom_exposesNestedBindings() throws {
-        let grammar = try parseGrammar("""
+        let grammar = try parseInternalGrammar("""
         @token d; @tokenCallKind "expectKind" ;
         start: a (b+ cBind=c 'd')? ;
         a[A]: 'a' ;
@@ -1738,7 +1738,7 @@ class SwiftCodeGenTests: XCTestCase {
     }
 
     func testGenerateParser_groupWithMultipleAlts_exposesCommonBindingsOnly() throws {
-        let grammar = try parseGrammar("""
+        let grammar = try parseInternalGrammar("""
         @token d; @token e; @tokenCallKind "expectKind" ;
         start: a (b+ cBind=c 'd' | b=e cBind=c) ;
         a[A]: 'a' ;
@@ -1873,7 +1873,7 @@ class SwiftCodeGenTests: XCTestCase {
     }
 
     func testGenerateParser_deeplyNestedOptionalGroups() throws {
-        let grammar = try parseGrammar("""
+        let grammar = try parseInternalGrammar("""
         @token d; @token e; @tokenCallKind "expectKind" ;
         start: a (((b+ cBind=c 'd')?)?)? ;
         a[A]: 'a' ;
@@ -2736,7 +2736,7 @@ class SwiftCodeGenTests: XCTestCase {
         }
         """#
 
-        let grammar = try parseGrammar(#"""
+        let grammar = try parseInternalGrammar(#"""
         @parserName "TestGrammarParser" ;
         @parserHeader """
         \#(StringEscaping.escape(parserHeader, terminator: "\"\"\""))
@@ -2996,18 +2996,13 @@ private func makeTokenDef(
     .init(name: name, isFragment: isFragment, staticToken: staticToken, tokenSyntax: tokenSyntax)
 }
 
-private func parseGrammar(
+private func parseInternalGrammar(
     _ grammar: String,
     file: StaticString = #file,
     line: UInt = #line
 ) throws -> InternalGrammar.Grammar {
 
-    let tokenizer = GrammarRawTokenizer(source: grammar)
-    let parser = GrammarParser(raw: tokenizer)
-
-    guard let grammar = try parser.start(), tokenizer.isEOF else {
-        throw parser.makeSyntaxError()
-    }
+    let grammar = try parseGrammar(grammar, file: file, line: line)
 
     let processor = GrammarProcessor(delegate: nil)
     return try processor.process(grammar).grammar

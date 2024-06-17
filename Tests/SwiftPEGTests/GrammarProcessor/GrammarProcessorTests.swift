@@ -353,19 +353,3 @@ private func makeString(_ string: String) -> SwiftPEGGrammar.GrammarString {
 private func makeEdge(_ start: String, _ end: String) -> RuleDependencyGraph.Edge {
     .init(start: start, end: end)
 }
-
-private func parseGrammar(
-    _ grammar: String,
-    file: StaticString = #file,
-    line: UInt = #line
-) throws -> SwiftPEGGrammar.Grammar {
-
-    let tokenizer = GrammarRawTokenizer(source: grammar)
-    let parser = GrammarParser(raw: tokenizer)
-
-    guard let grammar = try parser.start() else {
-        throw parser.makeSyntaxError()
-    }
-
-    return grammar
-}

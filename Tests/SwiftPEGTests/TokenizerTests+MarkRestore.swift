@@ -69,7 +69,7 @@ final class TokenizerTests_MarkRestore: XCTestCase {
         _ = try sut.next()
         _ = try sut.next()
 
-        assertEqual(stubRaw.next_callCount, 5)
+        assertEqual(stubRaw.next_callCount, 4)
     }
 
     /// Mark/restore pairs when the tokenizer has not moved should be a noop.
