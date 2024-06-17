@@ -151,7 +151,7 @@ extension Array where Element: Hashable {
     }
 }
 
-extension MutableCollection where Element: Equatable {
+extension Collection where Element: Equatable {
     func indexOfFirstDifference(_ other: some Collection<Element>) -> Int? {
         zip(self, other).enumerated().first(where: { $1.0 != $1.1 })?.offset
     }
@@ -162,6 +162,79 @@ extension MutableCollection where Element: Equatable {
         allSatisfy { $0.contains(element) }
     }
 
+    /// Finds the longest sequence of elements in common between this collection
+    /// of array elements, returning an array-of-arrays of the indices for each
+    /// of the arrays.
+    ///
+    /// If no common elements were factored out, `nil` is returned, instead.
+    ///
+    /// If this collection contains only one element, the result are all of the
+    /// element's indices.
+    func greatestCommonIndices<T: Equatable>() -> [[Int]]? where Element == [T] {
+        guard
+            let leastArrayIndex = self.indices.min(by: { self[$0].count < self[$1].count }),
+            !self[leastArrayIndex].isEmpty
+        else {
+            return nil
+        }
+        guard count > 1 else {
+            let indices = Array(self[startIndex].indices)
+            return [indices]
+        }
+
+        let leastArray = self[leastArrayIndex]
+        let leastCommon = leastArray.filter(allContain)
+        guard !leastCommon.isEmpty else {
+            return nil
+        }
+
+        let leastCommonIndices: [[Int]] = self.map {
+            $0.leastIndices(of: leastCommon).map { $0 ?? -1 }
+        }
+
+        // Find the greatest increasing sequence of integers in leastCommonIndices
+        var greatestCommonMonotone: Range<Int>?
+
+        for list in leastCommonIndices {
+            guard let nextMonotone = list.greatestMonotoneRange() else {
+                return nil
+            }
+
+            if let greatestMonotone = greatestCommonMonotone {
+                if !greatestMonotone.overlaps(nextMonotone) {
+                    return nil
+                }
+
+                let lower = Swift.max(greatestMonotone.lowerBound, nextMonotone.lowerBound)
+                let upper = Swift.min(greatestMonotone.upperBound, nextMonotone.upperBound)
+
+                greatestCommonMonotone = lower..<upper
+            } else {
+                greatestCommonMonotone = nextMonotone
+            }
+        }
+
+        guard let greatestCommonMonotone else {
+            return nil
+        }
+
+        var result: [[Int]] = []
+        for leastCommon in leastCommonIndices {
+            var partial: [Int] = []
+
+            for i in greatestCommonMonotone {
+                let inArray = leastCommon[i]
+                partial.append(inArray)
+            }
+
+            result.append(partial)
+        }
+
+        return result
+    }
+}
+
+extension MutableCollection where Element: Equatable {
     /// Factors out the longest prefix in common between this collection of
     /// array elements, replacing elements in-place, and returning the common
     /// prefix that was factored out.
@@ -216,66 +289,28 @@ extension MutableCollection where Element: Equatable {
     /// If this collection contains only one element, the result is the element,
     /// and this collection's element is emptied out.
     mutating func factorCommon<T: Equatable>() -> [T]? where Element == [T] {
-        guard
-            let leastArrayIndex = self.indices.min(by: { self[$0].count < self[$1].count }),
-            !self[leastArrayIndex].isEmpty
-        else {
-            return nil
-        }
-        guard count > 1 else {
-            defer {
-                self[startIndex] = []
-            }
-            return self[startIndex]
-        }
-
-        let leastArray = self[leastArrayIndex]
-        let leastCommon = leastArray.filter(allContain)
-        guard !leastCommon.isEmpty else {
+        guard let commonIndices = self.greatestCommonIndices() else {
             return nil
         }
 
-        let leastCommonIndices: [[Int]] = self.map {
-            $0.leastIndices(of: leastCommon).map { $0 ?? -1 }
-        }
+        var result: [T]?
 
-        // Find the greatest increasing sequence of integers in leastCommonIndices
-        var greatestCommonMonotone: Range<Int>?
-
-        for list in leastCommonIndices {
-            guard let nextMonotone = list.greatestMonotoneRange() else {
-                return nil
+        for (index, commonIndices) in zip(self.indices, commonIndices) {
+            var innerResult: [T]?
+            if result == nil {
+                innerResult = []
             }
 
-            if let greatestMonotone = greatestCommonMonotone {
-                if !greatestMonotone.overlaps(nextMonotone) {
-                    return nil
-                }
+            for inArray in commonIndices.reversed() {
+                let element = self[index].remove(at: inArray)
 
-                let lower = Swift.max(greatestMonotone.lowerBound, nextMonotone.lowerBound)
-                let upper = Swift.min(greatestMonotone.upperBound, nextMonotone.upperBound)
-
-                greatestCommonMonotone = lower..<upper
-            } else {
-                greatestCommonMonotone = nextMonotone
+                innerResult?.append(element)
             }
-        }
 
-        guard let greatestCommonMonotone else {
-            return nil
-        }
-
-        // Use greatest increasing monotone to construct result, and to remove
-        // the items from their original collections.
-        var result: [T] = []
-        for i in greatestCommonMonotone {
-            result.append(leastCommon[i])
-        }
-
-        for (index, leastCommon) in zip(self.indices, leastCommonIndices) {
-            for i in greatestCommonMonotone.reversed() {
-                let inArray = leastCommon[i]
-                self[index].remove(at: inArray)
+            if result == nil {
+                // Result is reversed due to the inner loop traversing the indices
+                // in reverse order
+                result = innerResult?.reversed()
             }
         }
 

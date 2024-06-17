@@ -3,7 +3,7 @@ import XCTest
 @testable import SwiftPEG
 
 class SyntaxNodeLayoutGenTests: XCTestCase {
-    func testGenerateSyntaxLayout() throws {
+    func testGenerateSyntaxNodes() throws {
         let processed = try processGrammar(tokens: #"""
         $A: 'a' ; $B: 'b' ; $C: 'c' ;
         """#, grammar: #"""
@@ -36,7 +36,7 @@ class SyntaxNodeLayoutGenTests: XCTestCase {
         ])
     }
 
-    func testGenerateSyntaxLayout_factorCommonElements() throws {
+    func testGenerateSyntaxNodes_factorCommonElements() throws {
         let processed = try processGrammar(tokens: #"""
         $A: 'a' ; $B: 'b' ; $C: 'c' ;
         """#, grammar: #"""
@@ -65,7 +65,7 @@ class SyntaxNodeLayoutGenTests: XCTestCase {
         ])
     }
 
-    func testGenerateSyntaxLayout_factorCommonElements_duplicated() throws {
+    func testGenerateSyntaxNodes_factorCommonElements_duplicated() throws {
         let processed = try processGrammar(tokens: #"""
         $A: 'a' ; $B: 'b' ; $C: 'c' ;
         """#, grammar: #"""
@@ -81,8 +81,8 @@ class SyntaxNodeLayoutGenTests: XCTestCase {
 
         assertSyntaxNodesEqual(result, [
             .init(name: "a", layout: .makeFixed([
-                "A": .token("A"),
                 "b": .optional(.rule("b")),
+                "A": .token("A"),
                 "c": .optional(.rule("c")),
                 "A1": .optional(.token("A")),
             ])),
@@ -95,7 +95,37 @@ class SyntaxNodeLayoutGenTests: XCTestCase {
         ])
     }
 
-    func testGenerateSyntaxLayout_gather() throws {
+    func testGenerateSyntaxNodes_factorCommonElements_suffix() throws {
+        let processed = try processGrammar(tokens: #"""
+        $A: 'a' ; $B: 'b' ; $C: 'c' ;
+        """#, grammar: #"""
+        @tokensFile "tokens.tokens" ;
+
+        a: b A B | c A B ;
+        b: 'b' ;
+        c: 'c' ;
+        """#, entryRuleName: "a")
+        let sut = makeSut(processed)
+
+        let result = try sut.generateSyntaxNodes()
+
+        assertSyntaxNodesEqual(result, [
+            .init(name: "a", layout: .makeFixed([
+                "b": .optional(.rule("b")),
+                "A": .token("A"),
+                "B": .token("B"),
+                "c": .optional(.rule("c")),
+            ])),
+            .init(name: "b", layout: .makeFixed([
+                "B": .token("B"),
+            ])),
+            .init(name: "c", layout: .makeFixed([
+                "C": .token("C"),
+            ])),
+        ])
+    }
+
+    func testGenerateSyntaxNodes_gather() throws {
         let processed = try processGrammar(tokens: #"""
         $A: 'a' ; $B: 'b' ; $C: 'c' ;
         """#, grammar: #"""
@@ -125,7 +155,37 @@ class SyntaxNodeLayoutGenTests: XCTestCase {
         ])
     }
 
-    func testGenerateSyntaxLayout_sample_tokenSyntaxAtom() throws {
+    func testGenerateSyntaxNodes_gather_groupNode() throws {
+        let processed = try processGrammar(tokens: #"""
+        $A: 'a' ; $B: 'b' ; $C: 'c' ;
+        """#, grammar: #"""
+        @tokensFile "tokens.tokens" ;
+
+        a: b.(c?)+ ;
+        b: 'b' ;
+        c: 'c' ;
+        """#, entryRuleName: "a")
+        let sut = makeSut(processed)
+
+        let result = try sut.generateSyntaxNodes()
+
+        assertSyntaxNodesEqual(result, [
+            .init(name: "a", layout: .makeFixed([
+                "c": .collectionOf(.makeFixed([
+                    "c": .optional(.rule("c")),
+                    "b": .optional(.rule("b")),
+                ])),
+            ])),
+            .init(name: "b", layout: .makeFixed([
+                "B": .token("B"),
+            ])),
+            .init(name: "c", layout: .makeFixed([
+                "C": .token("C"),
+            ])),
+        ])
+    }
+
+    func testGenerateSyntaxNodes_sample_tokenSyntaxAtom() throws {
         let processed = try processGrammar(tokens: #"""
         $IDENTIFIER: 'a'...'z'+ ;
         $STRING: '"' (!'"' .)+ '"' ;
@@ -213,7 +273,7 @@ class SyntaxNodeLayoutGenTests: XCTestCase {
         ])
     }
 
-    func testGenerateSyntaxLayout_error_unrecognizedTokenLiteral() throws {
+    func testGenerateSyntaxNodes_error_unrecognizedTokenLiteral() throws {
         let processed = try processGrammar(tokens: #"""
         """#, grammar: #"""
         @tokensFile "tokens.tokens" ;

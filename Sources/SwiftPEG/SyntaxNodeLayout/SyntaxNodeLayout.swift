@@ -1,5 +1,5 @@
 /// Describes the static structure of a syntax node from a grammar rule.
-indirect enum SyntaxNodeLayout: Equatable {
+public indirect enum SyntaxNodeLayout: Equatable {
     /// A token terminal, with a given identifier/kind.
     case token(String)
 
@@ -19,42 +19,42 @@ indirect enum SyntaxNodeLayout: Equatable {
     /// distinguished by identifiers.
     case fixed([FixedLayoutEntry])
 
-    var isToken: Bool {
+    public var isToken: Bool {
         switch self {
         case .token: true
         default: false
         }
     }
 
-    var isRule: Bool {
+    public var isRule: Bool {
         switch self {
         case .rule: true
         default: false
         }
     }
 
-    var isOptional: Bool {
+    public var isOptional: Bool {
         switch self {
         case .optional: true
         default: false
         }
     }
 
-    var isOneOf: Bool {
+    public var isOneOf: Bool {
         switch self {
         case .oneOf: true
         default: false
         }
     }
 
-    var isCollectionOf: Bool {
+    public var isCollectionOf: Bool {
         switch self {
         case .collectionOf: true
         default: false
         }
     }
 
-    var isFixed: Bool {
+    public var isFixed: Bool {
         switch self {
         case .fixed: true
         default: false
@@ -162,12 +162,14 @@ indirect enum SyntaxNodeLayout: Equatable {
 
     /// If this syntax node is a `.oneOf` of exclusively `.fixed` layouts, returns
     /// the result of factoring out the common elements of all fixed layouts into
-    /// the root layout.
+    /// the root layout, keeping them in the order of appearance on the first
+    /// fixed layout element.
     ///
     /// The transformation turns a layout of:
     /// ```
     /// - one of:
     ///   - fixed:
+    ///     - e: e
     ///     - a: A
     ///     - b: B
     ///   - fixed:
@@ -181,8 +183,9 @@ indirect enum SyntaxNodeLayout: Equatable {
     /// Into:
     /// ```
     /// - fixed:
-    ///   - a: A
+    ///   - e: optional: E
     ///   - b: optional: B
+    ///   - a: A
     ///   - c: optional: C
     ///   - d: optional: D
     /// ```
@@ -205,22 +208,30 @@ indirect enum SyntaxNodeLayout: Equatable {
             fixedEntries.append(entries)
         }
 
-        guard let factored = fixedEntries.factorCommon() else {
+        guard let indices = fixedEntries.greatestCommonIndices() else {
             return nil
         }
 
+        var emittedCommon = false
         var remaining: [FixedLayoutEntry] = []
-        for entries in fixedEntries {
-            for entry in entries {
-                remaining.append(entry)
+        for (entries, commonIndices) in zip(fixedEntries, indices) {
+            for (i, entry) in entries.enumerated() {
+                guard !commonIndices.contains(i) else {
+                    if !emittedCommon {
+                        remaining.append(entry)
+                    }
+                    continue
+                }
+
+                var newEntry = entry
+                newEntry.layout = .optional(entry.layout)
+                remaining.append(newEntry)
             }
+
+            emittedCommon = true
         }
 
-        remaining = remaining.map { entry in
-            .init(label: entry.label, layout: .optional(entry.layout))
-        }
-
-        return .fixed(factored + remaining)
+        return .fixed(remaining)
     }
 
     static func makeFixed(_ layout: KeyValuePairs<String, SyntaxNodeLayout>) -> Self {
@@ -229,9 +240,14 @@ indirect enum SyntaxNodeLayout: Equatable {
         return .fixed(entries)
     }
 
-    struct FixedLayoutEntry: Equatable {
-        var label: String
-        var layout: SyntaxNodeLayout
+    public struct FixedLayoutEntry: Equatable {
+        public var label: String
+        public var layout: SyntaxNodeLayout
+
+        public init(label: String, layout: SyntaxNodeLayout) {
+            self.label = label
+            self.layout = layout
+        }
     }
 
     /// Provides deduplication support for syntax nodes.
@@ -265,17 +281,17 @@ indirect enum SyntaxNodeLayout: Equatable {
 }
 
 public struct SyntaxNode: Equatable {
-    var name: String
-    var ruleName: String
-    var layout: SyntaxNodeLayout
+    public var name: String
+    public var ruleName: String
+    public var layout: SyntaxNodeLayout
 
-    internal init(name: String, ruleName: String, layout: SyntaxNodeLayout) {
+    public init(name: String, ruleName: String, layout: SyntaxNodeLayout) {
         self.name = name
         self.ruleName = ruleName
         self.layout = layout
     }
 
-    internal init(name: String, layout: SyntaxNodeLayout) {
+    public init(name: String, layout: SyntaxNodeLayout) {
         self.name = name
         self.ruleName = name
         self.layout = layout

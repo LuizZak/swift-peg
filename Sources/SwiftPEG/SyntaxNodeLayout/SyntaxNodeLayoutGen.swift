@@ -121,6 +121,14 @@ public class SyntaxNodeLayoutGen {
                         sepName: .optional(sepLayout.layout),
                     ])
                 )
+            } else if let nodeName = nodeLayout.name {
+                layout = .init(layout: .oneOf([
+                    nodeLayout.layout,
+                    .makeFixed([
+                        nodeName: nodeLayout.layout,
+                        "\(nodeName)_sep": .optional(sepLayout.layout),
+                    ]),
+                ]))
             } else {
                 layout = nodeLayout
             }
@@ -144,7 +152,17 @@ public class SyntaxNodeLayoutGen {
             let layouts = try alts.map {
                 try layoutForAlt($0, lookup: lookup)
             }
-            let layout = SyntaxNodeLayout.oneOf(layouts)
+            var layout = SyntaxNodeLayout.oneOf(layouts)
+
+            // Attempt to reduce nested fixed layouts
+            layout = layout.flattened()
+
+            switch layout {
+            case .fixed(let entries) where entries.count == 1:
+                return LabeledLayout(entries[0])
+            default:
+                break
+            }
 
             return LabeledLayout(name: nil, layout: layout)
 
@@ -171,6 +189,16 @@ public class SyntaxNodeLayoutGen {
     struct LabeledLayout {
         var name: String?
         var layout: SyntaxNodeLayout
+
+        init(name: String? = nil, layout: SyntaxNodeLayout) {
+            self.name = name
+            self.layout = layout
+        }
+
+        init(_ fixedLayoutEntry: SyntaxNodeLayout.FixedLayoutEntry) {
+            self.name = fixedLayoutEntry.label
+            self.layout = fixedLayoutEntry.layout
+        }
 
         func asFixedLayoutEntry(fallbackName: String) -> SyntaxNodeLayout.FixedLayoutEntry {
             return SyntaxNodeLayout.FixedLayoutEntry(

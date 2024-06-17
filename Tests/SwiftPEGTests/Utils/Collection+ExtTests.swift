@@ -3,6 +3,84 @@ import XCTest
 @testable import SwiftPEG
 
 class Collection_ExtTests: XCTestCase {
+    func testGreatestCommonIndices_empty() {
+        let sut: [[Int]] = []
+
+        let result = sut.greatestCommonIndices()
+
+        assertNil(result)
+    }
+
+    func testGreatestCommonIndices_singleArray() {
+        let sut: [[Int]] = [
+            [0, 1, 2],
+        ]
+
+        let result = sut.greatestCommonIndices()
+
+        assertEqual(result, [[0, 1, 2]])
+    }
+
+    func testGreatestCommonIndices_repeatingElement() {
+        let sut: [[Int]] = [
+            [0, 1, 0],
+            [1, 2, 0],
+            [1, 3, 4, 5, 0],
+        ]
+
+        let result = sut.greatestCommonIndices()
+
+        assertEqual(result, [
+            [1, 2],
+            [0, 2],
+            [0, 4],
+        ])
+    }
+
+    func testGreatestCommonIndices_singleRepeatingElement() {
+        let sut: [[Int]] = [
+            [0, 1, 0],
+            [1, 2, 6],
+            [0, 3, 1, 5, 7],
+        ]
+
+        let result = sut.greatestCommonIndices()
+
+        assertEqual(result, [
+            [1],
+            [0],
+            [2],
+        ])
+    }
+
+    func testGreatestCommonIndices_noCommonElement() {
+        let sut: [[Int]] = [
+            [0, 1, 0],
+            [3, 2, 6],
+            [4, 7, 8, 9],
+        ]
+
+        let result = sut.greatestCommonIndices()
+
+        assertNil(result)
+    }
+
+    func testGreatestCommonIndices_commonPrefix() {
+        let sut: [[Int]] = [
+            [0, 1, 2],
+            [0, 1],
+            [0, 3, 1, 4],
+        ]
+
+        let result = sut.greatestCommonIndices()
+
+        assertEqual(result, [
+            [0, 1],
+            [0, 1],
+            [0, 2],
+        ])
+    }
+
     func testFactorPrefix_empty() {
         var sut: [[Int]] = []
 
