@@ -107,9 +107,30 @@ public class SyntaxNodeLayoutGen {
 
             return LabeledLayout(name: nil, layout: .optional(layout))
 
+        case .gather(let sep, let node, _):
+            let sepLayout = try layoutForAtom(sep, lookup: lookup)
+            let nodeLayout = try layoutForAtom(node, lookup: lookup)
+
+            var layout: LabeledLayout
+
+            if let sepName = sepLayout.name, let nodeName = nodeLayout.name {
+                layout = .init(
+                    name: nodeLayout.name,
+                    layout: .makeFixed([
+                        nodeName: nodeLayout.layout,
+                        sepName: .optional(sepLayout.layout),
+                    ])
+                )
+            } else {
+                layout = nodeLayout
+            }
+
+            layout.layout = .collectionOf(layout.layout)
+
+            return layout
+
         case .zeroOrMore(let atom, _),
-            .oneOrMore(let atom, _),
-            .gather(_, let atom, _):
+            .oneOrMore(let atom, _):
             var layout = try layoutForAtom(atom, lookup: lookup)
             layout.layout = .collectionOf(layout.layout)
 

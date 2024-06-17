@@ -111,7 +111,10 @@ class SyntaxNodeLayoutGenTests: XCTestCase {
 
         assertSyntaxNodesEqual(result, [
             .init(name: "a", layout: .makeFixed([
-                "c": .collectionOf(.rule("c"))
+                "c": .collectionOf(.makeFixed([
+                    "c": .rule("c"),
+                    "b": .optional(.rule("b")),
+                ])),
             ])),
             .init(name: "b", layout: .makeFixed([
                 "B": .token("B"),
