@@ -162,6 +162,34 @@ extension Collection where Element: Equatable {
         allSatisfy { $0.contains(element) }
     }
 
+    /// Returns the least indices of elements, mapped 1-to-1, to a given collection
+    /// of elements in common with this collection.
+    ///
+    /// If an element appears twice in `elements`, an attempt is made to map to
+    /// different indices within this collection, otherwise, the repeated items
+    /// may share the same index.
+    func leastIndices(of elements: some Collection<Element>) -> [Index?] where Index: Hashable {
+        var used: Set<Index> = []
+
+        var result: [Index?] = []
+        for element in elements {
+            var nextIndex = self.indices.firstIndex { index in
+                !used.contains(index) && self[index] == element
+            }
+            if nextIndex == nil {
+                nextIndex = self.firstIndex(of: element)
+            }
+
+            result.append(nextIndex)
+
+            if let nextIndex {
+                used.insert(nextIndex)
+            }
+        }
+
+        return result
+    }
+
     /// Finds the longest sequence of elements in common between this collection
     /// of array elements, returning an array-of-arrays of the indices for each
     /// of the arrays.
@@ -231,6 +259,63 @@ extension Collection where Element: Equatable {
         }
 
         return result
+    }
+
+    /// Returns the end of a monotonic range within this collection, starting at
+    /// a given index.
+    ///
+    /// Returns the index, starting from `index`, of the first element that is
+    /// strictly less than the previous element.
+    ///
+    /// If the element at `index` is already greater than the next element, the
+    /// result is `index + 1`.
+    ///
+    /// - complexity: O(n) where n is the length of the collection.
+    func monotoneEnd(after index: Index) -> Index where Element: Comparable {
+        assert(indices.contains(index))
+
+        var current = self[index]
+
+        var stop = self.index(after: index)
+
+        while stop < endIndex, self[stop] >= current {
+            current = self[stop]
+
+            stop = self.index(after: stop)
+        }
+
+        return stop
+    }
+
+    /// Returns the range of indices that point to the greatest, contiguous range
+    /// of elements within this collection that are in increasing monotone order
+    /// (i.e., each element is equal to or greater than the previous).
+    ///
+    /// If no element is less than or equal to the next in this collection, a
+    /// range containing only one of any of the element of the collection is
+    /// returned, instead.
+    ///
+    /// Returns `nil` if the collection is empty.
+    ///
+    /// - complexity: O(n) where n is the length of the collection.
+    func greatestMonotoneRange() -> Range<Index>? where Element: Comparable, Index == Int {
+        var largest: Range<Index>?
+
+        var index = self.startIndex
+        while index < self.endIndex {
+            let end = self.monotoneEnd(after: index)
+            defer { index = end }
+
+            let range = index..<end
+
+            if let prev = largest {
+                largest = range.count > prev.count ? range : prev
+            } else {
+                largest = range
+            }
+        }
+
+        return largest
     }
 }
 
@@ -315,74 +400,5 @@ extension MutableCollection where Element: Equatable {
         }
 
         return result
-    }
-
-    /// Returns the least indices of elements, mapped 1-to-1, to a given collection
-    /// of elements in common with this collection.
-    ///
-    /// If an element appears twice in `elements`, an attempt is made to map to
-    /// different indices within this collection, otherwise, the repeated items
-    /// may share the same index.
-    func leastIndices(of elements: some Collection<Element>) -> [Index?] where Index: Hashable {
-        var used: Set<Index> = []
-
-        var result: [Index?] = []
-        for element in elements {
-            var nextIndex = self.indices.firstIndex { index in
-                !used.contains(index) && self[index] == element
-            }
-            if nextIndex == nil {
-                nextIndex = self.firstIndex(of: element)
-            }
-
-            result.append(nextIndex)
-
-            if let nextIndex {
-                used.insert(nextIndex)
-            }
-        }
-
-        return result
-    }
-
-    /// Returns the end of a monotonic range within this collection, starting at
-    /// a given index.
-    ///
-    /// Returns the index, starting from `index`, of the first element that is
-    /// strictly less than the previous element.
-    ///
-    /// If the element at `index` is already greater than the next element, the
-    /// result is `index`.
-    func monotoneEnd(after index: Index) -> Index where Element: Comparable {
-        assert(indices.contains(index))
-
-        var current = self[index]
-
-        var stop = self.index(after: index)
-
-        while stop < endIndex, self[stop] >= current {
-            current = self[stop]
-
-            stop = self.index(after: stop)
-        }
-
-        return stop
-    }
-
-    func greatestMonotoneRange() -> Range<Index>? where Element: Comparable, Index == Int {
-        var largest: Range<Index>?
-
-        for i in indices {
-            let end = self.monotoneEnd(after: i)
-            let range = i..<end
-
-            if let prev = largest {
-                largest = range.count > prev.count ? range : prev
-            } else {
-                largest = range
-            }
-        }
-
-        return largest
     }
 }

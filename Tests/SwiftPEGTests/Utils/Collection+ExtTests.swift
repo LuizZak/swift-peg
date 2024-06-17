@@ -81,6 +81,38 @@ class Collection_ExtTests: XCTestCase {
         ])
     }
 
+    func testGreatestMonotoneRange() {
+        let sut = [0, 1, 1, 2, 0, 3, 4, 5, 6]
+
+        let result = sut.greatestMonotoneRange()
+
+        assertEqual(result, 4..<9)
+    }
+
+    func testGreatestMonotoneRange_sortedArray() {
+        let sut = [0, 1, 1, 2, 3, 5, 10, 11]
+
+        let result = sut.greatestMonotoneRange()
+
+        assertEqual(result, 0..<8)
+    }
+
+    func testGreatestMonotoneRange_noIncreasingElements() {
+        let sut = [11, 10, 5, 3, 2, 1, 1, 0]
+
+        let result = sut.greatestMonotoneRange()
+
+        assertEqual(result, 5..<7)
+    }
+
+    func testGreatestMonotoneRange_strictlyNonIncreasingElements() {
+        let sut = [11, 10, 5, 3, 2, 1, 0]
+
+        let result = sut.greatestMonotoneRange()
+
+        assertEqual(result, 0..<1)
+    }
+
     func testFactorPrefix_empty() {
         var sut: [[Int]] = []
 
