@@ -1,9 +1,16 @@
+import ArgumentParser
 import SwiftPEG
 
-class PerformanceTest {
+struct PerformanceTest: ParsableCommand {
+    @Flag(
+        name: [.long, .customShort("s")],
+        help: "Whether to use GrammarRawTokenizer instead of a built-in array-based tokenizer for the benchmark test."
+    )
     var useStringBuffer: Bool = false
 
     func run() throws {
+        print("Running benchmark...")
+
         let tokensToCopy: [String] = [
             "ruleA", "[", "Some", ".", "SwiftType", "<", "Int", ">", "]", ":",
                 "|", "'a'",
