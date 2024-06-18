@@ -19,6 +19,24 @@ public indirect enum SyntaxNodeLayout: Equatable {
     /// distinguished by identifiers.
     case fixed([FixedLayoutEntry])
 
+    /// Returns the array of children sub-layouts if this layout contains inner
+    /// layouts, or an empty array, if not.
+    public var subLayouts: [SyntaxNodeLayout] {
+        switch self {
+        case .optional(let inner), .collectionOf(let inner):
+            return [inner]
+
+        case .oneOf(let layouts):
+            return layouts
+
+        case .fixed(let fields):
+            return fields.map(\.layout)
+
+        case .token, .rule:
+            return []
+        }
+    }
+
     public var isToken: Bool {
         switch self {
         case .token: true
@@ -158,6 +176,38 @@ public indirect enum SyntaxNodeLayout: Equatable {
         }
 
         return result
+    }
+
+    /// If this syntax node is a `.oneOf` of exclusively `.fixed` layouts, returns
+    /// the longest common prefix of layouts between all inner layouts.
+    ///
+    /// If the layouts have no common prefix, an empty array is returned.
+    ///
+    /// If this syntax node layout is not a `.oneOf` of exclusively `.fixed`
+    /// layouts, or there is only one element within the `.oneOf` collection,
+    /// `nil` is returned, instead.
+    func commonFixedLayoutsPrefix() -> [FixedLayoutEntry]? {
+        guard case .oneOf(let elements) = self else {
+            return nil
+        }
+        if elements.count == 1 {
+            return nil
+        }
+
+        var fixedEntries: [[FixedLayoutEntry]] = []
+        for element in elements {
+            guard case .fixed(let entries) = element else {
+                return nil
+            }
+
+            fixedEntries.append(entries)
+        }
+
+        guard let index = fixedEntries.greatestCommonPrefixIndex() else {
+            return nil
+        }
+
+        return Array(fixedEntries[0][0..<index])
     }
 
     /// If this syntax node is a `.oneOf` of exclusively `.fixed` layouts, returns
@@ -328,12 +378,14 @@ extension SyntaxNodeLayout {
 
         case .optional(let layout):
             line("optional:")
+
             output.indented(hasSiblings: false) {
                 layout.debugPrint(to: output)
             }
 
         case .collectionOf(let layout):
             line("collectionOf:")
+
             output.indented(hasSiblings: false) {
                 layout.debugPrint(to: output)
             }

@@ -3,6 +3,72 @@ import XCTest
 @testable import SwiftPEG
 
 class Collection_ExtTests: XCTestCase {
+    // MARK: greatestCommonPrefixIndex
+
+    func testGreatestCommonPrefixIndex_empty() {
+        let sut: [[Int]] = []
+
+        let result = sut.greatestCommonPrefixIndex()
+
+        assertNil(result)
+    }
+
+    func testGreatestCommonPrefixIndex_empty_elements() {
+        let sut: [[Int]] = [
+            [],
+            [],
+        ]
+
+        let result = sut.greatestCommonPrefixIndex()
+
+        assertNil(result)
+    }
+
+    func testGreatestCommonPrefixIndex_singleArray() {
+        let sut: [[Int]] = [
+            [0, 1, 2],
+        ]
+
+        let result = sut.greatestCommonPrefixIndex()
+
+        assertEqual(result, 3)
+    }
+
+    func testGreatestCommonPrefixIndex_commonPrefix_equalLength() {
+        let sut: [[Int]] = [
+            [0, 1, 2],
+            [0, 1, 3],
+        ]
+
+        let result = sut.greatestCommonPrefixIndex()
+
+        assertEqual(result, 2)
+    }
+
+    func testGreatestCommonPrefixIndex_commonPrefix_unequalLength() {
+        let sut: [[Int]] = [
+            [0, 1],
+            [0, 1, 3],
+        ]
+
+        let result = sut.greatestCommonPrefixIndex()
+
+        assertEqual(result, 2)
+    }
+
+    func testGreatestCommonPrefixIndex_noCommonPrefix() {
+        let sut: [[Int]] = [
+            [0, 1, 2],
+            [3, 0, 1],
+        ]
+
+        let result = sut.greatestCommonPrefixIndex()
+
+        assertNil(result)
+    }
+
+    // MARK: greatestCommonIndices
+
     func testGreatestCommonIndices_empty() {
         let sut: [[Int]] = []
 
@@ -81,6 +147,8 @@ class Collection_ExtTests: XCTestCase {
         ])
     }
 
+    // MARK: greatestMonotoneRange
+
     func testGreatestMonotoneRange() {
         let sut = [0, 1, 1, 2, 0, 3, 4, 5, 6]
 
@@ -112,6 +180,8 @@ class Collection_ExtTests: XCTestCase {
 
         assertEqual(result, 0..<1)
     }
+
+    // MARK: factorPrefix
 
     func testFactorPrefix_empty() {
         var sut: [[Int]] = []
@@ -171,6 +241,8 @@ class Collection_ExtTests: XCTestCase {
         assertNil(result)
         assertEqual(sut, [[0, 1, 2, 3], [1, 1, 2, 3], [2, 1, 2, 3]])
     }
+
+    // MARK: factorCommon
 
     func testFactorCommon_empty() {
         var sut: [[Int]] = []

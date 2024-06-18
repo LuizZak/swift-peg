@@ -152,6 +152,11 @@ extension Array where Element: Hashable {
 }
 
 extension Collection where Element: Equatable {
+    /// Returns the offset of the first element that is different between
+    /// `self` and `other`.
+    ///
+    /// If `self` and `other` are equal, or have the same elements, but have
+    /// different lengths, the result is `nil`.
     func indexOfFirstDifference(_ other: some Collection<Element>) -> Int? {
         zip(self, other).enumerated().first(where: { $1.0 != $1.1 })?.offset
     }
@@ -188,6 +193,35 @@ extension Collection where Element: Equatable {
         }
 
         return result
+    }
+
+    /// Returns the end index of the longest sequence of elements that are a
+    /// prefix of all elements of this collection of arrays.
+    ///
+    /// If this collection contains only one array, the result is that array's
+    /// `endIndex`.
+    ///
+    /// If the elements share no common prefix, or this collection is empty,
+    /// `nil` is returned, instead.
+    func greatestCommonPrefixIndex<T: Equatable>() -> Int? where Element == [T] {
+        guard let least = self.min(by: { $0.count < $1.count }), !least.isEmpty else {
+            return nil
+        }
+
+        var longest = least.count
+        for element in self {
+            let firstDifference =
+                element.indexOfFirstDifference(least)
+                    ?? least.endIndex
+
+            longest = Swift.min(firstDifference, longest)
+        }
+
+        if longest == 0 {
+            return nil
+        }
+
+        return longest
     }
 
     /// Finds the longest sequence of elements in common between this collection

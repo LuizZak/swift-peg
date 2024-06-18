@@ -103,7 +103,7 @@ public class SyntaxNodeLayoutGen {
             let layouts = try alts.map {
                 try layoutForAlt($0, lookup: lookup)
             }
-            let layout = SyntaxNodeLayout.oneOf(layouts)
+            let layout = SyntaxNodeLayout.oneOf(layouts).flattened()
 
             return LabeledLayout(name: nil, layout: .optional(layout))
 
