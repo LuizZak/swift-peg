@@ -7,10 +7,10 @@ extension StringStream {
     /// The state of `self` is restored to before this call on either results of
     /// `consumer`.
     @inlinable
-    public mutating func negativeLookahead(_ consumer: (inout StringStream) -> Bool) -> Bool {
+    public mutating func negativeLookahead(_ consumer: (inout StringStream) throws -> Bool) rethrows -> Bool {
         let state = save()
         defer { restore(state) }
 
-        return !consumer(&self)
+        return try !consumer(&self)
     }
 }

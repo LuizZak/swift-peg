@@ -519,6 +519,8 @@ extension CommonAbstract {
     ///     | '(' '|'.tokenSyntaxAtom+ ')' '+'
     ///     | '(' '|'.tokenSyntaxAtom+ ')' '?'
     ///     | '(' '|'.tokenSyntaxAtom+ ')'
+    ///     | tokenSyntaxAtom '*'
+    ///     | tokenSyntaxAtom '+'
     ///     | tokenSyntaxAtom '?'
     ///     | tokenSyntaxAtom
     ///     ;

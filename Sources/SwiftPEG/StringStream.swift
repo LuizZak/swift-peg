@@ -162,7 +162,7 @@ public struct StringStream<StringType: StringProtocol> {
 
     /// Contains information about the state of a string stream, allowing for
     /// recording and reversing of the stream.
-    public struct State {
+    public struct State: Equatable {
         public var index: StringType.Index
         public var substringStartIndex: StringType.Index
 
