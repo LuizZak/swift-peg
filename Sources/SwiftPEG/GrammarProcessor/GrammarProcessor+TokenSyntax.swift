@@ -23,6 +23,7 @@ extension GrammarProcessor {
         )
 
         diagnoseAltOrder(sorted)
+        diagnoseNullAtoms(sorted)
 
         var inlined = try applyFragmentInlining(
             sorted.reversed(),
@@ -78,6 +79,23 @@ extension GrammarProcessor {
         }
 
         return byName
+    }
+
+    /// Diagnoses atoms that have a combination of
+    func diagnoseNullAtoms(_ tokens: [SwiftPEGGrammar.TokenDefinition]) {
+        for token in tokens {
+            guard let syntax = token.tokenSyntax else {
+                continue
+            }
+
+            let atoms = syntax.alts.flatMap(\.items).flatMap(\.atoms)
+
+            for atom in atoms where atom.isNull {
+                diagnostics.append(
+                    .nullableAtomInToken(token: token, atom)
+                )
+            }
+        }
     }
 
     // TODO: Implement alt/atom order diagnostics for tokens

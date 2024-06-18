@@ -474,6 +474,13 @@ public class GrammarProcessor {
             token: SwiftPEGGrammar.TokenDefinition
         )
 
+        /// A token atom has a combination of exclusion + terminal that results
+        /// in no input ever matching.
+        case nullableAtomInToken(
+            token: SwiftPEGGrammar.TokenDefinition,
+            CommonAbstract.TokenAtom
+        )
+
         /// An alt of a token that executes before another, if it succeeds, will
         /// always prevent the other alt from being attempted.
         case tokenAltOrderIssue(
@@ -527,6 +534,13 @@ public class GrammarProcessor {
                     Token fragment %\(token.name) @ \(token.location) specifies \
                     a static token value, which is not relevant for fragments and \
                     will be ignored.
+                    """
+
+            case .nullableAtomInToken(let token, let atom):
+                return """
+                    Token $\(token.name) @ \(token.location) contains atom '\(atom)' \
+                    which has a token terminal + exclusion that cannot be satisfied \
+                    by any input, and will never match.
                     """
 
             case .tokenAltOrderIssue(let token, let prior, let former):

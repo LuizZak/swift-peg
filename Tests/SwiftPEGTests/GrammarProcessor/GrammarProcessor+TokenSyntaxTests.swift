@@ -332,6 +332,22 @@ class GrammarProcessor_TokenSyntaxTests: XCTestCase {
 
         assertEqual(processed.tokens, expected)
     }
+
+    func testDiagnostics_nullAtom() throws {
+        let delegate = stubDelegate(tokensFile: #"""
+        $a: !'a' 'a' ;
+        """#)
+        let grammar = makeGrammar()
+        let sut = makeSut(delegate)
+
+        _=try sut.process(grammar)
+
+        assertEqual(sut.test_diagnosticMessages(), """
+        Token $a @ line 1 column 1 contains atom '!'a' 'a'' which has a token \
+        terminal + exclusion that cannot be satisfied by any input, and will \
+        never match.
+        """)
+    }
 }
 
 // MARK: - Test internals

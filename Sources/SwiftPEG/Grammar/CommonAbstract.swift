@@ -741,12 +741,47 @@ extension CommonAbstract {
                 return excluded.contains(.identifier(ident))
 
             case .literal(let literal):
-                return excluded.contains(.string(literal))
+                let literal = literal.contents
+
+                for exclusion in excluded {
+                    switch exclusion {
+                    case .string(let exclusion):
+                        if literal.hasPrefix(exclusion.contents) {
+                            return true
+                        }
+
+                    case .rangeLiteral(let low, let high):
+                        let low = low.contents
+                        let high = high.contents
+                        let trimmed = literal.prefix(max(low.count, high.count))
+
+                        if (low...high).contains(String(trimmed)) {
+                            return true
+                        }
+
+                    default:
+                        break
+                    }
+                }
+
+                return false
 
             case .rangeLiteral(let low, let high) where low == high:
                 return excluded.contains(.string(low))
 
-            case .rangeLiteral:
+            case .rangeLiteral(let low, let high):
+                let low = low.contents
+                let high = high.contents
+
+                // Detect excluded ranges fully containing the range literal
+                let excludedRanges = excluded.compactMap(\.rangeLiteral).map{
+                    ($0.0.contents...$0.1.contents)
+                }
+
+                if excludedRanges.contains(where: { $0.lowerBound <= low && $0.upperBound >= high }) {
+                    return true
+                }
+
                 // Although technically a discrete space, there is no native way
                 // to deal with striding and covering Character spaces in Swift;
                 // for now, consider all ranges (except for single-item ranges)
@@ -864,6 +899,15 @@ extension CommonAbstract {
             switch self {
             case .string(let value):
                 return value.contents
+            default:
+                return nil
+            }
+        }
+
+        var rangeLiteral: (DualString, DualString)? {
+            switch self {
+            case .rangeLiteral(let low, let high):
+                return (low, high)
             default:
                 return nil
             }
