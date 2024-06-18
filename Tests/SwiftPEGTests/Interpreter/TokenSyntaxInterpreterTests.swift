@@ -3,6 +3,39 @@ import XCTest
 @testable import SwiftPEG
 
 class TokenSyntaxInterpreterTests: XCTestCase {
+    func testParseToken_success_returnsLongestMatch() throws {
+        let tokens = try parseTokenDefinitions(#"""
+        $a: 'a' ;
+        $b: 'abc' ;
+        $c: 'c' ;
+        """#)
+        let sut = makeSut(tokens)
+        var stream = StringStream(source: "abcdef")
+
+        let result = try sut.parseToken(from: &stream)
+
+        assertEqual(result, "abc")
+        assertEqual(stream.index, stream.source.index(stream.source.startIndex, offsetBy: 3))
+    }
+
+    func testParseToken_failure_resetsStreamPosition() throws {
+        let tokens = try parseTokenDefinitions(#"""
+        $a: 'a' ;
+        $b: 'abc' ;
+        $c: 'c' ;
+        """#)
+        let sut = makeSut(tokens)
+        var stream = StringStream(source: "abcdef")
+        stream.markSubstringStart()
+        stream.advance()
+
+        let result = try sut.parseToken(from: &stream)
+
+        assertNil(result)
+        assertEqual(stream.substringStartIndex, stream.source.startIndex)
+        assertEqual(stream.index, stream.source.index(stream.source.startIndex, offsetBy: 1))
+    }
+
     func testParse_literal() throws {
         let tokens = try parseTokenDefinitions(#"""
         $a: 'abc' ;

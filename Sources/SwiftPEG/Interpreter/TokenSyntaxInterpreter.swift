@@ -6,8 +6,49 @@ public class TokenSyntaxInterpreter {
         self.tokenDefinitions = tokenDefinitions
     }
 
+    /// Attempts to parse the contents of the given stream with one of the known
+    /// token definitions, returning the token parsing that consumed the most
+    /// characters from the stream.
+    public func parseToken<StringType: StringProtocol>(
+        from stream: inout StringStream<StringType>
+    ) throws -> StringType.SubSequence? {
+
+        let initialState = stream.save()
+
+        var longest: (StringStream<StringType>.State, StringType.SubSequence)?
+        stream.markSubstringStart()
+
+        let state = stream.save()
+
+        for token in tokenDefinitions {
+            guard try parse(token, from: &stream) else {
+                continue
+            }
+
+            let result = stream.substring
+            if let l = longest {
+                if result.count > l.1.count {
+                    longest = (stream.save(), result)
+                }
+            } else {
+                longest = (stream.save(), result)
+            }
+
+            stream.restore(state)
+        }
+
+        if let longest {
+            stream.restore(longest.0)
+            return longest.1
+        }
+
+        stream.restore(initialState)
+        return nil
+    }
+
     /// Attempts to parse a token with a given name from the given input stream's
-    /// position.
+    /// position, returning `true` if the parsing succeeded, otherwise, returns
+    /// `false` and restores the stream back to the state it was provided in.
     ///
     /// - throws: `Error.unknownTokenName` if `name` is not a token or fragment
     /// name in the list of tokens this interpreter was initialized with.
@@ -24,7 +65,9 @@ public class TokenSyntaxInterpreter {
     }
 
     /// Attempts to parse a given token definition's syntax from a given input
-    /// stream's position.
+    /// stream's position, returning `true` if the parsing succeeded, otherwise,
+    /// returns `false` and restores the stream back to the state it was provided
+    /// in.
     ///
     /// - throws: `Error.missingSyntax` if the token has a nil `tokenSyntax`.
     func parse<StringType: StringProtocol>(
@@ -38,7 +81,9 @@ public class TokenSyntaxInterpreter {
         return try parse(syntax, from: &stream)
     }
 
-    /// Attempts to parse a given token syntax from a given input stream's position.
+    /// Attempts to parse a given token syntax from a given input stream's position,
+    /// returning `true` if the parsing succeeded, otherwise, returns `false`
+    /// and restores the stream back to the state it was provided in.
     func parse<StringType: StringProtocol>(
         _ syntax: CommonAbstract.TokenSyntax,
         from stream: inout StringStream<StringType>
