@@ -7,31 +7,37 @@ public class TokenSyntaxInterpreter {
     }
 
     /// Attempts to parse the contents of the given stream with one of the known
-    /// token definitions, returning the token parsing that consumed the most
-    /// characters from the stream.
+    /// token definitions, returning the token that consumed the most characters
+    /// from the stream, as well as its identifier.
+    ///
+    /// Fragments are skipped by the method.
     public func parseToken<StringType: StringProtocol>(
         from stream: inout StringStream<StringType>
-    ) throws -> StringType.SubSequence? {
+    ) throws -> (tokenName: String, substring: StringType.SubSequence)? {
 
         let initialState = stream.save()
 
-        var longest: (StringStream<StringType>.State, StringType.SubSequence)?
+        var longest: (
+            StringStream<StringType>.State,
+            tokenName: String,
+            substring: StringType.SubSequence
+        )?
         stream.markSubstringStart()
 
         let state = stream.save()
 
-        for token in tokenDefinitions {
+        for token in tokenDefinitions where !token.isFragment {
             guard try parse(token, from: &stream) else {
                 continue
             }
 
             let result = stream.substring
             if let l = longest {
-                if result.count > l.1.count {
-                    longest = (stream.save(), result)
+                if result.count > l.substring.count {
+                    longest = (stream.save(), token.name, result)
                 }
             } else {
-                longest = (stream.save(), result)
+                longest = (stream.save(), token.name, result)
             }
 
             stream.restore(state)
@@ -39,7 +45,7 @@ public class TokenSyntaxInterpreter {
 
         if let longest {
             stream.restore(longest.0)
-            return longest.1
+            return (longest.tokenName, longest.substring)
         }
 
         stream.restore(initialState)

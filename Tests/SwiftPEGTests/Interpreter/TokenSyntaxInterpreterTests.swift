@@ -3,6 +3,20 @@ import XCTest
 @testable import SwiftPEG
 
 class TokenSyntaxInterpreterTests: XCTestCase {
+    func testParseToken_ignoresFragments() throws {
+        let tokens = try parseTokenDefinitions(#"""
+        $a: 'a' ;
+        %b: 'b' ;
+        %c: 'c' ;
+        """#)
+        let sut = makeSut(tokens)
+        var stream = StringStream(source: "b")
+
+        let result = try sut.parseToken(from: &stream)
+
+        assertNil(result)
+    }
+
     func testParseToken_success_returnsLongestMatch() throws {
         let tokens = try parseTokenDefinitions(#"""
         $a: 'a' ;
@@ -12,9 +26,10 @@ class TokenSyntaxInterpreterTests: XCTestCase {
         let sut = makeSut(tokens)
         var stream = StringStream(source: "abcdef")
 
-        let result = try sut.parseToken(from: &stream)
+        let result = try assertUnwrap(try sut.parseToken(from: &stream))
 
-        assertEqual(result, "abc")
+        assertEqual(result.tokenName, "b")
+        assertEqual(result.substring, "abc")
         assertEqual(stream.index, stream.source.index(stream.source.startIndex, offsetBy: 3))
     }
 
