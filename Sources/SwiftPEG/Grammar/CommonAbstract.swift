@@ -725,15 +725,15 @@ extension CommonAbstract {
         /// Returns `true` if this atom describes a pair of terminal+exclusion
         /// that result in no input ever matching.
         ///
-        /// Atoms that don't have exclusions cannot be null.
-        public var isNull: Bool {
+        /// Atoms that don't have exclusions cannot be unfulfillable.
+        public var isUnfulfillable: Bool {
             guard !excluded.isEmpty else {
                 return false
             }
 
             switch terminal {
             case .any:
-                // No (reasonable) finite combination of exclusions can nullify
+                // No (reasonable) finite combination of exclusions can void
                 // the any token
                 return false
 
@@ -785,7 +785,7 @@ extension CommonAbstract {
                 // Although technically a discrete space, there is no native way
                 // to deal with striding and covering Character spaces in Swift;
                 // for now, consider all ranges (except for single-item ranges)
-                // not nullable
+                // non-voidable
                 return false
 
             case .characterPredicate:

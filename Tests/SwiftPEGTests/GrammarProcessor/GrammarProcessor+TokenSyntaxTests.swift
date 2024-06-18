@@ -344,8 +344,8 @@ class GrammarProcessor_TokenSyntaxTests: XCTestCase {
 
         assertEqual(sut.test_diagnosticMessages(), """
         Token $a @ line 1 column 1 contains atom '!'a' 'a'' which has a token \
-        terminal + exclusion that cannot be satisfied by any input, and will \
-        never match.
+        terminal + exclusion that cannot ever be fulfilled by any input, and \
+        will never match.
         """)
     }
 }

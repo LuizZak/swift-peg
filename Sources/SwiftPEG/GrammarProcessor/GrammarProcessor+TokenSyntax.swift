@@ -90,9 +90,9 @@ extension GrammarProcessor {
 
             let atoms = syntax.alts.flatMap(\.items).flatMap(\.atoms)
 
-            for atom in atoms where atom.isNull {
+            for atom in atoms where atom.isUnfulfillable {
                 diagnostics.append(
-                    .nullableAtomInToken(token: token, atom)
+                    .unfulfillableAtomInToken(token: token, atom)
                 )
             }
         }

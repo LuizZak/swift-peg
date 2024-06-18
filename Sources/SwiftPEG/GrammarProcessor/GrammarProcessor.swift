@@ -476,7 +476,7 @@ public class GrammarProcessor {
 
         /// A token atom has a combination of exclusion + terminal that results
         /// in no input ever matching.
-        case nullableAtomInToken(
+        case unfulfillableAtomInToken(
             token: SwiftPEGGrammar.TokenDefinition,
             CommonAbstract.TokenAtom
         )
@@ -536,11 +536,11 @@ public class GrammarProcessor {
                     will be ignored.
                     """
 
-            case .nullableAtomInToken(let token, let atom):
+            case .unfulfillableAtomInToken(let token, let atom):
                 return """
                     Token $\(token.name) @ \(token.location) contains atom '\(atom)' \
-                    which has a token terminal + exclusion that cannot be satisfied \
-                    by any input, and will never match.
+                    which has a token terminal + exclusion that cannot ever be \
+                    fulfilled by any input, and will never match.
                     """
 
             case .tokenAltOrderIssue(let token, let prior, let former):
