@@ -29,11 +29,16 @@ extension GrammarProcessor {
             sorted.reversed(),
             fragmentReferenceCount: fragmentReferenceCount
         )
+        inlined = sortTokens(inlined)
 
-        // Apply light sorting to favor static terminal tokens before attempting
-        // dynamic tokens
-        inlined.sort { (tok1, tok2) in
-            switch (tok1.tokenSyntax?.staticTerminal(), tok2.tokenSyntax?.staticTerminal()) {
+        return inlined
+    }
+
+    func sortTokens(_ tokens: [InternalGrammar.TokenDefinition]) ->  [InternalGrammar.TokenDefinition] {
+        func tokenShouldPrecede(_ token1: InternalGrammar.TokenDefinition, _ token2: InternalGrammar.TokenDefinition) -> Bool {
+            // Apply light sorting to favor static terminal tokens before attempting
+            // dynamic tokens
+            switch (token1.tokenSyntax?.staticTerminal(), token2.tokenSyntax?.staticTerminal()) {
             case (let lhs?, let rhs?):
                 if lhs.contents.hasPrefix(rhs.contents) {
                     return true
@@ -41,19 +46,27 @@ extension GrammarProcessor {
                 if rhs.contents.hasPrefix(lhs.contents) {
                     return false
                 }
-                return tok1.name < tok2.name
+
+                return token1.name < token2.name
             case (_?, _):
                 return true
+
             case (_, _?):
                 return false
+
             case (nil, nil):
-                return tok1.name < tok2.name
+                return token1.name < token2.name
+
             default:
                 return false
             }
         }
 
-        return inlined
+        var tokens = tokens
+
+        tokens = tokens.sorted(by: tokenShouldPrecede)
+
+        return tokens
     }
 
     /// Validates that token names are not repeated; returns a dictionary mapping
@@ -201,42 +214,50 @@ extension GrammarProcessor {
         fragmentReferenceCount: [String: Int]
     ) throws -> [InternalGrammar.TokenDefinition] {
 
-        var fragmentReferenceCount = fragmentReferenceCount
-
         var tokens = tokenDefinitions.map(InternalGrammar.TokenDefinition.from)
 
-        for (i, token) in tokens.enumerated() {
-            var fragmentsByName: [String: InternalGrammar.TokenDefinition] {
-                var result: [String: InternalGrammar.TokenDefinition] = [:]
-                let fragments = tokens.filter(\.isFragment)
-                for fragment in fragments {
-                    result[fragment.name] = fragment
-                }
-                return result
-            }
+        let fragmentLookup: (String) -> InternalGrammar.TokenDefinition? = { name in
+            return tokens.first(where: { $0.isFragment && $0.name == name })
+        }
 
-            let rewriter = TokenFragmentInliner(fragments: fragmentsByName) { fragment in
-                fragmentReferenceCount[fragment.name, default: 0] -= 1
-            }
+        for (i, token) in tokens.enumerated() {
+            let rewriter = TokenFragmentInliner(fragmentLookup: fragmentLookup)
 
             let inlined = rewriter.visit(token)
             tokens[i] = inlined
         }
 
-        let fullyInlined = Set(fragmentReferenceCount.filter { $0.value <= 0 }.keys)
-
-        // Remove inlined fragments
-        return tokens.filter { token in
-            if token.isFragment {
-                return !fullyInlined.contains(token.name)
-            }
-
-            return true
+        // Remove inlined fragments by reference counting
+        let visitor = TokenSyntaxIdentifierCollector()
+        for fragment in tokens where fragment.isFragment {
+            visitor.fragmentReferenceCount[fragment.name] = 0
         }
+        visitor.visitAll(tokens)
+
+        var unreferencedTokens = Set(
+            visitor.fragmentReferenceCount
+                .filter({ $0.value == 0 })
+                .map(\.key)
+        )
+        for token in tokens where !token.isFragment {
+            unreferencedTokens.remove(token.name)
+        }
+
+        tokens = tokens.filter { token in
+            return !token.isFragment || !unreferencedTokens.contains(token.name)
+        }
+
+        return tokens
     }
 
     private class TokenSyntaxVisitor {
         func visit(_ node: SwiftPEGGrammar.TokenDefinition) {
+            if let syntax = node.tokenSyntax {
+                visit(syntax)
+            }
+        }
+
+        func visit(_ node: InternalGrammar.TokenDefinition) {
             if let syntax = node.tokenSyntax {
                 visit(syntax)
             }
@@ -268,15 +289,16 @@ extension GrammarProcessor {
     }
 
     private class TokenFragmentInliner {
-        var fragments: [String: InternalGrammar.TokenDefinition]
-        var onInlineFragment: (InternalGrammar.TokenDefinition) -> Void
+        let fragmentLookup: (String) -> InternalGrammar.TokenDefinition?
 
         init(
-            fragments: [String: InternalGrammar.TokenDefinition],
-            onInlineFragment: @escaping (InternalGrammar.TokenDefinition) -> Void
+            fragmentLookup: @escaping (String) -> InternalGrammar.TokenDefinition?
         ) {
-            self.fragments = fragments
-            self.onInlineFragment = onInlineFragment
+            self.fragmentLookup = fragmentLookup
+        }
+
+        func fragment(named name: String) -> InternalGrammar.TokenDefinition? {
+            fragmentLookup(name)
         }
 
         // MARK: Inline as alt
@@ -483,10 +505,9 @@ extension GrammarProcessor {
                         && atom.excluded.isEmpty:
                     if
                         case .identifier(let identifier) = atom.terminal,
-                        let fragment = fragments[identifier],
+                        let fragment = self.fragment(named: identifier),
                         let alts = _inlinedAsAlts(fragment)
                     {
-                        onInlineFragment(fragment)
                         result.append(contentsOf: _appendTrailExclusions(alts, alt))
                     } else {
                         result.append(reducedAlt)
@@ -550,14 +571,12 @@ extension GrammarProcessor {
 
                 switch reducedAtom.terminal {
                 case .identifier(let identifier):
-                    guard let fragment = fragments[identifier] else {
+                    guard let fragment = self.fragment(named: identifier) else {
                         break
                     }
                     guard let inlined = _inlinedAsAtoms(fragment) else {
                         break
                     }
-
-                    onInlineFragment(fragment)
 
                     result.append(contentsOf: inlined)
                     continue
@@ -581,7 +600,7 @@ extension GrammarProcessor {
         func visit(_ node: CommonAbstract.TokenExclusion) -> [CommonAbstract.TokenExclusion] {
             switch node {
             case .identifier(let identifier):
-                guard let fragment = fragments[identifier] else {
+                guard let fragment = self.fragment(named: identifier) else {
                     return [node]
                 }
                 guard let fragmentSyntax = fragment.tokenSyntax else {
@@ -589,14 +608,12 @@ extension GrammarProcessor {
                 }
 
                 if let staticTerminal = fragmentSyntax.staticTerminal() {
-                    onInlineFragment(fragment)
                     return [.literal(staticTerminal)]
                 }
 
                 // If an exclusion is a sequence of alts with simple terminals,
                 // unpack the terminals and return them
                 if let expanded = _inlinedAsTokenExclusions(fragment) {
-                    onInlineFragment(fragment)
                     return expanded
                 }
 
@@ -609,12 +626,11 @@ extension GrammarProcessor {
         func visit(_ node: CommonAbstract.TokenTerminal) -> CommonAbstract.TokenTerminal {
             switch node {
             case .identifier(let identifier):
-                guard let fragment = fragments[identifier] else {
+                guard let fragment = self.fragment(named: identifier) else {
                     return node
                 }
 
                 if let terminal = fragment.tokenSyntax?.asTerminal() {
-                    onInlineFragment(fragment)
                     return terminal
                 }
 
@@ -652,6 +668,18 @@ extension GrammarProcessor {
     private class TokenSyntaxIdentifierCollector: TokenSyntaxVisitor {
         var identifiers: Set<String> = []
         var fragmentReferenceCount: [String: Int] = [:]
+
+        func visitAll(_ tokens: [SwiftPEGGrammar.TokenDefinition]) {
+            for token in tokens {
+                visit(token)
+            }
+        }
+
+        func visitAll(_ tokens: [InternalGrammar.TokenDefinition]) {
+            for token in tokens {
+                visit(token)
+            }
+        }
 
         override func visit(_ node: CommonAbstract.TokenExclusion) {
             switch node {
