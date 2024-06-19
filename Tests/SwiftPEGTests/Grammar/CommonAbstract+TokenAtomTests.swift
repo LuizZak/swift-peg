@@ -2,26 +2,26 @@ import XCTest
 
 @testable import SwiftPEG
 
-class CommonAbstractTests: XCTestCase {
-    func testTokenAtom_isUnfulfillable_anyTerminal() {
+class CommonAbstractTests_TokenAtom: XCTestCase {
+    func testIsUnfulfillable_anyTerminal() {
         let sut = CommonAbstract.TokenAtom(
-            excluded: [.identifier("a"), .string("a"), .rangeLiteral("a", "Z")],
+            excluded: [.identifier("a"), .literal("a"), .rangeLiteral("a", "Z")],
             terminal: .any
         )
 
         assertFalse(sut.isUnfulfillable)
     }
 
-    func testTokenAtom_isUnfulfillable_characterPredicate() {
+    func testIsUnfulfillable_characterPredicate() {
         let sut = CommonAbstract.TokenAtom(
-            excluded: [.identifier("a"), .string("a"), .rangeLiteral("a", "Z")],
+            excluded: [.identifier("a"), .literal("a"), .rangeLiteral("a", "Z")],
             terminal: .characterPredicate("a", #"a != "b""#)
         )
 
         assertFalse(sut.isUnfulfillable)
     }
 
-    func testTokenAtom_isUnfulfillable_identifierExclusion_identifierTerminal() {
+    func testIsUnfulfillable_identifierExclusion_identifierTerminal() {
         let sut = CommonAbstract.TokenAtom(
             excluded: [.identifier("a")],
             terminal: .identifier("a")
@@ -30,34 +30,34 @@ class CommonAbstractTests: XCTestCase {
         assertTrue(sut.isUnfulfillable)
     }
 
-    func testTokenAtom_isUnfulfillable_literalExclusion_literalTerminal() {
+    func testIsUnfulfillable_literalExclusion_literalTerminal() {
         let sut = CommonAbstract.TokenAtom(
-            excluded: [.string("abc")],
+            excluded: [.literal("abc")],
             terminal: .literal("abc")
         )
 
         assertTrue(sut.isUnfulfillable)
     }
 
-    func testTokenAtom_isUnfulfillable_literalExclusion_literalTerminal_exclusionIsPrefix() {
+    func testIsUnfulfillable_literalExclusion_literalTerminal_exclusionIsPrefix() {
         let sut = CommonAbstract.TokenAtom(
-            excluded: [.string("a")],
+            excluded: [.literal("a")],
             terminal: .literal("abc")
         )
 
         assertTrue(sut.isUnfulfillable)
     }
 
-    func testTokenAtom_isUnfulfillable_literalExclusion_literalTerminal_terminalIsPrefix() {
+    func testIsUnfulfillable_literalExclusion_literalTerminal_terminalIsPrefix() {
         let sut = CommonAbstract.TokenAtom(
-            excluded: [.string("abc")],
+            excluded: [.literal("abc")],
             terminal: .literal("a")
         )
 
         assertFalse(sut.isUnfulfillable)
     }
 
-    func testTokenAtom_isUnfulfillable_rangeLiteralExclusion_literalTerminal() {
+    func testIsUnfulfillable_rangeLiteralExclusion_literalTerminal() {
         let sut = CommonAbstract.TokenAtom(
             excluded: [.rangeLiteral("a", "z")],
             terminal: .literal("a")
@@ -66,7 +66,7 @@ class CommonAbstractTests: XCTestCase {
         assertTrue(sut.isUnfulfillable)
     }
 
-    func testTokenAtom_isUnfulfillable_rangeLiteralExclusion_literalTerminal_longerLiteral() {
+    func testIsUnfulfillable_rangeLiteralExclusion_literalTerminal_longerLiteral() {
         let sut = CommonAbstract.TokenAtom(
             excluded: [.rangeLiteral("a", "z")],
             terminal: .literal("abc")
@@ -75,7 +75,7 @@ class CommonAbstractTests: XCTestCase {
         assertTrue(sut.isUnfulfillable)
     }
 
-    func testTokenAtom_isUnfulfillable_rangeLiteralExclusion_rangeLiteralTerminal_overlap() {
+    func testIsUnfulfillable_rangeLiteralExclusion_rangeLiteralTerminal_overlap() {
         let sut = CommonAbstract.TokenAtom(
             excluded: [.rangeLiteral("a", "c")],
             terminal: .rangeLiteral("b", "d")
@@ -84,7 +84,7 @@ class CommonAbstractTests: XCTestCase {
         assertFalse(sut.isUnfulfillable)
     }
 
-    func testTokenAtom_isUnfulfillable_rangeLiteralExclusion_rangeLiteralTerminal_exclusionContainsTerminal() {
+    func testIsUnfulfillable_rangeLiteralExclusion_rangeLiteralTerminal_exclusionContainsTerminal() {
         let sut = CommonAbstract.TokenAtom(
             excluded: [.rangeLiteral("a", "d")],
             terminal: .rangeLiteral("b", "d")
@@ -93,7 +93,7 @@ class CommonAbstractTests: XCTestCase {
         assertTrue(sut.isUnfulfillable)
     }
 
-    func testTokenAtom_isUnfulfillable_rangeLiteralExclusion_rangeLiteralTerminal_terminalContainsExclusion() {
+    func testIsUnfulfillable_rangeLiteralExclusion_rangeLiteralTerminal_terminalContainsExclusion() {
         let sut = CommonAbstract.TokenAtom(
             excluded: [.rangeLiteral("b", "c")],
             terminal: .rangeLiteral("a", "d")

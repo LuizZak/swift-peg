@@ -209,7 +209,7 @@ tokenSyntaxAtom[CommonAbstract.TokenAtom]:
 
 tokenSyntaxExclusion[CommonAbstract.TokenExclusion]:
     | '!' start=string '...' end=string             { .rangeLiteral(.from(start), .from(end)) }
-    | '!' string                                    { .string(.from(string)) }
+    | '!' string                                    { .literal(.from(string)) }
     | '!' IDENTIFIER                                { .identifier("\(identifier)") }
     ;
 

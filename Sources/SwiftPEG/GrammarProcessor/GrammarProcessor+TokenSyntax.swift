@@ -445,7 +445,7 @@ extension GrammarProcessor {
             case .identifier(let identifier):
                 return [.identifier(identifier)]
             case .literal(let literal):
-                return [.string(literal)]
+                return [.literal(literal)]
             case .rangeLiteral(let start, let end):
                 return [.rangeLiteral(start, end)]
             case .any, .characterPredicate:
@@ -590,7 +590,7 @@ extension GrammarProcessor {
 
                 if let staticTerminal = fragmentSyntax.staticTerminal() {
                     onInlineFragment(fragment)
-                    return [.string(staticTerminal)]
+                    return [.literal(staticTerminal)]
                 }
 
                 // If an exclusion is a sequence of alts with simple terminals,
@@ -659,7 +659,7 @@ extension GrammarProcessor {
                 incrementReference(identifier)
 
                 identifiers.insert(identifier)
-            case .string, .rangeLiteral:
+            case .literal, .rangeLiteral:
                 break
             }
         }

@@ -1280,7 +1280,7 @@ extension GrammarParser {
     /// ```
     /// tokenSyntaxExclusion[CommonAbstract.TokenExclusion]:
     ///     | '!' start=string '...' end=string { .rangeLiteral(.from(start), .from(end)) }
-    ///     | '!' string { .string(.from(string)) }
+    ///     | '!' string { .literal(.from(string)) }
     ///     | '!' IDENTIFIER { .identifier("\(identifier)") }
     ///     ;
     /// ```
@@ -1304,7 +1304,7 @@ extension GrammarParser {
             let _ = try self.expect(kind: .exclamationMark),
             let string = try self.string()
         {
-            return .string(.from(string))
+            return .literal(.from(string))
         }
 
         self.restore(_mark)

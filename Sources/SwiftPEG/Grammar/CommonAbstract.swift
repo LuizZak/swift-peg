@@ -6,7 +6,7 @@
 public enum CommonAbstract {
     /// A dual String representation that has carries a literal version and a
     /// as-per-source version containing the original escape sequences and quotes.
-    public enum DualString: Hashable, ExpressibleByStringLiteral {
+    public enum DualString: Hashable, Comparable, ExpressibleByStringLiteral {
         /// A dual string that originated from parsing a SwiftPEG grammar file,
         /// with both the parsed contents and the original string, with quotes,
         /// as found in the source code.
@@ -44,6 +44,18 @@ public enum CommonAbstract {
             .fromCode(contents: contents + other.contents)
         }
 
+        /// Returns `true` if the contents of this dual string contain another
+        /// dual string's contents as a prefix.
+        public func hasPrefix(_ other: Self) -> Bool {
+            contents.hasPrefix(other.contents)
+        }
+
+        /// Returns `true` if the contents of this dual string contain another
+        /// string as a prefix.
+        public func hasPrefix(_ other: String) -> Bool {
+            contents.hasPrefix(other)
+        }
+
         public func hash(into hasher: inout Hasher) {
             hasher.combine(contents)
         }
@@ -54,6 +66,10 @@ public enum CommonAbstract {
 
         public static func == (lhs: Self, rhs: Self) -> Bool {
             lhs.contents == rhs.contents
+        }
+
+        public static func < (lhs: Self, rhs: Self) -> Bool {
+            lhs.contents < rhs.contents
         }
     }
 
@@ -727,68 +743,22 @@ extension CommonAbstract {
         ///
         /// Atoms that don't have exclusions cannot be unfulfillable.
         public var isUnfulfillable: Bool {
-            guard !excluded.isEmpty else {
-                return false
-            }
-
             switch terminal {
             case .any:
                 // No (reasonable) finite combination of exclusions can void
                 // the any token
                 return false
 
-            case .identifier(let ident):
-                return excluded.contains(.identifier(ident))
+            case .characterPredicate:
+                return false
 
-            case .literal(let literal):
-                let literal = literal.contents
-
+            default:
                 for exclusion in excluded {
-                    switch exclusion {
-                    case .string(let exclusion):
-                        if literal.hasPrefix(exclusion.contents) {
-                            return true
-                        }
-
-                    case .rangeLiteral(let low, let high):
-                        let low = low.contents
-                        let high = high.contents
-                        let trimmed = literal.prefix(max(low.count, high.count))
-
-                        if (low...high).contains(String(trimmed)) {
-                            return true
-                        }
-
-                    default:
-                        break
+                    if exclusion.excludes(terminal) {
+                        return true
                     }
                 }
 
-                return false
-
-            case .rangeLiteral(let low, let high) where low == high:
-                return excluded.contains(.string(low))
-
-            case .rangeLiteral(let low, let high):
-                let low = low.contents
-                let high = high.contents
-
-                // Detect excluded ranges fully containing the range literal
-                let excludedRanges = excluded.compactMap(\.rangeLiteral).map{
-                    ($0.0.contents...$0.1.contents)
-                }
-
-                if excludedRanges.contains(where: { $0.lowerBound <= low && $0.upperBound >= high }) {
-                    return true
-                }
-
-                // Although technically a discrete space, there is no native way
-                // to deal with striding and covering Character spaces in Swift;
-                // for now, consider all ranges (except for single-item ranges)
-                // non-voidable
-                return false
-
-            case .characterPredicate:
                 return false
             }
         }
@@ -862,21 +832,7 @@ extension CommonAbstract {
         }
 
         private func _isExcluded(_ excludes: [TokenExclusion]) -> Bool {
-            switch terminal {
-            case .literal(let literal):
-                if
-                    excludes.contains(where: {
-                        $0.asString.map(literal.contents.hasPrefix) == true ||
-                        $0.asString.map { $0.hasPrefix(literal.contents) } == true
-                    })
-                {
-                    return true
-                }
-            default:
-                break
-            }
-
-            return false
+            return excludes.contains(where: { $0.excludes(terminal) })
         }
     }
 
@@ -891,20 +847,20 @@ extension CommonAbstract {
     /// ```
     @GeneratedCaseChecks(accessLevel: "public")
     public enum TokenExclusion: Hashable, CustomStringConvertible {
-        case string(DualString)
+        case literal(DualString)
         case identifier(String)
         case rangeLiteral(DualString, DualString)
 
-        var asString: String? {
+        var asLiteral: String? {
             switch self {
-            case .string(let value):
+            case .literal(let value):
                 return value.contents
             default:
                 return nil
             }
         }
 
-        var rangeLiteral: (DualString, DualString)? {
+        var asRangeLiteral: (DualString, DualString)? {
             switch self {
             case .rangeLiteral(let low, let high):
                 return (low, high)
@@ -913,9 +869,53 @@ extension CommonAbstract {
             }
         }
 
+        /// Returns `true` if this token exclusion voids a given terminal from
+        /// being matched.
+        func excludes(_ terminal: TokenTerminal) -> Bool {
+            switch (terminal, self) {
+            case (.identifier(let term), .identifier(let exclusion)):
+                return term == exclusion
+
+            case (_, .identifier), (.identifier, _):
+                return false
+
+            case (.literal(let term), .literal(let exclusion)):
+                return term.hasPrefix(exclusion)
+
+            case (.literal(let term), .rangeLiteral(let exclusionLow, let exclusionHigh)):
+                let exclusionLow = exclusionLow.contents
+                let exclusionHigh = exclusionHigh.contents
+                let trimmed = term.contents.prefix(max(exclusionLow.count, exclusionHigh.count))
+
+                if (exclusionLow...exclusionHigh).contains(String(trimmed)) {
+                    return true
+                }
+
+                return exclusionLow <= term.contents && exclusionHigh >= term.contents
+
+            case (.rangeLiteral(let termLow, let termHigh), .literal(let exclusion)):
+                guard termLow == termHigh else {
+                    return false
+                }
+
+                return termLow.hasPrefix(exclusion)
+
+            case (.rangeLiteral(let termLow, let termHigh), .rangeLiteral(let exclusionLow, let exclusionHigh)):
+                return exclusionLow <= termLow && exclusionHigh >= termHigh
+
+            case (.characterPredicate, _):
+                // Character predicates are not voidable
+                return false
+
+            case (.any, _):
+                // The any token is not voidable
+                return false
+            }
+        }
+
         public var description: String {
             switch self {
-            case .string(let string):
+            case .literal(let string):
                 return "!\(string.asStringLiteral)"
 
             case .identifier(let ident):

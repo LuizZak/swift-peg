@@ -261,7 +261,7 @@ public class TokenSyntaxInterpreter {
                     try interpreter.parse(tokenNamed: ident, from: &stream)
                 }
 
-            case .string(let literal):
+            case .literal(let literal):
                 return !stream.isNext(literal.contents)
 
             case .rangeLiteral(let low, let high):

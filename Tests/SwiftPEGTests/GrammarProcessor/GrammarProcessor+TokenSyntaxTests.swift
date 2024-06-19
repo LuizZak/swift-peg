@@ -333,7 +333,7 @@ class GrammarProcessor_TokenSyntaxTests: XCTestCase {
         assertEqual(processed.tokens, expected)
     }
 
-    func testDiagnostics_nullAtom() throws {
+    func testDiagnostics_unfulfillableAtom() throws {
         let delegate = stubDelegate(tokensFile: #"""
         $a: !'a' 'a' ;
         """#)

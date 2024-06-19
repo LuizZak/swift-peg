@@ -716,7 +716,7 @@ extension SwiftCodeGen {
 
     private func tok_conditional(for exclude: CommonAbstract.TokenExclusion) throws -> String {
         switch exclude {
-        case .string(let literal):
+        case .literal(let literal):
             return "!stream.isNext(\(tok_escapeLiteral(literal)))"
 
         case .identifier(let ident):
@@ -834,7 +834,7 @@ extension SwiftCodeGen {
         case .identifier(let identifier):
             return "!\(identifier)"
 
-        case .string(let literal):
+        case .literal(let literal):
             return "!\(tok_escapeLiteral(literal))"
 
         case .rangeLiteral(let start, let end):
