@@ -1,3 +1,5 @@
+// HEADS UP! This is a generated file
+
 public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
     public var kind: TokenKind
     public var string: Substring

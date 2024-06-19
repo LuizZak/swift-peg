@@ -4,10 +4,14 @@ public class SwiftCodeGen {
 
     /// Name of optional meta-property (`@<name> <value>`) from grammar file that
     /// indicates the raw contents to print atop the generated parser code.
+    ///
+    /// `parserHeader`
     public static let parserHeader: String = "parserHeader"
 
     /// Name of optional meta-property (`@<name> <value>`) from grammar file that
     /// indicates the raw contents to print atop the generated token type code.
+    ///
+    /// `tokenTypeHeader`
     public static let tokenTypeHeader: String = "tokenTypeHeader"
 
     /// Name of optional meta-property (`@<name> <value>`) from grammar file that
@@ -15,11 +19,15 @@ public class SwiftCodeGen {
     ///
     /// If no explicit token type is specified, the token's typename is set to
     /// `<@parserName>Token` by default.
+    ///
+    /// `tokenTypeName`
     public static let tokenTypeName: String = "tokenTypeName"
 
     /// Name of optional meta-property (`@<name> <value>`) from grammar file that
     /// indicates the name of the parser class to extend with the parsing methods.
     /// Assumes that the type exists already.
+    ///
+    /// `parserName`
     public static let parserName: String = "parserName"
 
     /// Name of optional meta-property (`@<name> <value>`) from grammar file that
@@ -28,6 +36,8 @@ public class SwiftCodeGen {
     /// 'expectKind' for this meta-property indicates that the code generator
     /// should emit `PEGParser.expect(kind:)` calls for the string literals,
     /// instead.
+    ///
+    /// `tokenCall`
     public static let tokenCall: String = "tokenCall"
 
     /// Name of optional meta-property (`@<name> <value>`) from grammar file that
@@ -36,6 +46,8 @@ public class SwiftCodeGen {
     ///
     /// Defaults to `true`, can be specified `true` or `false`, as either strings
     /// or identifiers.
+    ///
+    /// `implicitReturns`
     public static let implicitReturns: String = "implicitReturns"
 
     /// Name of optional meta-property (`@<name> <value>`) from grammar file that
@@ -44,6 +56,8 @@ public class SwiftCodeGen {
     ///
     /// Defaults to `true`, can be specified `true` or `false`, as either strings
     /// or identifiers.
+    ///
+    /// `implicitBindings`
     public static let implicitBindings: String = "implicitBindings"
 
     /// Name of optional meta-property (`@<name> <value>`) from grammar file that
@@ -52,6 +66,8 @@ public class SwiftCodeGen {
     ///
     /// Defaults to `true`, can be specified `true` or `false`, as either strings
     /// or identifiers.
+    ///
+    /// `bindTokenLiterals`
     public static let bindTokenLiterals: String = "bindTokenLiterals"
 
     /// Set of identifiers that cannot be used as bare identifiers in Swift, and

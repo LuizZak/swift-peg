@@ -1,6 +1,8 @@
 import MiniDigraph
 
 extension GrammarProcessor {
+    fileprivate typealias TokenDefinition = InternalGrammar.TokenDefinition
+
     /// Validates token syntaxes, ensuring that the identifiers contained within
     /// point to other token syntaxes, and the rules are not implemented in a
     /// recursive fashion.
@@ -34,8 +36,10 @@ extension GrammarProcessor {
         return inlined
     }
 
-    func sortTokens(_ tokens: [InternalGrammar.TokenDefinition]) ->  [InternalGrammar.TokenDefinition] {
-        func tokenShouldPrecede(_ token1: InternalGrammar.TokenDefinition, _ token2: InternalGrammar.TokenDefinition) -> Bool {
+    /// Sorts the input tokens by the order they should be parsed to decrease
+    /// the chance of token occlusion due to parse order.
+    fileprivate func sortTokens(_ tokens: [TokenDefinition]) ->  [TokenDefinition] {
+        func tokenShouldPrecede(_ token1: TokenDefinition, _ token2: TokenDefinition) -> Bool {
             // Apply light sorting to favor static terminal tokens before attempting
             // dynamic tokens
             switch (token1.tokenSyntax?.staticTerminal(), token2.tokenSyntax?.staticTerminal()) {
@@ -48,22 +52,18 @@ extension GrammarProcessor {
                 }
 
                 return token1.name < token2.name
-            case (_?, _):
+            case (_?, nil):
                 return true
 
-            case (_, _?):
+            case (nil, _?):
                 return false
 
             case (nil, nil):
                 return token1.name < token2.name
-
-            default:
-                return false
             }
         }
 
         var tokens = tokens
-
         tokens = tokens.sorted(by: tokenShouldPrecede)
 
         return tokens
@@ -71,7 +71,7 @@ extension GrammarProcessor {
 
     /// Validates that token names are not repeated; returns a dictionary mapping
     /// each token to its name.
-    func validateTokenNames(
+   fileprivate  func validateTokenNames(
         _ tokens: [SwiftPEGGrammar.TokenDefinition]
     ) throws -> [String: SwiftPEGGrammar.TokenDefinition] {
         var byName: [String: SwiftPEGGrammar.TokenDefinition] = [:]
@@ -95,7 +95,7 @@ extension GrammarProcessor {
     }
 
     /// Diagnoses atoms that have a combination of
-    func diagnoseNullAtoms(_ tokens: [SwiftPEGGrammar.TokenDefinition]) {
+    fileprivate func diagnoseNullAtoms(_ tokens: [SwiftPEGGrammar.TokenDefinition]) {
         for token in tokens {
             guard let syntax = token.tokenSyntax else {
                 continue
@@ -113,7 +113,7 @@ extension GrammarProcessor {
 
     // TODO: Implement alt/atom order diagnostics for tokens
     /// Diagnoses alt order issues in token syntaxes
-    func diagnoseAltOrder(_ tokens: [SwiftPEGGrammar.TokenDefinition]) {
+    fileprivate func diagnoseAltOrder(_ tokens: [SwiftPEGGrammar.TokenDefinition]) {
 #if false
         func inspect(token: SwiftPEGGrammar.TokenDefinition, _ alts: [CommonAbstract.TokenAlt]) {
 
@@ -140,7 +140,7 @@ extension GrammarProcessor {
     /// any level, either directly or indirectly.
     ///
     /// Returns a list of tokens sorted in topological order.
-    func ensureTokenSyntaxesAreNonReentrant(
+    fileprivate func ensureTokenSyntaxesAreNonReentrant(
         _ tokens: [SwiftPEGGrammar.TokenDefinition],
         byName: [String: SwiftPEGGrammar.TokenDefinition],
         fragmentReferenceCount: inout [String: Int]
@@ -209,14 +209,14 @@ extension GrammarProcessor {
 
     /// Applies inlining of fragments into token definitions wherever they may
     /// be possible.
-    func applyFragmentInlining(
+    fileprivate func applyFragmentInlining(
         _ tokenDefinitions: [SwiftPEGGrammar.TokenDefinition],
         fragmentReferenceCount: [String: Int]
-    ) throws -> [InternalGrammar.TokenDefinition] {
+    ) throws -> [TokenDefinition] {
 
-        var tokens = tokenDefinitions.map(InternalGrammar.TokenDefinition.from)
+        var tokens = tokenDefinitions.map(TokenDefinition.from)
 
-        let fragmentLookup: (String) -> InternalGrammar.TokenDefinition? = { name in
+        let fragmentLookup: (String) -> TokenDefinition? = { name in
             return tokens.first(where: { $0.isFragment && $0.name == name })
         }
 
@@ -289,21 +289,21 @@ extension GrammarProcessor {
     }
 
     private class TokenFragmentInliner {
-        let fragmentLookup: (String) -> InternalGrammar.TokenDefinition?
+        let fragmentLookup: (String) -> TokenDefinition?
 
         init(
-            fragmentLookup: @escaping (String) -> InternalGrammar.TokenDefinition?
+            fragmentLookup: @escaping (String) -> TokenDefinition?
         ) {
             self.fragmentLookup = fragmentLookup
         }
 
-        func fragment(named name: String) -> InternalGrammar.TokenDefinition? {
+        func fragment(named name: String) -> TokenDefinition? {
             fragmentLookup(name)
         }
 
         // MARK: Inline as alt
 
-        private func _inlinedAsAlts(_ node: InternalGrammar.TokenDefinition) -> [CommonAbstract.TokenAlt]? {
+        private func _inlinedAsAlts(_ node: TokenDefinition) -> [CommonAbstract.TokenAlt]? {
             node.tokenSyntax.flatMap(_inlinedAsAlts)
         }
 
@@ -675,7 +675,7 @@ extension GrammarProcessor {
             }
         }
 
-        func visitAll(_ tokens: [InternalGrammar.TokenDefinition]) {
+        func visitAll(_ tokens: [TokenDefinition]) {
             for token in tokens {
                 visit(token)
             }
@@ -713,6 +713,16 @@ extension GrammarProcessor {
             if let count = fragmentReferenceCount[identifier] {
                 fragmentReferenceCount[identifier] = count + 1
             }
+        }
+    }
+
+    private class TokenSyntaxPrefixChecker {
+        func isTokenPrefix(_ lhs: TokenDefinition, of rhs: TokenDefinition) -> Bool {
+            guard let lhsSyntax = lhs.tokenSyntax, let rhsSyntax = rhs.tokenSyntax else {
+                return false
+            }
+
+            return lhsSyntax.isPrefix(of: rhsSyntax)
         }
     }
 }

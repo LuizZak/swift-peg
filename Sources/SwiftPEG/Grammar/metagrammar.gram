@@ -10,6 +10,9 @@ public final class GrammarParser<RawTokenizer: RawTokenizerType>: PEGParser<RawT
     where RawTokenizer.RawToken == SwiftPEGGrammar.Token, RawTokenizer.Location == FileSourceLocation
 { }
 """ ;
+@tokenTypeHeader """
+// HEADS UP! This is a generated file
+""" ;
 
 @tokensFile "metagrammar.tokens" ;
 @tokenCall expectKind ;
