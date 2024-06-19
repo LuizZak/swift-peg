@@ -347,6 +347,38 @@ class GrammarProcessor_TokenSyntaxTests: XCTestCase {
         assertEmpty(processed.tokenOcclusionGraph.edges)
     }
 
+    func testTokenOcclusionGraph_ignoresFragments_fragmentOccludesToken() throws {
+        let delegate = stubDelegate(tokensFile: #"""
+        $a: 'a' ;
+        %b: 'a'+ | 'a'+ ;
+        $c: !b 'b' ;
+        """#)
+        let grammar = makeGrammar()
+        let sut = makeSut(delegate)
+
+        let processed = try sut.process(grammar)
+
+        assertCount(processed.tokens, 3)
+        assertEmpty(processed.tokenOcclusionGraph.nodes)
+        assertEmpty(processed.tokenOcclusionGraph.edges)
+    }
+
+    func testTokenOcclusionGraph_ignoresFragments_tokenOccludesFragment() throws {
+        let delegate = stubDelegate(tokensFile: #"""
+        %a: 'a' ;
+        $b: 'a'+ | 'a'+ ;
+        $c: !b 'b' ;
+        """#)
+        let grammar = makeGrammar()
+        let sut = makeSut(delegate)
+
+        let processed = try sut.process(grammar)
+
+        assertCount(processed.tokens, 2)
+        assertEmpty(processed.tokenOcclusionGraph.nodes)
+        assertEmpty(processed.tokenOcclusionGraph.edges)
+    }
+
     func testTokenOcclusionGraph_occlusion_doesNotCheckAlts() throws {
         let delegate = stubDelegate(tokensFile: #"""
         $a: 'a' | 'aa' | 'aaa';

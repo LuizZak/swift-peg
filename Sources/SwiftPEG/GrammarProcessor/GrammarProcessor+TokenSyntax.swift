@@ -41,8 +41,10 @@ extension GrammarProcessor {
     /// Computes the relationship between static tokens and dynamic tokens that
     /// parse on the same input.
     fileprivate func computeTokenOcclusions(_ tokens: [TokenDefinition]) -> TokenOcclusionGraph {
+        let nonFragmentTokens = tokens.filter { !$0.isFragment }
+
         var graph = DirectedGraph<String>()
-        let staticTokens: [(TokenDefinition, String)] = tokens.compactMap { token in
+        let staticTokens: [(TokenDefinition, String)] = nonFragmentTokens.compactMap { token in
             if let staticToken = token.tokenSyntax?.staticTerminal() {
                 return (token, staticToken.contents)
             } else {
@@ -52,7 +54,7 @@ extension GrammarProcessor {
         let staticTokensByLiteral =
             Dictionary(grouping: staticTokens, by: \.1)
             .mapValues({ $0.map(\.0) })
-        let dynamicTokens = tokens.filter({ $0.tokenSyntax?.isStatic() == false })
+        let dynamicTokens = nonFragmentTokens.filter({ $0.tokenSyntax?.isStatic() == false })
 
         let interpreter = TokenSyntaxInterpreter(tokenDefinitions: tokens)
         for dynamicToken in dynamicTokens {
