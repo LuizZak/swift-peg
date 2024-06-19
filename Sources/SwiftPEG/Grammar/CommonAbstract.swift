@@ -18,6 +18,7 @@ public enum CommonAbstract {
 
         // Convenience members
 
+        /// Returns the raw contents of the string, ignoring quotes.
         public var contents: String {
             switch self {
             case .fromSource(let contents, _), .fromCode(let contents):
@@ -25,6 +26,10 @@ public enum CommonAbstract {
             }
         }
 
+        /// Returns the string literal associated with this dual string.
+        ///
+        /// - note: If this `DualString` was parsed from source code, will contain
+        /// the quotes and escape sequences as found in source, as-is.
         public var asStringLiteral: String {
             switch self {
             case .fromSource(_, let original):

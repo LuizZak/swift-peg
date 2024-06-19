@@ -224,7 +224,7 @@ extension SwiftCodeGen {
                     throw Error.tokenDependantIsNotStatic(token, dependant: dependant)
                 }
 
-                buffer.emitLine("case \(staticTerminal.asStringLiteral):")
+                buffer.emitLine("case \(tok_escapeLiteral(staticTerminal)):")
                 buffer.indented {
                     buffer.emitLine("return \(returnExpForToken(dependant))")
                 }

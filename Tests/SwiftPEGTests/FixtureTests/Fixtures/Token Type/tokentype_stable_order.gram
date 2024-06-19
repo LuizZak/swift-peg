@@ -183,59 +183,59 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
         }
         if consume_identifier(from: &stream) {
             switch stream.substring {
-            case '_Atomic':
+            case "_Atomic":
                 return .init(kind: ._Atomic, string: stream.substring)
-            case '_BitInt':
+            case "_BitInt":
                 return .init(kind: ._BitInt, string: stream.substring)
-            case '_Complex':
+            case "_Complex":
                 return .init(kind: ._Complex, string: stream.substring)
-            case '_Decimal128':
+            case "_Decimal128":
                 return .init(kind: ._Decimal128, string: stream.substring)
-            case '_Decimal32':
+            case "_Decimal32":
                 return .init(kind: ._Decimal32, string: stream.substring)
-            case '_Decimal64':
+            case "_Decimal64":
                 return .init(kind: ._Decimal64, string: stream.substring)
-            case '_Generic':
+            case "_Generic":
                 return .init(kind: ._Generic, string: stream.substring)
-            case '_Imaginary':
+            case "_Imaginary":
                 return .init(kind: ._Imaginary, string: stream.substring)
-            case '_Noreturn':
+            case "_Noreturn":
                 return .init(kind: ._Noreturn, string: stream.substring)
-            case 'alignas':
+            case "alignas":
                 return .init(kind: .alignas, string: stream.substring)
-            case 'alignof':
+            case "alignof":
                 return .init(kind: .alignof, string: stream.substring)
-            case 'auto':
+            case "auto":
                 return .init(kind: .auto, string: stream.substring)
-            case 'bool':
+            case "bool":
                 return .init(kind: .bool, string: stream.substring)
-            case 'break':
+            case "break":
                 return .init(kind: .break, string: stream.substring)
-            case 'case':
+            case "case":
                 return .init(kind: .case, string: stream.substring)
-            case 'char':
+            case "char":
                 return .init(kind: .char, string: stream.substring)
-            case 'const':
+            case "const":
                 return .init(kind: .const, string: stream.substring)
-            case 'constexpr':
+            case "constexpr":
                 return .init(kind: .constexpr, string: stream.substring)
-            case 'continue':
+            case "continue":
                 return .init(kind: .continue, string: stream.substring)
-            case 'default':
+            case "default":
                 return .init(kind: .default, string: stream.substring)
-            case 'do':
+            case "do":
                 return .init(kind: .do, string: stream.substring)
-            case 'typeof':
+            case "typeof":
                 return .init(kind: .typeof, string: stream.substring)
-            case 'union':
+            case "union":
                 return .init(kind: .union, string: stream.substring)
-            case 'unsigned':
+            case "unsigned":
                 return .init(kind: .unsigned, string: stream.substring)
-            case 'void':
+            case "void":
                 return .init(kind: .void, string: stream.substring)
-            case 'volatile':
+            case "volatile":
                 return .init(kind: .volatile, string: stream.substring)
-            case 'while':
+            case "while":
                 return .init(kind: .while, string: stream.substring)
             default:
                 return .init(kind: .identifier, string: stream.substring)
