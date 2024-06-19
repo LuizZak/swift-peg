@@ -171,14 +171,14 @@ tokensFile[[SwiftPEGGrammar.TokenDefinition]]:
 #     | '@' IDENTIFIER                            { "\(identifier)" == "channel" ? self.setLocation(.init(identifier: identifier), at: _mark) : nil }
 #     ;
 
-# Note: staticToken must resolve statically to a token reference when PEGParser.expect()/PEGParser.expect(kind:) uses it as its argument.
+# Note: tokenCodeReference must resolve statically to a token reference when PEGParser.expect()/PEGParser.expect(kind:) uses it as its argument.
 #       Usually this can be simplified to a `.tokenReference` for RawTokenType/RawTokenType.TokenKind types that provide statically-accessible token declarations,
 #       but may be any Swift expression that resolves to the desired token when paired with an appropriate tokenizer's token type.
 tokenDefinition[SwiftPEGGrammar.TokenDefinition]:
-    | spec=tokenOrFragmentSpecifier name=IDENTIFIER '[' staticToken=string ']' ':' ~ tokenSyntax ';'    { self.setLocation(.init(name: name.rawToken, isFragment: spec.kind == .percent, staticToken: staticToken, tokenSyntax: tokenSyntax), at: _mark) }
-    | spec=tokenOrFragmentSpecifier name=IDENTIFIER '[' staticToken=string ']' ';'                      { self.setLocation(.init(name: name.rawToken, isFragment: spec.kind == .percent, staticToken: staticToken, tokenSyntax: nil), at: _mark) }
-    | spec=tokenOrFragmentSpecifier name=IDENTIFIER ':' ~ tokenSyntax ';'                               { self.setLocation(.init(name: name.rawToken, isFragment: spec.kind == .percent, staticToken: nil, tokenSyntax: tokenSyntax), at: _mark) }
-    | spec=tokenOrFragmentSpecifier name=IDENTIFIER ';'                                                 { self.setLocation(.init(name: name.rawToken, isFragment: spec.kind == .percent, staticToken: nil, tokenSyntax: nil), at: _mark) }
+    | spec=tokenOrFragmentSpecifier name=IDENTIFIER '[' tokenCodeReference=string ']' ':' ~ tokenSyntax ';'    { self.setLocation(.init(name: name.rawToken, isFragment: spec.kind == .percent, tokenCodeReference: tokenCodeReference, tokenSyntax: tokenSyntax), at: _mark) }
+    | spec=tokenOrFragmentSpecifier name=IDENTIFIER '[' tokenCodeReference=string ']' ';'                      { self.setLocation(.init(name: name.rawToken, isFragment: spec.kind == .percent, tokenCodeReference: tokenCodeReference, tokenSyntax: nil), at: _mark) }
+    | spec=tokenOrFragmentSpecifier name=IDENTIFIER ':' ~ tokenSyntax ';'                               { self.setLocation(.init(name: name.rawToken, isFragment: spec.kind == .percent, tokenCodeReference: nil, tokenSyntax: tokenSyntax), at: _mark) }
+    | spec=tokenOrFragmentSpecifier name=IDENTIFIER ';'                                                 { self.setLocation(.init(name: name.rawToken, isFragment: spec.kind == .percent, tokenCodeReference: nil, tokenSyntax: nil), at: _mark) }
     ;
 
 tokenOrFragmentSpecifier[RawToken]:

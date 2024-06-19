@@ -55,7 +55,8 @@ public class GrammarInterpreter {
             processedGrammar: .init(
                 grammar: grammar,
                 tokens: tokens,
-                ruleDependencyGraph: .init(nodes: [], edges: [])
+                ruleDependencyGraph: .init(nodes: [], edges: []),
+                tokenOcclusionGraph: .init(nodes: [], edges: [])
             ),
             source: source,
             delegate: delegate

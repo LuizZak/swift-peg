@@ -966,8 +966,8 @@ extension SwiftPEGGrammar {
     /// Represents the construct:
     /// ```
     /// tokenDefinition:
-    ///     | tokenOrFragmentSpecifier name=IDENTIFIER '[' staticToken=STRING ']' ':' ~ tokenSyntax ';'
-    ///     | tokenOrFragmentSpecifier name=IDENTIFIER '[' staticToken=STRING ']' ';'
+    ///     | tokenOrFragmentSpecifier name=IDENTIFIER '[' tokenCodeReference=STRING ']' ':' ~ tokenSyntax ';'
+    ///     | tokenOrFragmentSpecifier name=IDENTIFIER '[' tokenCodeReference=STRING ']' ';'
     ///     | tokenOrFragmentSpecifier name=IDENTIFIER ':' ~ tokenSyntax ';'
     ///     | tokenOrFragmentSpecifier name=IDENTIFIER ';'
     ///     ;
@@ -990,7 +990,7 @@ extension SwiftPEGGrammar {
         /// Is expected to resolve to a valid token/token kind when paired with
         /// a parser's `PEGParser.expect(_:)`/`PEGParser.expect(kind:)` calls.
         @NodeRequired
-        public var staticToken: GrammarString?
+        public var tokenCodeReference: GrammarString?
 
         /// The syntax of the token.
         @NodeRequired

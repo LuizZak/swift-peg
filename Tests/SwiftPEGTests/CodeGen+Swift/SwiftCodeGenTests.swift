@@ -719,8 +719,8 @@ class SwiftCodeGenTests: XCTestCase {
             ]),
         ])
         let tokens = makeTokenDefs([
-            makeTokenDef(name: "ADD", staticToken: "custom: .add", literal: "+"),
-            makeTokenDef(name: "BACKSLASH", staticToken: "custom: .back", literal: #"\"#),
+            makeTokenDef(name: "ADD", tokenCodeReference: "custom: .add", literal: "+"),
+            makeTokenDef(name: "BACKSLASH", tokenCodeReference: "custom: .back", literal: #"\"#),
         ])
         let sut = makeSut(grammar, tokens)
 
@@ -1092,7 +1092,7 @@ class SwiftCodeGenTests: XCTestCase {
             .init(name: "tokenCall", value: .identifier("expectKind")),
         ])
         let tokens = [
-            makeTokenDef(name: "ADD", staticToken: ".add", literal: "+"),
+            makeTokenDef(name: "ADD", tokenCodeReference: ".add", literal: "+"),
         ]
         let sut = makeSut(grammar, tokens)
 
@@ -2979,21 +2979,21 @@ private func makeTokenDefs(
 private func makeTokenDef(
     name: String,
     isFragment: Bool = false,
-    staticToken: String? = nil,
+    tokenCodeReference: String? = nil,
     literal: String
 ) -> InternalGrammar.TokenDefinition {
 
-    .init(name: name, isFragment: isFragment, staticToken: staticToken, tokenSyntax: .init(stringLiteral: literal))
+    .init(name: name, isFragment: isFragment, tokenCodeReference: tokenCodeReference, tokenSyntax: .init(stringLiteral: literal))
 }
 
 private func makeTokenDef(
     name: String,
     isFragment: Bool = false,
-    staticToken: String? = nil,
+    tokenCodeReference: String? = nil,
     tokenSyntax: CommonAbstract.TokenSyntax?
 ) -> InternalGrammar.TokenDefinition {
 
-    .init(name: name, isFragment: isFragment, staticToken: staticToken, tokenSyntax: tokenSyntax)
+    .init(name: name, isFragment: isFragment, tokenCodeReference: tokenCodeReference, tokenSyntax: tokenSyntax)
 }
 
 private func parseGrammar(

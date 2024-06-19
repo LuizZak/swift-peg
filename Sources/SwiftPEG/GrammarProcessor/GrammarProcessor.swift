@@ -83,7 +83,7 @@ public class GrammarProcessor {
         let knownRules = try validateRuleNames(in: grammar)
         let dependencyGraph = generateDependencyGraph(for: grammar, knownRules: knownRules)
         let tokensFile = try loadTokensFile(from: grammar)
-        let processedTokens = try validateTokenSyntaxes(tokensFile)
+        let (processedTokens, occlusionGraph) = try validateTokenSyntaxes(tokensFile)
 
         let (tokenNames, fragments) = try collectTokenNames(in: grammar, tokensFile: tokensFile)
         try validateReferences(in: grammar, tokens: tokenNames, fragments: fragments)
@@ -98,7 +98,8 @@ public class GrammarProcessor {
         return ProcessedGrammar(
             grammar: .from(grammar),
             tokens: processedTokens,
-            ruleDependencyGraph: dependencyGraph
+            ruleDependencyGraph: dependencyGraph,
+            tokenOcclusionGraph: occlusionGraph
         )
     }
 
@@ -215,7 +216,7 @@ public class GrammarProcessor {
             let tokenName = String(token.name.string)
 
             if token.isFragment {
-                if token.staticToken != nil {
+                if token.tokenCodeReference != nil {
                     diagnostics.append(.fragmentSpecifiesStaticToken(token: token))
                 }
 

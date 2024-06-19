@@ -6,6 +6,18 @@ public class TokenSyntaxInterpreter {
         self.tokenDefinitions = tokenDefinitions
     }
 
+    /// Returns `true` if the given token syntax parses the given input string
+    /// fully. Returns `false` if parsing fails, or if the token parses but stops
+    /// before consuming the entire input.
+    func tokenSyntaxFullyParses(_ tokenSyntax: CommonAbstract.TokenSyntax, input: String) -> Bool {
+        do {
+            var stream = StringStream(source: input)
+            return try parse(tokenSyntax, from: &stream) && stream.isEof
+        } catch {
+            return false
+        }
+    }
+
     /// Attempts to parse the contents of the given stream with one of the known
     /// token definitions, returning the token that consumed the most characters
     /// from the stream, as well as its identifier.

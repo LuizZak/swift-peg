@@ -10,7 +10,7 @@ extension GrammarProcessor {
     /// Returns a processed version of the tokens for emitting by a code generator.
     func validateTokenSyntaxes(
         _ tokens: [SwiftPEGGrammar.TokenDefinition]
-    ) throws -> [InternalGrammar.TokenDefinition] {
+    ) throws -> ([InternalGrammar.TokenDefinition], TokenOcclusionGraph) {
 
         var fragmentReferenceCount: [String: Int] =
             Dictionary(grouping: tokens.filter(\.isFragment)) {
@@ -25,7 +25,7 @@ extension GrammarProcessor {
         )
 
         diagnoseAltOrder(sorted)
-        diagnoseNullAtoms(sorted)
+        diagnoseUnfulfillableAtoms(sorted)
 
         var inlined = try applyFragmentInlining(
             sorted.reversed(),
@@ -33,7 +33,52 @@ extension GrammarProcessor {
         )
         inlined = sortTokens(inlined)
 
-        return inlined
+        let occlusionGraph = computeTokenOcclusions(inlined)
+
+        return (inlined, occlusionGraph)
+    }
+
+    /// Computes the relationship between static tokens and dynamic tokens that
+    /// parse on the same input.
+    fileprivate func computeTokenOcclusions(_ tokens: [TokenDefinition]) -> TokenOcclusionGraph {
+        var graph = DirectedGraph<String>()
+        let staticTokens: [(TokenDefinition, String)] = tokens.compactMap { token in
+            if let staticToken = token.tokenSyntax?.staticTerminal() {
+                return (token, staticToken.contents)
+            } else {
+                return nil
+            }
+        }
+        let staticTokensByLiteral =
+            Dictionary(grouping: staticTokens, by: \.1)
+            .mapValues({ $0.map(\.0) })
+        let dynamicTokens = tokens.filter({ $0.tokenSyntax?.isStatic() == false })
+
+        let interpreter = TokenSyntaxInterpreter(tokenDefinitions: tokens)
+        for dynamicToken in dynamicTokens {
+            guard let tokenSyntax = dynamicToken.tokenSyntax else {
+                continue
+            }
+
+            for (literal, staticTokens) in staticTokensByLiteral {
+                guard interpreter.tokenSyntaxFullyParses(tokenSyntax, input: literal) else {
+                    continue
+                }
+
+                if !graph.containsNode(dynamicToken.name) {
+                    graph.addNode(dynamicToken.name)
+                }
+                for staticToken in staticTokens {
+                    if !graph.containsNode(staticToken.name) {
+                        graph.addNode(staticToken.name)
+                    }
+
+                    graph.addEdge(from: dynamicToken.name, to: staticToken.name)
+                }
+            }
+        }
+
+        return TokenOcclusionGraph(graph: graph)
     }
 
     /// Sorts the input tokens by the order they should be parsed to decrease
@@ -94,8 +139,9 @@ extension GrammarProcessor {
         return byName
     }
 
-    /// Diagnoses atoms that have a combination of
-    fileprivate func diagnoseNullAtoms(_ tokens: [SwiftPEGGrammar.TokenDefinition]) {
+    /// Diagnoses atoms that have a combination of exclusion + terminal that cannot
+    /// be fulfilled by any input.
+    fileprivate func diagnoseUnfulfillableAtoms(_ tokens: [SwiftPEGGrammar.TokenDefinition]) {
         for token in tokens {
             guard let syntax = token.tokenSyntax else {
                 continue

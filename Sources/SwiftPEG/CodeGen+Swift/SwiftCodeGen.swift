@@ -80,8 +80,13 @@ public class SwiftCodeGen {
     var _typeForRuleOngoing: Set<String> = []
 
     let parserName: String
-    let grammar: InternalGrammar.Grammar
-    let tokenDefinitions: [InternalGrammar.TokenDefinition]
+    let processedGrammar: ProcessedGrammar
+    var grammar: InternalGrammar.Grammar {
+        processedGrammar.grammar
+    }
+    var tokenDefinitions: [InternalGrammar.TokenDefinition] {
+        processedGrammar.tokens
+    }
     let buffer: CodeStringBuffer
     var declContext: DeclarationsContext
 
@@ -105,11 +110,14 @@ public class SwiftCodeGen {
 
     /// Initializes a new `SwiftCodeGen`, preparing to generate the grammar and
     /// token definitions from a given grammar processor result.
-    public convenience init(from processed: ProcessedGrammar) {
-        self.init(
-            grammar: processed.grammar,
-            tokenDefinitions: processed.tokens
-        )
+    public init(from processedGrammar: ProcessedGrammar) {
+        self.processedGrammar = processedGrammar
+        self.tokenCallKind = processedGrammar.grammar.tokenCall().flatMap(TokenCallKind.init) ?? .expect
+
+        parserName = processedGrammar.grammar.parserName() ?? "Parser"
+        buffer = CodeStringBuffer()
+        declContext = DeclarationsContext()
+        bindingEngine = BindingEngine()
     }
 
     /// Initializes a new `SwiftCodeGen`, preparing to generate a given grammar.
@@ -117,18 +125,20 @@ public class SwiftCodeGen {
     /// - Parameters:
     ///   - grammar: The grammar to generate.
     ///   - tokenDefinitions: A list of token definitions to use when examining string literals.
-    public init(
+    public convenience init(
         grammar: InternalGrammar.Grammar,
-        tokenDefinitions: [InternalGrammar.TokenDefinition] = []
+        tokenDefinitions: [InternalGrammar.TokenDefinition] = [],
+        ruleDependencyGraph: RuleDependencyGraph = .empty,
+        tokenOcclusionGraph: TokenOcclusionGraph = .empty
     ) {
-        self.grammar = grammar
-        self.tokenDefinitions = tokenDefinitions
-        self.tokenCallKind = grammar.tokenCall().flatMap(TokenCallKind.init) ?? .expect
-
-        parserName = grammar.parserName() ?? "Parser"
-        buffer = CodeStringBuffer()
-        declContext = DeclarationsContext()
-        bindingEngine = BindingEngine()
+        self.init(
+            from: .init(
+                grammar: grammar,
+                tokens: tokenDefinitions,
+                ruleDependencyGraph: ruleDependencyGraph,
+                tokenOcclusionGraph: tokenOcclusionGraph
+            )
+        )
     }
 
     /// Generates Swift parser code.
@@ -938,10 +948,26 @@ public class SwiftCodeGen {
         /// type cannot be generated.
         case tokenDefinitionMissingSyntax(InternalGrammar.TokenDefinition)
 
+        /// Issued during token type code generation, indicates the associated
+        /// `ProcessedGrammar.tokenOcclusionGraph` contains dependants of dynamic
+        /// tokens that are not static.
+        case tokenDependantIsNotStatic(
+            InternalGrammar.TokenDefinition,
+            dependant: InternalGrammar.TokenDefinition
+        )
+
         public var description: String {
             switch self {
             case .tokenDefinitionMissingSyntax(let def):
-                return "Cannot generate token type: All tokens must have a syntax defined; found token '\(def.name)' that has no syntax."
+                return """
+                Cannot generate token type: All tokens must have a syntax defined; \
+                found token '\(def.name)' that has no syntax.
+                """
+            case .tokenDependantIsNotStatic(let token, let dependant):
+                return """
+                Found token '\(token.name)' that has a dependant '\(dependant.name)' \
+                that has a non-static syntax '\(dependant.tokenSyntax?.description ?? "<nil>")'.
+                """
             }
         }
     }
@@ -1454,14 +1480,14 @@ extension SwiftCodeGen {
     /// identifier
     ///
     /// If the identifier matches a known token definition with explicit
-    /// 'staticToken', returns `self.expect(<staticToken>)`, otherwise returns
+    /// 'tokenCodeReference', returns `self.expect(<tokenCodeReference>)`, otherwise returns
     /// `self.<ident>()`, as a fallback.
     func expandTokenName(_ ident: String) -> String {
         if
             let token = bindingEngine.tokenDefinition(named: ident),
-            let staticToken = staticToken(for: token)
+            let tokenCodeReference = tokenCodeReference(for: token)
         {
-            return "self.expect(\(expectArguments(forResolvedToken: staticToken)))"
+            return "self.expect(\(expectArguments(forResolvedToken: tokenCodeReference)))"
         }
 
         return "self.\(escapeIdentifier(ident))()"
@@ -1478,9 +1504,9 @@ extension SwiftCodeGen {
         // Check for explicit token aliases
         if
             let token = bindingEngine.tokenDefinition(named: identifier),
-            let staticToken = staticToken(for: token)
+            let tokenCodeReference = tokenCodeReference(for: token)
         {
-            return expectArguments(forResolvedToken: staticToken)
+            return expectArguments(forResolvedToken: tokenCodeReference)
         }
 
         return expectArguments(forResolvedToken: identifier)
@@ -1497,9 +1523,9 @@ extension SwiftCodeGen {
         // Check for explicit token aliases
         if
             let token = bindingEngine.tokenDefinition(ofRawLiteral: raw),
-            let staticToken = staticToken(for: token)
+            let tokenCodeReference = tokenCodeReference(for: token)
         {
-            return expectArguments(forResolvedToken: staticToken)
+            return expectArguments(forResolvedToken: tokenCodeReference)
         }
 
         return expectArguments(forResolvedToken: literal)
@@ -1507,15 +1533,15 @@ extension SwiftCodeGen {
 
     /// Computes the static token name for a given token definition.
     ///
-    /// If a custom static token was provided (`['.staticToken']`), that value
+    /// If a custom static token was provided (`['.tokenCodeReference']`), that value
     /// is returned; otherwise, an attempt is made to compute the potential case
     /// name for a generated token type.
     ///
     /// If the token is missing both the static token and token syntax, it is
     /// assumed to be implemented off-lexer and the return is `nil`.
-    func staticToken(for token: InternalGrammar.TokenDefinition) -> String? {
-        if let staticToken = token.staticToken {
-            return staticToken
+    func tokenCodeReference(for token: InternalGrammar.TokenDefinition) -> String? {
+        if let tokenCodeReference = token.tokenCodeReference {
+            return tokenCodeReference
         }
         if token.tokenSyntax == nil {
             return nil
