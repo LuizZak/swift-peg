@@ -1031,7 +1031,8 @@ public class SwiftCodeGen {
         /// Gets the static default settings configuration.
         public static let `default`: Self = Self(
             emitInlinable: false,
-            accessLevel: nil
+            accessLevel: nil,
+            emitLengthSwitchPhaseInTokenOcclusionSwitch: false
         )
 
         /// Whether to emit tokenization methods as @inlinable declarations.
@@ -1044,12 +1045,26 @@ public class SwiftCodeGen {
         /// generates an initializer for struct declarations.
         public var accessLevel: String?
 
+        /// In the main token parsing body, a token that occludes another (such
+        /// as a dynamic identifier token occluding a fixed keyword token), a
+        /// switch is emitted that favors the fixed token constructions occluded
+        /// by dynamic tokens. If this setting is `true`, an extra switch is
+        /// emitted that further divides the fixed tokens along length before
+        /// the final switch over each fixed token's string literal.
+        ///
+        /// The switch is only emitted if more than three fixed tokens are occluded
+        /// by the same dynamic token, and at least two of the fixed tokens share
+        /// the same literal string length.
+        public var emitLengthSwitchPhaseInTokenOcclusionSwitch: Bool
+
         public init(
             emitInlinable: Bool,
-            accessLevel: String?
+            accessLevel: String?,
+            emitLengthSwitchPhaseInTokenOcclusionSwitch: Bool
         ) {
             self.emitInlinable = emitInlinable
             self.accessLevel = accessLevel
+            self.emitLengthSwitchPhaseInTokenOcclusionSwitch = emitLengthSwitchPhaseInTokenOcclusionSwitch
         }
 
         /// Returns a copy of `self` with a given keypath modified to be `value`.

@@ -10,7 +10,11 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         let sut = makeSut(tokens)
         var emittedTokenNames: Set<String> = []
 
-        try sut.generateTokenParseCheck(tokens[0], emittedTokenNames: &emittedTokenNames)
+        try sut.generateTokenParseCheck(
+            settings: .default,
+            tokens[0],
+            emittedTokenNames: &emittedTokenNames
+        )
 
         assertEqual(emittedTokenNames, ["leftSquare"])
         diffTest(expected: #"""
@@ -32,7 +36,11 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         let sut = makeSut(tokens, tokenOcclusionGraph: tokenOcclusionGraph)
         var emittedTokenNames: Set<String> = []
 
-        try sut.generateTokenParseCheck(tokens[0], emittedTokenNames: &emittedTokenNames)
+        try sut.generateTokenParseCheck(
+            settings: .default,
+            tokens[0],
+            emittedTokenNames: &emittedTokenNames
+        )
 
         assertEqual(emittedTokenNames, ["identifier", "keyword"])
         diffTest(expected: #"""
@@ -40,6 +48,75 @@ class SwiftCodeGen_TokenTests: XCTestCase {
             switch stream.substring {
             case "keyword":
                 return .init(kind: .keyword, string: stream.substring)
+            default:
+                return .init(kind: .identifier, string: stream.substring)
+            }
+        }
+        """#).diff(sut.buffer.finishBuffer())
+    }
+
+    func testGenerateTokenParseCheck_emitLengthSwitchPhaseInTokenOcclusionSwitch_generateLengthSwitch() throws {
+        let tokens = try parseTokenDefinitions(#"""
+        $identifier: ("a"..."z") ("a"..."z" | "0"..."9")* ;
+        $foobar1: "foobar1" ;
+        $keyword: "keyword" ;
+        $keyword1: "keyword1" ;
+        $keyword2: "keyword2" ;
+        $keyword11: "keyword11" ;
+        $keyword12: "keyword12" ;
+        """#)
+        let dependants: [String] = [
+            "foobar1", "keyword", "keyword1", "keyword2", "keyword11", "keyword12",
+        ]
+        let tokenOcclusionGraph = TokenOcclusionGraph(
+            nodes: ["identifier"] + dependants,
+            edges: dependants.map({ dependant in
+                .init(start: "identifier", end: dependant)
+            })
+        )
+        let sut = makeSut(tokens, tokenOcclusionGraph: tokenOcclusionGraph)
+        var emittedTokenNames: Set<String> = []
+
+        try sut.generateTokenParseCheck(
+            settings: .default.with(\.emitLengthSwitchPhaseInTokenOcclusionSwitch, value: true),
+            tokens[0],
+            emittedTokenNames: &emittedTokenNames
+        )
+
+        assertEqual(emittedTokenNames, Set(dependants).union(["identifier"]))
+        diffTest(expected: #"""
+        if consume_identifier(from: &stream) {
+            switch stream.substringLength {
+            case 9:
+                switch stream.substring {
+                case "keyword11":
+                    return .init(kind: .keyword11, string: stream.substring)
+                case "keyword12":
+                    return .init(kind: .keyword12, string: stream.substring)
+                default:
+                    return .init(kind: .identifier, string: stream.substring)
+                }
+
+            case 8:
+                switch stream.substring {
+                case "keyword1":
+                    return .init(kind: .keyword1, string: stream.substring)
+                case "keyword2":
+                    return .init(kind: .keyword2, string: stream.substring)
+                default:
+                    return .init(kind: .identifier, string: stream.substring)
+                }
+
+            case 7:
+                switch stream.substring {
+                case "foobar1":
+                    return .init(kind: .foobar1, string: stream.substring)
+                case "keyword":
+                    return .init(kind: .keyword, string: stream.substring)
+                default:
+                    return .init(kind: .identifier, string: stream.substring)
+                }
+
             default:
                 return .init(kind: .identifier, string: stream.substring)
             }
@@ -59,7 +136,11 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         let sut = makeSut(tokens, tokenOcclusionGraph: tokenOcclusionGraph)
         var emittedTokenNames: Set<String> = ["keyword"]
 
-        try sut.generateTokenParseCheck(tokens[0], emittedTokenNames: &emittedTokenNames)
+        try sut.generateTokenParseCheck(
+            settings: .default,
+            tokens[0],
+            emittedTokenNames: &emittedTokenNames
+        )
 
         assertEqual(emittedTokenNames, ["identifier", "keyword"])
         diffTest(expected: #"""

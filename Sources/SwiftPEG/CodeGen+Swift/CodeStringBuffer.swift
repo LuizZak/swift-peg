@@ -299,6 +299,9 @@ public class CodeStringBuffer {
 
     /// Ensures an empty line sits in the end of the buffer.
     /// If the buffer is empty, no change is made.
+    ///
+    /// Unless the buffer is empty, this function behaves exactly the same as
+    /// `ensureDoubleNewline()`.
     public func ensureEmptyLine() {
         guard !buffer.isEmpty else { return }
 

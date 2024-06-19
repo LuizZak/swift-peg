@@ -178,92 +178,68 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
         if consume_BITWISEXOR(from: &stream) {
             return .init(kind: .bitwiseXor, string: stream.substring)
         }
-        if consume__Atomic(from: &stream) {
-            return .init(kind: ._Atomic, string: stream.substring)
-        }
-        if consume__BitInt(from: &stream) {
-            return .init(kind: ._BitInt, string: stream.substring)
-        }
-        if consume__Complex(from: &stream) {
-            return .init(kind: ._Complex, string: stream.substring)
-        }
-        if consume__Decimal128(from: &stream) {
-            return .init(kind: ._Decimal128, string: stream.substring)
-        }
-        if consume__Decimal32(from: &stream) {
-            return .init(kind: ._Decimal32, string: stream.substring)
-        }
-        if consume__Decimal64(from: &stream) {
-            return .init(kind: ._Decimal64, string: stream.substring)
-        }
-        if consume__Generic(from: &stream) {
-            return .init(kind: ._Generic, string: stream.substring)
-        }
-        if consume__Imaginary(from: &stream) {
-            return .init(kind: ._Imaginary, string: stream.substring)
-        }
-        if consume__Noreturn(from: &stream) {
-            return .init(kind: ._Noreturn, string: stream.substring)
-        }
-        if consume_alignas(from: &stream) {
-            return .init(kind: .alignas, string: stream.substring)
-        }
-        if consume_alignof(from: &stream) {
-            return .init(kind: .alignof, string: stream.substring)
-        }
-        if consume_auto(from: &stream) {
-            return .init(kind: .auto, string: stream.substring)
-        }
-        if consume_bool(from: &stream) {
-            return .init(kind: .bool, string: stream.substring)
-        }
-        if consume_break(from: &stream) {
-            return .init(kind: .break, string: stream.substring)
-        }
-        if consume_case(from: &stream) {
-            return .init(kind: .case, string: stream.substring)
-        }
-        if consume_char(from: &stream) {
-            return .init(kind: .char, string: stream.substring)
-        }
-        if consume_constexpr(from: &stream) {
-            return .init(kind: .constexpr, string: stream.substring)
-        }
-        if consume_const(from: &stream) {
-            return .init(kind: .const, string: stream.substring)
-        }
-        if consume_continue(from: &stream) {
-            return .init(kind: .continue, string: stream.substring)
-        }
-        if consume_default(from: &stream) {
-            return .init(kind: .default, string: stream.substring)
-        }
-        if consume_do(from: &stream) {
-            return .init(kind: .do, string: stream.substring)
-        }
-        if consume_typeof(from: &stream) {
-            return .init(kind: .typeof, string: stream.substring)
-        }
-        if consume_union(from: &stream) {
-            return .init(kind: .union, string: stream.substring)
-        }
-        if consume_unsigned(from: &stream) {
-            return .init(kind: .unsigned, string: stream.substring)
-        }
-        if consume_void(from: &stream) {
-            return .init(kind: .void, string: stream.substring)
-        }
-        if consume_volatile(from: &stream) {
-            return .init(kind: .volatile, string: stream.substring)
-        }
-        if consume_while(from: &stream) {
-            return .init(kind: .while, string: stream.substring)
-        }
         if consume_floatingConstant(from: &stream) {
             return .init(kind: .floatingConstant, string: stream.substring)
         }
         if consume_identifier(from: &stream) {
-            return .init(kind: .identifier, string: stream.substring)
+            switch stream.substring {
+            case '_Atomic':
+                return .init(kind: ._Atomic, string: stream.substring)
+            case '_BitInt':
+                return .init(kind: ._BitInt, string: stream.substring)
+            case '_Complex':
+                return .init(kind: ._Complex, string: stream.substring)
+            case '_Decimal128':
+                return .init(kind: ._Decimal128, string: stream.substring)
+            case '_Decimal32':
+                return .init(kind: ._Decimal32, string: stream.substring)
+            case '_Decimal64':
+                return .init(kind: ._Decimal64, string: stream.substring)
+            case '_Generic':
+                return .init(kind: ._Generic, string: stream.substring)
+            case '_Imaginary':
+                return .init(kind: ._Imaginary, string: stream.substring)
+            case '_Noreturn':
+                return .init(kind: ._Noreturn, string: stream.substring)
+            case 'alignas':
+                return .init(kind: .alignas, string: stream.substring)
+            case 'alignof':
+                return .init(kind: .alignof, string: stream.substring)
+            case 'auto':
+                return .init(kind: .auto, string: stream.substring)
+            case 'bool':
+                return .init(kind: .bool, string: stream.substring)
+            case 'break':
+                return .init(kind: .break, string: stream.substring)
+            case 'case':
+                return .init(kind: .case, string: stream.substring)
+            case 'char':
+                return .init(kind: .char, string: stream.substring)
+            case 'const':
+                return .init(kind: .const, string: stream.substring)
+            case 'constexpr':
+                return .init(kind: .constexpr, string: stream.substring)
+            case 'continue':
+                return .init(kind: .continue, string: stream.substring)
+            case 'default':
+                return .init(kind: .default, string: stream.substring)
+            case 'do':
+                return .init(kind: .do, string: stream.substring)
+            case 'typeof':
+                return .init(kind: .typeof, string: stream.substring)
+            case 'union':
+                return .init(kind: .union, string: stream.substring)
+            case 'unsigned':
+                return .init(kind: .unsigned, string: stream.substring)
+            case 'void':
+                return .init(kind: .void, string: stream.substring)
+            case 'volatile':
+                return .init(kind: .volatile, string: stream.substring)
+            case 'while':
+                return .init(kind: .while, string: stream.substring)
+            default:
+                return .init(kind: .identifier, string: stream.substring)
+            }
         }
         if consume_integerConstant(from: &stream) {
             return .init(kind: .integerConstant, string: stream.substring)
@@ -429,85 +405,85 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
         /// `"^"`
         case bitwiseXor
 
-        /// `"_Atomic" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        /// `"_Atomic"`
         case _Atomic
 
-        /// `"_BitInt" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        /// `"_BitInt"`
         case _BitInt
 
-        /// `"_Complex" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        /// `"_Complex"`
         case _Complex
 
-        /// `"_Decimal128" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        /// `"_Decimal128"`
         case _Decimal128
 
-        /// `"_Decimal32" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        /// `"_Decimal32"`
         case _Decimal32
 
-        /// `"_Decimal64" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        /// `"_Decimal64"`
         case _Decimal64
 
-        /// `"_Generic" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        /// `"_Generic"`
         case _Generic
 
-        /// `"_Imaginary" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        /// `"_Imaginary"`
         case _Imaginary
 
-        /// `"_Noreturn" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        /// `"_Noreturn"`
         case _Noreturn
 
-        /// `"alignas" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        /// `"alignas"`
         case alignas
 
-        /// `"alignof" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        /// `"alignof"`
         case alignof
 
-        /// `"auto" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        /// `"auto"`
         case auto
 
-        /// `"bool" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        /// `"bool"`
         case bool
 
-        /// `"break" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        /// `"break"`
         case `break`
 
-        /// `"case" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        /// `"case"`
         case `case`
 
-        /// `"char" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        /// `"char"`
         case char
 
-        /// `"constexpr" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        /// `"constexpr"`
         case constexpr
 
-        /// `"const" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        /// `"const"`
         case const
 
-        /// `"continue" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        /// `"continue"`
         case `continue`
 
-        /// `"default" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        /// `"default"`
         case `default`
 
-        /// `"do" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        /// `"do"`
         case `do`
 
-        /// `"typeof" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        /// `"typeof"`
         case typeof
 
-        /// `"union" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        /// `"union"`
         case union
 
-        /// `"unsigned" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        /// `"unsigned"`
         case unsigned
 
-        /// `"void" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        /// `"void"`
         case void
 
-        /// `"volatile" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        /// `"volatile"`
         case volatile
 
-        /// `"while" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"`
+        /// `"while"`
         case `while`
 
         /// ```
@@ -1111,731 +1087,245 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
 
     /// ```
     /// _Atomic["._Atomic"]:
-    ///     | "_Atomic" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     | "_Atomic"
     ///     ;
     /// ```
     static func consume__Atomic<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
-
-        alt:
-        do {
-            guard stream.isNext("_Atomic") else {
-                return false
-            }
-            stream.advance(7)
-
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
-                break alt
-            }
-            return true
-        }
-
-        stream.restore(state)
-
-        return false
+        stream.advanceIfNext("_Atomic")
     }
 
     /// ```
     /// _BitInt["._BitInt"]:
-    ///     | "_BitInt" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     | "_BitInt"
     ///     ;
     /// ```
     static func consume__BitInt<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
-
-        alt:
-        do {
-            guard stream.isNext("_BitInt") else {
-                return false
-            }
-            stream.advance(7)
-
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
-                break alt
-            }
-            return true
-        }
-
-        stream.restore(state)
-
-        return false
+        stream.advanceIfNext("_BitInt")
     }
 
     /// ```
     /// _Complex["._Complex"]:
-    ///     | "_Complex" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     | "_Complex"
     ///     ;
     /// ```
     static func consume__Complex<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
-
-        alt:
-        do {
-            guard stream.isNext("_Complex") else {
-                return false
-            }
-            stream.advance(8)
-
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
-                break alt
-            }
-            return true
-        }
-
-        stream.restore(state)
-
-        return false
+        stream.advanceIfNext("_Complex")
     }
 
     /// ```
     /// _Decimal128["._Decimal128"]:
-    ///     | "_Decimal128" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     | "_Decimal128"
     ///     ;
     /// ```
     static func consume__Decimal128<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
-
-        alt:
-        do {
-            guard stream.isNext("_Decimal128") else {
-                return false
-            }
-            stream.advance(11)
-
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
-                break alt
-            }
-            return true
-        }
-
-        stream.restore(state)
-
-        return false
+        stream.advanceIfNext("_Decimal128")
     }
 
     /// ```
     /// _Decimal32["._Decimal32"]:
-    ///     | "_Decimal32" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     | "_Decimal32"
     ///     ;
     /// ```
     static func consume__Decimal32<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
-
-        alt:
-        do {
-            guard stream.isNext("_Decimal32") else {
-                return false
-            }
-            stream.advance(10)
-
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
-                break alt
-            }
-            return true
-        }
-
-        stream.restore(state)
-
-        return false
+        stream.advanceIfNext("_Decimal32")
     }
 
     /// ```
     /// _Decimal64["._Decimal64"]:
-    ///     | "_Decimal64" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     | "_Decimal64"
     ///     ;
     /// ```
     static func consume__Decimal64<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
-
-        alt:
-        do {
-            guard stream.isNext("_Decimal64") else {
-                return false
-            }
-            stream.advance(10)
-
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
-                break alt
-            }
-            return true
-        }
-
-        stream.restore(state)
-
-        return false
+        stream.advanceIfNext("_Decimal64")
     }
 
     /// ```
     /// _Generic["._Generic"]:
-    ///     | "_Generic" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     | "_Generic"
     ///     ;
     /// ```
     static func consume__Generic<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
-
-        alt:
-        do {
-            guard stream.isNext("_Generic") else {
-                return false
-            }
-            stream.advance(8)
-
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
-                break alt
-            }
-            return true
-        }
-
-        stream.restore(state)
-
-        return false
+        stream.advanceIfNext("_Generic")
     }
 
     /// ```
     /// _Imaginary["._Imaginary"]:
-    ///     | "_Imaginary" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     | "_Imaginary"
     ///     ;
     /// ```
     static func consume__Imaginary<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
-
-        alt:
-        do {
-            guard stream.isNext("_Imaginary") else {
-                return false
-            }
-            stream.advance(10)
-
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
-                break alt
-            }
-            return true
-        }
-
-        stream.restore(state)
-
-        return false
+        stream.advanceIfNext("_Imaginary")
     }
 
     /// ```
     /// _Noreturn["._Noreturn"]:
-    ///     | "_Noreturn" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     | "_Noreturn"
     ///     ;
     /// ```
     static func consume__Noreturn<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
-
-        alt:
-        do {
-            guard stream.isNext("_Noreturn") else {
-                return false
-            }
-            stream.advance(9)
-
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
-                break alt
-            }
-            return true
-        }
-
-        stream.restore(state)
-
-        return false
+        stream.advanceIfNext("_Noreturn")
     }
 
     /// ```
     /// alignas[".alignas"]:
-    ///     | "alignas" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     | "alignas"
     ///     ;
     /// ```
     static func consume_alignas<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
-
-        alt:
-        do {
-            guard stream.isNext("alignas") else {
-                return false
-            }
-            stream.advance(7)
-
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
-                break alt
-            }
-            return true
-        }
-
-        stream.restore(state)
-
-        return false
+        stream.advanceIfNext("alignas")
     }
 
     /// ```
     /// alignof[".alignof"]:
-    ///     | "alignof" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     | "alignof"
     ///     ;
     /// ```
     static func consume_alignof<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
-
-        alt:
-        do {
-            guard stream.isNext("alignof") else {
-                return false
-            }
-            stream.advance(7)
-
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
-                break alt
-            }
-            return true
-        }
-
-        stream.restore(state)
-
-        return false
+        stream.advanceIfNext("alignof")
     }
 
     /// ```
     /// auto[".auto"]:
-    ///     | "auto" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     | "auto"
     ///     ;
     /// ```
     static func consume_auto<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
-
-        alt:
-        do {
-            guard stream.isNext("auto") else {
-                return false
-            }
-            stream.advance(4)
-
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
-                break alt
-            }
-            return true
-        }
-
-        stream.restore(state)
-
-        return false
+        stream.advanceIfNext("auto")
     }
 
     /// ```
     /// bool[".bool"]:
-    ///     | "bool" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     | "bool"
     ///     ;
     /// ```
     static func consume_bool<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
-
-        alt:
-        do {
-            guard stream.isNext("bool") else {
-                return false
-            }
-            stream.advance(4)
-
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
-                break alt
-            }
-            return true
-        }
-
-        stream.restore(state)
-
-        return false
+        stream.advanceIfNext("bool")
     }
 
     /// ```
     /// break[".break"]:
-    ///     | "break" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     | "break"
     ///     ;
     /// ```
     static func consume_break<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
-
-        alt:
-        do {
-            guard stream.isNext("break") else {
-                return false
-            }
-            stream.advance(5)
-
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
-                break alt
-            }
-            return true
-        }
-
-        stream.restore(state)
-
-        return false
+        stream.advanceIfNext("break")
     }
 
     /// ```
     /// case[".case"]:
-    ///     | "case" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     | "case"
     ///     ;
     /// ```
     static func consume_case<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
-
-        alt:
-        do {
-            guard stream.isNext("case") else {
-                return false
-            }
-            stream.advance(4)
-
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
-                break alt
-            }
-            return true
-        }
-
-        stream.restore(state)
-
-        return false
+        stream.advanceIfNext("case")
     }
 
     /// ```
     /// char[".char"]:
-    ///     | "char" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     | "char"
     ///     ;
     /// ```
     static func consume_char<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
-
-        alt:
-        do {
-            guard stream.isNext("char") else {
-                return false
-            }
-            stream.advance(4)
-
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
-                break alt
-            }
-            return true
-        }
-
-        stream.restore(state)
-
-        return false
+        stream.advanceIfNext("char")
     }
 
     /// ```
     /// constexpr[".constexpr"]:
-    ///     | "constexpr" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     | "constexpr"
     ///     ;
     /// ```
     static func consume_constexpr<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
-
-        alt:
-        do {
-            guard stream.isNext("constexpr") else {
-                return false
-            }
-            stream.advance(9)
-
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
-                break alt
-            }
-            return true
-        }
-
-        stream.restore(state)
-
-        return false
+        stream.advanceIfNext("constexpr")
     }
 
     /// ```
     /// const[".const"]:
-    ///     | "const" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     | "const"
     ///     ;
     /// ```
     static func consume_const<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
-
-        alt:
-        do {
-            guard stream.isNext("const") else {
-                return false
-            }
-            stream.advance(5)
-
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
-                break alt
-            }
-            return true
-        }
-
-        stream.restore(state)
-
-        return false
+        stream.advanceIfNext("const")
     }
 
     /// ```
     /// continue[".continue"]:
-    ///     | "continue" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     | "continue"
     ///     ;
     /// ```
     static func consume_continue<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
-
-        alt:
-        do {
-            guard stream.isNext("continue") else {
-                return false
-            }
-            stream.advance(8)
-
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
-                break alt
-            }
-            return true
-        }
-
-        stream.restore(state)
-
-        return false
+        stream.advanceIfNext("continue")
     }
 
     /// ```
     /// default[".default"]:
-    ///     | "default" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     | "default"
     ///     ;
     /// ```
     static func consume_default<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
-
-        alt:
-        do {
-            guard stream.isNext("default") else {
-                return false
-            }
-            stream.advance(7)
-
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
-                break alt
-            }
-            return true
-        }
-
-        stream.restore(state)
-
-        return false
+        stream.advanceIfNext("default")
     }
 
     /// ```
     /// do[".do"]:
-    ///     | "do" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     | "do"
     ///     ;
     /// ```
     static func consume_do<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
-
-        alt:
-        do {
-            guard stream.isNext("do") else {
-                return false
-            }
-            stream.advance(2)
-
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
-                break alt
-            }
-            return true
-        }
-
-        stream.restore(state)
-
-        return false
+        stream.advanceIfNext("do")
     }
 
     /// ```
     /// typeof[".typeof"]:
-    ///     | "typeof" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     | "typeof"
     ///     ;
     /// ```
     static func consume_typeof<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
-
-        alt:
-        do {
-            guard stream.isNext("typeof") else {
-                return false
-            }
-            stream.advance(6)
-
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
-                break alt
-            }
-            return true
-        }
-
-        stream.restore(state)
-
-        return false
+        stream.advanceIfNext("typeof")
     }
 
     /// ```
     /// union[".union"]:
-    ///     | "union" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     | "union"
     ///     ;
     /// ```
     static func consume_union<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
-
-        alt:
-        do {
-            guard stream.isNext("union") else {
-                return false
-            }
-            stream.advance(5)
-
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
-                break alt
-            }
-            return true
-        }
-
-        stream.restore(state)
-
-        return false
+        stream.advanceIfNext("union")
     }
 
     /// ```
     /// unsigned[".unsigned"]:
-    ///     | "unsigned" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     | "unsigned"
     ///     ;
     /// ```
     static func consume_unsigned<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
-
-        alt:
-        do {
-            guard stream.isNext("unsigned") else {
-                return false
-            }
-            stream.advance(8)
-
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
-                break alt
-            }
-            return true
-        }
-
-        stream.restore(state)
-
-        return false
+        stream.advanceIfNext("unsigned")
     }
 
     /// ```
     /// void[".void"]:
-    ///     | "void" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     | "void"
     ///     ;
     /// ```
     static func consume_void<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
-
-        alt:
-        do {
-            guard stream.isNext("void") else {
-                return false
-            }
-            stream.advance(4)
-
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
-                break alt
-            }
-            return true
-        }
-
-        stream.restore(state)
-
-        return false
+        stream.advanceIfNext("void")
     }
 
     /// ```
     /// volatile[".volatile"]:
-    ///     | "volatile" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     | "volatile"
     ///     ;
     /// ```
     static func consume_volatile<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
-
-        alt:
-        do {
-            guard stream.isNext("volatile") else {
-                return false
-            }
-            stream.advance(8)
-
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
-                break alt
-            }
-            return true
-        }
-
-        stream.restore(state)
-
-        return false
+        stream.advanceIfNext("volatile")
     }
 
     /// ```
     /// while[".while"]:
-    ///     | "while" !"0"..."9" !"a"..."z" !"A"..."Z" !"_"
+    ///     | "while"
     ///     ;
     /// ```
     static func consume_while<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
-
-        alt:
-        do {
-            guard stream.isNext("while") else {
-                return false
-            }
-            stream.advance(5)
-
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
-                break alt
-            }
-            return true
-        }
-
-        stream.restore(state)
-
-        return false
+        stream.advanceIfNext("while")
     }
 
     /// ```

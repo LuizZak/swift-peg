@@ -172,11 +172,14 @@ extension SwiftCodeGen {
         generateAccessLevel(settings: settings)
         buffer.emitWithSeparators(modifiers + ["func"], separator: " ")
         try buffer.emitBlock(" from<StringType>(stream: inout StringStream<StringType>) -> Self? where StringType.SubSequence == Substring") {
-            try generateTokenTypeParserBody(sortedTokens: sortedTokens)
+            try generateTokenTypeParserBody(settings: settings, sortedTokens: sortedTokens)
         }
     }
 
-    func generateTokenTypeParserBody(sortedTokens: [InternalGrammar.TokenDefinition]) throws {
+    func generateTokenTypeParserBody(
+        settings: TokenTypeGenSettings,
+        sortedTokens: [InternalGrammar.TokenDefinition]
+    ) throws {
         buffer.emitLine("guard !stream.isEof else { return nil }")
         buffer.emitLine("stream.markSubstringStart()")
         buffer.ensureDoubleNewline()
@@ -192,18 +195,56 @@ extension SwiftCodeGen {
         }
 
         for token in nonDependants.filter(showEmitInTokenParser) {
-            try generateTokenParseCheck(token, emittedTokenNames: &emittedTokenNames)
+            try generateTokenParseCheck(
+                settings: settings,
+                token,
+                emittedTokenNames: &emittedTokenNames
+            )
         }
 
         buffer.ensureDoubleNewline()
         buffer.emitLine("return nil")
     }
 
-    func generateTokenParseCheck(_ token: InternalGrammar.TokenDefinition, emittedTokenNames: inout Set<String>) throws {
+    func generateTokenParseCheck(
+        settings: TokenTypeGenSettings,
+        _ token: InternalGrammar.TokenDefinition,
+        emittedTokenNames: inout Set<String>
+    ) throws {
+
         func returnExpForToken(_ token: InternalGrammar.TokenDefinition) -> String {
             let tokenName = caseName(for: token)
 
             return ".init(kind: .\(tokenName), string: stream.substring)"
+        }
+
+        func emitDependantCases(_ dependants: [InternalGrammar.TokenDefinition]) throws {
+            for dependant in dependants {
+                guard let staticTerminal = dependant.tokenSyntax?.staticTerminal() else {
+                    throw Error.tokenDependantIsNotStatic(token, dependant: dependant)
+                }
+
+                buffer.emitLine("case \(staticTerminal.asStringLiteral):")
+                buffer.indented {
+                    buffer.emitLine("return \(returnExpForToken(dependant))")
+                }
+            }
+        }
+
+        func emitDependantsSwitch(
+            defaultReturnStmt: String,
+            _ dependants: [InternalGrammar.TokenDefinition]
+        ) throws {
+            buffer.emitLine("switch stream.substring {")
+
+            try emitDependantCases(dependants.sorted(by: { $0.name < $1.name }))
+
+            buffer.emitLine("default:")
+            buffer.indented {
+                buffer.emitLine(defaultReturnStmt)
+            }
+
+            buffer.emitLine("}")
         }
 
         defer { emittedTokenNames.insert(token.name) }
@@ -219,6 +260,8 @@ extension SwiftCodeGen {
                 processedGrammar.tokens.first(where: { $0.name == name })
             })
 
+        emittedTokenNames.formUnion(dependants.map(\.name))
+
         try buffer.emitBlock("if \(parseInvocation)") {
             let returnStmt = "return \(returnExpForToken(token))"
 
@@ -227,23 +270,46 @@ extension SwiftCodeGen {
                 return
             }
 
+            guard settings.emitLengthSwitchPhaseInTokenOcclusionSwitch else {
+                try emitDependantsSwitch(defaultReturnStmt: returnStmt, dependants)
+                return
+            }
+
             // Emit a switch over the stream's substring to move the result into
-            // dependant's static terminals
-            buffer.emitLine("switch stream.substring {")
-
-            for dependant in dependants where dependant.tokenSyntax?.isStatic() == true {
-                guard emittedTokenNames.insert(dependant.name).inserted else {
-                    continue
-                }
-
+            // dependant's static terminals. If the number if dependants is below
+            // a certain threshold, generate one switch, otherwise, generate a
+            // switch over the different lengths of dependants to make the process
+            // more granular.
+            var byLength: [Int: [InternalGrammar.TokenDefinition]] = [:]
+            for dependant in dependants {
                 guard let staticTerminal = dependant.tokenSyntax?.staticTerminal() else {
                     throw Error.tokenDependantIsNotStatic(token, dependant: dependant)
                 }
 
-                buffer.emitLine("case \(staticTerminal.asStringLiteral):")
-                buffer.indented {
-                    buffer.emitLine("return \(returnExpForToken(dependant))")
+                byLength[staticTerminal.contents.count, default: []].append(dependant)
+            }
+
+            guard
+                byLength.count >= 3,
+                byLength.contains(where: { $0.value.count > 1 })
+            else {
+                try emitDependantsSwitch(defaultReturnStmt: returnStmt, dependants)
+                return
+            }
+
+            buffer.emitLine("switch stream.substringLength {")
+
+            for (length, dependants) in byLength.sorted(by: { $0.key > $1.key }) {
+                buffer.emitLine("case \(length):")
+
+                try buffer.indented {
+                    try emitDependantsSwitch(
+                        defaultReturnStmt: returnStmt,
+                        dependants
+                    )
                 }
+
+                buffer.ensureDoubleNewline()
             }
 
             buffer.emitLine("default:")

@@ -26,6 +26,16 @@ public struct StringStream<StringType: StringProtocol> {
         source[range]
     }
 
+    /// Returns the length of the substring in `self.substring`.
+    @inlinable
+    public var substringLength: Int {
+        guard substringStartIndex < index else {
+            return 0
+        }
+
+        return source.distance(from: substringStartIndex, to: index)
+    }
+
     /// Returns `true` if the current index points past the end of the indexable
     /// space of the string.
     @inlinable
