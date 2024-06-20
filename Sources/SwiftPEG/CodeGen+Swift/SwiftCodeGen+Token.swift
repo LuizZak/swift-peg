@@ -1097,28 +1097,33 @@ extension SwiftCodeGen {
     private static func _sortTokens(_ tokens: [InternalGrammar.TokenDefinition]) -> [InternalGrammar.TokenDefinition] {
         // Generate a graph of prefix-dependencies
         var byName: [String: InternalGrammar.TokenDefinition] = [:]
-        for token in tokens {
+        var nameLookup: [Int: String] = [:]
+        for (i, token) in tokens.enumerated() {
             byName[token.name] = token
+            nameLookup[i] = token.name
         }
 
-        var graph = StringDirectedGraph()
-        graph.addNodes(byName.keys)
+        var graph = IntDirectedGraph()
+        graph.addNodes(nameLookup.keys)
 
-        for token in tokens {
+        func tokenForNode(_ node: Int) -> InternalGrammar.TokenDefinition {
+            tokens[node]
+        }
+        func nameForNode(_ node: Int) -> String {
+            tokens[node].name
+        }
+
+        for (i, token) in tokens.enumerated() {
             guard let tokenSyntax = token.tokenSyntax else {
                 continue
             }
-            guard let tokenNode = graph.nodes.first(where: { $0 == token.name }) else {
-                continue
-            }
+            let tokenNode = i
 
-            for other in tokens where token.name != other.name {
+            for (i, other) in tokens.enumerated() where token.name != other.name {
                 guard let otherSyntax = other.tokenSyntax else {
                     continue
                 }
-                guard let otherNode = graph.nodes.first(where: { $0 == other.name }) else {
-                    continue
-                }
+                let otherNode = i
 
                 if tokenSyntax.isPrefix(of: otherSyntax) && !otherSyntax.isPrefix(of: tokenSyntax) {
                     graph.addEdge(from: otherNode, to: tokenNode)
@@ -1134,7 +1139,7 @@ extension SwiftCodeGen {
             }
         }
 
-        guard var sorted = graph.topologicalSorted(breakTiesWith: <)?.compactMap({ byName[$0] }) else {
+        guard var sorted = graph.topologicalSorted(breakTiesWith: { nameForNode($0) < nameForNode($1) })?.compactMap(tokenForNode) else {
             // TODO: Apply some fallback strategy
             return tokens
         }

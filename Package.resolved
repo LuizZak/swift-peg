@@ -1,5 +1,5 @@
 {
-  "originHash" : "0298d36c86dc2453f5dcf1f24a1c1456b3c1d9d44353ebbcaea67749f4a58c44",
+  "originHash" : "4b52ca36d907b924375906e7581d08bb641891c51b5d921dd28dfc7d2fbccd93",
   "pins" : [
     {
       "identity" : "console",
@@ -15,8 +15,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/LuizZak/MiniDigraph.git",
       "state" : {
-        "revision" : "e1314571b60a17563d8c847fde19e4cd545b16ec",
-        "version" : "0.2.1"
+        "revision" : "157ca2c337ea0fef68f8e8d12144726a63c48b92",
+        "version" : "0.5.0"
       }
     },
     {

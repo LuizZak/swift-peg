@@ -77,13 +77,14 @@ protocol FixtureTestContext {
 extension FixtureTestContext {
     func diffTest(
         expected input: String,
-        lineOffset: Int
+        lineOffset: Int,
+        diffOnly: Bool = false
     ) -> DiffingTest {
         diffTest(
             expected: input,
             lineOffset: lineOffset,
             highlightLineInEditor: true,
-            diffOnly: false
+            diffOnly: diffOnly
         )
     }
 }

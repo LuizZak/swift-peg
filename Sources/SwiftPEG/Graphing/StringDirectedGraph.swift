@@ -1,3 +1,3 @@
 import MiniDigraph
 
-typealias StringDirectedGraph = DirectedGraph<String>
+typealias StringDirectedGraph = CachingDirectedGraph<String, DirectedGraph<String>.Edge>

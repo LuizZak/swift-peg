@@ -68,12 +68,14 @@ extension FixtureTestRunner {
             let processed = try context.processGrammar(grammarToTest)
             let codeGen = SwiftCodeGen(from: processed)
             let settings = file.test_parserSettings()
+            let shortMessages = file.test_shortMessages()
 
             let parser = try codeGen.generateParser(settings: settings).trimmingWhitespaceTrail()
 
             context.diffTest(
                 expected: value,
-                lineOffset: 0
+                lineOffset: 0,
+                diffOnly: shortMessages
             ).diff(parser)
         }
     }
@@ -107,18 +109,25 @@ extension FixtureTestRunner {
             let processed = try context.processGrammar(grammarToTest)
             let codeGen = SwiftCodeGen(from: processed)
             let settings = file.test_tokenTypeSettings()
+            let shortMessages = file.test_shortMessages()
 
             let parser = try codeGen.generateTokenType(settings: settings).trimmingWhitespaceTrail()
 
             context.diffTest(
                 expected: value,
-                lineOffset: 0
+                lineOffset: 0,
+                diffOnly: shortMessages
             ).diff(parser)
         }
     }
 }
 
 extension SwiftPEGGrammar.Grammar {
+    /// `@shortMessages`
+    func test_shortMessages() -> Bool {
+        return test_metaProperty(named: "shortMessages") != nil
+    }
+
     /// `@expectedParser <value>`
     func test_expectedParser() -> String? {
         return test_stringOrIdentMetaValue(named: FixtureTestRunner.expectedParserProp)
@@ -130,6 +139,7 @@ extension SwiftPEGGrammar.Grammar {
     }
 
     /// `@omitRedundantMarkRestores <true/false>`
+    /// `@emitTypesInBindings <true/false>`
     func test_parserSettings() -> SwiftCodeGen.ParserGenSettings {
         var settings = SwiftCodeGen.ParserGenSettings.default
 
@@ -143,10 +153,22 @@ extension SwiftPEGGrammar.Grammar {
         return settings
     }
 
-    /// Currently empty; might contain support for token type generation settings
-    /// later.
+    /// `@expectedTokenType_accessLevel <true/false>`
+    /// `@expectedTokenType_emitInlinable <true/false>`
+    /// `@expectedTokenType_emitLengthSwitchPhaseInTokenOcclusionSwitch <true/false>`
     func test_tokenTypeSettings() -> SwiftCodeGen.TokenTypeGenSettings {
-        let settings = SwiftCodeGen.TokenTypeGenSettings.default
+        var settings = SwiftCodeGen.TokenTypeGenSettings.default
+
+        if let accessLevel = test_stringOrIdentMetaValue(named: "expectedTokenType_accessLevel") {
+            settings.accessLevel = accessLevel
+        }
+        if let emitInlinable = test_stringOrIdentMetaValue(named: "expectedTokenType_emitInlinable") {
+            settings.emitInlinable = emitInlinable == "true"
+        }
+        if let emitLengthSwitchPhaseInTokenOcclusionSwitch = test_stringOrIdentMetaValue(named: "expectedTokenType_emitLengthSwitchPhaseInTokenOcclusionSwitch") {
+            settings.emitLengthSwitchPhaseInTokenOcclusionSwitch = emitLengthSwitchPhaseInTokenOcclusionSwitch == "true"
+        }
+
         return settings
     }
 }
