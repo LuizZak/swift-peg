@@ -1,9 +1,27 @@
 /// Provides interpreting capabilities to `InternalGrammar.TokenDefinition` objects.
 public class TokenSyntaxInterpreter {
+    /// A cache for tokens that where reduced to a regular expression object.
+    ///
+    /// If a previous conversion attempt failed, the entry for the token's name
+    /// is `nil`.
+    internal var regexCache: [String: RegexCacheEntry?] = [:]
+
     let tokenDefinitions: [InternalGrammar.TokenDefinition]
 
     public init(tokenDefinitions: [InternalGrammar.TokenDefinition]) {
         self.tokenDefinitions = tokenDefinitions
+    }
+
+    /// Returns `true` if the given token definition parses the given input string
+    /// fully. Returns `false` if parsing fails, or if the token parses but stops
+    /// before consuming the entire input.
+    func tokenFullyParses(_ token: InternalGrammar.TokenDefinition, input: String) -> Bool {
+        do {
+            var stream = StringStream(source: input)
+            return try parse(token, from: &stream) && stream.isEof
+        } catch {
+            return false
+        }
     }
 
     /// Returns `true` if the given token syntax parses the given input string
@@ -25,7 +43,7 @@ public class TokenSyntaxInterpreter {
     /// Fragments are skipped by the method.
     public func parseToken<StringType: StringProtocol>(
         from stream: inout StringStream<StringType>
-    ) throws -> (tokenName: String, substring: StringType.SubSequence)? {
+    ) throws -> (tokenName: String, substring: StringType.SubSequence)? where StringType.SubSequence == Substring {
 
         let initialState = stream.save()
 
@@ -74,7 +92,7 @@ public class TokenSyntaxInterpreter {
     public func parse<StringType: StringProtocol>(
         tokenNamed name: String,
         from stream: inout StringStream<StringType>
-    ) throws -> Bool {
+    ) throws -> Bool where StringType.SubSequence == Substring {
         guard let token = token(named: name) else {
             throw Error.unknownTokenName(name)
         }
@@ -91,7 +109,12 @@ public class TokenSyntaxInterpreter {
     func parse<StringType: StringProtocol>(
         _ token: InternalGrammar.TokenDefinition,
         from stream: inout StringStream<StringType>
-    ) throws -> Bool {
+    ) throws -> Bool where StringType.SubSequence == Substring {
+
+        if let regex = self.regexConversion(for: token) {
+            return stream.advanceIfNext(matches: regex)
+        }
+
         guard let syntax = token.tokenSyntax else {
             throw Error.missingSyntax(tokenName: token.name)
         }
@@ -105,7 +128,8 @@ public class TokenSyntaxInterpreter {
     func parse<StringType: StringProtocol>(
         _ syntax: CommonAbstract.TokenSyntax,
         from stream: inout StringStream<StringType>
-    ) throws -> Bool {
+    ) throws -> Bool where StringType.SubSequence == Substring {
+
         let parser = InternalParser(interpreter: self, stream: stream)
 
         if try parser.parse(syntax) {
@@ -116,11 +140,15 @@ public class TokenSyntaxInterpreter {
         return false
     }
 
-    private func token(named name: String) -> InternalGrammar.TokenDefinition? {
+    internal func token(named name: String) -> InternalGrammar.TokenDefinition? {
         tokenDefinitions.first(where: { $0.name == name })
     }
 
-    private class InternalParser<StringType: StringProtocol> {
+    internal func cachedRegex(for token: InternalGrammar.TokenDefinition) -> RegexCacheEntry?? {
+        regexCache[token.name]
+    }
+
+    private class InternalParser<StringType: StringProtocol> where StringType.SubSequence == Substring {
         typealias Stream = StringStream<StringType>
 
         let interpreter: TokenSyntaxInterpreter
@@ -284,10 +312,6 @@ public class TokenSyntaxInterpreter {
         }
 
         func parse(_ terminal: CommonAbstract.TokenTerminal) throws -> Bool {
-            guard !stream.isEof else {
-                return false
-            }
-
             switch terminal {
             case .characterPredicate(let c, let predicate):
                 throw Error.characterPredicateUnsupported("\(c) {\(predicate)}")
@@ -296,9 +320,13 @@ public class TokenSyntaxInterpreter {
                 return try interpreter.parse(tokenNamed: ident, from: &stream)
 
             case .literal(let literal):
+                guard !stream.isEof else { return false }
+
                 return stream.advanceIfNext(literal.contents)
 
             case .rangeLiteral(let low, let high):
+                guard !stream.isEof else { return false }
+
                 let range = try makeRange(start: low, end: high)
 
                 if stream.isNextInRange(range) {
@@ -309,6 +337,8 @@ public class TokenSyntaxInterpreter {
                 return false
 
             case .any:
+                guard !stream.isEof else { return false }
+
                 stream.advance()
                 return true
             }
@@ -329,13 +359,17 @@ public class TokenSyntaxInterpreter {
         }
     }
 
-    enum Error: Swift.Error, CustomStringConvertible {
+    internal struct RegexCacheEntry {
+        var regex: Regex<Substring>
+    }
+
+    public enum Error: Swift.Error, CustomStringConvertible {
         case characterPredicateUnsupported(String)
         case incompatibleRangeLiteral(String)
         case unknownTokenName(String)
         case missingSyntax(tokenName: String)
 
-        var description: String {
+        public var description: String {
             switch self {
             case .characterPredicateUnsupported(let msg):
                 return """

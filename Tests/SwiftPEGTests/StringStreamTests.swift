@@ -263,6 +263,22 @@ class StringStreamTests: XCTestCase {
         sut.advance(0)
         assertEqual(sut.index, makeIndex(sut, 3))
     }
+
+    func testAdvanceIfNextMatches() {
+        var sut = makeSut("abcdefg")
+
+        assertTrue(sut.advanceIfNext(matches: #/abc/#))
+        assertEqual(sut.index, makeIndex(sut, 3))
+        assertTrue(sut.advanceIfNext(matches: #/def/#))
+        assertEqual(sut.index, makeIndex(sut, 6))
+    }
+
+    func testAdvanceIfNextMatches_noMatch() {
+        var sut = makeSut("abcdefg")
+
+        assertFalse(sut.advanceIfNext(matches: #/def/#))
+        assertEqual(sut.index, makeIndex(sut, 0))
+    }
 }
 
 // MARK: - Test internals

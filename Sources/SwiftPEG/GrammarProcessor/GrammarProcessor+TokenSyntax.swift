@@ -57,13 +57,10 @@ extension GrammarProcessor {
         let dynamicTokens = nonFragmentTokens.filter({ $0.tokenSyntax?.isStatic() == false })
 
         let interpreter = TokenSyntaxInterpreter(tokenDefinitions: tokens)
-        for dynamicToken in dynamicTokens {
-            guard let tokenSyntax = dynamicToken.tokenSyntax else {
-                continue
-            }
 
+        for dynamicToken in dynamicTokens {
             for (literal, staticTokens) in staticTokensByLiteral {
-                guard interpreter.tokenSyntaxFullyParses(tokenSyntax, input: literal) else {
+                guard interpreter.tokenFullyParses(dynamicToken, input: literal) else {
                     continue
                 }
 

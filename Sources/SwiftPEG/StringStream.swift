@@ -184,6 +184,38 @@ public struct StringStream<StringType: StringProtocol> {
     }
 }
 
+extension StringStream where StringType.SubSequence == Substring {
+    /// Advances the stream if the given regex matches at the current string's
+    /// position.
+    @inlinable
+    public mutating func advanceIfNext(matches regex: Regex<Substring>) -> Bool {
+        let remaining = source[index...]
+        guard let match = remaining.prefixMatch(of: regex) else {
+            return false
+        }
+
+        let length = match.count
+        advance(length)
+
+        return true
+    }
+
+    /// Advances the stream if the given regex matches at the current string's
+    /// position.
+    @inlinable
+    public mutating func advanceIfNext(matches regex: Regex<AnyRegexOutput>) -> Bool {
+        let remaining = source[index...]
+        guard let match = remaining.prefixMatch(of: regex) else {
+            return false
+        }
+
+        let length = match.output.count
+        advance(length)
+
+        return true
+    }
+}
+
 extension StringStream {
     @usableFromInline
     func debugDisplay() -> String {

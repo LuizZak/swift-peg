@@ -84,6 +84,26 @@ class TokenSyntaxInterpreterTests: XCTestCase {
         assertParses(sut, tokens[0], input: "b")
     }
 
+    func testParse_identifier_optionalProduction_inOneOrMore() throws {
+        let tokens = try parseTokenDefinitions(#"""
+        $a: b+ ;
+        $b: 'b'? ;
+        """#)
+        let sut = makeSut(tokens)
+
+        assertParses(sut, tokens[0], input: "")
+    }
+
+    func testParse_identifier_optionalProduction_inZeroOrMore() throws {
+        let tokens = try parseTokenDefinitions(#"""
+        $a: b* ;
+        $b: 'b'? ;
+        """#)
+        let sut = makeSut(tokens)
+
+        assertParses(sut, tokens[0], input: "")
+    }
+
     func testParse_any() throws {
         let tokens = try parseTokenDefinitions(#"""
         $a: . ;
@@ -184,7 +204,7 @@ class TokenSyntaxInterpreterTests: XCTestCase {
 
         assertParses(sut, tokens[0], input: "ab")
         assertParses(sut, tokens[0], input: "abb")
-        assertDoesNotParse(sut, tokens[0], input: "a")
+        assertParses(sut, tokens[0], input: "a")
         assertDoesNotParse(sut, tokens[0], input: "")
         assertDoesNotParse(sut, tokens[0], input: "ba")
     }
