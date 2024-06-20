@@ -197,14 +197,18 @@ extension TokenSyntaxInterpreter {
                 return nil
             }
 
+            guard !atom.excluded.isEmpty else {
+                return terminal
+            }
+
             if let exclusion = convert(exclusions: atom.excluded) {
                 return Regex {
                     exclusion
                     terminal
                 }
-            } else {
-                return terminal
             }
+
+            return nil
         }
 
         func convert(exclusions: some Collection<CommonAbstract.TokenExclusion>) -> Regex<Substring>? {
