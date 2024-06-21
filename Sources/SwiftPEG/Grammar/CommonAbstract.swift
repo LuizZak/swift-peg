@@ -10,7 +10,11 @@ public enum CommonAbstract {
         /// A dual string that originated from parsing a SwiftPEG grammar file,
         /// with both the parsed contents and the original string, with quotes,
         /// as found in the source code.
-        case fromSource(contents: String, original: String, location: any (Hashable & Comparable))
+        case fromSource(
+            contents: String,
+            original: String,
+            location: any (Hashable & Comparable)
+        )
 
         /// A dual string that contains only a raw representation, and was generated
         /// by code.
