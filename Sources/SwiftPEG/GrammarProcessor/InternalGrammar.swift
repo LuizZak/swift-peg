@@ -1,8 +1,8 @@
 public enum InternalGrammar {
     /// ```
     /// tokenDefinition:
-    ///     | tokenOrFragmentSpecifier name=IDENTIFIER '[' staticToken=STRING ']' ':' ~ tokenSyntax ';'
-    ///     | tokenOrFragmentSpecifier name=IDENTIFIER '[' staticToken=STRING ']' ';'
+    ///     | tokenOrFragmentSpecifier name=IDENTIFIER '[' tokenCodeReference=STRING ']' ':' ~ tokenSyntax ';'
+    ///     | tokenOrFragmentSpecifier name=IDENTIFIER '[' tokenCodeReference=STRING ']' ';'
     ///     | tokenOrFragmentSpecifier name=IDENTIFIER ':' ~ tokenSyntax ';'
     ///     | tokenOrFragmentSpecifier name=IDENTIFIER ';'
     ///     ;
@@ -20,7 +20,7 @@ public enum InternalGrammar {
         /// own in a token's lexing function.
         public var isFragment: Bool
 
-        public var staticToken: String?
+        public var tokenCodeReference: String?
 
         /// The syntax definition of this token.
         public var tokenSyntax: CommonAbstract.TokenSyntax?
@@ -66,11 +66,11 @@ public enum InternalGrammar {
         public var description: String {
             let prefix = isFragment ? "%" : "$"
 
-            switch (staticToken, tokenSyntax) {
-            case (let staticToken?, let tokenSyntax?):
-                return #"\#(prefix)\#(name)["\#(staticToken)"]: \#(tokenSyntax) ;"#
-            case (let staticToken?, nil):
-                return #"\#(prefix)\#(name)["\#(staticToken)"] ;"#
+            switch (tokenCodeReference, tokenSyntax) {
+            case (let tokenCodeReference?, let tokenSyntax?):
+                return #"\#(prefix)\#(name)[\#(tokenCodeReference.debugDescription)]: \#(tokenSyntax) ;"#
+            case (let tokenCodeReference?, nil):
+                return #"\#(prefix)\#(name)[\#(tokenCodeReference.debugDescription)] ;"#
             case (nil, let tokenSyntax?):
                 return #"\#(prefix)\#(name) : \#(tokenSyntax) ;"#
             case (nil, nil):
@@ -91,7 +91,7 @@ public enum InternalGrammar {
             .init(
                 name: String(node.name.string),
                 isFragment: node.isFragment,
-                staticToken: node.staticToken.map({ $0.rawContents() }),
+                tokenCodeReference: node.tokenCodeReference.map({ $0.rawContents() }),
                 tokenSyntax: node.tokenSyntax
             )
         }

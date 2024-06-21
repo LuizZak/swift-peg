@@ -76,7 +76,7 @@ class CommonAbstract_TokenItemTests: XCTestCase {
         assertIsPrefix(sut, makeSut(zeroOrMore: ["a", "b", "c"]))
         try assertIsPrefix(parsing: #"("a"..."d")"#, makeSut(oneOrMore: ["a"..."d"]))
         assertIsNotPrefix(sut, makeSut(atom: "abc"))
-        assertIsNotPrefix(sut, makeSut(oneOrMore: [.init(excluded: [.string("b")], terminal: "a"..."c")]))
+        assertIsNotPrefix(sut, makeSut(oneOrMore: [.init(excluded: [.literal("b")], terminal: "a"..."c")]))
     }
 
     func testIsPrefix_optionalAtom() throws {
@@ -96,15 +96,16 @@ class CommonAbstract_TokenItemTests: XCTestCase {
         assertIsPrefix(sut, makeSut(zeroOrMore: ["abcd"]))
         assertIsPrefix(sut, makeSut(oneOrMore: ["abcd"]))
         assertIsPrefix(sut, makeSut(oneOrMore: [.init(terminal: .any)]))
+        assertIsPrefix(sut, makeSut(oneOrMore: [.init(excluded: [.literal("abcd")], terminal: .any)]))
         try assertIsPrefix(sut, parsing: #"'abcd'?"#)
-        assertIsNotPrefix(sut, makeSut(oneOrMore: [.init(excluded: [.string("a")], terminal: .any)]))
-        assertIsNotPrefix(sut, makeSut(oneOrMore: [.init(excluded: [.string("abcd")], terminal: .any)]))
+        assertIsNotPrefix(sut, makeSut(oneOrMore: [.init(excluded: [.literal("a")], terminal: .any)]))
+        assertIsNotPrefix(sut, makeSut(oneOrMore: [.init(excluded: [.literal("abc")], terminal: .any)]))
         assertIsNotPrefix(sut, makeSut(group: ["a", "b", "c", "d"]))
         assertIsNotPrefix(sut, makeSut(terminal: .any))
         assertIsNotPrefix(sut, makeSut(oneOrMore: ["a", "b", "c"]))
         assertIsNotPrefix(sut, makeSut(oneOrMore: ["a"..."c"]))
         assertIsNotPrefix(sut, makeSut(zeroOrMore: ["a", "b", "c"]))
-        assertIsNotPrefix(sut, makeSut(oneOrMore: [.init(excluded: [.string("b")], terminal: "a"..."c")]))
+        assertIsNotPrefix(sut, makeSut(oneOrMore: [.init(excluded: [.literal("b")], terminal: "a"..."c")]))
     }
 }
 

@@ -38,6 +38,28 @@ class StringStreamTests: XCTestCase {
         assertEqual(sut.substring, "b")
     }
 
+    func testSubstringLength_atStart_returnsZero() {
+        let sut = makeSut("a")
+
+        assertEqual(sut.substringLength, 0)
+    }
+
+    func testSubstringLength_nonStart() {
+        var sut = makeSut("abc")
+        sut.advance()
+
+        assertEqual(sut.substringLength, 1)
+    }
+
+    func testSubstringLength_negativeRange() {
+        var sut = makeSut("abc")
+        sut.advance()
+        sut.markSubstringStart()
+        sut.advance(-1)
+
+        assertEqual(sut.substringLength, 0)
+    }
+
     func testIsEof_emptyString_returnsTrue() {
         let sut = makeSut("")
 
@@ -240,6 +262,22 @@ class StringStreamTests: XCTestCase {
         assertEqual(sut.index, makeIndex(sut, 3))
         sut.advance(0)
         assertEqual(sut.index, makeIndex(sut, 3))
+    }
+
+    func testAdvanceIfNextMatches() {
+        var sut = makeSut("abcdefg")
+
+        assertTrue(sut.advanceIfNext(matches: #/abc/#))
+        assertEqual(sut.index, makeIndex(sut, 3))
+        assertTrue(sut.advanceIfNext(matches: #/def/#))
+        assertEqual(sut.index, makeIndex(sut, 6))
+    }
+
+    func testAdvanceIfNextMatches_noMatch() {
+        var sut = makeSut("abcdefg")
+
+        assertFalse(sut.advanceIfNext(matches: #/def/#))
+        assertEqual(sut.index, makeIndex(sut, 0))
     }
 }
 

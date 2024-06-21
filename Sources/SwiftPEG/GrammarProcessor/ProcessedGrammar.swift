@@ -9,13 +9,21 @@ public struct ProcessedGrammar {
     /// The rule dependency graph for the grammar.
     public var ruleDependencyGraph: RuleDependencyGraph
 
+    /// The token occlusion graph for the grammar.
+    ///
+    /// Contains relationships between dynamic tokens and static tokens that they
+    /// also parse as.
+    public var tokenOcclusionGraph: TokenOcclusionGraph
+
     internal init(
         grammar: InternalGrammar.Grammar,
         tokens: [InternalGrammar.TokenDefinition],
-        ruleDependencyGraph: RuleDependencyGraph
+        ruleDependencyGraph: RuleDependencyGraph,
+        tokenOcclusionGraph: TokenOcclusionGraph
     ) {
         self.grammar = grammar
         self.tokens = tokens
         self.ruleDependencyGraph = ruleDependencyGraph
+        self.tokenOcclusionGraph = tokenOcclusionGraph
     }
 }

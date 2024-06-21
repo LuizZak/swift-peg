@@ -83,7 +83,7 @@ public class GrammarProcessor {
         let knownRules = try validateRuleNames(in: grammar)
         let dependencyGraph = generateDependencyGraph(for: grammar, knownRules: knownRules)
         let tokensFile = try loadTokensFile(from: grammar)
-        let processedTokens = try validateTokenSyntaxes(tokensFile)
+        let (processedTokens, occlusionGraph) = try validateTokenSyntaxes(tokensFile)
 
         let (tokenNames, fragments) = try collectTokenNames(in: grammar, tokensFile: tokensFile)
         try validateReferences(in: grammar, tokens: tokenNames, fragments: fragments)
@@ -100,7 +100,8 @@ public class GrammarProcessor {
         return ProcessedGrammar(
             grammar: internalGrammar,
             tokens: processedTokens,
-            ruleDependencyGraph: dependencyGraph
+            ruleDependencyGraph: dependencyGraph,
+            tokenOcclusionGraph: occlusionGraph
         )
     }
 
@@ -217,7 +218,7 @@ public class GrammarProcessor {
             let tokenName = String(token.name.string)
 
             if token.isFragment {
-                if token.staticToken != nil {
+                if token.tokenCodeReference != nil {
                     diagnostics.append(.fragmentSpecifiesStaticToken(token: token))
                 }
 
@@ -476,6 +477,13 @@ public class GrammarProcessor {
             token: SwiftPEGGrammar.TokenDefinition
         )
 
+        /// A token atom has a combination of exclusion + terminal that results
+        /// in no input ever matching.
+        case unfulfillableAtomInToken(
+            token: SwiftPEGGrammar.TokenDefinition,
+            CommonAbstract.TokenAtom
+        )
+
         /// An alt of a token that executes before another, if it succeeds, will
         /// always prevent the other alt from being attempted.
         case tokenAltOrderIssue(
@@ -529,6 +537,13 @@ public class GrammarProcessor {
                     Token fragment %\(token.name) @ \(token.location) specifies \
                     a static token value, which is not relevant for fragments and \
                     will be ignored.
+                    """
+
+            case .unfulfillableAtomInToken(let token, let atom):
+                return """
+                    Token $\(token.name) @ \(token.location) contains atom '\(atom)' \
+                    which has a token terminal + exclusion that cannot ever be \
+                    fulfilled by any input, and will never match.
                     """
 
             case .tokenAltOrderIssue(let token, let prior, let former):

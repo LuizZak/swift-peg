@@ -1,14 +1,18 @@
 extension SwiftPEGGrammar {
+    /// A string that was parsed from a grammar file.
     public struct GrammarString: Hashable {
         internal var pieces: [Piece]
         internal var quote: Quote
+        internal var location: any (Hashable & Comparable)
 
         public init(
             pieces: [Piece],
-            quote: SwiftPEGGrammar.GrammarString.Quote
+            quote: Self.Quote,
+            location: any (Hashable & Comparable)
         ) {
             self.pieces = pieces
             self.quote = quote
+            self.location = location
         }
 
         /// Returns the contents of this grammar string as a raw string, with all
@@ -22,6 +26,15 @@ extension SwiftPEGGrammar {
             "\(quote.raw)\(pieces.map({$0.escaped(self.quote)}).joined())\(quote.raw)"
         }
 
+        public func hash(into hasher: inout Hasher) {
+            hasher.combine(quote)
+            hasher.combine(pieces)
+        }
+
+        public static func == (lhs: Self, rhs: Self) -> Bool {
+            lhs.quote == rhs.quote && lhs.pieces == rhs.pieces
+        }
+
         /// Attempts to construct a grammar string from a given string grammar
         /// token.
         ///
@@ -30,7 +43,11 @@ extension SwiftPEGGrammar {
         /// Throws errors if the token is not of 'string' token kind, if the
         /// terminators surrounding the string are not recognized, or if the
         /// string contains unrecognized escape sequences.
-        public static func fromStringToken(_ token: SwiftPEGGrammar.Token) throws -> Self {
+        public static func fromStringToken(
+            _ token: SwiftPEGGrammar.Token,
+            _ location: any (Hashable & Comparable)
+        ) throws -> Self {
+
             guard token.kind == .string else {
                 throw Error.unrecognizedStringToken
             }
@@ -99,11 +116,14 @@ extension SwiftPEGGrammar {
                 pieces.append(.literal(leadLiteral))
             }
 
-            return .init(pieces: pieces, quote: quote)
+            return .init(pieces: pieces, quote: quote, location: location)
         }
 
-        public static func fromStringToken<Raw>(_ token: Tokenizer<Raw>.Token) throws -> Self where Raw.RawToken == SwiftPEGGrammar.Token {
-            try .fromStringToken(token.rawToken)
+        public static func fromStringToken<Raw>(
+            _ token: Tokenizer<Raw>.Token
+        ) throws -> Self where Raw.RawToken == SwiftPEGGrammar.Token {
+
+            try .fromStringToken(token.rawToken, token.location)
         }
 
         /// Describes the quotes surrounding a grammar string literal.

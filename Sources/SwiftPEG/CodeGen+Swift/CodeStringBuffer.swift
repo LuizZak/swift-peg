@@ -128,6 +128,19 @@ public class CodeStringBuffer {
         emitRaw("\n")
     }
 
+    /// Emits the given text, first breaking up each line, then emitting the lines
+    /// one at a time with ``emitLine(_:)``.
+    ///
+    /// Indentation of the incoming text is appended to the current indentation
+    /// level of the buffer.
+    public func emitMultiline(_ text: some StringProtocol) {
+        let lines = text.split(separator: "\n", omittingEmptySubsequences: false)
+
+        for line in lines {
+            emitLine(line)
+        }
+    }
+
     /// Emits the given text on the current line and pushes a new line onto the
     /// buffer.
     public func emitLine(_ text: some StringProtocol) {
@@ -286,6 +299,9 @@ public class CodeStringBuffer {
 
     /// Ensures an empty line sits in the end of the buffer.
     /// If the buffer is empty, no change is made.
+    ///
+    /// Unless the buffer is empty, this function behaves exactly the same as
+    /// `ensureDoubleNewline()`.
     public func ensureEmptyLine() {
         guard !buffer.isEmpty else { return }
 

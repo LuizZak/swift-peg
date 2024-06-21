@@ -26,6 +26,16 @@ public struct StringStream<StringType: StringProtocol> {
         source[range]
     }
 
+    /// Returns the length of the substring in `self.substring`.
+    @inlinable
+    public var substringLength: Int {
+        guard substringStartIndex < index else {
+            return 0
+        }
+
+        return source.distance(from: substringStartIndex, to: index)
+    }
+
     /// Returns `true` if the current index points past the end of the indexable
     /// space of the string.
     @inlinable
@@ -162,7 +172,7 @@ public struct StringStream<StringType: StringProtocol> {
 
     /// Contains information about the state of a string stream, allowing for
     /// recording and reversing of the stream.
-    public struct State {
+    public struct State: Equatable {
         public var index: StringType.Index
         public var substringStartIndex: StringType.Index
 
@@ -171,6 +181,38 @@ public struct StringStream<StringType: StringProtocol> {
             self.index = index
             self.substringStartIndex = substringStartIndex
         }
+    }
+}
+
+extension StringStream where StringType.SubSequence == Substring {
+    /// Advances the stream if the given regex matches at the current string's
+    /// position.
+    @inlinable
+    public mutating func advanceIfNext(matches regex: Regex<Substring>) -> Bool {
+        let remaining = source[index...]
+        guard let match = remaining.prefixMatch(of: regex) else {
+            return false
+        }
+
+        let length = match.count
+        advance(length)
+
+        return true
+    }
+
+    /// Advances the stream if the given regex matches at the current string's
+    /// position.
+    @inlinable
+    public mutating func advanceIfNext(matches regex: Regex<AnyRegexOutput>) -> Bool {
+        let remaining = source[index...]
+        guard let match = remaining.prefixMatch(of: regex) else {
+            return false
+        }
+
+        let length = match.output.count
+        advance(length)
+
+        return true
     }
 }
 

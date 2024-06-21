@@ -332,6 +332,176 @@ class GrammarProcessor_TokenSyntaxTests: XCTestCase {
 
         assertEqual(processed.tokens, expected)
     }
+
+    func testTokenOcclusionGraph_noOcclusions() throws {
+        let delegate = stubDelegate(tokensFile: #"""
+        $a: 'abc' ;
+        $b: 'b'+ ;
+        """#)
+        let grammar = makeGrammar()
+        let sut = makeSut(delegate)
+
+        let processed = try sut.process(grammar)
+
+        assertEmpty(processed.tokenOcclusionGraph.nodes)
+        assertEmpty(processed.tokenOcclusionGraph.edges)
+    }
+
+    func testTokenOcclusionGraph_ignoresFragments_fragmentOccludesToken() throws {
+        let delegate = stubDelegate(tokensFile: #"""
+        $a: 'a' ;
+        %b: 'a'+ | 'a'+ ;
+        $c: !b 'b' ;
+        """#)
+        let grammar = makeGrammar()
+        let sut = makeSut(delegate)
+
+        let processed = try sut.process(grammar)
+
+        assertCount(processed.tokens, 3)
+        assertEmpty(processed.tokenOcclusionGraph.nodes)
+        assertEmpty(processed.tokenOcclusionGraph.edges)
+    }
+
+    func testTokenOcclusionGraph_ignoresFragments_tokenOccludesFragment() throws {
+        let delegate = stubDelegate(tokensFile: #"""
+        %a: 'a' ;
+        $b: 'a'+ | 'a'+ ;
+        $c: !b 'b' ;
+        """#)
+        let grammar = makeGrammar()
+        let sut = makeSut(delegate)
+
+        let processed = try sut.process(grammar)
+
+        assertCount(processed.tokens, 2)
+        assertEmpty(processed.tokenOcclusionGraph.nodes)
+        assertEmpty(processed.tokenOcclusionGraph.edges)
+    }
+
+    func testTokenOcclusionGraph_occlusion_doesNotCheckAlts() throws {
+        let delegate = stubDelegate(tokensFile: #"""
+        $a: 'a' | 'aa' | 'aaa';
+        $b: 'a'+ ;
+        $c ;
+        """#)
+        let grammar = makeGrammar()
+        let sut = makeSut(delegate)
+
+        let processed = try sut.process(grammar)
+
+        assertEmpty(processed.tokenOcclusionGraph.nodes)
+        assertEmpty(processed.tokenOcclusionGraph.edges)
+    }
+
+    func testTokenOcclusionGraph_partialOcclusion() throws {
+        let delegate = stubDelegate(tokensFile: #"""
+        $a: 'abc' ;
+        $b: 'a'+ ;
+        $c ;
+        """#)
+        let grammar = makeGrammar()
+        let sut = makeSut(delegate)
+
+        let processed = try sut.process(grammar)
+
+        assertEmpty(processed.tokenOcclusionGraph.nodes)
+        assertEmpty(processed.tokenOcclusionGraph.edges)
+    }
+
+    func testTokenOcclusionGraph_occlusion() throws {
+        let delegate = stubDelegate(tokensFile: #"""
+        $a: 'a' ;
+        $b: 'a'+ ;
+        $c ;
+        """#)
+        let grammar = makeGrammar()
+        let sut = makeSut(delegate)
+
+        let processed = try sut.process(grammar)
+
+        assertEqual(processed.tokenOcclusionGraph.nodes, [
+            "a", "b",
+        ])
+        assertEqual(processed.tokenOcclusionGraph.edges, [
+            .init(start: "b", end: "a"),
+        ])
+    }
+
+    func testDiagnostics_unfulfillableAtom() throws {
+        let delegate = stubDelegate(tokensFile: #"""
+        $a: !'a' 'a' ;
+        """#)
+        let grammar = makeGrammar()
+        let sut = makeSut(delegate)
+
+        _=try sut.process(grammar)
+
+        assertEqual(sut.test_diagnosticMessages(), """
+        Token $a @ line 1 column 1 contains atom '!'a' 'a'' which has a token \
+        terminal + exclusion that cannot ever be fulfilled by any input, and \
+        will never match.
+        """)
+    }
+
+#if PERFORMANCE_TESTS
+
+    func testTokenOcclusionGraph_performance_manyDynamicTokens_manyStaticTokens() throws {
+        let dynamicTokenCount = 1000
+        let staticTokenCount = 1000
+
+        // Data setup
+
+        var tokensFile = ""
+        var expectedNodes: Set<TokenOcclusionGraph.Node> = []
+        var expectedEdges: Set<TokenOcclusionGraph.Edge> = []
+
+        var dynamicTokens: [String] = []
+        var staticTokens: [String] = []
+
+        for i in 0..<dynamicTokenCount {
+            let name = "d\(i)"
+            let literal = "a\(i)"
+
+            dynamicTokens.append(name)
+
+            tokensFile += """
+            \n$\(name): "\(literal)"+ ;
+            """
+        }
+
+        for i in 0..<staticTokenCount {
+            let name = "s\(i)"
+            let literal = "a\(i)"
+
+            staticTokens.append(name)
+
+            tokensFile += """
+            \n$\(name): "\(literal)" ;
+            """
+        }
+
+        for (dynamicToken, staticToken) in zip(dynamicTokens, staticTokens) {
+            expectedNodes.insert(dynamicToken)
+            expectedNodes.insert(staticToken)
+            expectedEdges.insert(.init(start: dynamicToken, end: staticToken))
+        }
+
+        // Test execution
+
+        let delegate = stubDelegate(tokensFile: tokensFile)
+        let grammar = makeGrammar()
+        let sut = makeSut(delegate)
+
+        let processed = try sut.process(grammar)
+
+        // Validations
+
+        assertEqual(processed.tokenOcclusionGraph.nodes, expectedNodes)
+        assertEqual(processed.tokenOcclusionGraph.edges, expectedEdges)
+    }
+
+#endif // #if PERFORMANCE_TESTS
 }
 
 // MARK: - Test internals
@@ -381,7 +551,7 @@ private func makeIdent(_ ident: String) -> SwiftPEGGrammar.Token {
 }
 
 private func makeString(_ string: String) -> SwiftPEGGrammar.GrammarString {
-    .init(pieces: [.literal(string)], quote: .doubleQuote)
+    .init(pieces: [.literal(string)], quote: .doubleQuote, location: 0)
 }
 
 private func parseTokens(

@@ -59,6 +59,10 @@ extension SwiftCodeGen {
         buffer.ensureDoubleNewline()
         generateTokenTypeProduceDummy(settings: settings)
 
+        // `static func recordTokenAttempt<StringType>(...)`
+        // buffer.ensureDoubleNewline()
+        // generateRecordAttempt(settings: settings)
+
         // func from<StringType>(stream: inout StringStream<StringType>) -> Self? where StringType.SubSequence == Substring
         buffer.ensureDoubleNewline()
         try generateTokenTypeParser(
@@ -118,6 +122,37 @@ extension SwiftCodeGen {
         }
     }
 
+    /// `static func recordTokenAttempt<StringType>(...)`
+    func generateRecordAttempt(settings: TokenTypeGenSettings) {
+        generateInlinableAttribute(settings: settings)
+        buffer.emitMultiline("""
+        static func recordTokenAttempt<StringType>(
+            longestAttempt: inout (Self.TokenKind, StringStream<StringType>.State)?,
+            stream: inout StringStream<StringType>,
+            parser: (inout StringStream<StringType>) -> Self.TokenKind?
+        ) where StringType.SubSequence == Substring {
+
+            let state = stream.save()
+
+            stream.markSubstringStart()
+
+            if let result = parser(&stream) {
+                let newState = stream.save()
+
+                if let longest = longestAttempt {
+                    if newState.index > longest.1.index {
+                        longestAttempt = (result, newState)
+                    }
+                } else {
+                    longestAttempt = (result, newState)
+                }
+            }
+
+            stream.restore(state)
+        }
+        """)
+    }
+
     /// `static func produceDummy(_ kind: TokenKind) -> Self`
     func generateTokenTypeProduceDummy(settings: TokenTypeGenSettings) {
         generateInlinableAttribute(settings: settings)
@@ -137,30 +172,193 @@ extension SwiftCodeGen {
         generateAccessLevel(settings: settings)
         buffer.emitWithSeparators(modifiers + ["func"], separator: " ")
         try buffer.emitBlock(" from<StringType>(stream: inout StringStream<StringType>) -> Self? where StringType.SubSequence == Substring") {
-            try generateTokenTypeParserBody(sortedTokens: sortedTokens)
+            try generateTokenTypeParserBody(settings: settings, sortedTokens: sortedTokens)
         }
     }
 
-    func generateTokenTypeParserBody(sortedTokens: [InternalGrammar.TokenDefinition]) throws {
+    func generateTokenTypeParserBody(
+        settings: TokenTypeGenSettings,
+        sortedTokens: [InternalGrammar.TokenDefinition]
+    ) throws {
         buffer.emitLine("guard !stream.isEof else { return nil }")
         buffer.emitLine("stream.markSubstringStart()")
         buffer.ensureDoubleNewline()
 
         // TODO: Attempt to generate a switch over the first peeked character
-        // TODO: like in SwiftPEGGrammar's Token parser?
+        // TODO: like in SwiftPEGGrammar's old Token parser?
+        var emittedTokenNames: Set<String> = []
+        let nonDependants = sortedTokens.filter { token in
+            !processedGrammar
+                .tokenOcclusionGraph
+                .edges
+                .contains(where: { $0.end == token.name })
+        }
+
+        for token in nonDependants.filter(showEmitInTokenParser) {
+            try generateTokenParseCheck(
+                settings: settings,
+                token,
+                emittedTokenNames: &emittedTokenNames
+            )
+        }
+
+        buffer.ensureDoubleNewline()
+        buffer.emitLine("return nil")
+    }
+
+    func generateTokenParseCheck(
+        settings: TokenTypeGenSettings,
+        _ token: InternalGrammar.TokenDefinition,
+        emittedTokenNames: inout Set<String>
+    ) throws {
+
+        func returnExpForToken(_ token: InternalGrammar.TokenDefinition) -> String {
+            let tokenName = caseName(for: token)
+
+            return ".init(kind: .\(tokenName), string: stream.substring)"
+        }
+
+        func emitDependantCases(_ dependants: [InternalGrammar.TokenDefinition]) throws {
+            for dependant in dependants {
+                guard let staticTerminal = dependant.tokenSyntax?.staticTerminal() else {
+                    throw Error.tokenDependantIsNotStatic(token, dependant: dependant)
+                }
+
+                buffer.emitLine("case \(tok_escapeLiteral(staticTerminal)):")
+                buffer.indented {
+                    buffer.emitLine("return \(returnExpForToken(dependant))")
+                }
+            }
+        }
+
+        func emitDependantsSwitch(
+            defaultReturnStmt: String,
+            _ dependants: [InternalGrammar.TokenDefinition]
+        ) throws {
+            buffer.emitLine("switch stream.substring {")
+
+            try emitDependantCases(dependants.sorted(by: { $0.name < $1.name }))
+
+            buffer.emitLine("default:")
+            buffer.indented {
+                buffer.emitLine(defaultReturnStmt)
+            }
+
+            buffer.emitLine("}")
+        }
+
+        defer { emittedTokenNames.insert(token.name) }
+
+        let method = parseMethodName(for: token)
+        let parseInvocation = "\(method)(from: &stream)"
+
+        let dependants = processedGrammar
+            .tokenOcclusionGraph
+            .edges.filter({
+                $0.start == token.name && !emittedTokenNames.contains($0.end)
+            }).map(\.end).compactMap({ name in
+                processedGrammar.tokens.first(where: { $0.name == name })
+            })
+
+        emittedTokenNames.formUnion(dependants.map(\.name))
+
+        try buffer.emitBlock("if \(parseInvocation)") {
+            let returnStmt = "return \(returnExpForToken(token))"
+
+            guard !dependants.isEmpty else {
+                buffer.emitLine(returnStmt)
+                return
+            }
+
+            guard settings.emitLengthSwitchPhaseInTokenOcclusionSwitch else {
+                try emitDependantsSwitch(defaultReturnStmt: returnStmt, dependants)
+                return
+            }
+
+            // Emit a switch over the stream's substring to move the result into
+            // dependant's static terminals. If the number if dependants is below
+            // a certain threshold, generate one switch, otherwise, generate a
+            // switch over the different lengths of dependants to make the process
+            // more granular.
+            var byLength: [Int: [InternalGrammar.TokenDefinition]] = [:]
+            for dependant in dependants {
+                guard let staticTerminal = dependant.tokenSyntax?.staticTerminal() else {
+                    throw Error.tokenDependantIsNotStatic(token, dependant: dependant)
+                }
+
+                byLength[staticTerminal.contents.count, default: []].append(dependant)
+            }
+
+            guard
+                byLength.count >= 3,
+                byLength.contains(where: { $0.value.count > 1 })
+            else {
+                try emitDependantsSwitch(defaultReturnStmt: returnStmt, dependants)
+                return
+            }
+
+            buffer.emitLine("switch stream.substringLength {")
+
+            for (length, dependants) in byLength.sorted(by: { $0.key > $1.key }) {
+                buffer.emitLine("case \(length):")
+
+                try buffer.indented {
+                    try emitDependantsSwitch(
+                        defaultReturnStmt: returnStmt,
+                        dependants
+                    )
+                }
+
+                buffer.ensureDoubleNewline()
+            }
+
+            buffer.emitLine("default:")
+            buffer.indented {
+                buffer.emitLine(returnStmt)
+            }
+
+            buffer.emitLine("}")
+        }
+    }
+
+    func generateTokenTypeParserBodyLongestParse(sortedTokens: [InternalGrammar.TokenDefinition]) throws {
+        buffer.emitLine("guard !stream.isEof else { return nil }")
+        buffer.emitLine("stream.markSubstringStart()")
+        buffer.ensureDoubleNewline()
+        buffer.emitLine("var longestAttempt: (Self.TokenKind, StringStream<StringType>.State)?")
+        buffer.ensureDoubleNewline()
+
+        // TODO: Attempt to generate a switch over the first peeked character
+        // TODO: like in SwiftPEGGrammar's old Token parser?
 
         for token in sortedTokens.filter(showEmitInTokenParser) {
             let tokenName = caseName(for: token)
             let method = parseMethodName(for: token)
             let parseInvocation = "\(method)(from: &stream)"
 
-            buffer.emitBlock("if \(parseInvocation)") {
-                buffer.emitLine("return .init(kind: .\(tokenName), string: stream.substring)")
+            buffer.emitBlock("recordTokenAttempt(longestAttempt: &longestAttempt, stream: &stream) ") {
+                buffer.backtrackWhitespace()
+                buffer.emitLine(" stream in")
+
+                buffer.emitBlock("if \(parseInvocation)") {
+                    buffer.emitLine("return .\(tokenName)")
+                }
+                buffer.backtrackWhitespace()
+                buffer.emitBlock(" else ") {
+                    buffer.emitLine("return nil")
+                }
             }
         }
 
         buffer.ensureDoubleNewline()
-        buffer.emitLine("return nil")
+        buffer.emitMultiline("""
+        guard let longestAttempt else {
+            return nil
+        }
+
+        stream.restore(longestAttempt.1)
+        return .init(kind: longestAttempt.0, string: stream.substring)
+        """)
     }
 
     // MARK: TokenKind generation
@@ -274,8 +472,8 @@ extension SwiftCodeGen {
 
         buffer.emitLine("\(linePrefix) ```")
         buffer.emit("\(linePrefix) \(token.name)")
-        if let staticToken = token.staticToken {
-            buffer.emit(#"["\#(staticToken)"]"#)
+        if let tokenCodeReference = token.tokenCodeReference {
+            buffer.emit(#"[\#(tokenCodeReference.debugDescription)]"#)
         }
         buffer.emitLine(":")
         for alt in tokenSyntax.alts {
@@ -716,7 +914,7 @@ extension SwiftCodeGen {
 
     private func tok_conditional(for exclude: CommonAbstract.TokenExclusion) throws -> String {
         switch exclude {
-        case .string(let literal):
+        case .literal(let literal):
             return "!stream.isNext(\(tok_escapeLiteral(literal)))"
 
         case .identifier(let ident):
@@ -771,7 +969,7 @@ extension SwiftCodeGen {
     /// Escapes a given `DualString` into a Swift string literal expression.
     private func tok_escapeLiteral(_ string: CommonAbstract.DualString) -> String {
         switch string {
-        case .fromSource(_, let original):
+        case .fromSource(_, let original, _):
             // Convert single-quote into double-quote
             guard original.hasPrefix("'") else {
                 return original
@@ -834,7 +1032,7 @@ extension SwiftCodeGen {
         case .identifier(let identifier):
             return "!\(identifier)"
 
-        case .string(let literal):
+        case .literal(let literal):
             return "!\(tok_escapeLiteral(literal))"
 
         case .rangeLiteral(let start, let end):
@@ -869,22 +1067,22 @@ extension SwiftCodeGen {
     /// or `.<someIdentifier>`, returns `<someIdentifier>`, otherwise returns
     /// the token's name.
     func caseName(for token: InternalGrammar.TokenDefinition) -> String {
-        guard let staticToken = token.staticToken else {
+        guard let tokenCodeReference = token.tokenCodeReference else {
             return token.name
         }
-        if staticToken.hasPrefix(".") {
-            let suffix = staticToken.dropFirst()
+        if tokenCodeReference.hasPrefix(".") {
+            let suffix = tokenCodeReference.dropFirst()
             guard SwiftSyntaxExt.isIdentifier(suffix) else {
                 return token.name
             }
 
             return String(suffix)
         } else {
-            guard SwiftSyntaxExt.isIdentifier(staticToken) else {
+            guard SwiftSyntaxExt.isIdentifier(tokenCodeReference) else {
                 return token.name
             }
 
-            return String(staticToken)
+            return String(tokenCodeReference)
         }
     }
 
@@ -899,28 +1097,33 @@ extension SwiftCodeGen {
     private static func _sortTokens(_ tokens: [InternalGrammar.TokenDefinition]) -> [InternalGrammar.TokenDefinition] {
         // Generate a graph of prefix-dependencies
         var byName: [String: InternalGrammar.TokenDefinition] = [:]
-        for token in tokens {
+        var nameLookup: [Int: String] = [:]
+        for (i, token) in tokens.enumerated() {
             byName[token.name] = token
+            nameLookup[i] = token.name
         }
 
-        var graph = StringDirectedGraph()
-        graph.addNodes(byName.keys)
+        var graph = IntDirectedGraph()
+        graph.addNodes(nameLookup.keys)
 
-        for token in tokens {
+        func tokenForNode(_ node: Int) -> InternalGrammar.TokenDefinition {
+            tokens[node]
+        }
+        func nameForNode(_ node: Int) -> String {
+            tokens[node].name
+        }
+
+        for (i, token) in tokens.enumerated() {
             guard let tokenSyntax = token.tokenSyntax else {
                 continue
             }
-            guard let tokenNode = graph.nodes.first(where: { $0 == token.name }) else {
-                continue
-            }
+            let tokenNode = i
 
-            for other in tokens where token.name != other.name {
+            for (i, other) in tokens.enumerated() where token.name != other.name {
                 guard let otherSyntax = other.tokenSyntax else {
                     continue
                 }
-                guard let otherNode = graph.nodes.first(where: { $0 == other.name }) else {
-                    continue
-                }
+                let otherNode = i
 
                 if tokenSyntax.isPrefix(of: otherSyntax) && !otherSyntax.isPrefix(of: tokenSyntax) {
                     graph.addEdge(from: otherNode, to: tokenNode)
@@ -936,7 +1139,7 @@ extension SwiftCodeGen {
             }
         }
 
-        guard var sorted = graph.topologicalSorted(breakTiesWith: <)?.compactMap({ byName[$0] }) else {
+        guard var sorted = graph.topologicalSorted(breakTiesWith: { nameForNode($0) < nameForNode($1) })?.compactMap(tokenForNode) else {
             // TODO: Apply some fallback strategy
             return tokens
         }
@@ -1068,6 +1271,6 @@ extension SwiftCodeGen {
 
 private extension InternalGrammar.TokenDefinition {
     var isWhitespace: Bool {
-        self.staticToken == ".whitespace" || self.staticToken == "whitespace" || self.name == "whitespace"
+        self.tokenCodeReference == ".whitespace" || self.tokenCodeReference == "whitespace" || self.name == "whitespace"
     }
 }

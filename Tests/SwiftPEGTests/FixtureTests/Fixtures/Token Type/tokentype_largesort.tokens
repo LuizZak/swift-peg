@@ -1,0 +1,534 @@
+#### Based off of ISO/IEC 9899:2023 (E) available at:
+#### https://www.iso-9899.info/n3047.html
+# Comments with digits separated by dots in parenthesis (x.y.z.w...) are in reference of the above C spec's document sections.
+
+# Notes:
+# - Comments (6.4.9) are assumed to automatically be skipped by the tokenizer.
+
+$WHITESPACE[".whitespace"]:
+    | (" " | "\n" | "\t" | "\r")+
+    ;
+
+######################################################################################################################################################
+######################################################################################################################################################
+##########
+##########
+##########
+########## Objective-C
+########## (no specification as far as I can find)
+##########
+########## Defines syntaxes that will be merged with C spec grammar later in the file.
+##########
+##########
+##########
+######################################################################################################################################################
+######################################################################################################################################################
+
+$BOOL:                          'BOOL';
+$Class:                         'Class';
+$BYCOPY:                        'bycopy';
+$BYREF:                         'byref';
+$ID:                            'id';
+$IMP:                           'IMP';
+$IN:                            'in';
+$INOUT:                         'inout';
+$NIL:                           'nil';
+$NO:                            'NO';
+$NULL:                          'NULL';
+$ONEWAY:                        'oneway';
+$OUT:                           'out';
+$PROTOCOL_:                     'Protocol';
+$SEL:                           'SEL';
+$SELF:                          'self';
+$SUPER:                         'super';
+$YES:                           'YES';
+# TODO: Figure out a better way to deal with identifier-or-keyword problem in SwiftPEG; for now, at the end of keyword syntax alts is enough to fix it.
+$AUTORELEASEPOOL:               '@autoreleasepool' !identifierContinuation ;
+$CATCH:                         '@catch' !identifierContinuation ;
+$CLASS:                         '@class' !identifierContinuation ;
+$DYNAMIC:                       '@dynamic' !identifierContinuation ;
+$ENCODE:                        '@encode' !identifierContinuation ;
+$END:                           '@end' !identifierContinuation ;
+$FINALLY:                       '@finally' !identifierContinuation ;
+$IMPLEMENTATION:                '@implementation' !identifierContinuation ;
+$INTERFACE:                     '@interface' !identifierContinuation ;
+$IMPORT:                        '@import' !identifierContinuation ;
+$PACKAGE:                       '@package' !identifierContinuation ;
+$PROTOCOL:                      '@protocol' !identifierContinuation ;
+$OPTIONAL:                      '@optional' !identifierContinuation ;
+$PRIVATE:                       '@private' !identifierContinuation ;
+$PROPERTY:                      '@property' !identifierContinuation ;
+$PROTECTED:                     '@protected' !identifierContinuation ;
+$PUBLIC:                        '@public' !identifierContinuation ;
+$REQUIRED:                      '@required' !identifierContinuation ;
+$SELECTOR:                      '@selector' !identifierContinuation ;
+$SYNCHRONIZED:                  '@synchronized' !identifierContinuation ;
+$SYNTHESIZE:                    '@synthesize' !identifierContinuation ;
+$THROW:                         '@throw' !identifierContinuation ;
+$TRY:                           '@try' !identifierContinuation ;
+$ATOMIC:                        'atomic' ;
+$NONATOMIC:                     'nonatomic' ;
+$RETAIN:                        'retain' ;
+
+# Attributes with '__' prefix
+
+$ATTRIBUTE:                     '__attribute__' ;
+$AUTORELEASING_QUALIFIER:       '__autoreleasing' ;
+$BLOCK:                         '__block' ;
+$BRIDGE:                        '__bridge' ;
+$BRIDGE_RETAINED:               '__bridge_retained' ;
+$BRIDGE_TRANSFER:               '__bridge_transfer' ;
+$COVARIANT:                     '__covariant' ;
+$CONTRAVARIANT:                 '__contravariant' ;
+$DEPRECATED:                    '__deprecated' ;
+$KINDOF:                        '__kindof' ;
+$STRONG_QUALIFIER:              '__strong' ;
+$TYPEOF:                        'typeof' !identifierContinuation | '__typeof' !identifierContinuation | TYPEOF__ !identifierContinuation ;
+$TYPEOF__:                      '__typeof__' ;
+$UNSAFE_UNRETAINED_QUALIFIER:   '__unsafe_unretained' ;
+$UNUSED:                        '__unused' ;
+$WEAK_QUALIFIER:                '__weak' ;
+$ASM:                           '__asm' ;
+$CDECL:                         '__cdecl' ;
+$CLRCALL:                       '__clrcall' ;
+$STDCALL:                       '__stdcall' ;
+$DECLSPEC:                      '__declspec' ;
+$FASTCALL:                      '__fastcall' ;
+$THISCALL:                      '__thiscall' ;
+$VECTORCALL:                    '__vectorcall' ;
+$INLINE__:                      '__inline__' ;
+$EXTENSION:                     '__extension__' ;
+$M128:                          '__m128' ;
+$M128D:                         '__m128d' ;
+$M128I:                         '__m128i' ;
+
+$IB_OUTLET:                     'IBOutlet' ;
+$IB_OUTLET_COLLECTION:          'IBOutletCollection' ;
+$IB_INSPECTABLE:                'IBInspectable' ;
+$IB_DESIGNABLE:                 'IB_DESIGNABLE' ;
+
+# Nullability specifiers
+
+$NULL_UNSPECIFIED:
+    | 'null_unspecified' !identifierContinuation
+    | '__null_unspecified' !identifierContinuation
+    | '_Null_unspecified' !identifierContinuation
+    ;
+
+$NULLABLE:
+    | 'nullable' !identifierContinuation
+    | '__nullable' !identifierContinuation
+    | '_Nullable' !identifierContinuation
+    ;
+
+$NONNULL:
+    | 'nonnull' !identifierContinuation
+    | '__nonnull' !identifierContinuation
+    | '_Nonnull' !identifierContinuation
+    ;
+
+$NULL_RESETTABLE:
+    | 'null_resettable' !identifierContinuation
+    | '__null_resettable' !identifierContinuation
+    | '_Null_resettable' !identifierContinuation
+    ;
+
+
+# NS prefix
+
+$NS_INLINE:                     'NS_INLINE';
+$NS_ENUM:                       'NS_ENUM';
+$NS_OPTIONS:                    'NS_OPTIONS';
+
+# Macros
+
+$NS_ASSUME_NONNULL_BEGIN:       'NS_ASSUME_NONNULL_BEGIN' ;
+$NS_ASSUME_NONNULL_END:         'NS_ASSUME_NONNULL_END' ;
+
+# Property attributes
+
+$ASSIGN:                        'assign' ;
+$COPY:                          'copy' ;
+$GETTER:                        'getter' ;
+$SETTER:                        'setter' ;
+$STRONG:                        'strong' ;
+$READONLY:                      'readonly' ;
+$READWRITE:                     'readwrite' ;
+$WEAK:                          'weak' ;
+$UNSAFE_UNRETAINED:             'unsafe_unretained' ;
+
+
+######################################################################################################################################################
+######################################################################################################################################################
+##########
+##########
+##########
+########## C spec
+########## (https://www.iso-9899.info/n3047.html)
+##########
+########## Modifications to support Objective-C are inlined within the tokens below as necessary.
+##########
+##########
+##########
+######################################################################################################################################################
+######################################################################################################################################################
+
+###
+### MARK: - Keywords (6.4.1)
+###
+
+$_Atomic["._Atomic"]: '_Atomic' ;
+$_BitInt["._BitInt"]: '_BitInt' ;
+$_Complex["._Complex"]: '_Complex' ;
+$_Decimal128["._Decimal128"]: '_Decimal128' ;
+$_Decimal32["._Decimal32"]: '_Decimal32' ;
+$_Decimal64["._Decimal64"]: '_Decimal64' ;
+$_Generic["._Generic"]: '_Generic' ;
+$_Imaginary["._Imaginary"]: '_Imaginary' ;
+$_Noreturn["._Noreturn"]: '_Noreturn' ;
+$alignas[".alignas"]: 'alignas' ;
+$alignof[".alignof"]: 'alignof' ;
+$auto[".auto"]: 'auto' ;
+$bool[".bool"]: 'bool' ;
+$break[".break"]: 'break' ;
+$case[".case"]: 'case' ;
+$char[".char"]: 'char' ;
+$const[".const"]: 'const' ;
+$constexpr[".constexpr"]: 'constexpr' ;
+$continue[".continue"]: 'continue' ;
+$default[".default"]: 'default' ;
+$do[".do"]: 'do' ;
+$double[".double"]: 'double' ;
+$else[".else"]: 'else' ;
+$enum[".enum"]: 'enum' ;
+$extern[".extern"]: 'extern' ;
+$false[".false"]: 'false' ;
+$float[".float"]: 'float' ;
+$for[".for"]: 'for' ;
+$goto[".goto"]: 'goto' ;
+$if[".if"]: 'if' ;
+$inline[".inline"]: 'inline' ;
+$int[".int"]: 'int' ;
+$long[".long"]: 'long' ;
+$nullptr[".nullptr"]: 'nullptr' ;
+$register[".register"]: 'register' ;
+$restrict[".restrict"]: 'restrict' ;
+$return[".return"]: 'return' ;
+$short[".short"]: 'short' ;
+$signed[".signed"]: 'signed' ;
+$sizeof[".sizeof"]: 'sizeof' ;
+$static_assert[".static_assert"]: 'static_assert' ;
+$static[".static"]: 'static' ;
+$struct[".struct"]: 'struct' ;
+$switch[".switch"]: 'switch' ;
+$thread_local[".thread_local"]: 'thread_local' ;
+$true[".true"]: 'true' ;
+$typedef[".typedef"]: 'typedef' ;
+$typeof_unqual[".typeof_unqual"]: 'typeof_unqual' ;
+$typeof[".typeof"]: 'typeof' ;
+$union[".union"]: 'union' ;
+$void[".void"]: 'void' ;
+$volatile[".volatile"]: 'volatile' ;
+$while[".while"]: 'while' ;
+$unsigned[".unsigned"]: 'unsigned' ;
+
+# (6.4.2.1)
+$IDENTIFIER[".identifier"]:
+    | ('a'...'z' | 'A'...'Z' | '_') identifierContinuation*
+    ;
+
+%identifierContinuation:
+    | digit | 'a'...'z' | 'A'...'Z' | '_'
+    ;
+
+%digit:
+    | '0'...'9'
+    ;
+
+## Constants (6.4.4)
+
+###
+### MARK: - integer_constant
+###
+
+$integerConstant[".integerConstant"]:
+    # Hexadecimal
+    | hexadecimal_constant integer_suffix?
+    # Binary
+    | binary_constant integer_suffix?
+    # Decimal
+    | decimal_constant integer_suffix?
+    # Octal
+    | octal_constant integer_suffix?
+    ;
+
+%hexadecimal_constant:
+    | hexadecimal_prefix hexadecimal_digit_sequence
+    ;
+%binary_constant:
+    | binary_prefix binary_digit _binary_digit*
+    ;
+%decimal_constant:
+    | nonzero_digit _decimal_digit*
+    ;
+%octal_constant:
+    | '0' _octal_digit*
+    ;
+
+%hexadecimal_prefix:
+    | '0x' | '0X'
+    ;
+
+%binary_prefix:
+    | '0b' | '0B'
+    ;
+
+%nonzero_digit:
+    | '1'...'9'
+    ;
+
+%_decimal_digit:
+    | "'"? digit
+    ;
+
+%octal_digit:
+    | '0'...'7'
+    ;
+%_octal_digit:
+    | "'"? octal_digit
+    ;
+
+%binary_digit:
+    | '0' | '1'
+    ;
+%_binary_digit:
+    | "'"? binary_digit
+    ;
+
+%hexadecimal_digit:
+    | '0'...'9'
+    | 'a'...'f'
+    | 'A'...'F'
+    ;
+%_hexadecimal_digit:
+    | "'"? hexadecimal_digit
+    ;
+%hexadecimal_digit_sequence:
+    | hexadecimal_digit _hexadecimal_digit*
+    ;
+
+%integer_suffix:
+    | unsigned_suffix long_suffix?
+    | unsigned_suffix long_long_suffix
+    | unsigned_suffix bit_precise_int_suffix
+    | long_suffix unsigned_suffix?
+    | long_long_suffix unsigned_suffix?
+    | bit_precise_int_suffix unsigned_suffix?
+    ;
+
+%bit_precise_int_suffix:
+    | 'wb' | 'WB'
+    ;
+%unsigned_suffix:
+    | 'u' | 'U'
+    ;
+%long_suffix:
+    | 'l' | 'L'
+    ;
+%long_long_suffix:
+    | 'll' | 'LL'
+    ;
+
+###
+### MARK: - floating_constant
+###
+
+$floatingConstant[".floatingConstant"]:
+    | decimal_floating_constant
+    | hexadecimal_floating_constant
+    ;
+
+%decimal_floating_constant:
+    | fractional_constant exponent_part? floating_suffix?
+    | digit_sequence exponent_part floating_suffix?
+    ;
+
+%hexadecimal_floating_constant:
+    | hexadecimal_prefix hexadecimal_fractional_constant binary_exponent_part floating_suffix?
+    | hexadecimal_prefix hexadecimal_digit_sequence binary_exponent_part floating_suffix?
+    ;
+
+%fractional_constant:
+    | digit_sequence? '.' digit_sequence
+    | digit_sequence '.'
+    ;
+
+%exponent_part:
+    | 'e' sign? digit_sequence
+    | 'E' sign? digit_sequence
+    ;
+
+%sign:
+    | '+' | '-'
+    ;
+
+%digit_sequence:
+    | digit _decimal_digit*
+    ;
+
+%hexadecimal_fractional_constant:
+    | hexadecimal_digit_sequence? '.' hexadecimal_digit_sequence
+    | hexadecimal_digit_sequence '.'
+    ;
+
+%binary_exponent_part:
+    | 'p' sign? digit_sequence
+    | 'P' sign? digit_sequence
+    ;
+
+%floating_suffix:
+    | 'f' | 'l' | 'F' | 'L' | 'df' | 'dd' | 'dl' | 'DF' | 'DD' | 'DL'
+    ;
+
+
+###
+### MARK: - character_constant
+###
+
+$characterConstant[".characterConstant"]:
+    | encoding_prefix? "'" c_char_sequence? "'"
+    ;
+
+%encoding_prefix:
+    | 'u8'
+    | 'u'
+    | 'U'
+    | 'L'
+    ;
+
+%c_char_sequence:
+    | c_char+
+    ;
+
+%c_char:
+    | "\\\\"
+    | "\\'"
+    | escape_sequence
+    | !"'" !"\\" !"\n" .
+    ;
+
+
+###
+### MARK: - string_literal
+###
+
+$stringLiteral[".stringLiteral"]:
+    | encoding_prefix? '"' s_char_sequence? '"' ;
+
+%s_char_sequence:
+    | s_char+
+    ;
+
+%s_char:
+    | "\\\\"
+    | '\\"'
+    | escape_sequence
+    | !'"' !"\\" !"\n" .
+    ;
+
+%escape_sequence:
+    | "\\n"
+    | "\\r"
+    | "\\t"
+    ;
+
+###
+### MARK: - Puctuators (6.4.6)
+###
+
+$OPENSQUARE[".openSquare"]: "[" ;
+$CLOSESQUARE[".closeSquare"]: "]" ;
+$OPENPARENS[".openParens"]: "(" ;
+$CLOSEPARENS[".closeParens"]: ")" ;
+$OPENBRACE[".openBrace"]: "{" ;
+$CLOSEBRACE[".closeBrace"]: "}" ;
+$DOT[".dot"]: "." ;
+$ARROW[".arrow"]: "->" ;
+$INCREMENT[".increment"]: "++" ;
+$DECREMENT[".decrement"]: "--" ;
+$BITWISEAND[".bitwiseAnd"]: "&" ;
+$ASTERISK[".asterisk"]: "*" ;
+$PLUS[".plus"]: "+" ;
+$MINUS[".minus"]: "-" ;
+$TILDE[".tilde"]: "~" ;
+$EXCLAMATION[".exclamation"]: "!" ;
+$FORWARDSLASH[".forwardSlash"]: "/" ;
+$PERCENT[".percent"]: "%" ;
+$LEFTSHIFT[".leftShift"]: "<<" ;
+$RIGHTSHIFT[".rightShift"]: ">>" ;
+$LESSTHAN[".lessThan"]: "<" ;
+$GREATERTHAN[".greaterThan"]: ">" ;
+$LESSTHANOREQUAL[".lessThanOrEqual"]: "<=" ;
+$GREATERTHANOREQUAL[".greaterThanOrEqual"]: ">=" ;
+$EQUALS[".equals"]: "==" ;
+$NOTEQUALS[".notEquals"]: "!=" ;
+$BITWISEXOR[".bitwiseXor"]: "^" ;
+$BITWISEOR[".bitwiseOr"]: "|" ;
+$LOGICALAND[".logicalAnd"]: "&&" ;
+$LOGICALOR[".logicalOr"]: "||" ;
+$QUESTIONMARK[".questionMark"]: "?" ;
+$COLON[".colon"]: ":" ;
+$DOUBLECOLON[".doubleColon"]: "::" ;
+$SEMICOLON[".semicolon"]: ";" ;
+$ELLIPSIS[".ellipsis"]: "..." ;
+$ASSIGNMENT[".assignment"]: "=" ;
+$MULTIPLYASSIGN[".multiplyAssign"]: "*=" ;
+$DIVIDEASSIGN[".divideAssign"]: "/=" ;
+$MODULOASSIGN[".moduloAssign"]: "%=" ;
+$PLUSASSIGN[".plusAssign"]: "+=" ;
+$MINUSASSIGN[".minusAssign"]: "-=" ;
+$LEFTSHIFTASSIGN[".leftShiftAssign"]: "<<=" ;
+$RIGHTSHIFTASSIGN[".rightShiftAssign"]: ">>=" ;
+$ANDASSIGN[".andAssign"]: "&=" ;
+$XORASSIGN[".xorAssign"]: "^=" ;
+$ORASSIGN[".orAssign"]: "|=" ;
+$COMMA[".comma"]: "," ;
+$HASH[".hash"]: "#" ;
+$DOUBLEHASH[".doubleHash"]: "##" ;
+$OPENMACRO[".openMacro"]: "<:" ;
+$CLOSEMACRO[".closeMacro"]: ":>" ;
+$OPENPERCENT[".openPercent"]: "<%" ;
+$CLOSEPERCENT[".closePercent"]: "%>" ;
+$PERCENTCOLON[".percentColon"]: "%:" ;
+$PERCENTDOUBLECOLON[".percentDoubleColon"]: "%:%:" ;
+
+###
+### MARK: - Header names (6.4.7)
+###
+
+# (6.4.7)
+# $header_name[".headerName"]:
+#     | '<' h_char_sequence '>'
+#     | '"' q_char_sequence '"'
+#     ;
+# 
+# # (6.4.7)
+# %h_char_sequence:
+#     | h_char+
+#     ;
+# 
+# # (6.4.7)
+# %h_char:
+#     | !"\n" !">" .
+#     ;
+# 
+# # (6.4.7)
+# %q_char_sequence:
+#     | q_char+
+#     ;
+# 
+# # (6.4.7)
+# %q_char:
+#     | !"\n" !'"' .
+#     ;
+# 

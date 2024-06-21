@@ -4,10 +4,14 @@ public class SwiftCodeGen {
 
     /// Name of optional meta-property (`@<name> <value>`) from grammar file that
     /// indicates the raw contents to print atop the generated parser code.
+    ///
+    /// `parserHeader`
     public static let parserHeader: String = "parserHeader"
 
     /// Name of optional meta-property (`@<name> <value>`) from grammar file that
     /// indicates the raw contents to print atop the generated token type code.
+    ///
+    /// `tokenTypeHeader`
     public static let tokenTypeHeader: String = "tokenTypeHeader"
 
     /// Name of optional meta-property (`@<name> <value>`) from grammar file that
@@ -15,11 +19,15 @@ public class SwiftCodeGen {
     ///
     /// If no explicit token type is specified, the token's typename is set to
     /// `<@parserName>Token` by default.
+    ///
+    /// `tokenTypeName`
     public static let tokenTypeName: String = "tokenTypeName"
 
     /// Name of optional meta-property (`@<name> <value>`) from grammar file that
     /// indicates the name of the parser class to extend with the parsing methods.
     /// Assumes that the type exists already.
+    ///
+    /// `parserName`
     public static let parserName: String = "parserName"
 
     /// Name of optional meta-property (`@<name> <value>`) from grammar file that
@@ -28,6 +36,8 @@ public class SwiftCodeGen {
     /// 'expectKind' for this meta-property indicates that the code generator
     /// should emit `PEGParser.expect(kind:)` calls for the string literals,
     /// instead.
+    ///
+    /// `tokenCall`
     public static let tokenCall: String = "tokenCall"
 
     /// Name of optional meta-property (`@<name> <value>`) from grammar file that
@@ -36,6 +46,8 @@ public class SwiftCodeGen {
     ///
     /// Defaults to `true`, can be specified `true` or `false`, as either strings
     /// or identifiers.
+    ///
+    /// `implicitReturns`
     public static let implicitReturns: String = "implicitReturns"
 
     /// Name of optional meta-property (`@<name> <value>`) from grammar file that
@@ -44,6 +56,8 @@ public class SwiftCodeGen {
     ///
     /// Defaults to `true`, can be specified `true` or `false`, as either strings
     /// or identifiers.
+    ///
+    /// `implicitBindings`
     public static let implicitBindings: String = "implicitBindings"
 
     /// Name of optional meta-property (`@<name> <value>`) from grammar file that
@@ -52,6 +66,8 @@ public class SwiftCodeGen {
     ///
     /// Defaults to `true`, can be specified `true` or `false`, as either strings
     /// or identifiers.
+    ///
+    /// `bindTokenLiterals`
     public static let bindTokenLiterals: String = "bindTokenLiterals"
 
     /// Set of identifiers that cannot be used as bare identifiers in Swift, and
@@ -64,8 +80,13 @@ public class SwiftCodeGen {
     var _typeForRuleOngoing: Set<String> = []
 
     let parserName: String
-    let grammar: InternalGrammar.Grammar
-    let tokenDefinitions: [InternalGrammar.TokenDefinition]
+    let processedGrammar: ProcessedGrammar
+    var grammar: InternalGrammar.Grammar {
+        processedGrammar.grammar
+    }
+    var tokenDefinitions: [InternalGrammar.TokenDefinition] {
+        processedGrammar.tokens
+    }
     let buffer: CodeStringBuffer
     var declContext: DeclarationsContext
 
@@ -89,11 +110,14 @@ public class SwiftCodeGen {
 
     /// Initializes a new `SwiftCodeGen`, preparing to generate the grammar and
     /// token definitions from a given grammar processor result.
-    public convenience init(from processed: ProcessedGrammar) {
-        self.init(
-            grammar: processed.grammar,
-            tokenDefinitions: processed.tokens
-        )
+    public init(from processedGrammar: ProcessedGrammar) {
+        self.processedGrammar = processedGrammar
+        self.tokenCallKind = processedGrammar.grammar.tokenCall().flatMap(TokenCallKind.init) ?? .expect
+
+        parserName = processedGrammar.grammar.parserName() ?? "Parser"
+        buffer = CodeStringBuffer()
+        declContext = DeclarationsContext()
+        bindingEngine = BindingEngine()
     }
 
     /// Initializes a new `SwiftCodeGen`, preparing to generate a given grammar.
@@ -101,18 +125,20 @@ public class SwiftCodeGen {
     /// - Parameters:
     ///   - grammar: The grammar to generate.
     ///   - tokenDefinitions: A list of token definitions to use when examining string literals.
-    public init(
+    public convenience init(
         grammar: InternalGrammar.Grammar,
-        tokenDefinitions: [InternalGrammar.TokenDefinition] = []
+        tokenDefinitions: [InternalGrammar.TokenDefinition] = [],
+        ruleDependencyGraph: RuleDependencyGraph = .empty,
+        tokenOcclusionGraph: TokenOcclusionGraph = .empty
     ) {
-        self.grammar = grammar
-        self.tokenDefinitions = tokenDefinitions
-        self.tokenCallKind = grammar.tokenCall().flatMap(TokenCallKind.init) ?? .expect
-
-        parserName = grammar.parserName() ?? "Parser"
-        buffer = CodeStringBuffer()
-        declContext = DeclarationsContext()
-        bindingEngine = BindingEngine()
+        self.init(
+            from: .init(
+                grammar: grammar,
+                tokens: tokenDefinitions,
+                ruleDependencyGraph: ruleDependencyGraph,
+                tokenOcclusionGraph: tokenOcclusionGraph
+            )
+        )
     }
 
     /// Generates Swift parser code.
@@ -922,10 +948,26 @@ public class SwiftCodeGen {
         /// type cannot be generated.
         case tokenDefinitionMissingSyntax(InternalGrammar.TokenDefinition)
 
+        /// Issued during token type code generation, indicates the associated
+        /// `ProcessedGrammar.tokenOcclusionGraph` contains dependants of dynamic
+        /// tokens that are not static.
+        case tokenDependantIsNotStatic(
+            InternalGrammar.TokenDefinition,
+            dependant: InternalGrammar.TokenDefinition
+        )
+
         public var description: String {
             switch self {
             case .tokenDefinitionMissingSyntax(let def):
-                return "Cannot generate token type: All tokens must have a syntax defined; found token '\(def.name)' that has no syntax."
+                return """
+                Cannot generate token type: All tokens must have a syntax defined; \
+                found token '\(def.name)' that has no syntax.
+                """
+            case .tokenDependantIsNotStatic(let token, let dependant):
+                return """
+                Found token '\(token.name)' that has a dependant '\(dependant.name)' \
+                that has a non-static syntax '\(dependant.tokenSyntax?.description ?? "<nil>")'.
+                """
             }
         }
     }
@@ -989,7 +1031,8 @@ public class SwiftCodeGen {
         /// Gets the static default settings configuration.
         public static let `default`: Self = Self(
             emitInlinable: false,
-            accessLevel: nil
+            accessLevel: nil,
+            emitLengthSwitchPhaseInTokenOcclusionSwitch: false
         )
 
         /// Whether to emit tokenization methods as @inlinable declarations.
@@ -1002,12 +1045,26 @@ public class SwiftCodeGen {
         /// generates an initializer for struct declarations.
         public var accessLevel: String?
 
+        /// In the main token parsing body, a token that occludes another (such
+        /// as a dynamic identifier token occluding a fixed keyword token), a
+        /// switch is emitted that favors the fixed token constructions occluded
+        /// by dynamic tokens. If this setting is `true`, an extra switch is
+        /// emitted that further divides the fixed tokens along length before
+        /// the final switch over each fixed token's string literal.
+        ///
+        /// The switch is only emitted if more than three fixed tokens are occluded
+        /// by the same dynamic token, and at least two of the fixed tokens share
+        /// the same literal string length.
+        public var emitLengthSwitchPhaseInTokenOcclusionSwitch: Bool
+
         public init(
             emitInlinable: Bool,
-            accessLevel: String?
+            accessLevel: String?,
+            emitLengthSwitchPhaseInTokenOcclusionSwitch: Bool
         ) {
             self.emitInlinable = emitInlinable
             self.accessLevel = accessLevel
+            self.emitLengthSwitchPhaseInTokenOcclusionSwitch = emitLengthSwitchPhaseInTokenOcclusionSwitch
         }
 
         /// Returns a copy of `self` with a given keypath modified to be `value`.
@@ -1438,14 +1495,14 @@ extension SwiftCodeGen {
     /// identifier
     ///
     /// If the identifier matches a known token definition with explicit
-    /// 'staticToken', returns `self.expect(<staticToken>)`, otherwise returns
+    /// 'tokenCodeReference', returns `self.expect(<tokenCodeReference>)`, otherwise returns
     /// `self.<ident>()`, as a fallback.
     func expandTokenName(_ ident: String) -> String {
         if
             let token = bindingEngine.tokenDefinition(named: ident),
-            let staticToken = staticToken(for: token)
+            let tokenCodeReference = tokenCodeReference(for: token)
         {
-            return "self.expect(\(expectArguments(forResolvedToken: staticToken)))"
+            return "self.expect(\(expectArguments(forResolvedToken: tokenCodeReference)))"
         }
 
         return "self.\(escapeIdentifier(ident))()"
@@ -1462,9 +1519,9 @@ extension SwiftCodeGen {
         // Check for explicit token aliases
         if
             let token = bindingEngine.tokenDefinition(named: identifier),
-            let staticToken = staticToken(for: token)
+            let tokenCodeReference = tokenCodeReference(for: token)
         {
-            return expectArguments(forResolvedToken: staticToken)
+            return expectArguments(forResolvedToken: tokenCodeReference)
         }
 
         return expectArguments(forResolvedToken: identifier)
@@ -1481,9 +1538,9 @@ extension SwiftCodeGen {
         // Check for explicit token aliases
         if
             let token = bindingEngine.tokenDefinition(ofRawLiteral: raw),
-            let staticToken = staticToken(for: token)
+            let tokenCodeReference = tokenCodeReference(for: token)
         {
-            return expectArguments(forResolvedToken: staticToken)
+            return expectArguments(forResolvedToken: tokenCodeReference)
         }
 
         return expectArguments(forResolvedToken: literal)
@@ -1491,15 +1548,15 @@ extension SwiftCodeGen {
 
     /// Computes the static token name for a given token definition.
     ///
-    /// If a custom static token was provided (`['.staticToken']`), that value
+    /// If a custom static token was provided (`['.tokenCodeReference']`), that value
     /// is returned; otherwise, an attempt is made to compute the potential case
     /// name for a generated token type.
     ///
     /// If the token is missing both the static token and token syntax, it is
     /// assumed to be implemented off-lexer and the return is `nil`.
-    func staticToken(for token: InternalGrammar.TokenDefinition) -> String? {
-        if let staticToken = token.staticToken {
-            return staticToken
+    func tokenCodeReference(for token: InternalGrammar.TokenDefinition) -> String? {
+        if let tokenCodeReference = token.tokenCodeReference {
+            return tokenCodeReference
         }
         if token.tokenSyntax == nil {
             return nil
