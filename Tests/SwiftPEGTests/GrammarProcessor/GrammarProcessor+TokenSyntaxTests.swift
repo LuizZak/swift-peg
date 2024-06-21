@@ -551,7 +551,7 @@ private func makeIdent(_ ident: String) -> SwiftPEGGrammar.Token {
 }
 
 private func makeString(_ string: String) -> SwiftPEGGrammar.GrammarString {
-    .init(pieces: [.literal(string)], quote: .doubleQuote)
+    .init(pieces: [.literal(string)], quote: .doubleQuote, location: 0)
 }
 
 private func parseTokens(

@@ -25,7 +25,7 @@ class SwiftPEGGrammar_StringTests: XCTestCase {
 private func makeSut(
     fromStringToken token: SwiftPEGGrammar.Token
 ) throws -> SwiftPEGGrammar.GrammarString {
-    try .fromStringToken(token)
+    try .fromStringToken(token, 0)
 }
 
 private func makeStringToken(

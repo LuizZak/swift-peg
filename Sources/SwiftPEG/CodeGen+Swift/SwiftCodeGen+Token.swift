@@ -969,7 +969,7 @@ extension SwiftCodeGen {
     /// Escapes a given `DualString` into a Swift string literal expression.
     private func tok_escapeLiteral(_ string: CommonAbstract.DualString) -> String {
         switch string {
-        case .fromSource(_, let original):
+        case .fromSource(_, let original, _):
             // Convert single-quote into double-quote
             guard original.hasPrefix("'") else {
                 return original

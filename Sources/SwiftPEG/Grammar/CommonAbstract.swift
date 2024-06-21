@@ -10,7 +10,7 @@ public enum CommonAbstract {
         /// A dual string that originated from parsing a SwiftPEG grammar file,
         /// with both the parsed contents and the original string, with quotes,
         /// as found in the source code.
-        case fromSource(contents: String, original: String)
+        case fromSource(contents: String, original: String, location: any (Hashable & Comparable))
 
         /// A dual string that contains only a raw representation, and was generated
         /// by code.
@@ -21,7 +21,8 @@ public enum CommonAbstract {
         /// Returns the raw contents of the string, ignoring quotes.
         public var contents: String {
             switch self {
-            case .fromSource(let contents, _), .fromCode(let contents):
+            case .fromSource(let contents, _, _),
+                .fromCode(let contents):
                 return contents
             }
         }
@@ -32,7 +33,7 @@ public enum CommonAbstract {
         /// the quotes and escape sequences as found in source, as-is.
         public var asStringLiteral: String {
             switch self {
-            case .fromSource(_, let original):
+            case .fromSource(_, let original, _):
                 return original
             case .fromCode(let contents):
                 return StringEscaping.escapeAsStringLiteral(contents)
@@ -66,7 +67,11 @@ public enum CommonAbstract {
         }
 
         public static func from(_ string: SwiftPEGGrammar.GrammarString) -> Self {
-            return .fromSource(contents: string.rawContents(), original: string.asStringLiteral())
+            return .fromSource(
+                contents: string.rawContents(),
+                original: string.asStringLiteral(),
+                location: string.location
+            )
         }
 
         public static func == (lhs: Self, rhs: Self) -> Bool {
