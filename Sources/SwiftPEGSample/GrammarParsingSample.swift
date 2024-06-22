@@ -285,9 +285,10 @@ class NodeLayoutDebugBuffer {
         case .collectionOf(let layout):
             switch layout {
             case .rule, .token:
+                inline("[")
                 add(layout)
                 backtrackSpace()
-                line("*")
+                line("]")
             default:
                 line("collectionOf:")
                 indented {

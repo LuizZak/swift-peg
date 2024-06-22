@@ -163,8 +163,12 @@ extension Collection where Element: Equatable {
 
     /// Returns `true` if `element` occurs in all collections contained within
     /// this collection.
-    func allContain<T: Equatable>(_ element: T) -> Bool where Element: Collection<T> {
-        allSatisfy { $0.contains(element) }
+    func allContain<T: Equatable>(
+        _ element: T,
+        comparator: (T, T) -> Bool = (==)
+    ) -> Bool where Element: Collection<T> {
+
+        allSatisfy { $0.contains(where: { comparator(element, $0) }) }
     }
 
     /// Returns the least indices of elements, mapped 1-to-1, to a given collection
@@ -173,16 +177,20 @@ extension Collection where Element: Equatable {
     /// If an element appears twice in `elements`, an attempt is made to map to
     /// different indices within this collection, otherwise, the repeated items
     /// may share the same index.
-    func leastIndices(of elements: some Collection<Element>) -> [Index?] where Index: Hashable {
+    func leastIndices(
+        of elements: some Collection<Element>,
+        comparator: (Element, Element) -> Bool = (==)
+    ) -> [Index?] where Index: Hashable {
+
         var used: Set<Index> = []
 
         var result: [Index?] = []
         for element in elements {
             var nextIndex = self.indices.firstIndex { index in
-                !used.contains(index) && self[index] == element
+                !used.contains(index) && comparator(self[index], element)
             }
             if nextIndex == nil {
-                nextIndex = self.firstIndex(of: element)
+                nextIndex = self.firstIndex(where: { comparator($0, element) })
             }
 
             result.append(nextIndex)
@@ -232,7 +240,10 @@ extension Collection where Element: Equatable {
     ///
     /// If this collection contains only one element, the result are all of the
     /// element's indices.
-    func greatestCommonIndices<T: Equatable>() -> [[Int]]? where Element == [T] {
+    func greatestCommonIndices<T: Equatable>(
+        comparator: (T, T) -> Bool = (==)
+    ) -> [[Int]]? where Element == [T] {
+
         guard
             let leastArrayIndex = self.indices.min(by: { self[$0].count < self[$1].count }),
             !self[leastArrayIndex].isEmpty
@@ -245,13 +256,13 @@ extension Collection where Element: Equatable {
         }
 
         let leastArray = self[leastArrayIndex]
-        let leastCommon = leastArray.filter(allContain)
+        let leastCommon = leastArray.filter({ allContain($0, comparator: comparator) })
         guard !leastCommon.isEmpty else {
             return nil
         }
 
         let leastCommonIndices: [[Int]] = self.map {
-            $0.leastIndices(of: leastCommon).map { $0 ?? -1 }
+            $0.leastIndices(of: leastCommon, comparator: comparator).map { $0 ?? -1 }
         }
 
         // Find the greatest increasing sequence of integers in leastCommonIndices

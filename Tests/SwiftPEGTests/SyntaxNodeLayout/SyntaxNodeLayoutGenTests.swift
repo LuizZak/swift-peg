@@ -70,6 +70,40 @@ class SyntaxNodeLayoutGenTests: XCTestCase {
         ])
     }
 
+    func testGenerateSyntaxNodes_factorTogglingElements_factorOptionalVariations() throws {
+        let processed = try processGrammar(tokens: #"""
+        $A: 'a' ; $B: 'b' ; $C: 'c' ; $D: 'd' ;
+        """#, grammar: #"""
+        @tokensFile "tokens.tokens" ;
+
+        a: A b? c d | A b d | A c d | A d ;
+        b: 'b' ;
+        c: 'c' ;
+        d: 'd' ;
+        """#, entryRuleName: "a")
+        let sut = makeSut(processed)
+
+        let result = try sut.generateSyntaxNodes()
+
+        assertSyntaxNodesEqual(result, [
+            .init(name: "a", layout: .makeFixed([
+                "A": .token("A"),
+                "b": .optional(.rule("b")),
+                "c": .optional(.rule("c")),
+                "d": .rule("d"),
+            ])),
+            .init(name: "b", layout: .makeFixed([
+                "B": .token("B"),
+            ])),
+            .init(name: "c", layout: .makeFixed([
+                "C": .token("C"),
+            ])),
+            .init(name: "d", layout: .makeFixed([
+                "D": .token("D"),
+            ])),
+        ])
+    }
+
     func testGenerateSyntaxNodes_factorTogglingElements_abortOnUnmatchedElement() throws {
         let processed = try processGrammar(tokens: #"""
         $A: 'a' ; $B: 'b' ; $C: 'c' ; $D: 'd' ;
@@ -86,16 +120,27 @@ class SyntaxNodeLayoutGenTests: XCTestCase {
         let result = try sut.generateSyntaxNodes()
 
         assertSyntaxNodesEqual(result, [
-            .init(name: "a", layout: .makeFixed([
-                "A": .token("A"),
-                "b": .optional(.rule("b")),
-                "c": .optional(.rule("c")),
-                "d": .optional(.rule("d")),
-                "b1": .optional(.rule("b")),
-                "b2": .optional(.rule("b")),
-                "c1": .optional(.rule("c")),
-                "d1": .optional(.rule("d")),
-                "d2": .optional(.rule("d")),
+            .init(name: "a", layout: .oneOf([
+                .makeFixed([
+                    "A": .token("A"),
+                    "b": .rule("b"),
+                    "c": .rule("c"),
+                    "d": .rule("d"),
+                ]),
+                .makeFixed([
+                    "A": .token("A"),
+                    "b": .rule("b"),
+                    "b1": .rule("b"),
+                ]),
+                .makeFixed([
+                    "A": .token("A"),
+                    "c": .rule("c"),
+                    "d": .rule("d"),
+                ]),
+                .makeFixed([
+                    "A": .token("A"),
+                    "d": .rule("d"),
+                ]),
             ])),
             .init(name: "b", layout: .makeFixed([
                 "B": .token("B"),

@@ -216,6 +216,21 @@ public indirect enum SyntaxNodeLayout: Equatable {
     /// construction, with elements that are not common between all fixed layouts
     /// marked as optional.
     func factorFixedAlternationLayout() -> Self? {
+        func comparator(_ lhs: FixedLayoutEntry, _ rhs: FixedLayoutEntry) -> Bool {
+            guard lhs.label == rhs.label else {
+                return false
+            }
+
+            if lhs.layout == .optional(rhs.layout) {
+                return true
+            }
+            if .optional(lhs.layout) == rhs.layout {
+                return true
+            }
+
+            return lhs.layout == rhs.layout
+        }
+
         guard case .oneOf(let elements) = self else {
             return nil
         }
@@ -245,9 +260,10 @@ public indirect enum SyntaxNodeLayout: Equatable {
             return nil
         }
 
-        guard let commonIndices = fixedEntries.greatestCommonIndices().map({ $0[longestIndex] }) else {
+        guard let greatestCommon = fixedEntries.greatestCommonIndices(comparator: comparator) else {
             return nil
         }
+        let commonOnLongest = greatestCommon[longestIndex]
 
         let longest = fixedEntries[longestIndex]
         var unseenLongestIndices = Set(longest.indices)
@@ -258,7 +274,7 @@ public indirect enum SyntaxNodeLayout: Equatable {
             }
 
             let pair = [longest, entry]
-            guard let common = pair.greatestCommonIndices() else {
+            guard let common = pair.greatestCommonIndices(comparator: comparator) else {
                 // Found layout that is disjoint with longest layout
                 return nil
             }
@@ -277,8 +293,8 @@ public indirect enum SyntaxNodeLayout: Equatable {
         var newEntries: [FixedLayoutEntry] = []
 
         for (i, var element) in longest.enumerated() {
-            let isOptional = !commonIndices.contains(i)
-            if isOptional {
+            let requiresOptional = !commonOnLongest.contains(i)
+            if requiresOptional && !element.layout.isOptional {
                 element.layout = .optional(element.layout)
             }
 
@@ -388,7 +404,9 @@ public indirect enum SyntaxNodeLayout: Equatable {
 
     /// Simple deduplicating delegate that simply increments a numeric suffix to
     /// each identifier to deduplicate them.
-    struct CounterDeduplicateDelegate: DeduplicateDelegate {
+    class CounterDeduplicateDelegate: DeduplicateDelegate {
+        var deduplicationCount: Int = 0
+
         func deduplicate(
             identifier: String,
             currentIdentifiers: Set<String>
@@ -401,9 +419,18 @@ public indirect enum SyntaxNodeLayout: Equatable {
 
             while currentIdentifiers.contains(current) {
                 counter += 1
+                deduplicationCount += 1
             }
 
             return current
+        }
+
+        /// Returns the number of identifiers that require deduplication in a
+        /// given syntax node layout item.
+        static func duplicatedCount(in layout: SyntaxNodeLayout) -> Int {
+            let delegate = CounterDeduplicateDelegate()
+            _=layout.deduplicating(with: delegate)
+            return delegate.deduplicationCount
         }
     }
 }

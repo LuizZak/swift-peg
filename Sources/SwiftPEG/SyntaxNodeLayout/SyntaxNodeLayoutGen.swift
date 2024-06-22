@@ -39,16 +39,28 @@ public class SyntaxNodeLayoutGen {
         var layout = SyntaxNodeLayout.oneOf(possibleLayouts)
         layout = layout.flattened()
 
+        let deduplicateDelegate = SyntaxNodeLayout.CounterDeduplicateDelegate()
+
         // Attempt to factor out the layout into known common patterns
         if let alternating = layout.factorFixedAlternationLayout() {
             layout = alternating
         } else if let factored = layout.factoringCommonFixedElements() {
-            layout = factored
+            let countBefore = SyntaxNodeLayout
+                .CounterDeduplicateDelegate
+                .duplicatedCount(in: layout)
+
+            let countAfter = SyntaxNodeLayout
+                .CounterDeduplicateDelegate
+                .duplicatedCount(in: factored)
+
+            // Favor layouts that lead to less required deduplications
+            if countAfter <= countBefore {
+                layout = factored
+            }
         }
 
         // Deduplicate identifiers
-        let delegate = SyntaxNodeLayout.CounterDeduplicateDelegate()
-        layout = layout.deduplicating(with: delegate)
+        layout = layout.deduplicating(with: deduplicateDelegate)
 
         return .init(name: rule.name, ruleName: rule.name, layout: layout)
     }
