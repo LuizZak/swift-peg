@@ -36,6 +36,115 @@ class SyntaxNodeLayoutGenTests: XCTestCase {
         ])
     }
 
+    func testGenerateSyntaxNodes_factorTogglingElements() throws {
+        let processed = try processGrammar(tokens: #"""
+        $A: 'a' ; $B: 'b' ; $C: 'c' ; $D: 'd' ;
+        """#, grammar: #"""
+        @tokensFile "tokens.tokens" ;
+
+        a: A b c d | A b d | A c d | A d ;
+        b: 'b' ;
+        c: 'c' ;
+        d: 'd' ;
+        """#, entryRuleName: "a")
+        let sut = makeSut(processed)
+
+        let result = try sut.generateSyntaxNodes()
+
+        assertSyntaxNodesEqual(result, [
+            .init(name: "a", layout: .makeFixed([
+                "A": .token("A"),
+                "b": .optional(.rule("b")),
+                "c": .optional(.rule("c")),
+                "d": .rule("d"),
+            ])),
+            .init(name: "b", layout: .makeFixed([
+                "B": .token("B"),
+            ])),
+            .init(name: "c", layout: .makeFixed([
+                "C": .token("C"),
+            ])),
+            .init(name: "d", layout: .makeFixed([
+                "D": .token("D"),
+            ])),
+        ])
+    }
+
+    func testGenerateSyntaxNodes_factorTogglingElements_abortOnUnmatchedElement() throws {
+        let processed = try processGrammar(tokens: #"""
+        $A: 'a' ; $B: 'b' ; $C: 'c' ; $D: 'd' ;
+        """#, grammar: #"""
+        @tokensFile "tokens.tokens" ;
+
+        a: A b c d | A b b | A c d | A d ;
+        b: 'b' ;
+        c: 'c' ;
+        d: 'd' ;
+        """#, entryRuleName: "a")
+        let sut = makeSut(processed)
+
+        let result = try sut.generateSyntaxNodes()
+
+        assertSyntaxNodesEqual(result, [
+            .init(name: "a", layout: .makeFixed([
+                "A": .token("A"),
+                "b": .optional(.rule("b")),
+                "c": .optional(.rule("c")),
+                "d": .optional(.rule("d")),
+                "b1": .optional(.rule("b")),
+                "b2": .optional(.rule("b")),
+                "c1": .optional(.rule("c")),
+                "d1": .optional(.rule("d")),
+                "d2": .optional(.rule("d")),
+            ])),
+            .init(name: "b", layout: .makeFixed([
+                "B": .token("B"),
+            ])),
+            .init(name: "c", layout: .makeFixed([
+                "C": .token("C"),
+            ])),
+            .init(name: "d", layout: .makeFixed([
+                "D": .token("D"),
+            ])),
+        ])
+    }
+
+    func testGenerateSyntaxNodes_factorTogglingElements_abortOnMultipleLongestElements() throws {
+        let processed = try processGrammar(tokens: #"""
+        $A: 'a' ; $B: 'b' ; $C: 'c' ; $D: 'd' ;
+        """#, grammar: #"""
+        @tokensFile "tokens.tokens" ;
+
+        a: A b c | A b d | A c;
+        b: 'b' ;
+        c: 'c' ;
+        d: 'd' ;
+        """#, entryRuleName: "a")
+        let sut = makeSut(processed)
+
+        let result = try sut.generateSyntaxNodes()
+
+        assertSyntaxNodesEqual(result, [
+            .init(name: "a", layout: .makeFixed([
+                "A": .token("A"),
+                "b": .optional(.rule("b")),
+                "c": .optional(.rule("c")),
+                "b1": .optional(.rule("b")),
+                "d": .optional(.rule("d")),
+                "c1": .optional(.rule("c")),
+            ])),
+            .init(name: "b", layout: .makeFixed([
+                "B": .token("B"),
+            ])),
+            .init(name: "c", layout: .makeFixed([
+                "C": .token("C"),
+            ])),
+            .init(name: "d", layout: .makeFixed([
+                "D": .token("D"),
+            ])),
+        ])
+    }
+
     func testGenerateSyntaxNodes_factorCommonElements() throws {
         let processed = try processGrammar(tokens: #"""
         $A: 'a' ; $B: 'b' ; $C: 'c' ;
@@ -367,7 +476,7 @@ private func assertSyntaxNodesEqual(
         return
     }
 
-    fail("Nodes aren't equal", file: file, line: line)
+    fail("Node sequences aren't equal", file: file, line: line)
 
     // Attempt to pair remaining/unmatched by name
     let byName = Dictionary(grouping: (unmatched + remaining), by: {
@@ -376,7 +485,8 @@ private func assertSyntaxNodesEqual(
 
     for (name, values) in byName {
         if values.count == 1 {
-            print("Found unmatched node \(values[0])")
+            print("Found unmatched node '\(values[0].name)':")
+            debugPrint(values[0])
         } else if values.count == 2 {
             print("Node '\(name)' is mismatched:")
 

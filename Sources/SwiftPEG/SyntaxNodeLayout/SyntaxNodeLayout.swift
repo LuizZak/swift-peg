@@ -210,6 +210,84 @@ public indirect enum SyntaxNodeLayout: Equatable {
         return Array(fixedEntries[0][0..<index])
     }
 
+    /// If this syntax node layout is a `.oneOf` of exclusively `.fixed` layouts,
+    /// where each layout can be constructed by the presence or absence of
+    /// elements contained within the longest layout production, returns that
+    /// construction, with elements that are not common between all fixed layouts
+    /// marked as optional.
+    func factorFixedAlternationLayout() -> Self? {
+        guard case .oneOf(let elements) = self else {
+            return nil
+        }
+        if elements.count == 1 {
+            return nil
+        }
+
+        var fixedEntries: [[FixedLayoutEntry]] = []
+
+        for element in elements {
+            guard case .fixed(let entries) = element else {
+                return nil
+            }
+
+            fixedEntries.append(entries)
+        }
+
+        guard
+            let longestIndex = fixedEntries.indices.max(by: {
+                fixedEntries[$0].count < fixedEntries[$1].count
+            }),
+            // Alternating layouts can only occur if one entry contains subsets
+            // of all others, meaning only one entry has the greatest count of
+            // items.
+            fixedEntries.filter({ $0.count == fixedEntries[longestIndex].count }).count == 1
+        else {
+            return nil
+        }
+
+        guard let commonIndices = fixedEntries.greatestCommonIndices().map({ $0[longestIndex] }) else {
+            return nil
+        }
+
+        let longest = fixedEntries[longestIndex]
+        var unseenLongestIndices = Set(longest.indices)
+
+        for (index, entry) in fixedEntries.enumerated() {
+            guard index != longestIndex else {
+                continue
+            }
+
+            let pair = [longest, entry]
+            guard let common = pair.greatestCommonIndices() else {
+                // Found layout that is disjoint with longest layout
+                return nil
+            }
+            guard common[1] == Array(entry.indices) else {
+                // Found layout that was unmatched in longest layout
+                return nil
+            }
+
+            unseenLongestIndices.subtract(common[0])
+        }
+
+        guard unseenLongestIndices.isEmpty else {
+            return nil
+        }
+
+        var newEntries: [FixedLayoutEntry] = []
+
+        for (i, var element) in longest.enumerated() {
+            let isOptional = !commonIndices.contains(i)
+            if isOptional {
+                element.layout = .optional(element.layout)
+            }
+
+            newEntries.append(element)
+        }
+
+        return .fixed(newEntries)
+    }
+
     /// If this syntax node is a `.oneOf` of exclusively `.fixed` layouts, returns
     /// the result of factoring out the common elements of all fixed layouts into
     /// the root layout, keeping them in the order of appearance on the first

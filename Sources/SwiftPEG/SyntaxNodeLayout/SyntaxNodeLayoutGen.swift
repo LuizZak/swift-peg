@@ -39,9 +39,12 @@ public class SyntaxNodeLayoutGen {
         var layout = SyntaxNodeLayout.oneOf(possibleLayouts)
         layout = layout.flattened()
 
-        // Attempt to factor out the layout
-        let factored = layout.factoringCommonFixedElements()
-        layout = factored ?? layout
+        // Attempt to factor out the layout into known common patterns
+        if let alternating = layout.factorFixedAlternationLayout() {
+            layout = alternating
+        } else if let factored = layout.factoringCommonFixedElements() {
+            layout = factored
+        }
 
         // Deduplicate identifiers
         let delegate = SyntaxNodeLayout.CounterDeduplicateDelegate()

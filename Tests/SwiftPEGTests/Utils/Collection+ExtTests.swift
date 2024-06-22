@@ -87,6 +87,20 @@ class Collection_ExtTests: XCTestCase {
         assertEqual(result, [[0, 1, 2]])
     }
 
+    func testGreatestCommonIndices_mismatchedElementCount() {
+        let sut: [[Int]] = [
+            [0, 2, 1, 1],
+            [3, 0, 4, 1],
+        ]
+
+        let result = sut.greatestCommonIndices()
+
+        assertEqual(result, [
+            [0, 2],
+            [1, 3],
+        ])
+    }
+
     func testGreatestCommonIndices_repeatingElement() {
         let sut: [[Int]] = [
             [0, 1, 0],

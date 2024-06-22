@@ -258,7 +258,7 @@ extension Collection where Element: Equatable {
         var greatestCommonMonotone: Range<Int>?
 
         for list in leastCommonIndices {
-            guard let nextMonotone = list.greatestMonotoneRange() else {
+            guard let nextMonotone = list.greatestMonotoneRange(by: <) else {
                 return nil
             }
 
@@ -281,11 +281,11 @@ extension Collection where Element: Equatable {
         }
 
         var result: [[Int]] = []
-        for leastCommon in leastCommonIndices {
+        for indices in leastCommonIndices {
             var partial: [Int] = []
 
             for i in greatestCommonMonotone {
-                let inArray = leastCommon[i]
+                let inArray = indices[i]
                 partial.append(inArray)
             }
 
@@ -298,21 +298,35 @@ extension Collection where Element: Equatable {
     /// Returns the end of a monotonic range within this collection, starting at
     /// a given index.
     ///
-    /// Returns the index, starting from `index`, of the first element that is
-    /// strictly less than the previous element.
+    /// Returns the index, starting from `index`, of the first element that
+    /// `comparator` returns `false` when compared to the previous element.
     ///
-    /// If the element at `index` is already greater than the next element, the
-    /// result is `index + 1`.
+    /// If the element at `index` already compares as false with the next element,
+    /// the result is `index + 1`.
+    ///
+    /// - Parameters:
+    ///   - index:
+    ///         The index to start the search at.
+    ///   - comparator:
+    ///         A comparator that will be invoked with sequential items as
+    ///         `comparator(self[n], self[n + 1])`.
+    ///         Defaults to `<=`.
+    /// - Returns:
+    ///     The index of the first element where `comparator(current, next)`
+    ///     returns false.
     ///
     /// - complexity: O(n) where n is the length of the collection.
-    func monotoneEnd(after index: Index) -> Index where Element: Comparable {
+    func monotoneEnd(
+        after index: Index,
+        by comparator: (Element, Element) -> Bool = (<=)
+    ) -> Index where Element: Comparable {
         assert(indices.contains(index))
 
         var current = self[index]
 
         var stop = self.index(after: index)
 
-        while stop < endIndex, self[stop] >= current {
+        while stop < endIndex, comparator(current, self[stop]) {
             current = self[stop]
 
             stop = self.index(after: stop)
@@ -331,13 +345,24 @@ extension Collection where Element: Equatable {
     ///
     /// Returns `nil` if the collection is empty.
     ///
+    /// - Parameters:
+    ///   - comparator:
+    ///         A comparator that will be invoked with sequential items as
+    ///         `comparator(self[n], self[n + 1])`.
+    ///         Defaults to `<=`.
+    /// - Returns:
+    ///     The greatest sequential range of indices where
+    ///     `comparator(self[index], self[index + 1])` is true.
+    ///
     /// - complexity: O(n) where n is the length of the collection.
-    func greatestMonotoneRange() -> Range<Index>? where Element: Comparable, Index == Int {
+    func greatestMonotoneRange(
+        by comparator: (Element, Element) -> Bool = (<=)
+    ) -> Range<Index>? where Element: Comparable, Index == Int {
         var largest: Range<Index>?
 
         var index = self.startIndex
         while index < self.endIndex {
-            let end = self.monotoneEnd(after: index)
+            let end = self.monotoneEnd(after: index, by: comparator)
             defer { index = end }
 
             let range = index..<end
