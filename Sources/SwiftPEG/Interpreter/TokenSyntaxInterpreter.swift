@@ -15,7 +15,10 @@ public class TokenSyntaxInterpreter {
     /// Returns `true` if the given token definition parses the given input string
     /// fully. Returns `false` if parsing fails, or if the token parses but stops
     /// before consuming the entire input.
-    func tokenFullyParses(_ token: InternalGrammar.TokenDefinition, input: String) -> Bool {
+    func tokenFullyParses<StringType: StringProtocol>(
+        _ token: InternalGrammar.TokenDefinition,
+        input: StringType
+    ) -> Bool where StringType.SubSequence == Substring {
         do {
             var stream = StringStream(source: input)
             return try parse(token, from: &stream) && stream.isEof
@@ -27,7 +30,10 @@ public class TokenSyntaxInterpreter {
     /// Returns `true` if the given token syntax parses the given input string
     /// fully. Returns `false` if parsing fails, or if the token parses but stops
     /// before consuming the entire input.
-    func tokenSyntaxFullyParses(_ tokenSyntax: CommonAbstract.TokenSyntax, input: String) -> Bool {
+    func tokenSyntaxFullyParses<StringType: StringProtocol>(
+        _ tokenSyntax: CommonAbstract.TokenSyntax,
+        input: StringType
+    ) -> Bool where StringType.SubSequence == Substring {
         do {
             var stream = StringStream(source: input)
             return try parse(tokenSyntax, from: &stream) && stream.isEof
@@ -142,6 +148,16 @@ public class TokenSyntaxInterpreter {
 
     internal func token(named name: String) -> InternalGrammar.TokenDefinition? {
         tokenDefinitions.first(where: { $0.name == name })
+    }
+
+    internal func token(forLiteral literal: some StringProtocol) -> InternalGrammar.TokenDefinition? {
+        tokenDefinitions.first(where: {
+            if let string = $0.string {
+                return string == literal
+            } else {
+                return false
+            }
+        })
     }
 
     internal func cachedRegex(for token: InternalGrammar.TokenDefinition) -> RegexCacheEntry?? {

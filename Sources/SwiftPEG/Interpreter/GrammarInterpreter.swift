@@ -7,11 +7,22 @@ public class GrammarInterpreter {
     typealias Mark = InterpreterTokenizer.Mark
 
     let context = InterpretedRuleContextManager()
-    weak var _delegate: Delegate?
+    weak var _tokenDelegate: TokenDelegate?
+    weak var _altDelegate: AltDelegate?
 
-    var delegate: Delegate {
+    var tokenDelegate: TokenDelegate {
         get throws {
-            guard let delegate = _delegate else {
+            guard let delegate = _tokenDelegate else {
+                throw Error.delegateReleased
+            }
+
+            return delegate
+        }
+    }
+
+    var altDelegate: AltDelegate {
+        get throws {
+            guard let delegate = _altDelegate else {
                 throw Error.delegateReleased
             }
 
@@ -49,7 +60,8 @@ public class GrammarInterpreter {
         grammar: InternalGrammar.Grammar,
         tokens: [InternalGrammar.TokenDefinition] = [],
         source: String,
-        delegate: Delegate?
+        tokenDelegate: TokenDelegate?,
+        altDelegate: AltDelegate?
     ) {
         self.init(
             processedGrammar: .init(
@@ -59,7 +71,8 @@ public class GrammarInterpreter {
                 tokenOcclusionGraph: .init(nodes: [], edges: [])
             ),
             source: source,
-            delegate: delegate
+            tokenDelegate: tokenDelegate,
+            altDelegate: altDelegate
         )
     }
 
@@ -68,9 +81,11 @@ public class GrammarInterpreter {
     public init(
         processedGrammar: ProcessedGrammar,
         source: String,
-        delegate: Delegate?
+        tokenDelegate: TokenDelegate?,
+        altDelegate: AltDelegate?
     ) {
-        self._delegate = delegate
+        self._tokenDelegate = tokenDelegate
+        self._altDelegate = altDelegate
         self.grammar = processedGrammar.grammar
         self.source = source
         self.tokenizer = InterpreterTokenizer(source: source)
@@ -94,7 +109,7 @@ public class GrammarInterpreter {
     }
 
     func next() throws -> Token? {
-        try self.tokenizer.next(self.delegate)
+        try self.tokenizer.next(self.tokenDelegate)
     }
 
     func makeKey(ruleName: String) -> InterpreterCache.Key {
@@ -201,7 +216,7 @@ public class GrammarInterpreter {
 
             if
                 let ctx = try tryAlt(alt),
-                let result = try self.delegate.produceResult(for: alt, context: ctx)
+                let result = try self.altDelegate.produceResult(for: alt, context: ctx)
             {
                 return result
             }
@@ -511,7 +526,7 @@ public class GrammarInterpreter {
 
         guard
             let next = try self.next(),
-            try self.delegate.tokenResult(next, matchesTokenName: tokenName)
+            try self.tokenDelegate.tokenResult(next, matchesTokenName: tokenName)
         else {
             self.restore(mark)
             return nil
@@ -525,7 +540,7 @@ public class GrammarInterpreter {
 
         guard
             let next = try self.next(),
-            try self.delegate.tokenResult(next, matchesTokenLiteral: tokenLiteral)
+            try self.tokenDelegate.tokenResult(next, matchesTokenLiteral: tokenLiteral)
         else {
             self.restore(mark)
             return nil
@@ -735,20 +750,8 @@ public class GrammarInterpreter {
         }
     }
 
-    public protocol Delegate: AnyObject {
-        /// Requests that the delegate produce the resulting value for an alt
-        /// that was matched.
-        ///
-        /// If the delegate returns `nil`, the alternative is failed as if it
-        /// didn't match its items.
-        ///
-        /// Errors thrown during result production abort further parsing of the
-        /// syntax.
-        func produceResult(
-            for alt: InternalGrammar.Alt,
-            context: AltContext
-        ) throws -> Any?
-
+    /// Delegate for token lexing.
+    public protocol TokenDelegate: AnyObject {
         /// Requests that a token be produced from a given substring, returning
         /// the token value and an associated length that indicates how much of
         /// the input substring the token occupies, in grapheme cluster count
@@ -780,6 +783,22 @@ public class GrammarInterpreter {
             _ tokenResult: Token,
             matchesTokenLiteral tokenLiteral: String
         ) -> Bool
+    }
+
+    /// Delegate for alternative result productions.
+    public protocol AltDelegate: AnyObject {
+        /// Requests that the delegate produce the resulting value for an alt
+        /// that was matched.
+        ///
+        /// If the delegate returns `nil`, the alternative is failed as if it
+        /// didn't match its items.
+        ///
+        /// Errors thrown during result production abort further parsing of the
+        /// syntax.
+        func produceResult(
+            for alt: InternalGrammar.Alt,
+            context: AltContext
+        ) throws -> Any?
     }
 
     /// Errors that can be raised during grammar interpretation.
@@ -869,7 +888,7 @@ class InterpreterTokenizer {
     /// Fetches the next token in the stream, either from the currently cached
     /// token set or by requesting that a given delegate parse the next token
     /// from the stream.
-    func next(_ delegate: GrammarInterpreter.Delegate) throws -> Token? {
+    func next(_ delegate: GrammarInterpreter.TokenDelegate) throws -> Token? {
         guard cacheIndex >= cachedTokens.count else {
             defer { cacheIndex += 1 }
             return cachedTokens[cacheIndex]

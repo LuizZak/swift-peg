@@ -272,7 +272,12 @@ private func makeSut(
     source: String
 ) -> GrammarInterpreter {
 
-    return GrammarInterpreter(grammar: grammar, source: source, delegate: delegate)
+    return GrammarInterpreter(
+        grammar: grammar,
+        source: source,
+        tokenDelegate: delegate,
+        altDelegate: delegate
+    )
 }
 
 private func mockDelegate() -> TestInterpreterDelegate {

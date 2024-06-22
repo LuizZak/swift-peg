@@ -1,6 +1,6 @@
 @testable import SwiftPEG
 
-class TestInterpreterDelegate: GrammarInterpreter.Delegate {
+class TestInterpreterDelegate: GrammarInterpreter.AltDelegate, GrammarInterpreter.TokenDelegate {
     var tokenMatchers: [TokenProduction] = []
     var altMatchers: [AltProduction] = []
 
