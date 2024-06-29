@@ -92,18 +92,22 @@ extension SwiftCodeGen {
     func generateTokenTypeLength(settings: TokenTypeGenSettings) throws {
         generateInlinableAttribute(settings: settings)
         generateAccessLevel(settings: settings)
-        buffer.emitBlock("var length: Int") {
-            buffer.emitLine("string.count")
+        buffer.emitMultiline("""
+        var length: Int {
+            string.count
         }
+        """)
     }
 
     /// `var description: String`
     func generateTokenTypeDescription(settings: TokenTypeGenSettings) throws {
         generateInlinableAttribute(settings: settings)
         generateAccessLevel(settings: settings)
-        buffer.emitBlock("var description: String") {
-            buffer.emitLine("String(string)")
+        buffer.emitMultiline("""
+        var description: String {
+            String(string)
         }
+        """)
     }
 
     /// `init(kind: TokenKind, string: Substring)`
@@ -116,10 +120,12 @@ extension SwiftCodeGen {
 
         generateInlinableAttribute(settings: settings)
         generateAccessLevel(settings: settings)
-        buffer.emitBlock("init(kind: TokenKind, string: Substring)") {
-            buffer.emitLine("self.kind = kind")
-            buffer.emitLine("self.string = string")
+        buffer.emitMultiline("""
+        init(kind: TokenKind, string: Substring) {
+            self.kind = kind
+            self.string = string
         }
+        """)
     }
 
     /// `static func recordTokenAttempt<StringType>(...)`
@@ -157,9 +163,11 @@ extension SwiftCodeGen {
     func generateTokenTypeProduceDummy(settings: TokenTypeGenSettings) {
         generateInlinableAttribute(settings: settings)
         generateAccessLevel(settings: settings)
-        buffer.emitBlock("static func produceDummy(_ kind: TokenKind) -> Self") {
-            buffer.emitLine(#".init(kind: kind, string: "<dummy>")"#)
+        buffer.emitMultiline("""
+        static func produceDummy(_ kind: TokenKind) -> Self {
+            .init(kind: kind, string: "<dummy>")
         }
+        """)
     }
 
     /// `func from<StringType>(stream: inout StringStream<StringType>) -> Self? where StringType.SubSequence == Substring`
@@ -180,9 +188,11 @@ extension SwiftCodeGen {
         settings: TokenTypeGenSettings,
         sortedTokens: [InternalGrammar.TokenDefinition]
     ) throws {
-        buffer.emitLine("guard !stream.isEof else { return nil }")
-        buffer.emitLine("stream.markSubstringStart()")
-        buffer.ensureDoubleNewline()
+        buffer.emitMultiline("""
+        guard !stream.isEof else { return nil }
+        stream.markSubstringStart()
+
+        """)
 
         // TODO: Attempt to generate a switch over the first peeked character
         // TODO: like in SwiftPEGGrammar's old Token parser?
@@ -322,11 +332,13 @@ extension SwiftCodeGen {
     }
 
     func generateTokenTypeParserBodyLongestParse(sortedTokens: [InternalGrammar.TokenDefinition]) throws {
-        buffer.emitLine("guard !stream.isEof else { return nil }")
-        buffer.emitLine("stream.markSubstringStart()")
-        buffer.ensureDoubleNewline()
-        buffer.emitLine("var longestAttempt: (Self.TokenKind, StringStream<StringType>.State)?")
-        buffer.ensureDoubleNewline()
+        buffer.emitMultiline("""
+        guard !stream.isEof else { return nil }
+        stream.markSubstringStart()
+
+        var longestAttempt: (Self.TokenKind, StringStream<StringType>.State)?
+
+        """)
 
         // TODO: Attempt to generate a switch over the first peeked character
         // TODO: like in SwiftPEGGrammar's old Token parser?
@@ -340,13 +352,13 @@ extension SwiftCodeGen {
                 buffer.backtrackWhitespace()
                 buffer.emitLine(" stream in")
 
-                buffer.emitBlock("if \(parseInvocation)") {
-                    buffer.emitLine("return .\(tokenName)")
+                buffer.emitMultiline("""
+                if \(parseInvocation) {
+                    return .\(tokenName)
+                } else {
+                    return nil
                 }
-                buffer.backtrackWhitespace()
-                buffer.emitBlock(" else ") {
-                    buffer.emitLine("return nil")
-                }
+                """)
             }
         }
 
