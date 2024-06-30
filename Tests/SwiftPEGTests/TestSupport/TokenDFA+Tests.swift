@@ -95,7 +95,7 @@ extension TokenDFA {
             graph.addConnection(
                 fromLabel: start,
                 toLabel: end,
-                label: edge.label
+                label: edge.condition.description
             )
         }
 

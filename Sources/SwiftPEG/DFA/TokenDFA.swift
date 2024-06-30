@@ -36,19 +36,19 @@ class TokenDFA {
     }
 
     @discardableResult
-    func addEdge(from start: Node, to end: Node, label: String) -> Edge {
-        addEdge(from: start.id, to: end.id, label: label)
+    func addEdge(from start: Node, to end: Node, condition: EdgeCondition) -> Edge {
+        addEdge(from: start.id, to: end.id, condition: condition)
     }
 
     @discardableResult
-    func addEdge(from start: Node.ID, to end: Node.ID, label: String) -> Edge {
-        let edge = makeEdge(from: start, to: end, label: label)
+    func addEdge(from start: Node.ID, to end: Node.ID, condition: EdgeCondition) -> Edge {
+        let edge = makeEdge(from: start, to: end, condition: condition)
         edges.insert(edge)
         return edge
     }
 
-    func makeEdge(from start: Node.ID, to end: Node.ID, label: String) -> Edge {
-        Edge(start: start, end: end, label: label)
+    func makeEdge(from start: Node.ID, to end: Node.ID, condition: EdgeCondition) -> Edge {
+        Edge(start: start, end: end, condition: condition)
     }
 
     struct Node: Identifiable, Hashable {
@@ -61,6 +61,18 @@ class TokenDFA {
     struct Edge: Hashable {
         var start: Node.ID
         var end: Node.ID
-        var label: String
+        var condition: EdgeCondition
+    }
+
+    /// Condition for transitioning between states in a DFA.
+    enum EdgeCondition: Hashable, CustomStringConvertible {
+        case terminal(CommonAbstract.TokenTerminal)
+
+        var description: String {
+            switch self {
+            case .terminal(let terminal):
+                return terminal.description
+            }
+        }
     }
 }
