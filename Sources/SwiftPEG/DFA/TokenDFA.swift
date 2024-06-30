@@ -2,8 +2,11 @@ import MiniDigraph
 
 /// Contains information about a token syntax's characteristic deterministic
 /// finite automata.
-class TokenDFA {
+class TokenDFA: DirectedGraphType {
     private var _nextId: Int = 0
+
+    /// Refers to the Id of the starting node for this DFA.
+    var startNodeId: Int = -1
 
     var nodes: Set<Node> = []
     var edges: Set<Edge> = []
@@ -47,8 +50,32 @@ class TokenDFA {
         return edge
     }
 
+    func startNode(for edge: Edge) -> Node {
+        findNode(edge.start)!
+    }
+
+    func endNode(for edge: Edge) -> Node {
+        findNode(edge.end)!
+    }
+
+    func edge(from start: Node, to end: Node) -> Edge? {
+        edges.first(where: { $0.start == start.id && $0.end == end.id })
+    }
+
+    func edges(from node: Node) -> Set<Edge> {
+        edges.filter({ $0.start == node.id })
+    }
+
+    func edges(towards node: Node) -> Set<Edge> {
+        edges.filter({ $0.end == node.id })
+    }
+
     func makeEdge(from start: Node.ID, to end: Node.ID, condition: EdgeCondition) -> Edge {
         Edge(start: start, end: end, condition: condition)
+    }
+
+    func findNode(_ nodeId: Node.ID) -> Node? {
+        nodes.first(where: { $0.id == nodeId })
     }
 
     struct Node: Identifiable, Hashable {
@@ -58,7 +85,7 @@ class TokenDFA {
         var isAccept: Bool
     }
 
-    struct Edge: Hashable {
+    struct Edge: DirectedGraphEdge {
         var start: Node.ID
         var end: Node.ID
         var condition: EdgeCondition
@@ -66,12 +93,19 @@ class TokenDFA {
 
     /// Condition for transitioning between states in a DFA.
     enum EdgeCondition: Hashable, CustomStringConvertible {
+        /// A terminal match against the input string.
         case terminal(CommonAbstract.TokenTerminal)
+
+        /// An empty match that succeeds without consuming input.
+        case epsilon
 
         var description: String {
             switch self {
             case .terminal(let terminal):
                 return terminal.description
+
+            case .epsilon:
+                return "ε"
             }
         }
     }
