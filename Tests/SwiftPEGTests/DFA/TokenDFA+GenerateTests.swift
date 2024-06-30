@@ -211,6 +211,46 @@ class TokenDFA_GenerateTests: XCTestCase {
         }
         """#)
     }
+
+    func testFrom_alts() throws {
+        let syntax = try parseTokenSyntax(#"""
+        | tripleQuote ( '\\"""' | backslashEscape | !tripleQuote . )* tripleQuote
+        | doubleQuote ( '\\"' | backslashEscape | !doubleQuote !'\n' . )* doubleQuote
+        | singleQuote ( "\\'" | backslashEscape | !singleQuote !'\n' . )* singleQuote
+        """#)
+
+        let sut = makeSut(syntax)
+
+        assertGraphviz(dfa: sut, matches: #"""
+        digraph {
+            graph [rankdir=LR]
+
+            n1 [label="s0", shape=circle]
+            n2 [label="s1", shape=circle]
+            n3 [label="s2", shape=doublecircle]
+            n4 [label="s3", shape=circle]
+            n5 [label="s4", shape=doublecircle]
+            n6 [label="s5", shape=circle]
+            n7 [label="s6", shape=doublecircle]
+
+            n1 -> n2 [label="tripleQuote"]
+            n2 -> n2 [label="\'\\\\\"\"\"\'"]
+            n2 -> n2 [label="."]
+            n2 -> n2 [label="backslashEscape"]
+            n2 -> n3 [label="tripleQuote"]
+            n1 -> n4 [label="doubleQuote"]
+            n4 -> n4 [label="\'\\\\\"\'"]
+            n4 -> n4 [label="."]
+            n4 -> n4 [label="backslashEscape"]
+            n4 -> n5 [label="doubleQuote"]
+            n1 -> n6 [label="singleQuote"]
+            n6 -> n6 [label="\"\\\\\'\""]
+            n6 -> n6 [label="."]
+            n6 -> n6 [label="backslashEscape"]
+            n6 -> n7 [label="singleQuote"]
+        }
+        """#)
+    }
 }
 
 // MARK: - Test internals
