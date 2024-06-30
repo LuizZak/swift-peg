@@ -57,16 +57,36 @@ internal func printGraphviz(dfa: TokenDFA) {
 }
 
 extension TokenDFA {
+    func validate(
+        file: StaticString = #file,
+        line: UInt = #line
+    ) {
+        for edge in edges {
+            assertNotNil(
+                findNode(edge.start),
+                message: "Validation failure: Found edge referencing non-existing node id \(edge.start)",
+                file: file,
+                line: line
+            )
+            assertNotNil(
+                findNode(edge.end),
+                message: "Validation failure: Found edge referencing non-existing node id \(edge.end)",
+                file: file,
+                line: line
+            )
+        }
+    }
+
     func asGraphviz() -> GraphViz {
         let graph = GraphViz()
 
         // Sort nodes
-        let nodes = nodes.sorted { (lhs, rhs) in
+        let sortedNodes = nodes.sorted { (lhs, rhs) in
             lhs.id < rhs.id
         }
 
         // Sort edges
-        let edges = edges.sorted { (lhs, rhs) in
+        let sortedEdges = edges.sorted { (lhs, rhs) in
             if lhs.start < rhs.start {
                 return true
             } else if lhs.start == rhs.start {
@@ -76,7 +96,7 @@ extension TokenDFA {
             }
         }
 
-        for node in nodes {
+        for node in sortedNodes {
             var attributes: GraphViz.Attributes = [:]
             if node.isAccept {
                 attributes["shape"] = "doublecircle"
@@ -88,7 +108,7 @@ extension TokenDFA {
                 attributes: attributes
             )
         }
-        for edge in edges {
+        for edge in sortedEdges {
             let start = "s\(edge.start)"
             let end = "s\(edge.end)"
 

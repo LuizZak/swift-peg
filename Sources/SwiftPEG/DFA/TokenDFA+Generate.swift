@@ -1,6 +1,21 @@
 import MiniDigraph
 
 extension TokenDFA {
+    /// Generates a DFA for a given token definition.
+    ///
+    /// If the token has no syntax, or the syntax could not be expanded, `nil` is
+    /// returned, instead.
+    static func from(
+        _ token: InternalGrammar.TokenDefinition
+    ) -> TokenDFA? {
+        guard let syntax = token.tokenSyntax else {
+            return nil
+        }
+
+        return from(syntax)
+    }
+
+    /// Generates a DFA for a given token syntax.
     static func from(_ syntax: CommonAbstract.TokenSyntax) -> TokenDFA {
         let dfa = TokenDFA()
 
@@ -17,6 +32,9 @@ extension TokenDFA {
         for node in finalized.nodes {
             idMap[node] = addNode(isAccept: node.isAccept).id
         }
+
+        self.startNodeId = idMap[finalized.startNode] ?? -1
+
         for edge in finalized.edges {
             guard let start = idMap[edge.start] else {
                 fatalError("\(#function): Found edge labeled \(edge.label) referring to nodes not listed in finalized DFA?")
@@ -34,7 +52,11 @@ fileprivate extension TokenDFA {
     func build(_ syntax: CommonAbstract.TokenSyntax) -> FinalizedDFA {
         let start = makeRealizableNode(isAccept: false)
 
-        var result = FinalizedDFA(nodes: [start], edges: [])
+        var result = FinalizedDFA(
+            startNode: start,
+            nodes: [start],
+            edges: []
+        )
 
         for alt in syntax.alts {
             result = result.merged(with: build(alt, entry: start))
@@ -44,8 +66,15 @@ fileprivate extension TokenDFA {
     }
 
     func build(_ alt: CommonAbstract.TokenAlt, entry: RealizableNode) -> FinalizedDFA {
-        var result = FinalizedDFA(nodes: [], edges: [])
+        var result = FinalizedDFA(
+            startNode: entry,
+            nodes: [],
+            edges: []
+        )
 
+        func inlined(_ terminal: CommonAbstract.TokenTerminal) -> PartialDFA {
+            return .terminal(label: terminal)
+        }
         func addEdge(_ start: RealizableNode, _ end: RealizableNode, label: CommonAbstract.TokenTerminal) {
             result.edges.append(
                 makeRealizedEdge(from: start, to: end, label: label)
@@ -197,11 +226,13 @@ fileprivate extension TokenDFA {
 
 fileprivate extension TokenDFA {
     struct FinalizedDFA {
+        var startNode: RealizableNode
         var nodes: [RealizableNode]
         var edges: [RealizedEdge]
 
         func merged(with other: Self) -> Self {
             Self(
+                startNode: startNode,
                 nodes: nodes + other.nodes,
                 edges: edges + other.edges
             )
