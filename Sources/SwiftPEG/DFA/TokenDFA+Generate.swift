@@ -25,7 +25,7 @@ extension TokenDFA {
                 fatalError("\(#function): Found edge labeled \(edge.label) referring to nodes not listed in finalized DFA?")
             }
 
-            addEdge(from: start, to: end, label: edge.label)
+            addEdge(from: start, to: end, condition: .terminal(edge.label))
         }
     }
 }
@@ -46,12 +46,12 @@ fileprivate extension TokenDFA {
     func build(_ alt: CommonAbstract.TokenAlt, entry: RealizableNode) -> FinalizedDFA {
         var result = FinalizedDFA(nodes: [], edges: [])
 
-        func addEdge(_ start: RealizableNode, _ end: RealizableNode, label: String) {
+        func addEdge(_ start: RealizableNode, _ end: RealizableNode, label: CommonAbstract.TokenTerminal) {
             result.edges.append(
                 makeRealizedEdge(from: start, to: end, label: label)
             )
         }
-        func addEdges(_ start: RealizableNode, _ end: RealizableNode, labels: [String]) {
+        func addEdges(_ start: RealizableNode, _ end: RealizableNode, labels: [CommonAbstract.TokenTerminal]) {
             for label in labels {
                 addEdge(start, end, label: label)
             }
@@ -149,32 +149,32 @@ fileprivate extension TokenDFA {
         switch item {
         case .atom(let atom):
             return .terminal(
-                label: atom.terminal.description
+                label: atom.terminal
             )
 
         case .group(let atoms):
             return .choice(
-                labels: atoms.map(\.terminal.description)
+                labels: atoms.map(\.terminal)
             )
 
         case .optionalAtom(let atom):
             return .optional(
-                labels: [atom.terminal.description]
+                labels: [atom.terminal]
             )
 
         case .optionalGroup(let atoms):
             return .optional(
-                labels: atoms.map(\.terminal.description)
+                labels: atoms.map(\.terminal)
             )
 
         case .zeroOrMore(let atoms):
             return .zeroOrMore(
-                labels: atoms.map(\.terminal.description)
+                labels: atoms.map(\.terminal)
             )
 
         case .oneOrMore(let atoms):
             return .oneOrMore(
-                labels: atoms.map(\.terminal.description)
+                labels: atoms.map(\.terminal)
             )
         }
     }
@@ -188,7 +188,7 @@ fileprivate extension TokenDFA {
     func makeRealizedEdge(
         from start: RealizableNode,
         to end: RealizableNode,
-        label: String
+        label: CommonAbstract.TokenTerminal
     ) -> RealizedEdge {
 
         RealizedEdge(start: start, end: end, label: label)
@@ -209,13 +209,13 @@ fileprivate extension TokenDFA {
     }
 
     enum PartialDFA {
-        case terminal(label: String)
-        case choice(labels: [String])
-        case optional(labels: [String])
-        case zeroOrMore(labels: [String])
-        case oneOrMore(labels: [String])
+        case terminal(label: CommonAbstract.TokenTerminal)
+        case choice(labels: [CommonAbstract.TokenTerminal])
+        case optional(labels: [CommonAbstract.TokenTerminal])
+        case zeroOrMore(labels: [CommonAbstract.TokenTerminal])
+        case oneOrMore(labels: [CommonAbstract.TokenTerminal])
 
-        var labels: [String] {
+        var labels: [CommonAbstract.TokenTerminal] {
             switch self {
             case .terminal(let label):
                 return [label]
@@ -251,11 +251,11 @@ fileprivate extension TokenDFA {
     struct RealizedEdge {
         var start: RealizableNode
         var end: RealizableNode
-        var label: String
+        var label: CommonAbstract.TokenTerminal
     }
 
     struct PendingEdge {
         var start: RealizableNode
-        var label: String?
+        var label: CommonAbstract.TokenTerminal?
     }
 }

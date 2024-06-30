@@ -955,7 +955,7 @@ extension CommonAbstract {
     ///     | '.'
     ///     ;
     /// ```
-    public enum TokenTerminal: Equatable, CustomStringConvertible {
+    public enum TokenTerminal: Hashable, CustomStringConvertible {
         /// `IDENTIFIER action`
         case characterPredicate(String, String)
 
