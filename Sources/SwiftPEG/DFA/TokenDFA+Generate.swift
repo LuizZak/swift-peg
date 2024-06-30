@@ -32,7 +32,7 @@ extension TokenDFA {
 
 fileprivate extension TokenDFA {
     func build(_ syntax: CommonAbstract.TokenSyntax) -> FinalizedDFA {
-        let start = RealizableNode()
+        let start = makeRealizableNode(isAccept: false)
 
         var result = FinalizedDFA(nodes: [start], edges: [])
 
@@ -46,11 +46,6 @@ fileprivate extension TokenDFA {
     func build(_ alt: CommonAbstract.TokenAlt, entry: RealizableNode) -> FinalizedDFA {
         var result = FinalizedDFA(nodes: [], edges: [])
 
-        enum State {
-            case initial(RealizableNode)
-            case ongoing(RealizableNode, [PendingEdge])
-        }
-
         func addEdge(_ start: RealizableNode, _ end: RealizableNode, label: String) {
             result.edges.append(
                 makeRealizedEdge(from: start, to: end, label: label)
@@ -61,75 +56,90 @@ fileprivate extension TokenDFA {
                 addEdge(start, end, label: label)
             }
         }
-        func addEdgesAndNodes(_ start: RealizableNode, _ end: PartialDFA, _ pending: [PendingEdge]) -> (RealizableNode, [PendingEdge]) {
+        func makeNode(isAccept: Bool) -> RealizableNode {
+            let node = makeRealizableNode(isAccept: isAccept)
+            result.nodes.append(node)
+            return node
+        }
+        func addEdgesAndNodes(
+            _ start: RealizableNode,
+            _ end: PartialDFA,
+            _ pending: [PendingEdge],
+            isAccept: Bool
+        ) -> (RealizableNode, [PendingEdge]) {
 
             switch end {
-            case .zeroOrMore(_, let node):
-                for label in end.labels {
+            case .zeroOrMore(let labels):
+                for label in labels {
                     addEdge(start, start, label: label)
                 }
 
-                if node.isAccept {
+                for pending in pending {
+                    addEdge(pending.start, start, label: pending.label ?? end.labels[0])
+                }
+
+                if isAccept {
                     start.isAccept = true
                 }
 
                 return (start, [])
 
-            case .oneOrMore(_, let node):
-                result.nodes.append(end.node)
+            case .oneOrMore(let labels):
+                let node = makeNode(isAccept: isAccept)
 
-                for label in end.labels {
+                for label in labels {
                     addEdge(start, node, label: label)
                     addEdge(node, node, label: label)
                 }
 
+                for pending in pending {
+                    addEdge(pending.start, node, label: pending.label ?? end.labels[0])
+                }
+
                 return (node, [])
 
-            case .optional:
-                result.nodes.append(end.node)
+            case .optional(let labels):
+                let node = makeNode(isAccept: isAccept)
 
-                for label in end.labels {
-                    addEdge(start, end.node, label: label)
+                for label in labels {
+                    addEdge(start, node, label: label)
                 }
 
                 for pending in pending {
-                    addEdge(pending.start, end.node, label: pending.label ?? end.labels[0])
+                    addEdge(pending.start, node, label: pending.label ?? labels[0])
                 }
 
-                return (end.node, [.init(start: start, label: nil)])
+                return (node, [.init(start: start, label: nil)])
 
             default:
-                result.nodes.append(end.node)
+                let node = makeNode(isAccept: isAccept)
 
                 for label in end.labels {
-                    addEdge(start, end.node, label: label)
+                    addEdge(start, node, label: label)
                 }
 
                 for pending in pending {
-                    addEdge(pending.start, end.node, label: pending.label ?? end.labels[0])
+                    addEdge(pending.start, node, label: pending.label ?? end.labels[0])
                 }
 
-                return (end.node, [])
+                return (node, [])
             }
         }
 
-        var state = State.initial(entry)
+        var latest = entry
+        var pending: [PendingEdge] = []
 
         for (i, item) in alt.items.enumerated() {
             let next = build(item)
+
+            var isAccept: Bool = false
             if i == alt.items.count - 1 {
-                next.node.isAccept = true
+                isAccept = true
             }
 
-            switch state {
-            case .initial(let node):
-                let result = addEdgesAndNodes(node, next, [])
-                state = .ongoing(result.0, result.1)
-
-            case .ongoing(let node, let pending):
-                let result = addEdgesAndNodes(node, next, pending)
-                state = .ongoing(result.0, result.1)
-            }
+            let result = addEdgesAndNodes(latest, next, pending, isAccept: isAccept)
+            latest = result.0
+            pending = result.1
         }
 
         return result
@@ -138,51 +148,41 @@ fileprivate extension TokenDFA {
     func build(_ item: CommonAbstract.TokenItem) -> PartialDFA {
         switch item {
         case .atom(let atom):
-            let node = makeRealizableNode()
-
-            return .terminal(label: atom.terminal.description, node)
+            return .terminal(
+                label: atom.terminal.description
+            )
 
         case .group(let atoms):
-            let node = makeRealizableNode()
-
-            return .choice(labels: atoms.map(\.terminal.description), node)
+            return .choice(
+                labels: atoms.map(\.terminal.description)
+            )
 
         case .optionalAtom(let atom):
-            let node = makeRealizableNode()
-
             return .optional(
-                labels: [atom.terminal.description],
-                node
+                labels: [atom.terminal.description]
             )
 
         case .optionalGroup(let atoms):
-            let node = makeRealizableNode()
-
             return .optional(
-                labels: atoms.map(\.terminal.description),
-                node
+                labels: atoms.map(\.terminal.description)
             )
 
         case .zeroOrMore(let atoms):
-            let node = makeRealizableNode()
-
             return .zeroOrMore(
-                labels: atoms.map(\.terminal.description),
-                node
+                labels: atoms.map(\.terminal.description)
             )
 
         case .oneOrMore(let atoms):
-            let node = makeRealizableNode()
-
             return .oneOrMore(
-                labels: atoms.map(\.terminal.description),
-                node
+                labels: atoms.map(\.terminal.description)
             )
         }
     }
 
-    func makeRealizableNode() -> RealizableNode {
-        RealizableNode()
+    func makeRealizableNode(isAccept: Bool) -> RealizableNode {
+        let node = RealizableNode()
+        node.isAccept = isAccept
+        return node
     }
 
     func makeRealizedEdge(
@@ -209,47 +209,28 @@ fileprivate extension TokenDFA {
     }
 
     enum PartialDFA {
-        case terminal(label: String, RealizableNode)
-        case choice(labels: [String], RealizableNode)
-        case optional(labels: [String], RealizableNode)
-        case zeroOrMore(labels: [String], RealizableNode)
-        case oneOrMore(labels: [String], RealizableNode)
+        case terminal(label: String)
+        case choice(labels: [String])
+        case optional(labels: [String])
+        case zeroOrMore(labels: [String])
+        case oneOrMore(labels: [String])
 
         var labels: [String] {
             switch self {
-            case .terminal(let label, _):
+            case .terminal(let label):
                 return [label]
 
-            case .choice(let labels, _):
+            case .choice(let labels):
                 return labels
 
-            case .oneOrMore(let labels, _):
+            case .oneOrMore(let labels):
                 return labels
 
-            case .optional(let labels, _):
+            case .optional(let labels):
                 return labels
 
-            case .zeroOrMore(let labels, _):
+            case .zeroOrMore(let labels):
                 return labels
-            }
-        }
-
-        var node: RealizableNode {
-            switch self {
-            case .choice(_, let node):
-                return node
-
-            case .oneOrMore(_, let node):
-                return node
-
-            case .optional(_, let node):
-                return node
-
-            case .terminal(_, let node):
-                return node
-
-            case .zeroOrMore(_, let node):
-                return node
             }
         }
     }
