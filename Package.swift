@@ -15,6 +15,7 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-argument-parser.git", exact: "1.4.0"),
         .package(url: "https://github.com/LuizZak/Console.git", exact: "0.13.0"),
         .package(url: "https://github.com/LuizZak/MiniDigraph.git", exact: "0.5.0"),
+        .package(url: "https://github.com/LuizZak/MiniGraphviz.git", from: "0.1.0"),
     ],
     targets: [
         .macro(
@@ -60,6 +61,7 @@ let package = Package(
             dependencies: [
                 "SwiftPEG",
                 .product(name: "Console", package: "Console"),
+                .product(name: "MiniGraphviz", package: "MiniGraphviz"),
             ],
             exclude: [
                 "FixtureTests/Fixtures",
