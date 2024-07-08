@@ -59,6 +59,42 @@ class TokenDFA_PrefixTests: XCTestCase {
         assertTrue(sut.isPrefix(of: token1))
         assertFalse(token2.isPrefix(of: token1))
     }
+
+    func testIsPrefix_nonInlined_zeroOrMoreCenter() throws {
+        let tokens = try parseTokenDefinitions(#"""
+        $a: 'a' 'c' ;
+        $b: 'a' 'b'* 'c' ;
+        """#)
+        let sut = try makeSut(tokens[0])
+        let token1 = try makeSut(tokens[1])
+
+        assertTrue(sut.isPrefix(of: token1))
+        assertTrue(token1.isPrefix(of: sut))
+    }
+
+    func testIsPrefix_nonInlined_oneOrMoreCenter() throws {
+        let tokens = try parseTokenDefinitions(#"""
+        $a: 'a' 'c' ;
+        $b: 'a' 'b'+ 'c' ;
+        """#)
+        let sut = try makeSut(tokens[0])
+        let token1 = try makeSut(tokens[1])
+
+        assertFalse(sut.isPrefix(of: token1))
+        assertFalse(token1.isPrefix(of: sut))
+    }
+
+    func testIsPrefix_nonInlined_decimalsAndFloats() throws {
+        let tokens = try parseTokenDefinitions(#"""
+        $a: '0'...'9'+ ;
+        $b: '0'...'9'+ '.' '0'...'9'+ ;
+        """#)
+        let sut = try makeSut(tokens[0])
+        let token1 = try makeSut(tokens[1])
+
+        assertTrue(sut.isPrefix(of: token1))
+        assertFalse(token1.isPrefix(of: sut))
+    }
 }
 
 // MARK: - Test internals
