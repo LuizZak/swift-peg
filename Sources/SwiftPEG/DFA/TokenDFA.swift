@@ -108,5 +108,35 @@ class TokenDFA: DirectedGraphType {
                 return "ε"
             }
         }
+
+        /// Returns `true` if `self` matches on the same inputs as `other`, but
+        /// not necessarily the other way around.
+        func isSubset(of other: Self) -> Bool {
+            switch (self, other) {
+            case (.terminal(let lhs), .terminal(let rhs)):
+                return lhs.isSubset(of: rhs)
+
+            case (.epsilon, _):
+                return true
+
+            case (_, .epsilon):
+                return false
+            }
+        }
+
+        /// Returns `true` if `self` matches on the same inputs as `other`, but
+        /// never consuming more characters than than `other`.
+        func isPrefix(of other: Self) -> Bool {
+            switch (self, other) {
+            case (.terminal(let lhs), .terminal(let rhs)):
+                return lhs.isPrefix(of: rhs)
+
+            case (.epsilon, _):
+                return false
+
+            case (_, .epsilon):
+                return false
+            }
+        }
     }
 }
