@@ -105,6 +105,7 @@ public class SwiftCodeGen {
     var implicitReturns: Bool = true
     var implicitBindings: Bool = true
     var bindTokenLiterals: Bool = false
+    var producerProtocol: ProducerProtocolInfo?
 
     var bindingEngine: BindingEngine
 
@@ -214,6 +215,9 @@ public class SwiftCodeGen {
                     .nested(.typeName(self.producerGenericParameterName()), identifier)
                 }
 
+            try generateDefaultProducerProtocol(protocolInfo)
+
+            self.producerProtocol = protocolInfo
             bindingEngine = bindingEngine.withCustomRuleResultMappings(ruleReturnAliases)
         }
 
@@ -327,9 +331,15 @@ public class SwiftCodeGen {
                 generateAction(action)
             }
 
-            for alt in rule.alts {
+            for (altIndex, alt) in rule.alts.enumerated() {
                 conditional.ensureEmptyLine()
-                try generateAlt(alt, in: production, backtrackBlock: markerBlock, cutFlagBlock: cutBlock)
+                try generateAlt(
+                    alt,
+                    altIndex,
+                    in: production,
+                    backtrackBlock: markerBlock,
+                    cutFlagBlock: cutBlock
+                )
             }
 
             bailBlock()
@@ -516,6 +526,7 @@ public class SwiftCodeGen {
 
     func generateAlt(
         _ alt: InternalGrammar.Alt,
+        _ altIndex: Int,
         in production: RemainingProduction,
         backtrackBlock: () -> Void,
         cutFlagBlock: () -> Void
@@ -535,7 +546,11 @@ public class SwiftCodeGen {
 
         // Successful alt match
         buffer.emitBlock {
-            generateOnAltMatchBlock(alt, in: production)
+            generateOnAltMatchBlock(
+                alt,
+                altIndex,
+                in: production
+            )
         }
 
         buffer.emitNewline()
@@ -563,12 +578,35 @@ public class SwiftCodeGen {
     /// of the action's resolved string.
     func generateOnAltMatchBlock(
         _ alt: InternalGrammar.Alt,
+        _ altIndex: Int,
         in production: RemainingProduction
     ) {
+        if
+            let producerProtocol,
+            production.isGrammarRule,
+            let producer = producerProtocol.ruleProducer(
+                forRuleName: production.name,
+                altIndex: altIndex
+            )
+        {
+            buffer.emitLine("return \(producerMemberName()).\(producer.makeCallExpression())")
+            return
+        }
+
         if implicitReturns {
             buffer.emit("return ")
         }
 
+        generateOnAltMatchBlockInterior(
+            alt,
+            production.productionType
+        )
+    }
+
+    func generateOnAltMatchBlockInterior(
+        _ alt: InternalGrammar.Alt,
+        _ productionType: CommonAbstract.SwiftType?
+    ) {
         if let action = alt.action {
             generateAction(action)
             return
@@ -587,7 +625,7 @@ public class SwiftCodeGen {
         // Fallback: Return an initialization of the associated node type, assuming
         // it is not `nil` and is not a known existential type, otherwise return
         // `Node()`.
-        if let type = production.productionType?.description, type != "Any" {
+        if let type = productionType?.description, type != "Any" {
             buffer.emitLine("\(type)()")
         } else {
             buffer.emitLine("Node()")

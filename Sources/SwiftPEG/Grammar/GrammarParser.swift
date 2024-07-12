@@ -5,42 +5,6 @@ public final class GrammarParser<RawTokenizer: RawTokenizerType>: PEGParser<RawT
     where RawTokenizer.RawToken == SwiftPEGGrammar.Token, RawTokenizer.Location == FileSourceLocation
 { }
 
-protocol GrammarParserProducer {
-    associatedtype StartProduction
-    associatedtype GrammarProduction
-    associatedtype MetaProduction
-    associatedtype MetaValueProduction
-    associatedtype RuleProduction
-    associatedtype RuleNameProduction
-    associatedtype AltsProduction
-    associatedtype AltProduction
-    associatedtype NamedItemsProduction
-    associatedtype NamedItemProduction
-    associatedtype LookaheadProduction
-    associatedtype ItemProduction
-    associatedtype RepetitionModeProduction
-    associatedtype AtomProduction
-    associatedtype SwiftTypeProduction
-    associatedtype SwiftTypeListProduction
-    associatedtype SwiftTupleTypeListProduction
-    associatedtype SwiftTupleTypeElementProduction
-    associatedtype ActionProduction
-    associatedtype FailActionProduction
-    associatedtype BalancedTokensProduction
-    associatedtype BalancedTokenProduction
-    associatedtype BalancedTokenAtomProduction
-    associatedtype StringProduction
-    associatedtype TokensFileProduction
-    associatedtype TokenDefinitionProduction
-    associatedtype TokenOrFragmentSpecifierProduction
-    associatedtype TokenSyntaxProduction
-    associatedtype TokenSyntaxAltProduction
-    associatedtype TokenSyntaxItemProduction
-    associatedtype TokenSyntaxAtomProduction
-    associatedtype TokenSyntaxExclusionProduction
-    associatedtype TokenSyntaxTerminalProduction
-}
-
 extension GrammarParser {
     /// ```
     /// start[SwiftPEGGrammar.Grammar]:

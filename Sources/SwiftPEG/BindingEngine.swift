@@ -170,7 +170,7 @@ class BindingEngine {
     /// - note: Rules always have an optional layer added to their return types.
     func typeForRule(_ rule: InternalGrammar.Rule) -> CommonAbstract.SwiftType? {
         if let alias = ruleReturnAliases[rule.name] {
-            return alias
+            return alias.be_optionalWrapped()
         }
 
         return rule.type?.be_optionalWrapped()

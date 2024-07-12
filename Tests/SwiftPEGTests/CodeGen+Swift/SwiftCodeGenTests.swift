@@ -603,10 +603,13 @@ class SwiftCodeGenTests: XCTestCase {
                 ]),
             ]),
             .init(name: "b", alts: [
-                .init(namedItems: [
-                    .item("MUL"),
-                    .item("a"),
-                ]),
+                .init(
+                    namedItems: [
+                        .item("MUL"),
+                        .item("a"),
+                    ],
+                    action: "action1()"
+                ),
                 .init(namedItems: [
                     .item("'-'"),
                 ]),
@@ -636,7 +639,7 @@ class SwiftCodeGenTests: XCTestCase {
 
         diffTest(expected: """
             // TestParser
-            protocol TestParserProducer {
+            public protocol TestParserProducer {
                 associatedtype Mark
                 associatedtype Token
 
@@ -645,15 +648,39 @@ class SwiftCodeGenTests: XCTestCase {
                 associatedtype AAndBProduction
 
                 func produce_a_alt1(_mark: Mark) throws -> AProduction
-                func produce_a_failure(_mark: Mark) throws -> AProduction
 
                 func produce_b_alt1(_mark: Mark, mul: Token, a: AProduction) throws -> BProduction
                 func produce_b_alt2(_mark: Mark) throws -> BProduction
-                func produce_b_failure(_mark: Mark) throws -> BProduction
 
                 func produce_aAndB_alt1(_mark: Mark, a: AProduction, b: BProduction) throws -> AAndBProduction
                 func produce_aAndB_alt2(_mark: Mark, a: AProduction, b: BProduction, a1: AProduction) throws -> AAndBProduction
-                func produce_aAndB_failure(_mark: Mark) throws -> AAndBProduction
+            }
+            
+            public class DefaultTestParserProducer<RawTokenizer: RawTokenizerType> {
+                public typealias Mark = Tokenizer<RawTokenizer>.Mark
+                public typealias Token = Tokenizer<RawTokenizer>.Token
+
+                public typealias AProduction = Node
+                public typealias BProduction = Node
+                public typealias AAndBProduction = Node
+
+                public func produce_a_alt1(_mark: Mark) throws -> AProduction {
+                    return Node()
+                }
+
+                public func produce_b_alt1(_mark: Mark, mul: Token, a: AProduction) throws -> BProduction {
+                    return action1()
+                }
+                public func produce_b_alt2(_mark: Mark) throws -> BProduction {
+                    return Node()
+                }
+
+                public func produce_aAndB_alt1(_mark: Mark, a: AProduction, b: BProduction) throws -> AAndBProduction {
+                    return Node()
+                }
+                public func produce_aAndB_alt2(_mark: Mark, a: AProduction, b: BProduction, a1: AProduction) throws -> AAndBProduction {
+                    return Node()
+                }
             }
 
             extension TestParser {
@@ -664,13 +691,13 @@ class SwiftCodeGenTests: XCTestCase {
                 /// ```
                 @memoized("a")
                 @inlinable
-                public func __a() throws -> Producer.AProduction {
+                public func __a() throws -> Producer.AProduction? {
                     let _mark = self.mark()
 
                     if
                         let _ = try self.expect(.ADD)
                     {
-                        return Node()
+                        return _producer.produce_a_alt1(_mark: _mark)
                     }
 
                     self.restore(_mark)
@@ -679,20 +706,20 @@ class SwiftCodeGenTests: XCTestCase {
 
                 /// ```
                 /// b:
-                ///     | MUL a
+                ///     | MUL a {action1()}
                 ///     | '-'
                 ///     ;
                 /// ```
                 @memoized("b")
                 @inlinable
-                public func __b() throws -> Producer.BProduction {
+                public func __b() throws -> Producer.BProduction? {
                     let _mark = self.mark()
 
                     if
                         let mul = try self.expect(.MUL),
                         let a = try self.a()
                     {
-                        return Node()
+                        return _producer.produce_b_alt1(_mark: _mark, mul: mul, a: a)
                     }
 
                     self.restore(_mark)
@@ -700,7 +727,7 @@ class SwiftCodeGenTests: XCTestCase {
                     if
                         let _ = try self.expect(.SUB)
                     {
-                        return Node()
+                        return _producer.produce_b_alt2(_mark: _mark)
                     }
 
                     self.restore(_mark)
@@ -715,14 +742,14 @@ class SwiftCodeGenTests: XCTestCase {
                 /// ```
                 @memoized("aAndB")
                 @inlinable
-                public func __aAndB() throws -> Producer.AAndBProduction {
+                public func __aAndB() throws -> Producer.AAndBProduction? {
                     let _mark = self.mark()
 
                     if
                         let a = try self.a(),
                         let b = try self.b()
                     {
-                        return Node()
+                        return _producer.produce_aAndB_alt1(_mark: _mark, a: a, b: b)
                     }
 
                     self.restore(_mark)
@@ -732,7 +759,7 @@ class SwiftCodeGenTests: XCTestCase {
                         let b = try self.b(),
                         let a1 = try self.a()
                     {
-                        return Node()
+                        return _producer.produce_aAndB_alt2(_mark: _mark, a: a, b: b, a1: a1)
                     }
 
                     self.restore(_mark)

@@ -1,8 +1,10 @@
+// MARK: - Protocol generation
+
 extension SwiftCodeGen {
     func generateProducerProtocol(
         _ protocolInfo: ProducerProtocolInfo
     ) throws {
-        buffer.emit("protocol \(protocolInfo.name) ")
+        buffer.emit("public protocol \(protocolInfo.name) ")
         try buffer.emitMembersBlock {
             try generateProducerAssociatedTypes(protocolInfo)
 
@@ -68,14 +70,14 @@ extension SwiftCodeGen {
         _ producerMethods: [ProducerMethodInfo]
     ) throws {
         for producerMethod in producerMethods {
-            try generateProducerMethod(
+            try generateProducerMethodSignature(
                 protocolInfo,
                 producerMethod
             )
         }
     }
 
-    fileprivate func generateProducerMethod(
+    fileprivate func generateProducerMethodSignature(
         _ protocolInfo: ProducerProtocolInfo,
         _ producerMethod: ProducerMethodInfo
     ) throws {
@@ -97,11 +99,97 @@ extension SwiftCodeGen {
     }
 }
 
+// MARK: - Default implementation generation
+
+extension SwiftCodeGen {
+
+    func generateDefaultProducerProtocol(
+        _ protocolInfo: ProducerProtocolInfo
+    ) throws {
+        buffer.emit("public class Default\(protocolInfo.name)<RawTokenizer: RawTokenizerType> ")
+        try buffer.emitMembersBlock {
+            try generateDefaultProducerTypealiases(protocolInfo)
+            try generateDefaultProducerMethods(protocolInfo)
+        }
+
+        buffer.ensureDoubleNewline()
+    }
+
+    func generateDefaultProducerTypealiases(
+        _ protocolInfo: ProducerProtocolInfo
+    ) throws {
+
+        buffer.emitLine("public typealias Mark = Tokenizer<RawTokenizer>.Mark")
+        buffer.emitLine("public typealias Token = Tokenizer<RawTokenizer>.Token")
+
+        buffer.ensureDoubleNewline()
+
+        for rule in grammar.rules {
+            guard let identifier = protocolInfo.ruleReturnType[rule.name] else {
+                continue
+            }
+
+            let returnType = bindingEngine.returnTypeForRule(rule).unwrapped
+
+            buffer.emitLine("public typealias \(identifier) = \(returnType)")
+        }
+
+        buffer.ensureDoubleNewline()
+    }
+
+    func generateDefaultProducerMethods(
+        _ protocolInfo: ProducerProtocolInfo
+    ) throws {
+        for rule in grammar.rules {
+            let methods = protocolInfo.allRuleProducer(for: rule)
+
+            for method in methods {
+                try generateDefaultProducerMethod(
+                    protocolInfo,
+                    rule: rule,
+                    method: method
+                )
+            }
+
+            buffer.ensureDoubleNewline()
+        }
+    }
+
+    func generateDefaultProducerMethod(
+        _ protocolInfo: ProducerProtocolInfo,
+        rule: InternalGrammar.Rule,
+        method: ProducerMethodInfo
+    ) throws {
+        buffer.emit("public ")
+        try generateProducerMethodSignature(protocolInfo, method)
+        buffer.backtrackWhitespace()
+        buffer.ensureSpaceSeparator()
+
+        buffer.emitBlock {
+            let alt = rule.alts[method.altIndex]
+
+            if implicitReturns {
+                buffer.emit("return ")
+            }
+
+            generateOnAltMatchBlockInterior(alt, rule.type)
+        }
+    }
+}
+
+// MARK: - Commons
+
 extension SwiftCodeGen {
     /// How '<Parser>Producer' is expected to be parameterized within the parser
     /// subclass.
     func producerGenericParameterName() -> String {
         return "Producer"
+    }
+
+    /// How '<Parser>Producer' is expected to be referenced as a member of the
+    /// parser subclass.
+    func producerMemberName() -> String {
+        return "_producer"
     }
 
     /// Generates a producer protocol info for the current grammar loaded.
@@ -154,21 +242,13 @@ extension SwiftCodeGen {
         bindingEngine: BindingEngine
     ) -> [ProducerMethodInfo] {
 
-        var results = (0..<rule.alts.count).map { altIndex in
+        let results = (0..<rule.alts.count).map { altIndex in
             producerRuleMethodInfo(
                 for: rule,
                 altIndex: altIndex,
                 bindingEngine: bindingEngine
             )
         }
-
-        // Append failure producer method
-        results.append(
-            producerFailureRuleMethodInfo(
-                for: rule,
-                bindingEngine: bindingEngine
-            )
-        )
 
         return results
     }
@@ -189,7 +269,8 @@ extension SwiftCodeGen {
             altIndex: altIndex,
             methodName: methodName,
             bindingParameters: [],
-            returnType: ruleResult
+            returnType: ruleResult,
+            action: alt.action
         )
 
         declContext.push()
@@ -216,25 +297,6 @@ extension SwiftCodeGen {
         return result
     }
 
-    func producerFailureRuleMethodInfo(
-        for rule: InternalGrammar.Rule,
-        bindingEngine: BindingEngine
-    ) -> ProducerMethodInfo {
-        let ruleResult = producerAssociatedTypeAsSwiftType(for: rule)
-
-        let methodName = "produce_\(rule.name)_failure"
-
-        let result = ProducerMethodInfo(
-            ruleName: rule.name,
-            altIndex: nil,
-            methodName: methodName,
-            bindingParameters: [],
-            returnType: ruleResult
-        )
-
-        return result
-    }
-
     /// Information for '<ParserName>Producer' protocol to be generated.
     struct ProducerProtocolInfo {
         /// Name of protocol.
@@ -246,24 +308,52 @@ extension SwiftCodeGen {
 
         /// List of rule alternative production methods.
         var ruleProducers: [ProducerMethodInfo]
+
+        func allRuleProducer(for rule: InternalGrammar.Rule) -> [ProducerMethodInfo] {
+            allRuleProducer(forRuleName: rule.name)
+        }
+
+        func allRuleProducer(forRuleName ruleName: String) -> [ProducerMethodInfo] {
+            ruleProducers.filter { $0.ruleName == ruleName }
+        }
+
+        func ruleProducer(forRuleName ruleName: String, altIndex: Int) -> ProducerMethodInfo? {
+            ruleProducers.first { $0.ruleName == ruleName && $0.altIndex == altIndex }
+        }
     }
 
     /// Information for '<ParserName>Producer' protocol methods to be generated.
     struct ProducerMethodInfo {
         var ruleName: String
-
-        /// If `nil`, this method represents the failure return value of a rule.
-        var altIndex: Int?
+        var altIndex: Int
 
         var methodName: String
         /// Parameters, as bindings taken by the method.
         var bindingParameters: [Parameter]
         var isThrowing: Bool = true
         var returnType: CommonAbstract.IdentifierSwiftType
+        var action: InternalGrammar.Action?
 
         struct Parameter {
             var name: String
             var type: CommonAbstract.SwiftType
+        }
+
+        /// Makes a standard call expression that invokes this producer method,
+        /// assuming all parameters are available as equal identifiers in the
+        /// call site.
+        func makeCallExpression() -> String {
+            var result = methodName
+            result += "("
+
+            let params = ["_mark"] + bindingParameters.map(\.name)
+
+            result += params.map {
+                "\($0): \($0)"
+            }.joined(separator: ", ")
+
+            result += ")"
+            return result
         }
     }
 }
