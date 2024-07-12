@@ -848,6 +848,88 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
+    func testGenerateParser_emitProducerProtocol_true_optionalGroup() throws {
+        let grammar = try parseInternalGrammar(#"""
+        @parserName TestParser ;
+        @token ADD ; @token MUL ;
+        a: (ADD+)? ;
+        """#, entryRuleName: "a")
+        let tokens = [
+            makeTokenDef(name: "ADD", literal: "+"),
+        ]
+        let sut = makeSut(grammar, tokens)
+
+        let result = try sut.generateParser(
+            settings: .default.with(\.emitProducerProtocol, value: true)
+        )
+
+        diffTest(expected: """
+            public protocol TestParserProducer {
+                associatedtype Mark
+                associatedtype Token
+
+                associatedtype AProduction
+
+                func produce_a_alt1(_mark: Mark, add: [Token]?) throws -> AProduction
+            }
+            
+            public class DefaultTestParserProducer<RawTokenizer: RawTokenizerType> {
+                public typealias Mark = Tokenizer<RawTokenizer>.Mark
+                public typealias Token = Tokenizer<RawTokenizer>.Token
+
+                public typealias AProduction = Node
+
+                public func produce_a_alt1(_mark: Mark, add: [Token]?) throws -> AProduction {
+                    return add
+                }
+            }
+
+            extension TestParser {
+                /// ```
+                /// a:
+                ///     | (ADD+)?
+                ///     ;
+                /// ```
+                @memoized("a")
+                @inlinable
+                public func __a() throws -> Producer.AProduction? {
+                    let _mark = self.mark()
+
+                    if
+                        case let add = try self._a__group_()
+                    {
+                        return try _producer.produce_a_alt1(_mark: _mark, add: add)
+                    }
+
+                    self.restore(_mark)
+                    return nil
+                }
+
+                /// ```
+                /// _a__group_[[Token]]:
+                ///     | ADD+ { add }
+                ///     ;
+                /// ```
+                @memoized("_a__group_")
+                @inlinable
+                public func ___a__group_() throws -> [Token]? {
+                    let _mark = self.mark()
+
+                    if
+                        let add = try self.repeatOneOrMore({
+                            try self.expect(.ADD)
+                        })
+                    {
+                        return add
+                    }
+
+                    self.restore(_mark)
+                    return nil
+                }
+            }
+            """).diff(result)
+    }
+
     func testGenerateParser_respectsTokenCallMeta() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
@@ -2304,13 +2386,13 @@ class SwiftCodeGenTests: XCTestCase {
                 }
 
                 /// ```
-                /// _start__group_[(b: [B], cBind: C)]:
+                /// _start__group_[(b: [B]??, cBind: C??)]:
                 ///     | ((b+ cBind=c 'd')?)? { (b: b, cBind: cBind) }
                 ///     ;
                 /// ```
                 @memoized("_start__group_")
                 @inlinable
-                public func ___start__group_() throws -> (b: [B]?, cBind: C?) {
+                public func ___start__group_() throws -> (b: [B]???, cBind: C???) {
                     let _mark = self.mark()
 
                     if
@@ -2324,13 +2406,13 @@ class SwiftCodeGenTests: XCTestCase {
                 }
 
                 /// ```
-                /// __start__group___group_[(b: [B], cBind: C)]:
+                /// __start__group___group_[(b: [B]?, cBind: C?)]:
                 ///     | (b+ cBind=c 'd')? { (b: b, cBind: cBind) }
                 ///     ;
                 /// ```
                 @memoized("__start__group___group_")
                 @inlinable
-                public func ____start__group___group_() throws -> (b: [B]?, cBind: C?) {
+                public func ____start__group___group_() throws -> (b: [B]??, cBind: C??) {
                     let _mark = self.mark()
 
                     if
@@ -3331,6 +3413,7 @@ private func makeTokenDef(
 
 private func parseInternalGrammar(
     _ grammar: String,
+    entryRuleName: String = "start",
     file: StaticString = #file,
     line: UInt = #line
 ) throws -> InternalGrammar.Grammar {
@@ -3338,5 +3421,5 @@ private func parseInternalGrammar(
     let grammar = try parseGrammar(grammar, file: file, line: line)
 
     let processor = GrammarProcessor(delegate: nil)
-    return try processor.process(grammar).grammar
+    return try processor.process(grammar, entryRuleName: entryRuleName).grammar
 }

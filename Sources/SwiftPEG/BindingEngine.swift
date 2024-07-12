@@ -308,7 +308,7 @@ class BindingEngine {
     func bindings(for atom: InternalGrammar.Atom) -> [Binding] {
         switch atom {
         case .group(let alts):
-            return computeBindings(alts)
+            return computeBindings(alts).be_optionalWrapped()
 
         case .token(let ident):
             return [(implicitBindings ? ident.lowercased() : nil, typeForAtom(atom))]
