@@ -64,15 +64,37 @@ extension GrammarProcessor {
                     continue
                 }
 
-                if !graph.containsNode(dynamicToken.name) {
-                    graph.addNode(dynamicToken.name)
-                }
-                for staticToken in staticTokens {
-                    if !graph.containsNode(staticToken.name) {
-                        graph.addNode(staticToken.name)
-                    }
+                graph.ensureNode(dynamicToken.name)
 
+                for staticToken in staticTokens {
+                    graph.ensureNode(staticToken.name)
                     graph.addEdge(from: dynamicToken.name, to: staticToken.name)
+                }
+            }
+        }
+
+        // Use DFA to figure out extra prefix dependencies between tokens
+        let lookup = TokenDFA.InliningLookup()
+        lookup.cacheAll(tokens)
+
+        for (i, token) in tokens.enumerated() {
+            guard let tokenDFA = lookup.dfaForToken(token) else {
+                continue
+            }
+
+            for other in tokens.dropFirst(i + 1) {
+                guard let otherDFA = lookup.dfaForToken(other) else {
+                    continue
+                }
+
+                if tokenDFA.isPrefix(of: otherDFA) && !otherDFA.isPrefix(of: tokenDFA) {
+                    graph.ensureNode(other.name)
+                    graph.ensureNode(token.name)
+                    graph.ensureEdge(from: other.name, to: token.name)
+                } else if otherDFA.isPrefix(of: tokenDFA) && !tokenDFA.isPrefix(of: otherDFA) {
+                    graph.ensureNode(other.name)
+                    graph.ensureNode(token.name)
+                    graph.ensureEdge(from: token.name, to: other.name)
                 }
             }
         }
@@ -768,6 +790,20 @@ extension GrammarProcessor {
             }
 
             return lhsSyntax.isPrefix(of: rhsSyntax)
+        }
+    }
+}
+
+fileprivate extension DirectedGraph {
+    mutating func ensureNode(_ node: Node) {
+        if !containsNode(node) {
+            addNode(node)
+        }
+    }
+
+    mutating func ensureEdge(from start: Node, to end: Node) {
+        if edge(from: start, to: end) == nil {
+            addEdge(from: start, to: end)
         }
     }
 }

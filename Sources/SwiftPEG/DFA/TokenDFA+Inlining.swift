@@ -2,23 +2,50 @@ extension TokenDFA {
     /// Applies inlining of terminals that refer to token definitions within this
     /// token DFA.
     func inline(_ tokenDefinitions: [InternalGrammar.TokenDefinition]) {
-        let lookup: Lookup = Lookup()
+        let lookup: InliningLookup = InliningLookup()
         for token in tokenDefinitions {
             lookup[token.name] = token
         }
 
         inline(lookup)
     }
-}
 
-fileprivate extension TokenDFA {
-    func inline(_ lookup: Lookup) {
+    /// Applies inlining of terminals that refer to token definitions within this
+    /// token DFA.
+    func inline(_ lookup: InliningLookup) {
         for edge in edges {
             attemptInline(edge, lookup)
         }
     }
 
-    func attemptInline(_ edge: Edge, _ lookup: Lookup) {
+    class InliningLookup {
+        private var byName: [String: InternalGrammar.TokenDefinition] = [:]
+        private var dfaCache: [String: TokenDFA?] = [:]
+
+        subscript(name: String) -> InternalGrammar.TokenDefinition? {
+            get { byName[name] }
+            set { byName[name] = newValue }
+        }
+
+        func cacheAll(_ tokens: [InternalGrammar.TokenDefinition]) {
+
+        }
+
+        func dfaForToken(_ token: InternalGrammar.TokenDefinition) -> TokenDFA? {
+            if let cached = dfaCache[token.name] {
+                return cached
+            }
+
+            let dfa = TokenDFA.from(token)
+            dfaCache[token.name] = dfa
+
+            return dfa
+        }
+    }
+}
+
+fileprivate extension TokenDFA {
+    func attemptInline(_ edge: Edge, _ lookup: InliningLookup) {
         switch edge.condition {
         case .terminal(.identifier(let ident)):
             guard let token = lookup[ident] else {
@@ -35,7 +62,7 @@ fileprivate extension TokenDFA {
     func attemptInline(
         _ edge: Edge,
         _ token: InternalGrammar.TokenDefinition,
-        _ lookup: Lookup
+        _ lookup: InliningLookup
     ) {
         guard let dfa = lookup.dfaForToken(token) else {
             return
@@ -125,26 +152,5 @@ fileprivate extension TokenDFA {
         }
 
         return idOffset
-    }
-}
-
-private class Lookup {
-    private var byName: [String: InternalGrammar.TokenDefinition] = [:]
-    private var dfaCache: [String: TokenDFA?] = [:]
-
-    subscript(name: String) -> InternalGrammar.TokenDefinition? {
-        get { byName[name] }
-        set { byName[name] = newValue }
-    }
-
-    func dfaForToken(_ token: InternalGrammar.TokenDefinition) -> TokenDFA? {
-        if let cached = dfaCache[token.name] {
-            return cached
-        }
-
-        let dfa = TokenDFA.from(token)
-        dfaCache[token.name] = dfa
-
-        return dfa
     }
 }

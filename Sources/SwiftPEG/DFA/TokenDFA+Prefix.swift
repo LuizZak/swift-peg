@@ -220,8 +220,12 @@ fileprivate class DFAWalker {
     }
 }
 
-fileprivate struct ConsumedString {
+fileprivate struct ConsumedString: CustomStringConvertible {
     var elements: [Element] = []
+
+    var description: String {
+        elements.map(\.description).joined()
+    }
 
     mutating func append(_ element: Element) {
         switch (elements.last, element) {
@@ -248,10 +252,23 @@ fileprivate struct ConsumedString {
         return true
     }
 
-    fileprivate enum Element: Equatable {
+    fileprivate enum Element: Equatable, CustomStringConvertible {
         case literal(String)
         case range(String, String)
         case any
+
+        var description: String {
+            switch self {
+            case .literal(let literal):
+                return literal.debugDescription
+
+            case .range(let low, let high):
+                return "\(low.debugDescription)...\(high.debugDescription)"
+
+            case .any:
+                return "*"
+            }
+        }
 
         func isPrefix(of other: Self) -> Bool {
             switch (self, other) {
