@@ -1693,14 +1693,14 @@ class SwiftCodeGenTests: XCTestCase {
                 }
 
                 /// ```
-                /// _start__group_[Any]:
+                /// _start__group_[Void]:
                 ///     | 'a' { () }
                 ///     | 'b' { () }
                 ///     ;
                 /// ```
                 @memoized("_start__group_")
                 @inlinable
-                public func ___start__group_() throws -> Any? {
+                public func ___start__group_() throws -> Void? {
                     let _mark = self.mark()
 
                     if

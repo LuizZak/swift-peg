@@ -633,7 +633,11 @@ public class SwiftCodeGen {
         // it is not `nil` and is not a known existential type, otherwise return
         // `Node()`.
         if let type = productionType?.description, type != "Any" {
-            buffer.emitLine("\(type)()")
+            if type == "Void" || type == "()" {
+                buffer.emitLine("()")
+            } else {
+                buffer.emitLine("\(type)()")
+            }
         } else {
             buffer.emitLine("Node()")
         }
@@ -1342,7 +1346,7 @@ extension SwiftCodeGen {
         let elements = bindingEngine.computeBindings(alts)
         let type: CommonAbstract.SwiftType =
             if elements.isEmpty {
-                "Any"
+                "Void"
             } else if elements.count == 1 {
                 elements[0].type
             } else {
@@ -1354,7 +1358,7 @@ extension SwiftCodeGen {
         // Produce a common action that passes the bound elements back to the
         // caller
         var action: InternalGrammar.Action = .init(string: " () ")
-        if type != "Any" {
+        if type != "Void" {
             action = defaultReturnAction(for: elements)
         }
         alts = alts.map { alt in
