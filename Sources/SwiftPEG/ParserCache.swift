@@ -36,7 +36,7 @@ public struct ParserCache<RawTokenizer: RawTokenizerType> {
     /// Fetches or stores a cached entry with a given key within this cache.
     /// Returns `nil` if no entries are stored with the given key.
     @inlinable
-    public subscript<Value>(key: Key) -> CacheEntry<Value>? {
+    public subscript<Value>(key: Key) -> CacheEntry<Value?>? {
         get { fetch(key) }
         set {
             if let newValue {
@@ -178,16 +178,6 @@ public struct ParserCache<RawTokenizer: RawTokenizerType> {
     public func fetchAny(_ key: Key) -> Any?? {
         if enabled { _cache[key] }
         else { nil }
-    }
-
-    /// Performs a typed cache fetch.
-    @inlinable
-    public func fetch<Value>(_ key: Key) -> CacheEntry<Value>? {
-        guard enabled, let cached = _cache[key] else {
-            return nil
-        }
-
-        return cached as? CacheEntry<Value>
     }
 
     /// Performs a typed cache fetch.
