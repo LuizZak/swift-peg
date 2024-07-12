@@ -222,7 +222,13 @@ public class SwiftCodeGen {
                     .nested(.typeName(self.producerGenericParameterName()), identifier)
                 }
 
-            try generateDefaultProducerProtocol(protocolInfo)
+            let info = generateDefaultProducerImplementationInfo()
+            try generateDefaultProducerProtocol(protocolInfo, info)
+
+            if settings.emitVoidProducer {
+                let info = generateVoidProducerImplementationInfo()
+                try generateDefaultProducerProtocol(protocolInfo, info)
+            }
 
             self.producerProtocol = protocolInfo
             bindingEngine = bindingEngine.withCustomRuleResultMappings(ruleReturnAliases)
@@ -619,28 +625,12 @@ public class SwiftCodeGen {
             return
         }
 
-        // If no action is specified, attempt to return instead the named
-        // item within the alt, if it's the only named item in the alt.
-        if alt.namedItems.count == 1 {
-            let bindings = bindingEngine.computeBindings(alt)
-            if bindings.count == 1, let label = bindings[0].label {
-                buffer.emitLine(escapeIdentifier(label))
-                return
-            }
-        }
+        let expression = defaultReturnExpression(
+            for: alt,
+            productionType: productionType
+        )
 
-        // Fallback: Return an initialization of the associated node type, assuming
-        // it is not `nil` and is not a known existential type, otherwise return
-        // `Node()`.
-        if let type = productionType?.description, type != "Any" {
-            if type == "Void" || type == "()" {
-                buffer.emitLine("()")
-            } else {
-                buffer.emitLine("\(type)()")
-            }
-        } else {
-            buffer.emitLine("Node()")
-        }
+        buffer.emitLine(expression)
     }
 
     /// Generates a given action as an in-line string terminated with a newline.
@@ -1041,7 +1031,8 @@ public class SwiftCodeGen {
             omitUnreachable: false,
             emitTypesInBindings: false,
             omitRedundantMarkRestores: false,
-            emitProducerProtocol: false
+            emitProducerProtocol: false,
+            emitVoidProducer: false
         )
 
         /// Whether to omit unreachable rules, as detected by a `GrammarProcessor`
@@ -1080,16 +1071,24 @@ public class SwiftCodeGen {
         /// alternative results in its place.
         public var emitProducerProtocol: Bool
 
+        /// If `emitProducerProtocol` is `true`, whether to emit another implementation
+        /// of the protocol that produces all `Void` return values.
+        ///
+        /// If `emitProducerProtocol` is not `true`, this setting has no effect.
+        public var emitVoidProducer: Bool
+
         public init(
             omitUnreachable: Bool,
             emitTypesInBindings: Bool,
             omitRedundantMarkRestores: Bool,
-            emitProducerProtocol: Bool
+            emitProducerProtocol: Bool,
+            emitVoidProducer: Bool
         ) {
             self.omitUnreachable = omitUnreachable
             self.emitTypesInBindings = emitTypesInBindings
             self.omitRedundantMarkRestores = omitRedundantMarkRestores
             self.emitProducerProtocol = emitProducerProtocol
+            self.emitVoidProducer = emitVoidProducer
         }
 
         /// Returns a copy of `self` with a given keypath modified to be `value`.
@@ -1281,6 +1280,35 @@ public class SwiftCodeGen {
 // MARK: - Auxiliary method management
 
 extension SwiftCodeGen {
+    /// Generates a default expression representing the return of an alternative,
+    /// ignoring its associated action.
+    func defaultReturnExpression(
+        for alt: InternalGrammar.Alt,
+        productionType: CommonAbstract.SwiftType?
+    ) -> String {
+        // If no action is specified, attempt to return instead the named
+        // item within the alt, if it's the only named item in the alt.
+        if alt.namedItems.count == 1 {
+            let bindings = bindingEngine.computeBindings(alt)
+            if bindings.count == 1, let label = bindings[0].label {
+                return escapeIdentifier(label)
+            }
+        }
+
+        // Fallback: Return an initialization of the associated node type, assuming
+        // it is not `nil` and is not a known existential type.
+        if let type = productionType?.description, type != "Any" {
+            if type == "Void" || type == "()" {
+                return "()"
+            } else {
+                return "\(type)()"
+            }
+        }
+
+        // If no other option was found, default to 'Node()'
+        return "Node()"
+    }
+
     /// Attempts to compute a default return action for a given set of return
     /// elements of a rule or auxiliary rule.
     func defaultReturnAction(

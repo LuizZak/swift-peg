@@ -103,20 +103,50 @@ extension SwiftCodeGen {
 
 extension SwiftCodeGen {
 
+    func generateDefaultProducerImplementationInfo() -> ProducerProtocolImplementationInfo {
+        ProducerProtocolImplementationInfo(
+            kind: .default
+        )
+    }
+
+    func generateVoidProducerImplementationInfo() -> ProducerProtocolImplementationInfo {
+        ProducerProtocolImplementationInfo(
+            kind: .void
+        )
+    }
+
     func generateDefaultProducerProtocol(
-        _ protocolInfo: ProducerProtocolInfo
+        _ protocolInfo: ProducerProtocolInfo,
+        _ implementationInfo: ProducerProtocolImplementationInfo
     ) throws {
-        buffer.emit("public class Default\(protocolInfo.name)<RawTokenizer: RawTokenizerType>: \(protocolInfo.name) ")
+
+        let prefix: String
+        switch implementationInfo.kind {
+        case .default:
+            prefix = "Default"
+
+        case .void:
+            prefix = "Void"
+        }
+
+        buffer.emit("public class \(prefix)\(protocolInfo.name)<RawTokenizer: RawTokenizerType>: \(protocolInfo.name) ")
         try buffer.emitMembersBlock {
-            try generateDefaultProducerTypealiases(protocolInfo)
-            try generateDefaultProducerMethods(protocolInfo)
+            try generateDefaultProducerTypealiases(
+                protocolInfo,
+                implementationInfo
+            )
+            try generateDefaultProducerMethods(
+                protocolInfo,
+                implementationInfo
+            )
         }
 
         buffer.ensureDoubleNewline()
     }
 
     func generateDefaultProducerTypealiases(
-        _ protocolInfo: ProducerProtocolInfo
+        _ protocolInfo: ProducerProtocolInfo,
+        _ implementationInfo: ProducerProtocolImplementationInfo
     ) throws {
 
         buffer.emitLine("public typealias Mark = Tokenizer<RawTokenizer>.Mark")
@@ -129,7 +159,14 @@ extension SwiftCodeGen {
                 continue
             }
 
-            let returnType = bindingEngine.returnTypeForRule(rule).unwrapped
+            let returnType: CommonAbstract.SwiftType
+            switch implementationInfo.kind {
+            case .default:
+                returnType = bindingEngine.returnTypeForRule(rule).unwrapped
+
+            case .void:
+                returnType = "Void"
+            }
 
             buffer.emitLine("public typealias \(identifier) = \(returnType)")
         }
@@ -138,7 +175,8 @@ extension SwiftCodeGen {
     }
 
     func generateDefaultProducerMethods(
-        _ protocolInfo: ProducerProtocolInfo
+        _ protocolInfo: ProducerProtocolInfo,
+        _ implementationInfo: ProducerProtocolImplementationInfo
     ) throws {
         for rule in grammar.rules {
             let methods = protocolInfo.allRuleProducer(for: rule)
@@ -146,6 +184,7 @@ extension SwiftCodeGen {
             for method in methods {
                 try generateDefaultProducerMethod(
                     protocolInfo,
+                    implementationInfo,
                     rule: rule,
                     method: method
                 )
@@ -157,22 +196,30 @@ extension SwiftCodeGen {
 
     func generateDefaultProducerMethod(
         _ protocolInfo: ProducerProtocolInfo,
+        _ implementationInfo: ProducerProtocolImplementationInfo,
         rule: InternalGrammar.Rule,
         method: ProducerMethodInfo
     ) throws {
+        buffer.emitLine("@inlinable")
         buffer.emit("public ")
         try generateProducerMethodSignature(protocolInfo, method)
         buffer.backtrackWhitespace()
         buffer.ensureSpaceSeparator()
 
         buffer.emitBlock {
-            let alt = rule.alts[method.altIndex]
+            switch implementationInfo.kind {
+            case .default:
+                let alt = rule.alts[method.altIndex]
 
-            if implicitReturns {
-                buffer.emit("return ")
+                if implicitReturns {
+                    buffer.emit("return ")
+                }
+
+                generateOnAltMatchBlockInterior(alt, rule.type)
+
+            case .void:
+                break
             }
-
-            generateOnAltMatchBlockInterior(alt, rule.type)
         }
     }
 }
@@ -295,6 +342,24 @@ extension SwiftCodeGen {
         }
 
         return result
+    }
+
+    /// Information for generating '<ParserName>Producer' protocol implementation
+    /// types.
+    struct ProducerProtocolImplementationInfo {
+        /// The kind of producer to generate.
+        var kind: ProducerKind
+
+        /// Specifies the kind of producer to generate with code-generation
+        /// methods.
+        enum ProducerKind {
+            /// Specifies the default producer to generate, or the producer that
+            /// contains the alt actions.
+            case `default`
+
+            /// Specifies a `Void` producer to generate.
+            case void
+        }
     }
 
     /// Information for '<ParserName>Producer' protocol to be generated.
