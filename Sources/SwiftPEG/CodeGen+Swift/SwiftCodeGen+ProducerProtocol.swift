@@ -106,7 +106,7 @@ extension SwiftCodeGen {
     func generateDefaultProducerProtocol(
         _ protocolInfo: ProducerProtocolInfo
     ) throws {
-        buffer.emit("public class Default\(protocolInfo.name)<RawTokenizer: RawTokenizerType> ")
+        buffer.emit("public class Default\(protocolInfo.name)<RawTokenizer: RawTokenizerType>: \(protocolInfo.name) ")
         try buffer.emitMembersBlock {
             try generateDefaultProducerTypealiases(protocolInfo)
             try generateDefaultProducerMethods(protocolInfo)

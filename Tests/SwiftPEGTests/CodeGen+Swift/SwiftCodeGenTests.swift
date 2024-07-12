@@ -656,7 +656,7 @@ class SwiftCodeGenTests: XCTestCase {
                 func produce_aAndB_alt2(_mark: Mark, a: AProduction, b: BProduction, a1: AProduction) throws -> AAndBProduction
             }
             
-            public class DefaultTestParserProducer<RawTokenizer: RawTokenizerType> {
+            public class DefaultTestParserProducer<RawTokenizer: RawTokenizerType>: TestParserProducer {
                 public typealias Mark = Tokenizer<RawTokenizer>.Mark
                 public typealias Token = Tokenizer<RawTokenizer>.Token
 
@@ -801,7 +801,7 @@ class SwiftCodeGenTests: XCTestCase {
                 func produce_a_alt2(_mark: Mark, `in`: Node) throws -> AProduction
             }
 
-            public class DefaultTestParserProducer<RawTokenizer: RawTokenizerType> {
+            public class DefaultTestParserProducer<RawTokenizer: RawTokenizerType>: TestParserProducer {
                 public typealias Mark = Tokenizer<RawTokenizer>.Mark
                 public typealias Token = Tokenizer<RawTokenizer>.Token
 
@@ -873,7 +873,7 @@ class SwiftCodeGenTests: XCTestCase {
                 func produce_a_alt1(_mark: Mark, add: [Token]?) throws -> AProduction
             }
             
-            public class DefaultTestParserProducer<RawTokenizer: RawTokenizerType> {
+            public class DefaultTestParserProducer<RawTokenizer: RawTokenizerType>: TestParserProducer {
                 public typealias Mark = Tokenizer<RawTokenizer>.Mark
                 public typealias Token = Tokenizer<RawTokenizer>.Token
 
