@@ -342,14 +342,16 @@ extension SwiftCodeGen {
         /// Makes a standard call expression that invokes this producer method,
         /// assuming all parameters are available as equal identifiers in the
         /// call site.
-        func makeCallExpression(_ escapeIdentifier: (String) -> String) -> String {
+        func makeCallExpression(
+            _ escapeIdentifier: (String, _ isLabel: Bool) -> String
+        ) -> String {
             var result = methodName
             result += "("
 
             let params = ["_mark"] + bindingParameters.map(\.name)
 
             result += params.map {
-                "\($0): \(escapeIdentifier($0))"
+                "\(escapeIdentifier($0, true)): \(escapeIdentifier($0, false))"
             }.joined(separator: ", ")
 
             result += ")"

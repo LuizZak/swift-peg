@@ -697,7 +697,7 @@ class SwiftCodeGenTests: XCTestCase {
                     if
                         let _ = try self.expect(.ADD)
                     {
-                        return _producer.produce_a_alt1(_mark: _mark)
+                        return try _producer.produce_a_alt1(_mark: _mark)
                     }
 
                     self.restore(_mark)
@@ -719,7 +719,7 @@ class SwiftCodeGenTests: XCTestCase {
                         let mul = try self.expect(.MUL),
                         let a = try self.a()
                     {
-                        return _producer.produce_b_alt1(_mark: _mark, mul: mul, a: a)
+                        return try _producer.produce_b_alt1(_mark: _mark, mul: mul, a: a)
                     }
 
                     self.restore(_mark)
@@ -727,7 +727,7 @@ class SwiftCodeGenTests: XCTestCase {
                     if
                         let _ = try self.expect(.SUB)
                     {
-                        return _producer.produce_b_alt2(_mark: _mark)
+                        return try _producer.produce_b_alt2(_mark: _mark)
                     }
 
                     self.restore(_mark)
@@ -749,7 +749,7 @@ class SwiftCodeGenTests: XCTestCase {
                         let a = try self.a(),
                         let b = try self.b()
                     {
-                        return _producer.produce_aAndB_alt1(_mark: _mark, a: a, b: b)
+                        return try _producer.produce_aAndB_alt1(_mark: _mark, a: a, b: b)
                     }
 
                     self.restore(_mark)
@@ -759,7 +759,7 @@ class SwiftCodeGenTests: XCTestCase {
                         let b = try self.b(),
                         let a1 = try self.a()
                     {
-                        return _producer.produce_aAndB_alt2(_mark: _mark, a: a, b: b, a1: a1)
+                        return try _producer.produce_aAndB_alt2(_mark: _mark, a: a, b: b, a1: a1)
                     }
 
                     self.restore(_mark)
@@ -774,6 +774,9 @@ class SwiftCodeGenTests: XCTestCase {
             .init(name: "a", alts: [
                 .init(namedItems: [
                     .item("inout"),
+                ]),
+                .init(namedItems: [
+                    .item("in"),
                 ]),
             ]),
         ])
@@ -795,6 +798,7 @@ class SwiftCodeGenTests: XCTestCase {
                 associatedtype AProduction
 
                 func produce_a_alt1(_mark: Mark, `inout`: Node) throws -> AProduction
+                func produce_a_alt2(_mark: Mark, `in`: Node) throws -> AProduction
             }
 
             public class DefaultTestParserProducer<RawTokenizer: RawTokenizerType> {
@@ -806,12 +810,16 @@ class SwiftCodeGenTests: XCTestCase {
                 public func produce_a_alt1(_mark: Mark, `inout`: Node) throws -> AProduction {
                     return `inout`
                 }
+                public func produce_a_alt2(_mark: Mark, `in`: Node) throws -> AProduction {
+                    return `in`
+                }
             }
 
             extension TestParser {
                 /// ```
                 /// a:
                 ///     | inout
+                ///     | in
                 ///     ;
                 /// ```
                 @memoized("a")
@@ -822,7 +830,15 @@ class SwiftCodeGenTests: XCTestCase {
                     if
                         let `inout` = try self.`inout`()
                     {
-                        return _producer.produce_a_alt1(_mark: _mark, inout: `inout`)
+                        return try _producer.produce_a_alt1(_mark: _mark, `inout`: `inout`)
+                    }
+
+                    self.restore(_mark)
+
+                    if
+                        let `in` = try self.`in`()
+                    {
+                        return try _producer.produce_a_alt2(_mark: _mark, in: `in`)
                     }
 
                     self.restore(_mark)

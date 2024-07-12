@@ -76,6 +76,13 @@ public class SwiftCodeGen {
         SwiftKeywords.keywords
     }
 
+    /// Set of identifiers that cannot be used as bare labels in labeled expressions
+    /// in Swift, and must be escaped with backticks (`) to allow usage in labeled
+    /// expressions.
+    public static var invalidBareLabels: Set<String> {
+        ["inout"]
+    }
+
     /// Used to keep track of reentrance in `typeForRule()` calls.
     var _typeForRuleOngoing: Set<String> = []
 
@@ -589,7 +596,7 @@ public class SwiftCodeGen {
                 altIndex: altIndex
             )
         {
-            buffer.emitLine("return \(producerMemberName()).\(producer.makeCallExpression(escapeIdentifier))")
+            buffer.emitLine("return try \(producerMemberName()).\(producer.makeCallExpression(escapeIdentifier))")
             return
         }
 
@@ -1544,7 +1551,7 @@ extension SwiftCodeGen {
 extension SwiftCodeGen {
     /// Escapes the given identifier to something that can be declared as a local
     /// or member name in Swift.
-    func escapeIdentifier(_ ident: String) -> String {
+    func escapeIdentifier(_ ident: String, isLabel: Bool = false) -> String {
         // Wildcard; return unchanged
         if ident == "_" {
             return ident
@@ -1555,7 +1562,15 @@ extension SwiftCodeGen {
             return ident
         }
 
-        if Self.invalidBareIdentifiers.contains(ident) {
+        var requiresEscaping = false
+
+        if isLabel {
+            requiresEscaping = Self.invalidBareLabels.contains(ident)
+        } else {
+            requiresEscaping = Self.invalidBareIdentifiers.contains(ident)
+        }
+
+        if requiresEscaping {
             return "`\(ident)`"
         }
 
