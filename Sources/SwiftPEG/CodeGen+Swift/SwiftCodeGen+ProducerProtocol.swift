@@ -83,7 +83,7 @@ extension SwiftCodeGen {
     ) throws {
         let parameters: [String] =
             ["_mark: Mark"] + producerMethod.bindingParameters.map { param in
-                "\(param.name): \(param.type)"
+                "\(escapeIdentifier(param.name)): \(param.type)"
             }
 
         buffer.emit("func \(producerMethod.methodName)")
@@ -342,14 +342,14 @@ extension SwiftCodeGen {
         /// Makes a standard call expression that invokes this producer method,
         /// assuming all parameters are available as equal identifiers in the
         /// call site.
-        func makeCallExpression() -> String {
+        func makeCallExpression(_ escapeIdentifier: (String) -> String) -> String {
             var result = methodName
             result += "("
 
             let params = ["_mark"] + bindingParameters.map(\.name)
 
             result += params.map {
-                "\($0): \($0)"
+                "\($0): \(escapeIdentifier($0))"
             }.joined(separator: ", ")
 
             result += ")"

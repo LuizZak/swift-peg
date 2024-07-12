@@ -589,7 +589,7 @@ public class SwiftCodeGen {
                 altIndex: altIndex
             )
         {
-            buffer.emitLine("return \(producerMemberName()).\(producer.makeCallExpression())")
+            buffer.emitLine("return \(producerMemberName()).\(producer.makeCallExpression(escapeIdentifier))")
             return
         }
 

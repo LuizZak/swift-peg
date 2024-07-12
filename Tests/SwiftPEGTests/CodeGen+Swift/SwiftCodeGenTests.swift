@@ -769,6 +769,68 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
+    func testGenerateParser_emitProducerProtocol_true_escapesIdentifiers() throws {
+        let grammar = makeGrammar([
+            .init(name: "a", alts: [
+                .init(namedItems: [
+                    .item("inout"),
+                ]),
+            ]),
+        ])
+        let tokens = [
+            makeTokenDef(name: "inout", literal: "inout"),
+        ]
+        let sut = makeSut(grammar, tokens)
+
+        let result = try sut.generateParser(
+            settings: .default.with(\.emitProducerProtocol, value: true)
+        )
+
+        diffTest(expected: """
+            // TestParser
+            public protocol TestParserProducer {
+                associatedtype Mark
+                associatedtype Token
+
+                associatedtype AProduction
+
+                func produce_a_alt1(_mark: Mark, `inout`: Node) throws -> AProduction
+            }
+
+            public class DefaultTestParserProducer<RawTokenizer: RawTokenizerType> {
+                public typealias Mark = Tokenizer<RawTokenizer>.Mark
+                public typealias Token = Tokenizer<RawTokenizer>.Token
+
+                public typealias AProduction = Node
+
+                public func produce_a_alt1(_mark: Mark, `inout`: Node) throws -> AProduction {
+                    return `inout`
+                }
+            }
+
+            extension TestParser {
+                /// ```
+                /// a:
+                ///     | inout
+                ///     ;
+                /// ```
+                @memoized("a")
+                @inlinable
+                public func __a() throws -> Producer.AProduction? {
+                    let _mark = self.mark()
+
+                    if
+                        let `inout` = try self.`inout`()
+                    {
+                        return _producer.produce_a_alt1(_mark: _mark, inout: `inout`)
+                    }
+
+                    self.restore(_mark)
+                    return nil
+                }
+            }
+            """).diff(result)
+    }
 
     func testGenerateParser_respectsTokenCallMeta() throws {
         let grammar = makeGrammar([
