@@ -204,6 +204,19 @@ public class SwiftCodeGen {
         declContext = DeclarationsContext()
         declContext.push() // No need to pop as the context is meant to be replaced in new generate calls
 
+        if settings.emitProducerProtocol {
+            let protocolInfo = producerProtocolInfo()
+            try generateProducerProtocol(protocolInfo)
+
+            let ruleReturnAliases: [String: CommonAbstract.SwiftType] =
+                protocolInfo
+                .ruleReturnType.mapValues { identifier in
+                    .nested(.typeName(self.producerGenericParameterName()), identifier)
+                }
+
+            bindingEngine = bindingEngine.withCustomRuleResultMappings(ruleReturnAliases)
+        }
+
         self.remaining = grammar.rules.map(RemainingProduction.rule)
 
         buffer.emit("extension \(parserName) ")
@@ -978,7 +991,8 @@ public class SwiftCodeGen {
         public static let `default`: Self = Self(
             omitUnreachable: false,
             emitTypesInBindings: false,
-            omitRedundantMarkRestores: false
+            omitRedundantMarkRestores: false,
+            emitProducerProtocol: false
         )
 
         /// Whether to omit unreachable rules, as detected by a `GrammarProcessor`
@@ -1008,14 +1022,25 @@ public class SwiftCodeGen {
         /// measurable bottleneck.
         public var omitRedundantMarkRestores: Bool
 
+        /// Whether to emit a `<Parser>Producer` protocol alongside the main parser
+        /// extension which implements the actual production of alternatives, and
+        /// can be swapped out for different implementations.
+        ///
+        /// This makes the main parser extension require a second generic type
+        /// argument which takes in the producer that is used to produce the
+        /// alternative results in its place.
+        public var emitProducerProtocol: Bool
+
         public init(
             omitUnreachable: Bool,
             emitTypesInBindings: Bool,
-            omitRedundantMarkRestores: Bool
+            omitRedundantMarkRestores: Bool,
+            emitProducerProtocol: Bool
         ) {
             self.omitUnreachable = omitUnreachable
             self.emitTypesInBindings = emitTypesInBindings
             self.omitRedundantMarkRestores = omitRedundantMarkRestores
+            self.emitProducerProtocol = emitProducerProtocol
         }
 
         /// Returns a copy of `self` with a given keypath modified to be `value`.
@@ -1465,6 +1490,14 @@ extension SwiftCodeGen {
         remaining.append(production)
 
         return production
+    }
+}
+
+// MARK: - Rule return type management
+
+extension SwiftCodeGen {
+    func returnType(for rule: InternalGrammar.Rule) -> CommonAbstract.SwiftType {
+        bindingEngine.returnTypeForRule(rule)
     }
 }
 
