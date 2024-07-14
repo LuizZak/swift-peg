@@ -37,10 +37,14 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
         typealias TokenKindType = RawToken.TokenKind
 
         let errorMark = tokenizer.mark(before: self.reach)
-        let errorLead = "Syntax error @ \(tokenizer.readableLocation(for: errorMark))"
+        let location = self.tokenizer.readableLocation(for: errorMark)
 
         guard let tokens = cache.fetchTokenKinds(at: errorMark)?.removingDuplicates(), !tokens.isEmpty else {
-            return SyntaxError.invalidSyntax(errorLead, errorMark)
+            return SyntaxError.invalidSyntax(
+                "Syntax error",
+                errorMark,
+                location: location
+            )
         }
 
         let expectedTokensMsg = tokens.asNaturalLanguageList({ "\"\($0)\"" })
@@ -48,12 +52,18 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
         // Check EOF
         tokenizer.restore(errorMark)
         guard let actual = try? tokenizer.peekToken() else {
-            return SyntaxError.unexpectedEof("\(errorLead): Unexpected end-of-stream but expected: \(expectedTokensMsg)", errorMark, expected: tokens)
+            return SyntaxError.unexpectedEof(
+                "Unexpected end-of-stream but expected: \(expectedTokensMsg)",
+                errorMark,
+                location: location,
+                expected: tokens
+            )
         }
 
         return SyntaxError.expectedToken(
-            "\(errorLead): Found \"\(actual.rawToken.string)\" but expected: \(expectedTokensMsg)",
+            "Found \"\(actual.rawToken.string)\" but expected: \(expectedTokensMsg)",
             errorMark,
+            location: location,
             received: actual.rawToken,
             expected: tokens
         )
@@ -312,7 +322,11 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
     public func expectForced<T>(_ production: () throws -> T?, _ message: String) throws -> T? {
         let mark = self.mark()
         guard let production = try production() else {
-            throw SyntaxError.expectedForcedFailed("Expected \(message)", mark)
+            throw SyntaxError.expectedForcedFailed(
+                "Expected \(message)",
+                mark,
+                location: self.tokenizer.readableLocation(for: mark)
+            )
         }
 
         return production
@@ -450,38 +464,48 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
     /// A generic syntax error produced by a parser.
     public enum SyntaxError: ParserError, Equatable, CustomStringConvertible, CustomDebugStringConvertible {
         /// Generic syntax error.
-        case invalidSyntax(String, _ mark: Mark)
+        case invalidSyntax(String, _ mark: Mark, location: String)
 
         /// Found end-of-stream unexpectedly.
-        case unexpectedEof(String, _ mark: Mark, expected: [RawToken.TokenKind])
+        case unexpectedEof(String, _ mark: Mark, location: String, expected: [RawToken.TokenKind])
 
         /// An `expectForced` check failed at a given point.
-        case expectedForcedFailed(String, _ mark: Mark)
+        case expectedForcedFailed(String, _ mark: Mark, location: String)
 
         /// Found given token kind, expected one of the following token kinds
         /// instead.
-        case expectedToken(String, _ mark: Mark, received: RawToken, expected: [RawToken.TokenKind])
+        case expectedToken(String, _ mark: Mark, location: String, received: RawToken, expected: [RawToken.TokenKind])
+
+        public var location: String {
+            switch self {
+            case .invalidSyntax(_, _, let location),
+                .unexpectedEof(_, _, let location, _),
+                .expectedForcedFailed(_, _, let location),
+                .expectedToken(_, _, let location, _, _):
+                return location
+            }
+        }
 
         public var description: String {
             switch self {
-            case .invalidSyntax(let desc, _),
-                .unexpectedEof(let desc, _, _),
-                .expectedForcedFailed(let desc, _),
-                .expectedToken(let desc, _, _, _):
-                return desc
+            case .invalidSyntax(let desc, _, let location),
+                .unexpectedEof(let desc, _, let location, _),
+                .expectedForcedFailed(let desc, _, let location),
+                .expectedToken(let desc, _, let location, _, _):
+                return "Syntax error @ \(location): \(desc)"
             }
         }
 
         public var debugDescription: String {
             switch self {
-            case .invalidSyntax(let desc, let mark):
-                return "\(Self.self).invalidSyntax(\"\(desc)\", \(mark))"
-            case .unexpectedEof(let desc, let mark, let expected):
-                return "\(Self.self).unexpectedEof(\"\(desc)\", \(mark), expected: \(expected))"
-            case .expectedForcedFailed(let desc, let mark):
-                return "\(Self.self).expectedForcedFailed(\"\(desc)\", \(mark))"
-            case .expectedToken(let desc, let mark, let received, let expected):
-                return "\(Self.self).expectedToken(\"\(desc)\", \(mark), received: \(received), expected: \(expected))"
+            case .invalidSyntax(let desc, let mark, let location):
+                return "\(Self.self).invalidSyntax(\"\(desc)\", \(mark), location: \(location))"
+            case .unexpectedEof(let desc, let mark, let location, let expected):
+                return "\(Self.self).unexpectedEof(\"\(desc)\", \(mark), location: \(location), expected: \(expected))"
+            case .expectedForcedFailed(let desc, let mark, let location):
+                return "\(Self.self).expectedForcedFailed(\"\(desc)\", \(mark), location: \(location))"
+            case .expectedToken(let desc, let mark, let location, let received, let expected):
+                return "\(Self.self).expectedToken(\"\(desc)\", \(mark), location: \(location), received: \(received), expected: \(expected))"
             }
         }
     }

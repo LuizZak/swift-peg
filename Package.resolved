@@ -1,15 +1,6 @@
 {
-  "originHash" : "ef15b68ef1a3a64f7cc465ca5fac873d298ff5549e9c9b06462e6e2b9d4cbd07",
+  "originHash" : "b30e810998b8ce8f124ca26bcd38a159c437a91e2e10abe889e860acb358e8b3",
   "pins" : [
-    {
-      "identity" : "console",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/LuizZak/Console.git",
-      "state" : {
-        "revision" : "86160c804d22293dac3aa5b2d69f7246a2263a09",
-        "version" : "0.13.0"
-      }
-    },
     {
       "identity" : "minidigraph",
       "kind" : "remoteSourceControl",
