@@ -36,7 +36,7 @@ public struct ParserCache<RawTokenizer: RawTokenizerType> {
     /// Fetches or stores a cached entry with a given key within this cache.
     /// Returns `nil` if no entries are stored with the given key.
     @inlinable
-    public subscript<Value>(key: Key) -> CacheEntry<Value?>? {
+    public subscript<Value>(key: Key) -> CacheEntry<Value>? {
         get { fetch(key) }
         set {
             if let newValue {
