@@ -1,3 +1,4 @@
+import Foundation
 import ArgumentParser
 import Console
 import SwiftPEG
@@ -7,10 +8,7 @@ struct Generate: ParsableCommand {
         commandName: "generate",
         discussion: """
         Generates parser and tokens files from .gram SwiftPEG grammar files.
-        """,
-        subcommands: [
-            GenerateTokenType.self,
-        ]
+        """
     )
 
     @OptionGroup(title: "Global")
@@ -18,6 +16,13 @@ struct Generate: ParsableCommand {
 
     @OptionGroup
     var options: ParserGenSettings
+
+    @Option(
+        help: """
+        File path to save generated code to.
+        """
+    )
+    var output: String
 
     func run() throws {
         let console = commonOptions.makeConsole()
@@ -31,9 +36,13 @@ struct Generate: ParsableCommand {
         console.printStage(name: "Generating parser...")
         let codeGen = SwiftCodeGen(from: processed)
         let settings = try options.toSwiftCodeGenParserGenSettings()
-        let output = try codeGen.generateParser(settings: settings)
+        let generated = try codeGen.generateParser(settings: settings)
 
-        print(output)
+        try generated.write(
+            to: .init(fileURLWithPath: output),
+            atomically: true,
+            encoding: .utf8
+        )
 
         console.printSuccessMessage()
     }

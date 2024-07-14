@@ -9,11 +9,18 @@ struct GenerateTokenType: ParsableCommand {
         """
     )
 
-    @OptionGroup(title: "Global")
+    @OptionGroup
     var commonOptions: CommonOptions
 
     @OptionGroup
     var options: TokenTypeGenSettings
+
+    @Option(
+        help: """
+        File path to save generated code to.
+        """
+    )
+    var output: String
 
     func run() throws {
         let console = commonOptions.makeConsole()
@@ -27,9 +34,13 @@ struct GenerateTokenType: ParsableCommand {
         console.printStage(name: "Generating token type...")
         let codeGen = SwiftCodeGen(from: processed)
         let settings = try options.toSwiftCodeGenTokenTypeGenSettings()
-        let output = try codeGen.generateTokenType(settings: settings)
+        let generated = try codeGen.generateTokenType(settings: settings)
 
-        print(output)
+        try generated.write(
+            to: .init(fileURLWithPath: output),
+            atomically: true,
+            encoding: .utf8
+        )
 
         console.printSuccessMessage()
     }
@@ -40,7 +51,7 @@ struct GenerateTokenType: ParsableCommand {
             Emit '@inlinable' attributes in all generated methods.
             """
         )
-        var emitInlinable: Bool = false
+        var inlinable: Bool = false
 
         @Option(
             help: """
@@ -57,7 +68,7 @@ struct GenerateTokenType: ParsableCommand {
             strings.
             """
         )
-        var emitLengthSwitchPhaseInTokenOcclusionSwitch: Bool = false
+        var emitLengthSwitch: Bool = false
 
         func toSwiftCodeGenTokenTypeGenSettings() throws -> SwiftCodeGen.TokenTypeGenSettings {
             switch accessLevel {
@@ -70,9 +81,9 @@ struct GenerateTokenType: ParsableCommand {
             }
 
             return .init(
-                emitInlinable: emitInlinable,
+                emitInlinable: inlinable,
                 accessLevel: accessLevel,
-                emitLengthSwitchPhaseInTokenOcclusionSwitch: emitLengthSwitchPhaseInTokenOcclusionSwitch
+                emitLengthSwitchPhaseInTokenOcclusionSwitch: emitLengthSwitch
             )
         }
 

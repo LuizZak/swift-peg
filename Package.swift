@@ -49,11 +49,11 @@ let package = Package(
             name: "SwiftPEGPlugin",
             capability: .command(
                 intent: .custom(
-                    verb: "Save Parser",
-                    description: "Save generated parser file in target where .gram/.tokens file is present"
+                    verb: "generate-parser",
+                    description: "Generate parser or token type file in target where .gram/.tokens file is present"
                 ),
                 permissions: [.writeToPackageDirectory(
-                    reason: "Save generated parser code"
+                    reason: "Save generated parser or token type code"
                 )]
             ),
             dependencies: [
