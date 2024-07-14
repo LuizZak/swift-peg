@@ -4,7 +4,7 @@ import CompilerPluginSupport
 
 let package = Package(
     name: "swift-peg",
-    platforms: [.macOS(.v10_15)],
+    platforms: [.macOS(.v13)],
     products: [
         .library(
             name: "SwiftPEG",
