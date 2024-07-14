@@ -63,7 +63,7 @@ struct GenerateTokenType: ParsableCommand {
         @Flag(
             help: """
             Attempt to generate switch statements in top-level token parser method \
-            to alternate between static and dynamic alternatives by inspecting the \
+            that alternate between dynamic and shadowed static tokens by inspecting the \
             length of the results before switching into the actual static token \
             strings.
             """
