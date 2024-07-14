@@ -7,11 +7,29 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug",
+            "name": "Debug (SwiftPEGGenerator)",
+            "program": "${workspaceFolder}/.build/debug/SwiftPEGGenerator",
+            "cwd": "${workspaceFolder}",
+            // "args": "${input:pegGeneratorArgs}", // TODO: Currently this doesn't seem to work with code-lldb
+            "args": "--grammar-file ./Sources/SwiftPEG/Grammar/metagrammar.gram -v",
+            "preLaunchTask": "Build (debug)",
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug (SwiftPEGSample)",
             "program": "${workspaceFolder}/.build/debug/SwiftPEGSample",
             "args": [],
             "cwd": "${workspaceFolder}",
             "preLaunchTask": "Build (debug)"
-        }
+        },
+    ],
+    "inputs": [
+        {
+            "id": "pegGeneratorArgs",
+            "type": "promptString",
+            "description": "Arguments for SwiftPEGGenerator",
+            "default": ""
+        },
     ]
 }

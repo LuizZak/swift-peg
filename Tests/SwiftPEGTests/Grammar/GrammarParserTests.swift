@@ -44,8 +44,9 @@ class GrammarParserTests: XCTestCase {
         assertEqual(
             error,
             Sut.SyntaxError.unexpectedEof(
-                #"Syntax error @ 3: Unexpected end-of-stream but expected: "@" or "IDENTIFIER""#,
+                #"Unexpected end-of-stream but expected: "@" or "IDENTIFIER""#,
                 .init(owner: sut.tokenizer, index: 3),
+                location: "3",
                 expected: [.at, .identifier]
             )
         )
