@@ -20,7 +20,7 @@ extension Parser {
 
         if
             let a = try self.a(),
-            case let (b, c, d) = try self._start__group_()
+            case let (b, c, d) = self.shuffleTuple(try self._start__group_())
         {
             return Node()
         }
@@ -116,7 +116,7 @@ extension Parser {
     /// ```
     @memoized("_start__group_")
     @inlinable
-    public func ___start__group_() throws -> (b: Node?, c: Node??, d: Node??) {
+    public func ___start__group_() throws -> (b: Node, c: Node?, d: Node?)? {
         let _mark = self.mark()
 
         if
@@ -128,7 +128,7 @@ extension Parser {
         }
 
         self.restore(_mark)
-        return (nil, nil, nil)
+        return nil
     }
 }
 """ ;

@@ -41,7 +41,7 @@ extension Parser {
         let _mark = self.mark()
 
         if
-            case let (b?, c?) = try self._a_nsr()
+            case let (b?, c?) = self.shuffleTuple(try self._a_nsr())
         {
             return Node()
         }
@@ -49,7 +49,7 @@ extension Parser {
         self.restore(_mark)
 
         if
-            case let (b?, d?) = try self._a_nsr1()
+            case let (b?, d?) = self.shuffleTuple(try self._a_nsr1())
         {
             return Node()
         }
@@ -65,7 +65,7 @@ extension Parser {
     /// ```
     @memoized("_a_nsr")
     @inlinable
-    public func ___a_nsr() throws -> (b: [Token]?, c: Token?) {
+    public func ___a_nsr() throws -> (b: [Token], c: Token)? {
         let _mark = self.mark()
 
         var _current: [Token] = []
@@ -87,7 +87,7 @@ extension Parser {
         }
 
         self.restore(_mark)
-        return (nil, nil)
+        return nil
     }
 
     /// ```
@@ -97,7 +97,7 @@ extension Parser {
     /// ```
     @memoized("_a_nsr1")
     @inlinable
-    public func ___a_nsr1() throws -> (b: [Token]?, d: Token?) {
+    public func ___a_nsr1() throws -> (b: [Token], d: Token)? {
         let _mark = self.mark()
 
         // Start by fetching as many productions as possible
@@ -107,7 +107,7 @@ extension Parser {
                 return nil
             })
         else {
-            return (nil, nil)
+            return nil
         }
 
         while let _endMark = _current.last?.0 {
@@ -127,7 +127,7 @@ extension Parser {
         }
 
         self.restore(_mark)
-        return (nil, nil)
+        return nil
     }
 }
 """ ;

@@ -689,7 +689,17 @@ public class SwiftCodeGen {
 
         buffer.emit(" = ")
 
+        // Detect shuffleTuple requirement
+        let requiresShuffle = bindingEngine.requiresTupleShuffling(item)
+        if requiresShuffle {
+            buffer.emit("self.shuffleTuple(")
+        }
+
         try generateItem(item, in: production)
+
+        if requiresShuffle {
+            buffer.emit(")")
+        }
 
         return bindingNames
     }
@@ -903,12 +913,7 @@ public class SwiftCodeGen {
     }
 
     private func _failReturnExpression(for type: CommonAbstract.SwiftType?) -> String {
-        switch type {
-        case .tuple(let elements) where elements.count != 1:
-            "(\(elements.map({ _ in "nil" }).joined(separator: ", ")))"
-        default:
-            "nil"
-        }
+        return "nil"
     }
 
     private func memoizationMode(for rule: InternalGrammar.Rule) -> MemoizationMode {
@@ -1464,6 +1469,8 @@ extension SwiftCodeGen {
 
         remaining.append(production)
 
+        bindingEngine.registerCodeGenProduction(production)
+
         return production
     }
 }
@@ -1804,12 +1811,6 @@ internal extension CommonAbstract.SwiftType {
     /// Returns a string representation of this Swift type that can be used as a
     /// valid Swift type in code.
     func scg_asValidSwiftType() -> String {
-        // Ensure we don't emit labeled tuples with one element
-        switch self {
-        case .tuple(let elements) where elements.count == 1:
-            return elements[0].swiftType.scg_asValidSwiftType()
-        default:
-            return self.description
-        }
+        self.description
     }
 }

@@ -42,7 +42,7 @@ extension Parser {
 
         if
             let b = try self.b(),
-            case let (c?, d?) = try self._a__group_()
+            case let (c?, d?) = self.shuffleTuple(try self._a__group_())
         {
             return Node()
         }
@@ -63,7 +63,7 @@ extension Parser {
 
         if
             let _ = try self.expect("b"),
-            case let (c?, d?) = try self._a__group_()
+            case let (c?, d?) = self.shuffleTuple(try self._a__group_())
         {
             return Node()
         }
@@ -132,7 +132,7 @@ extension Parser {
         self.restore(_mark)
 
         if
-            case let (c?, d?) = try self._e__group_(),
+            case let (c?, d?) = self.shuffleTuple(try self._e__group_()),
             let _ = try self.expect("a")
         {
             return Node()
@@ -149,7 +149,7 @@ extension Parser {
     /// ```
     @memoized("_a__group_")
     @inlinable
-    public func ___a__group_() throws -> (c: Node?, d: Node?) {
+    public func ___a__group_() throws -> (c: Node, d: Node)? {
         let _mark = self.mark()
 
         if
@@ -160,7 +160,7 @@ extension Parser {
         }
 
         self.restore(_mark)
-        return (nil, nil)
+        return nil
     }
 
     /// ```
@@ -169,7 +169,7 @@ extension Parser {
     ///     ;
     /// ```
     @inlinable
-    public func _e__group_() throws -> (c: Node?, d: Node?) {
+    public func _e__group_() throws -> (c: Node, d: Node)? {
         let _mark = self.mark()
 
         if
@@ -180,7 +180,7 @@ extension Parser {
         }
 
         self.restore(_mark)
-        return (nil, nil)
+        return nil
     }
 }
 """ ;
