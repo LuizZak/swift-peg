@@ -123,6 +123,7 @@ public enum CommonAbstract {
     ///     | swiftType
     ///     ;
     /// ```
+    @GeneratedCaseChecks
     public indirect enum SwiftType: Hashable, CustomStringConvertible, ExpressibleByStringLiteral {
         /// A Swift tuple type
         ///
@@ -159,12 +160,27 @@ public enum CommonAbstract {
 
         public var description: String {
             switch self {
-            case .tuple(let elements): "(\(elements.map(\.description).joined(separator: ", ")))"
-            case .dictionary(let key, let value): "[\(key): \(value)]"
-            case .array(let element): "[\(element)]"
-            case .optional(let wrappedType): "\(wrappedType)?"
-            case .nested(let base, let nominal): "\(base).\(nominal)"
-            case .nominal(let nominal): nominal.description
+            case .tuple(let element) where element.count == 1:
+                // Avoid emitting single-element tuples
+                element[0].swiftType.description
+
+            case .tuple(let elements):
+                "(\(elements.map(\.description).joined(separator: ", ")))"
+
+            case .dictionary(let key, let value):
+                "[\(key): \(value)]"
+
+            case .array(let element):
+                "[\(element)]"
+
+            case .optional(let wrappedType):
+                "\(wrappedType)?"
+
+            case .nested(let base, let nominal):
+                "\(base).\(nominal)"
+
+            case .nominal(let nominal):
+                nominal.description
             }
         }
 

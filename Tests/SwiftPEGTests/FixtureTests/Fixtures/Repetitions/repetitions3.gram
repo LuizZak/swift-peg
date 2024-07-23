@@ -44,7 +44,7 @@ extension Parser {
         let _mark = self.mark()
 
         if
-            case let (b?, c?, d?) = try self._a_nsr()
+            case let (b?, c?, d?) = self.shuffleTuple(try self._a_nsr())
         {
             return Node()
         }
@@ -52,7 +52,7 @@ extension Parser {
         self.restore(_mark)
 
         if
-            case let (b?, c?, d?) = try self._a_nsr1()
+            case let (b?, c?, d?) = self.shuffleTuple(try self._a_nsr1())
         {
             return Node()
         }
@@ -122,13 +122,13 @@ extension Parser {
     }
 
     /// ```
-    /// _a_nsr[(b: [TokenType], c: TokenType, d: TokenType)]:
+    /// _a_nsr[([TokenType], TokenType, TokenType)]:
     ///     | b+< c ~ d
     ///     ;
     /// ```
     @memoized("_a_nsr")
     @inlinable
-    public func ___a_nsr() throws -> (b: [TokenType]?, c: TokenType?, d: TokenType?) {
+    public func ___a_nsr() throws -> ([TokenType], TokenType, TokenType)? {
         let _mark = self.mark()
         var _cut = CutFlag()
 
@@ -152,17 +152,17 @@ extension Parser {
         }
 
         self.restore(_mark)
-        return (nil, nil, nil)
+        return nil
     }
 
     /// ```
-    /// _a_nsr1[(b: [TokenType], c: TokenType, d: TokenType)]:
+    /// _a_nsr1[([TokenType], TokenType, TokenType)]:
     ///     | b+> c ~ d
     ///     ;
     /// ```
     @memoized("_a_nsr1")
     @inlinable
-    public func ___a_nsr1() throws -> (b: [TokenType]?, c: TokenType?, d: TokenType?) {
+    public func ___a_nsr1() throws -> ([TokenType], TokenType, TokenType)? {
         let _mark = self.mark()
         var _cut = CutFlag()
 
@@ -173,7 +173,7 @@ extension Parser {
                 return nil
             })
         else {
-            return (nil, nil, nil)
+            return nil
         }
 
         while !_cut.isOn, let _endMark = _current.last?.0 {
@@ -194,7 +194,7 @@ extension Parser {
         }
 
         self.restore(_mark)
-        return (nil, nil, nil)
+        return nil
     }
 }
 """ ;

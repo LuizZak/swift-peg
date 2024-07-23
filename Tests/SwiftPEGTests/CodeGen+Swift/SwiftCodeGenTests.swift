@@ -1973,7 +1973,7 @@ class SwiftCodeGenTests: XCTestCase {
                     if
                         let b = try self.b(),
                         let c = try self.c(),
-                        case let (d?, e?) = try self._a__group_()
+                        case let (d?, e?) = self.shuffleTuple(try self._a__group_())
                     {
                         return ANode()
                     }
@@ -1983,13 +1983,13 @@ class SwiftCodeGenTests: XCTestCase {
                 }
 
                 /// ```
-                /// _a__group_[(d: Node, e: Node)]:
+                /// _a__group_[(Node, Node)]:
                 ///     | d e { (d: d, e: e) }
                 ///     ;
                 /// ```
                 @memoized("_a__group_")
                 @inlinable
-                public func ___a__group_() throws -> (d: Node?, e: Node?) {
+                public func ___a__group_() throws -> (Node, Node)? {
                     let _mark = self.mark()
 
                     if
@@ -2000,7 +2000,7 @@ class SwiftCodeGenTests: XCTestCase {
                     }
 
                     self.restore(_mark)
-                    return (nil, nil)
+                    return nil
                 }
             }
             """).diff(result)
@@ -2034,7 +2034,7 @@ class SwiftCodeGenTests: XCTestCase {
 
                     if
                         let a: A = try self.a(),
-                        case let (b?, cBind?) = try self._start__group_()
+                        case let (b?, cBind?) = self.shuffleTuple(try self._start__group_())
                     {
                         return Node()
                     }
@@ -2105,13 +2105,13 @@ class SwiftCodeGenTests: XCTestCase {
                 }
 
                 /// ```
-                /// _start__group_[(b: [B], cBind: C)]:
+                /// _start__group_[([B], C)]:
                 ///     | b+ cBind=c 'd' { (b: b, cBind: cBind) }
                 ///     ;
                 /// ```
                 @memoized("_start__group_")
                 @inlinable
-                public func ___start__group_() throws -> (b: [B]?, cBind: C?) {
+                public func ___start__group_() throws -> ([B], C)? {
                     let _mark = self.mark()
 
                     if
@@ -2125,7 +2125,7 @@ class SwiftCodeGenTests: XCTestCase {
                     }
 
                     self.restore(_mark)
-                    return (nil, nil)
+                    return nil
                 }
             }
             """).diff(result)
@@ -2159,7 +2159,7 @@ class SwiftCodeGenTests: XCTestCase {
 
                     if
                         let a: A = try self.a(),
-                        case let (b, cBind) = try self._start__group_()
+                        case let (b, cBind) = self.shuffleTuple(try self._start__group_())
                     {
                         return Node()
                     }
@@ -2230,13 +2230,13 @@ class SwiftCodeGenTests: XCTestCase {
                 }
 
                 /// ```
-                /// _start__group_[(b: [B], cBind: C)]:
+                /// _start__group_[([B], C)]:
                 ///     | b+ cBind=c 'd' { (b: b, cBind: cBind) }
                 ///     ;
                 /// ```
                 @memoized("_start__group_")
                 @inlinable
-                public func ___start__group_() throws -> (b: [B]?, cBind: C?) {
+                public func ___start__group_() throws -> ([B], C)? {
                     let _mark = self.mark()
 
                     if
@@ -2250,7 +2250,7 @@ class SwiftCodeGenTests: XCTestCase {
                     }
 
                     self.restore(_mark)
-                    return (nil, nil)
+                    return nil
                 }
             }
             """).diff(result)
@@ -2391,10 +2391,10 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
-    func testGenerateParser_deeplyNestedOptionalGroups() throws {
+    func testGenerateParser_repetitionWithMultipleBindings() throws {
         let grammar = try parseInternalGrammar("""
-        @token d; @token e; @tokenCallKind "expectKind" ;
-        start: a (((b+ cBind=c 'd')?)?)? ;
+        @tokenCallKind "expectKind" ;
+        start: a (b c)+ ;
         a[A]: 'a' ;
         b[B]: 'b' ;
         c[C]: 'c'? 'e' ;
@@ -2409,7 +2409,7 @@ class SwiftCodeGenTests: XCTestCase {
             extension Parser {
                 /// ```
                 /// start:
-                ///     | a (((b+ cBind=c 'd')?)?)?
+                ///     | a (b c)+
                 ///     ;
                 /// ```
                 @memoized("start")
@@ -2419,7 +2419,9 @@ class SwiftCodeGenTests: XCTestCase {
 
                     if
                         let a: A = try self.a(),
-                        case let (b, cBind) = try self._start__group_()
+                        let _: [(b: B, c: C)] = try self.repeatOneOrMore({
+                            try self._start__group_()
+                        })
                     {
                         return Node()
                     }
@@ -2490,53 +2492,175 @@ class SwiftCodeGenTests: XCTestCase {
                 }
 
                 /// ```
-                /// _start__group_[(b: [B]??, cBind: C??)]:
+                /// _start__group_[(B, C)]:
+                ///     | b c { (b: b, c: c) }
+                ///     ;
+                /// ```
+                @memoized("_start__group_")
+                @inlinable
+                public func ___start__group_() throws -> (B, C)? {
+                    let _mark = self.mark()
+
+                    if
+                        let b: B = try self.b(),
+                        let c: C = try self.c()
+                    {
+                        return (b: b, c: c)
+                    }
+
+                    self.restore(_mark)
+                    return nil
+                }
+            }
+            """).diff(result)
+    }
+
+    func testGenerateParser_deeplyNestedOptionalGroups() throws {
+        let grammar = try parseInternalGrammar("""
+        @token d; @token e; @tokenCallKind "expectKind" ;
+        start: a (((b+ cBind=c 'd')?)?)? ;
+        a[A]: 'a' ;
+        b[B]: 'b' ;
+        c[C]: 'c'? 'e' ;
+        """)
+        let sut = makeSut(grammar)
+
+        let result = try sut.generateParser(
+            settings: .default.with(\.emitTypesInBindings, value: true)
+        )
+
+        diffTest(expected: """
+            extension Parser {
+                /// ```
+                /// start:
+                ///     | a (((b+ cBind=c 'd')?)?)?
+                ///     ;
+                /// ```
+                @memoized("start")
+                @inlinable
+                public func __start() throws -> Node? {
+                    let _mark = self.mark()
+
+                    if
+                        let a: A = try self.a(),
+                        case let (b, cBind) = self.shuffleTuple(try self._start__group_())
+                    {
+                        return Node()
+                    }
+
+                    self.restore(_mark)
+                    return nil
+                }
+
+                /// ```
+                /// a[A]:
+                ///     | 'a'
+                ///     ;
+                /// ```
+                @memoized("a")
+                @inlinable
+                public func __a() throws -> A? {
+                    let _mark = self.mark()
+
+                    if
+                        let _: Token = try self.expect("a")
+                    {
+                        return A()
+                    }
+
+                    self.restore(_mark)
+                    return nil
+                }
+
+                /// ```
+                /// b[B]:
+                ///     | 'b'
+                ///     ;
+                /// ```
+                @memoized("b")
+                @inlinable
+                public func __b() throws -> B? {
+                    let _mark = self.mark()
+
+                    if
+                        let _: Token = try self.expect("b")
+                    {
+                        return B()
+                    }
+
+                    self.restore(_mark)
+                    return nil
+                }
+
+                /// ```
+                /// c[C]:
+                ///     | 'c'? 'e'
+                ///     ;
+                /// ```
+                @memoized("c")
+                @inlinable
+                public func __c() throws -> C? {
+                    let _mark = self.mark()
+
+                    if
+                        case _: Token? = try self.expect("c"),
+                        let _: Token = try self.expect("e")
+                    {
+                        return C()
+                    }
+
+                    self.restore(_mark)
+                    return nil
+                }
+
+                /// ```
+                /// _start__group_[([B]??, C??)]:
                 ///     | ((b+ cBind=c 'd')?)? { (b: b, cBind: cBind) }
                 ///     ;
                 /// ```
                 @memoized("_start__group_")
                 @inlinable
-                public func ___start__group_() throws -> (b: [B]???, cBind: C???) {
+                public func ___start__group_() throws -> ([B]??, C??)? {
                     let _mark = self.mark()
 
                     if
-                        case let (b, cBind) = try self.__start__group___group_()
+                        case let (b, cBind) = self.shuffleTuple(try self.__start__group___group_())
                     {
                         return (b: b, cBind: cBind)
                     }
 
                     self.restore(_mark)
-                    return (nil, nil)
+                    return nil
                 }
 
                 /// ```
-                /// __start__group___group_[(b: [B]?, cBind: C?)]:
+                /// __start__group___group_[([B]?, C?)]:
                 ///     | (b+ cBind=c 'd')? { (b: b, cBind: cBind) }
                 ///     ;
                 /// ```
                 @memoized("__start__group___group_")
                 @inlinable
-                public func ____start__group___group_() throws -> (b: [B]??, cBind: C??) {
+                public func ____start__group___group_() throws -> ([B]?, C?)? {
                     let _mark = self.mark()
 
                     if
-                        case let (b, cBind) = try self.___start__group___group___group_()
+                        case let (b, cBind) = self.shuffleTuple(try self.___start__group___group___group_())
                     {
                         return (b: b, cBind: cBind)
                     }
 
                     self.restore(_mark)
-                    return (nil, nil)
+                    return nil
                 }
 
                 /// ```
-                /// ___start__group___group___group_[(b: [B], cBind: C)]:
+                /// ___start__group___group___group_[([B], C)]:
                 ///     | b+ cBind=c 'd' { (b: b, cBind: cBind) }
                 ///     ;
                 /// ```
                 @memoized("___start__group___group___group_")
                 @inlinable
-                public func _____start__group___group___group_() throws -> (b: [B]?, cBind: C?) {
+                public func _____start__group___group___group_() throws -> ([B], C)? {
                     let _mark = self.mark()
 
                     if
@@ -2550,7 +2674,7 @@ class SwiftCodeGenTests: XCTestCase {
                     }
 
                     self.restore(_mark)
-                    return (nil, nil)
+                    return nil
                 }
             }
             """).diff(result)
@@ -2736,7 +2860,7 @@ class SwiftCodeGenTests: XCTestCase {
                     let _mark = self.mark()
 
                     if
-                        case let (b, c) = try self._a__opt()
+                        case let (b, c) = self.shuffleTuple(try self._a__opt())
                     {
                         return Node()
                     }
@@ -2746,13 +2870,13 @@ class SwiftCodeGenTests: XCTestCase {
                 }
 
                 /// ```
-                /// _a__opt[(b: Node, c: Node)]:
+                /// _a__opt[(Node, Node)]:
                 ///     | b '\' c { (b: b, c: c) }
                 ///     ;
                 /// ```
                 @memoized("_a__opt")
                 @inlinable
-                public func ___a__opt() throws -> (b: Node?, c: Node?) {
+                public func ___a__opt() throws -> (Node, Node)? {
                     let _mark = self.mark()
 
                     if
@@ -2764,7 +2888,7 @@ class SwiftCodeGenTests: XCTestCase {
                     }
 
                     self.restore(_mark)
-                    return (nil, nil)
+                    return nil
                 }
             }
             """#).diff(result)

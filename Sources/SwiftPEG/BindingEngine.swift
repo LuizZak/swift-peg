@@ -7,6 +7,7 @@ class BindingEngine {
 
     var ruleAliases: [String: String]
     var knownRules: [String: InternalGrammar.Rule]
+    var knownAuxiliaries: [String: CommonAbstract.SwiftType] = [:]
     var knownTokens: [String: InternalGrammar.TokenDefinition]
 
     /// Whether to implicitly generate bindings for atoms that compute into
@@ -35,6 +36,7 @@ class BindingEngine {
             ruleReturnAliases: [:],
             ruleAliases: [:],
             knownRules: [:],
+            knownAuxiliaries: [:],
             knownTokens: [:],
             implicitBindings: true,
             bindTokenLiterals: false
@@ -45,6 +47,7 @@ class BindingEngine {
         ruleReturnAliases: [String: CommonAbstract.SwiftType],
         ruleAliases: [String: String],
         knownRules: [String: InternalGrammar.Rule],
+        knownAuxiliaries: [String: CommonAbstract.SwiftType],
         knownTokens: [String: InternalGrammar.TokenDefinition],
         implicitBindings: Bool,
         bindTokenLiterals: Bool
@@ -52,6 +55,7 @@ class BindingEngine {
         self.ruleAliases = ruleAliases
         self.ruleReturnAliases = ruleReturnAliases
         self.knownRules = knownRules
+        self.knownAuxiliaries = knownAuxiliaries
         self.knownTokens = knownTokens
         self.implicitBindings = implicitBindings
         self.bindTokenLiterals = bindTokenLiterals
@@ -66,6 +70,7 @@ class BindingEngine {
             ruleReturnAliases: ruleReturnAliases,
             ruleAliases: ruleAliases,
             knownRules: knownRules,
+            knownAuxiliaries: knownAuxiliaries,
             knownTokens: knownTokens,
             implicitBindings: implicitBindings,
             bindTokenLiterals: bindTokenLiterals
@@ -84,6 +89,21 @@ class BindingEngine {
     /// Registers a new rule into this binding engine.
     func registerRule(_ rule: InternalGrammar.Rule) {
         knownRules[rule.name] = rule
+    }
+
+    /// Registers information about a given code generation production into this
+    /// binding engine.
+    func registerCodeGenProduction(_ production: SwiftCodeGen.RemainingProduction) {
+        switch production {
+        case .rule(let rule):
+            registerRule(rule)
+
+        case .auxiliary(let rule, _):
+            registerRule(rule)
+
+        case .nonStandardRepetition(let info, _):
+            knownAuxiliaries[info.name] = info.bindings.be_asTupleType().scg_removingTupleLabels()
+        }
     }
 
     /// Registers a new token definition into this binding engine.
@@ -152,6 +172,26 @@ class BindingEngine {
         .optional("Node")
     }
 
+    /// Returns `true` if the given rule requires a call to `PEGParser.shuffleTuple`
+    /// in order to appropriately optional-bind its contents.
+    func requiresTupleShuffling(_ rule: InternalGrammar.Rule) -> Bool {
+        let ruleType = typeForRule(rule) ?? defaultRuleType()
+
+        return ruleType.be_isOptionalTuple()
+    }
+
+    /// Returns `true` if the given item requires a call to `PEGParser.shuffleTuple`
+    /// in order to appropriately optional-bind its contents.
+    func requiresTupleShuffling(_ item: InternalGrammar.Item) -> Bool {
+        bindings(for: item).count > 1
+    }
+
+    /// Returns `true` if the given atom requires a call to `PEGParser.shuffleTuple`
+    /// in order to appropriately optional-bind its contents.
+    func requiresTupleShuffling(_ atom: InternalGrammar.Atom) -> Bool {
+        bindings(for: atom).count > 1
+    }
+
     /// Returns the type to use as the return type for a given rule's method.
     ///
     /// If computing the return type with the rule's type fails, a default `Node?`
@@ -162,7 +202,7 @@ class BindingEngine {
     func returnTypeForRule(_ rule: InternalGrammar.Rule) -> CommonAbstract.SwiftType {
         let returnType = typeForRule(rule) ?? defaultRuleType()
 
-        return returnType
+        return returnType.scg_removingTupleLabels()
     }
 
     /// Attempts to statically infer the type of a given rule.
@@ -235,6 +275,9 @@ class BindingEngine {
             if let rule = findRule(named: ruleName) {
                 return typeForRule(rule) ?? defaultRuleType()
             }
+            if let auxiliary = knownAuxiliaries[ruleName] {
+                return auxiliary.be_optionalWrapped()
+            }
 
             return defaultRuleType()
         }
@@ -289,7 +332,7 @@ class BindingEngine {
 
         case .optional(let atom):
             // TODO: Validate an optional bind of multiple results
-            return bindings(for: atom).be_optionalWrapped()
+            return bindings(for: atom).be_optionalWrapped(forced: true)
 
         case .optionalItems(let alts):
             return computeBindings(alts)
@@ -308,7 +351,7 @@ class BindingEngine {
     func bindings(for atom: InternalGrammar.Atom) -> [Binding] {
         switch atom {
         case .group(let alts):
-            return computeBindings(alts).be_optionalWrapped()
+            return computeBindings(alts).be_optionalWrapped(forced: true)
 
         case .token(let ident):
             return [(implicitBindings ? ident.lowercased() : nil, typeForAtom(atom))]
@@ -317,11 +360,33 @@ class BindingEngine {
             return [(implicitBindings ? ident.lowercased() : nil, typeForAtom(atom))]
 
         case .ruleName(let ident):
-            return [(implicitBindings ? ident : nil, typeForAtom(atom))]
+            let type = typeForAtom(atom).be_unwrapped()
+            let bindings = bindings(for: type)
+            if implicitBindings && bindings.count == 1 {
+                return [(label: ident, type: bindings[0].type)].be_optionalWrapped()
+            }
+
+            return bindings.be_optionalWrapped()
 
         case .string(_, let literal):
             let identifier = tokenName(ofRawLiteral: literal)
             return [(implicitBindings && bindTokenLiterals ? identifier : nil, typeForAtom(atom))]
+        }
+    }
+
+    /// Returns bindings for a given Swift type, to be used for if-let binding.
+    ///
+    /// The result might have more than one element, in case the type expands
+    /// into a tuple type.
+    ///
+    /// - note: Bindings from this layer have extra optionality still.
+    func bindings(for swiftType: CommonAbstract.SwiftType) -> [Binding] {
+        switch swiftType {
+        case .tuple(let elements):
+            return elements.be_asBindings()
+
+        default:
+            return [(label: nil, type: swiftType)]
         }
     }
 
@@ -435,7 +500,6 @@ class BindingEngine {
     func computeBindings(
         _ alt: InternalGrammar.Alt
     ) -> [Binding] {
-
         return computeBindings(alt.namedItems)
     }
 
@@ -470,9 +534,10 @@ internal extension Sequence where Element == BindingEngine.Binding {
     ///
     /// If the binding represents a tuple, with multiple bindings, each type
     /// binding within the tuple is optional-wrapped.
-    func be_optionalWrapped() -> [Element] {
-        map { binding in
-            (binding.label, .optional(binding.type))
+    func be_optionalWrapped(forced: Bool = false) -> [Element] {
+        let elements = Array(self)
+        return elements.map { binding in
+            (binding.label, !binding.type.isOptional || forced ? .optional(binding.type) : binding.type)
         }
     }
 
@@ -481,7 +546,8 @@ internal extension Sequence where Element == BindingEngine.Binding {
     /// If the binding represents a tuple, with multiple bindings, each type
     /// binding within the tuple is unwrapped.
     func be_unwrapped() -> [Element] {
-        map { binding in
+        let elements = Array(self)
+        return elements.map { binding in
             (binding.label, binding.type.unwrapped)
         }
     }
@@ -512,22 +578,52 @@ internal extension CommonAbstract.SwiftType {
     /// type, in which case returns a tuple of each element unwrapped by one
     /// optional layer.
     func be_unwrapped() -> Self {
-        switch self {
-        case .tuple(let types):
-            return .tuple(types.map(\.unwrapped))
-        default:
-            return self.unwrapped
-        }
+        self.unwrapped
     }
 
     /// Returns `self` wrapped in an optional layer, unless `self` is a tuple type,
     /// in which case returns a tuple of optional elements of the tuple type.
     func be_optionalWrapped() -> Self {
+        .optional(self)
+    }
+
+    /// Returns `true` if this type represents a Swift tuple with more than one
+    /// element, wrapped in any depth of optionality.
+    func be_isMultipleItemTuple() -> Bool {
         switch self {
-        case .tuple(let types):
-            return .tuple(types.map(\.optionalWrapped))
+        case .tuple(let elements):
+            return elements.count > 1
+
+        case .optional(let inner):
+            return inner.be_isMultipleItemTuple()
+
         default:
-            return .optional(self)
+            return false
+        }
+    }
+
+    /// Returns `true` if the current type represents an optional tuple, with any
+    /// depth of optionality.
+    func be_isOptionalTuple() -> Bool {
+        switch self {
+        case .optional(.tuple(let elements)):
+            return elements.count > 1
+
+        case .optional(let inner):
+            return inner.be_isOptionalTuple()
+
+        default:
+            return false
+        }
+    }
+}
+
+internal extension Sequence where Element == CommonAbstract.TupleTypeElement {
+    /// Converts the elements within this tuple type element sequence into binding
+    /// engine bindings.
+    func be_asBindings() -> [BindingEngine.Binding] {
+        map { element in
+            (label: element.label, type: element.swiftType)
         }
     }
 }

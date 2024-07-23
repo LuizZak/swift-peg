@@ -21,7 +21,7 @@ extension Parser {
 
         if
             let a: A = try self.a(),
-            case let (b?, c?) = try self._start_nsr()
+            case let (b?, c?) = self.shuffleTuple(try self._start_nsr())
         {
             return Node()
         }
@@ -92,13 +92,13 @@ extension Parser {
     }
 
     /// ```
-    /// _start_nsr[(b: [B], c: C)]:
+    /// _start_nsr[([B], C)]:
     ///     | b*> c
     ///     ;
     /// ```
     @memoized("_start_nsr")
     @inlinable
-    public func ___start_nsr() throws -> (b: [B]?, c: C?) {
+    public func ___start_nsr() throws -> ([B], C)? {
         let _mark = self.mark()
 
         // Start by fetching as many productions as possible
@@ -108,7 +108,7 @@ extension Parser {
                 return nil
             })
         else {
-            return (nil, nil)
+            return nil
         }
 
         while true {
@@ -128,7 +128,7 @@ extension Parser {
         }
 
         self.restore(_mark)
-        return (nil, nil)
+        return nil
     }
 }
 """ ;

@@ -371,7 +371,7 @@ public class SwiftCodeGen {
 
         let ruleName = info.name
         let ruleType = info.bindings.be_asTupleType().be_optionalWrapped()
-        let returnType = ruleType.scg_asValidSwiftType()
+        let returnType = ruleType.scg_asReturnType()
 
         // Synthesize method
         generateRuleDocComment(ruleName, info.bindings.be_asTupleType(), nil, nil, [
@@ -492,7 +492,7 @@ public class SwiftCodeGen {
         buffer.emitLine("\(linePrefix)```")
         buffer.emit("\(linePrefix)\(ruleName)")
         if let ruleType {
-            buffer.emit("[\(ruleType.scg_asValidSwiftType())]")
+            buffer.emit("[\(ruleType.scg_asReturnType())]")
         }
         buffer.emitLine(":")
         if action != nil || failAction != nil {
@@ -741,7 +741,17 @@ public class SwiftCodeGen {
 
         buffer.emit(" = ")
 
+        // Detect shuffleTuple requirement
+        let requiresShuffle = bindingEngine.requiresTupleShuffling(item)
+        if requiresShuffle {
+            buffer.emit("self.shuffleTuple(")
+        }
+
         try generateItem(item, in: production)
+
+        if requiresShuffle {
+            buffer.emit(")")
+        }
 
         return bindingNames
     }
@@ -752,12 +762,13 @@ public class SwiftCodeGen {
     ) throws {
         switch item {
         case .optional(let atom):
-            try generateAtom(atom, in: production)
+            try generateAtom(atom, unwrapped: false, in: production)
 
         case .optionalItems(let alts):
             let aux = enqueueAuxiliaryRule(
                 for: production,
                 suffix: "_opt",
+                unwrapped: true,
                 alts: alts
             )
             buffer.emit("try self.\(aux)()")
@@ -765,30 +776,30 @@ public class SwiftCodeGen {
         case .gather(let sep, let item, _):
             buffer.emit("try self.gather(separator: ")
                 try buffer.emitInlinedBlock {
-                    try generateAtom(sep, in: production)
+                    try generateAtom(sep, unwrapped: true, in: production)
                 }
             buffer.emit(", item: ")
                 try buffer.emitInlinedBlock {
-                    try generateAtom(item, in: production)
+                    try generateAtom(item, unwrapped: true, in: production)
                 }
             buffer.emit(")")
 
         case .zeroOrMore(let atom, _):
             buffer.emit("try self.repeatZeroOrMore(")
             try buffer.emitInlinedBlock {
-                try generateAtom(atom, in: production)
+                try generateAtom(atom, unwrapped: true, in: production)
             }
             buffer.emit(")")
 
         case .oneOrMore(let atom, _):
             buffer.emit("try self.repeatOneOrMore(")
             try buffer.emitInlinedBlock {
-                try generateAtom(atom, in: production)
+                try generateAtom(atom, unwrapped: true, in: production)
             }
             buffer.emit(")")
 
         case .atom(let atom):
-            try generateAtom(atom, in: production)
+            try generateAtom(atom, unwrapped: true, in: production)
         }
     }
 
@@ -800,21 +811,21 @@ public class SwiftCodeGen {
         case .forced(let atom):
             buffer.emit("try self.expectForced(")
             try buffer.emitInlinedBlock {
-                try generateAtom(atom, in: production)
+                try generateAtom(atom, unwrapped: true, in: production)
             }
             buffer.emit(#", \#(atom.description.debugDescription))"#)
 
         case .positive(let atom):
             buffer.emit("try self.positiveLookahead(")
             try buffer.emitInlinedBlock {
-                try generateAtom(atom, in: production)
+                try generateAtom(atom, unwrapped: true, in: production)
             }
             buffer.emit(")")
 
         case .negative(let atom):
             buffer.emit("try self.negativeLookahead(")
             try buffer.emitInlinedBlock {
-                try generateAtom(atom, in: production)
+                try generateAtom(atom, unwrapped: true, in: production)
             }
             buffer.emit(")")
 
@@ -825,6 +836,7 @@ public class SwiftCodeGen {
 
     func generateAtom(
         _ atom: InternalGrammar.Atom,
+        unwrapped: Bool,
         in production: RemainingProduction
     ) throws {
         switch atom {
@@ -832,6 +844,7 @@ public class SwiftCodeGen {
             let aux = enqueueAuxiliaryRule(
                 for: production,
                 suffix: "_group_",
+                unwrapped: unwrapped,
                 alts: group
             )
 
@@ -955,12 +968,7 @@ public class SwiftCodeGen {
     }
 
     private func _failReturnExpression(for type: CommonAbstract.SwiftType?) -> String {
-        switch type {
-        case .tuple(let elements) where elements.count != 1:
-            "(\(elements.map({ _ in "nil" }).joined(separator: ", ")))"
-        default:
-            "nil"
-        }
+        return "nil"
     }
 
     private func memoizationMode(for rule: InternalGrammar.Rule) -> MemoizationMode {
@@ -1266,10 +1274,13 @@ public class SwiftCodeGen {
             switch (self, other) {
             case (.rule(let lhs), .rule(let rhs)):
                 return lhs.isEquivalent(to: rhs)
+
             case (.auxiliary(let lhsRule, let lhsInfo), .auxiliary(let rhsRule, let rhsInfo)):
                 return lhsRule.isEquivalent(to: rhsRule) && lhsInfo.isEquivalent(to: rhsInfo)
+
             case (.nonStandardRepetition(let lhsRule, let lhsInfo), .nonStandardRepetition(let rhsRule, let rhsInfo)):
                 return lhsRule.isEquivalent(to: rhsRule) && lhsInfo == rhsInfo
+
             default:
                 return false
             }
@@ -1366,12 +1377,17 @@ extension SwiftCodeGen {
     func enqueueAuxiliaryRule(
         for production: RemainingProduction,
         suffix: String,
+        unwrapped: Bool,
         alts: [InternalGrammar.Alt]
     ) -> String {
 
         var alts = alts
 
-        let elements = bindingEngine.computeBindings(alts)
+        var elements = bindingEngine.computeBindings(alts)
+        if unwrapped {
+            elements = elements.be_unwrapped()
+        }
+
         let type: CommonAbstract.SwiftType =
             if elements.isEmpty {
                 "Void"
@@ -1419,7 +1435,7 @@ extension SwiftCodeGen {
         namedItem: InternalGrammar.NamedItem
     ) -> String {
 
-        enqueueAuxiliaryRule(for: production, suffix: suffix, alts: [
+        enqueueAuxiliaryRule(for: production, suffix: suffix, unwrapped: true, alts: [
             .init(namedItems: [namedItem])
         ])
     }
@@ -1565,6 +1581,8 @@ extension SwiftCodeGen {
         production.name = decl.name
 
         remaining.append(production)
+
+        bindingEngine.registerCodeGenProduction(production)
 
         return production
     }
@@ -1922,12 +1940,40 @@ internal extension CommonAbstract.SwiftType {
     /// Returns a string representation of this Swift type that can be used as a
     /// valid Swift type in code.
     func scg_asValidSwiftType() -> String {
-        // Ensure we don't emit labeled tuples with one element
+        self.description
+    }
+
+    /// Returns a string representation of this Swift type that can be used as a
+    /// valid return type for production rules.
+    func scg_asReturnType() -> String {
+        scg_removingTupleLabels().description
+    }
+
+    /// Returns a copy of this type, deeply removing all tuple labels.
+    func scg_removingTupleLabels() -> Self {
         switch self {
-        case .tuple(let elements) where elements.count == 1:
-            return elements[0].swiftType.scg_asValidSwiftType()
-        default:
-            return self.description
+        case .tuple(let elements):
+            return .tuple(
+                elements.map({ .init(label: nil, $0.swiftType.scg_removingTupleLabels()) })
+            )
+
+        case .optional(let inner):
+            return .optional(inner.scg_removingTupleLabels())
+
+        case .array(let inner):
+            return .array(inner.scg_removingTupleLabels())
+
+        case .dictionary(let key, let value):
+            return .dictionary(
+                key: key.scg_removingTupleLabels(),
+                value: value.scg_removingTupleLabels()
+            )
+
+        case .nominal(let identifier):
+            return .nominal(identifier)
+
+        case .nested(let base, let identifier):
+            return .nested(base.scg_removingTupleLabels(), identifier)
         }
     }
 }

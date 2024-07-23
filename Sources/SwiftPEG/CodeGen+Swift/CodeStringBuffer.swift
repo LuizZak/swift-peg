@@ -32,13 +32,20 @@ public class CodeStringBuffer {
         buffer = ""
     }
 
-    /// Performs end-of-production changes to the buffer, like removing redundant
-    /// line feeds from the end of the buffer.
+    /// Performs end-of-production changes to the buffer, and optionally adds a
+    /// trailing newline at the end of the buffer.
+    ///
+    /// If `addTrailingNewline` is `false`, any trailing newlines are instead
+    /// removed from the buffer.
     ///
     /// Returns the contents of the buffer.
-    public func finishBuffer() -> String {
-        while buffer.hasSuffix("\n") {
-            buffer.removeLast()
+    public func finishBuffer(addTrailingNewline: Bool = false) -> String {
+        if addTrailingNewline {
+            ensureNewline()
+        } else {
+            while buffer.hasSuffix("\n") {
+                buffer.removeLast()
+            }
         }
 
         return buffer
