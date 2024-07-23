@@ -5,16 +5,6 @@ open class Tokenizer<Raw: RawTokenizerType> {
     public typealias RawToken = Raw.RawToken
     public typealias Location = Raw.Location
 
-#if DEBUG
-    /// Used for uniquely identifying tokenizers in debug builds for asserting
-    /// that marks haven't been used across different tokenizer instances, which
-    /// may be fault-prone.
-    ///
-    /// Is omitted in release builds.
-    @usableFromInline
-    internal let _uuid = UUID().uuidString
-#endif
-
     @usableFromInline
     internal var _raw: Raw
 
@@ -141,10 +131,6 @@ open class Tokenizer<Raw: RawTokenizerType> {
     /// Returns a marker that points just before a given marker.
     @inlinable
     open func mark(before marker: Mark) -> Mark {
-#if DEBUG
-        assert(marker.ownerUUID == self._uuid, "mark.ownerUUID != \(self._uuid)")
-#endif
-
         return Mark(owner: self, index: marker.index - 1)
     }
 
@@ -162,10 +148,6 @@ open class Tokenizer<Raw: RawTokenizerType> {
     /// instance's own `mark()` method.
     @inlinable
     open func restore(_ mark: Mark) {
-#if DEBUG
-        assert(mark.ownerUUID == self._uuid, "mark.ownerUUID != \(self._uuid)")
-#endif
-
         if mark.index != self.tokenIndex {
             self.tokenIndex = mark.index
         }
@@ -175,10 +157,6 @@ open class Tokenizer<Raw: RawTokenizerType> {
     /// `mark`. If `self.reach > mark`, the reach is not updated.
     @inlinable
     public func updateReach(_ mark: Mark) {
-#if DEBUG
-        assert(mark.ownerUUID == self._uuid, "mark.ownerUUID != \(self._uuid)")
-#endif
-
         _reach = max(_reach, mark.index)
     }
 
@@ -186,10 +164,6 @@ open class Tokenizer<Raw: RawTokenizerType> {
     /// value.
     @inlinable
     public func resetReach(_ mark: Mark) -> Mark {
-#if DEBUG
-        assert(mark.ownerUUID == self._uuid, "mark.ownerUUID != \(self._uuid)")
-#endif
-
         let oldReach = reach
         _reach = max(_reach, mark.index)
         return oldReach
@@ -217,24 +191,11 @@ open class Tokenizer<Raw: RawTokenizerType> {
     /// A marker created by `Tokenizer.mark()`. Can be used to later restore the
     /// token stream to a previous location.
     public struct Mark: Hashable, Comparable {
-#if DEBUG
-        /// UUID used in debug builds to assert that a mark was used exclusively
-        /// on the tokenizer instance that produced it.
-        ///
-        /// Is omitted in release builds.
-        @usableFromInline
-        var ownerUUID: String
-#endif
-
         @usableFromInline
         var index: Int
 
         @usableFromInline
         internal init(owner: Tokenizer<Raw>?, index: Int) {
-            #if DEBUG
-            self.ownerUUID = owner?._uuid ?? ""
-            #endif
-
             self.index = index
         }
 
@@ -251,11 +212,7 @@ open class Tokenizer<Raw: RawTokenizerType> {
         /// by different tokenizer instances.
         @inlinable
         public static func == (lhs: Mark, rhs: Mark) -> Bool {
-#if DEBUG
-            lhs.ownerUUID == rhs.ownerUUID && lhs.index == rhs.index
-#else
             lhs.index == rhs.index
-#endif
         }
 
         /// Returns `true` if `lhs` is a marker that precedes `rhs` on its tokenizer.
@@ -264,11 +221,7 @@ open class Tokenizer<Raw: RawTokenizerType> {
         /// by different tokenizer instances.
         @inlinable
         public static func < (lhs: Mark, rhs: Mark) -> Bool {
-#if DEBUG
-            lhs.ownerUUID == rhs.ownerUUID && lhs.index < rhs.index
-#else
             lhs.index < rhs.index
-#endif
         }
     }
 }

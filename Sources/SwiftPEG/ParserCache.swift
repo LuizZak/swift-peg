@@ -53,10 +53,6 @@ public struct ParserCache<RawTokenizer: RawTokenizerType> {
     /// merging token hits and metadata as well. When a non-failure result is found,
     /// instead of replacing the value from this cache, it is removed from this
     /// cache altogether, requiring re-caching of the value.
-    ///
-    /// Failures are only merged for cache entries that are of `CacheEntry<T>`
-    /// type, where the appropriate initializer for the cache entry type was
-    /// used during initialization (`CacheEntry.init<U>(mark: Mark, reach: Mark, result: U?) where T == U?`)
     public mutating func mergeFailures(
         _ other: Self,
         mergeTokenHits: Bool,
@@ -273,14 +269,6 @@ public struct ParserCache<RawTokenizer: RawTokenizerType> {
         /// Whether the value stored within this cached entry is an optional of
         /// `nil` value.
         public var isNilValue: Bool
-
-        @inlinable
-        public init(mark: Mark, reach: Mark, result: T) {
-            self.mark = mark
-            self.reach = reach
-            self.result = result
-            self.isNilValue = false
-        }
 
         @inlinable
         public init<U>(mark: Mark, reach: Mark, result: U?) where T == U? {
