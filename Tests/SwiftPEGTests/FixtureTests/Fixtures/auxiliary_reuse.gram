@@ -143,13 +143,13 @@ extension Parser {
     }
 
     /// ```
-    /// _a__group_[(c: Node, d: Node)]:
+    /// _a__group_[(Node, Node)]:
     ///     | c d { (c: c, d: d) }
     ///     ;
     /// ```
     @memoized("_a__group_")
     @inlinable
-    public func ___a__group_() throws -> (c: Node, d: Node)? {
+    public func ___a__group_() throws -> (Node, Node)? {
         let _mark = self.mark()
 
         if
@@ -164,12 +164,12 @@ extension Parser {
     }
 
     /// ```
-    /// _e__group_[(c: Node, d: Node)]:
+    /// _e__group_[(Node, Node)]:
     ///     | c d { (c: c, d: d) }
     ///     ;
     /// ```
     @inlinable
-    public func _e__group_() throws -> (c: Node, d: Node)? {
+    public func _e__group_() throws -> (Node, Node)? {
         let _mark = self.mark()
 
         if

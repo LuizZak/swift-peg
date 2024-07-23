@@ -110,13 +110,13 @@ extension Parser {
     }
 
     /// ```
-    /// _start__group_[(b: Node, c: Node?, d: Node?)]:
+    /// _start__group_[(Node, Node?, Node?)]:
     ///     | b c? d? { (b: b, c: c, d: d) }
     ///     ;
     /// ```
     @memoized("_start__group_")
     @inlinable
-    public func ___start__group_() throws -> (b: Node, c: Node?, d: Node?)? {
+    public func ___start__group_() throws -> (Node, Node?, Node?)? {
         let _mark = self.mark()
 
         if

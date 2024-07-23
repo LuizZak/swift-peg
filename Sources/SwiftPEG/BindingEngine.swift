@@ -54,7 +54,7 @@ class BindingEngine {
             registerRule(rule)
 
         case .nonStandardRepetition(let info, _):
-            knownAuxiliaries[info.name] = info.bindings.be_asTupleType()
+            knownAuxiliaries[info.name] = info.bindings.be_asTupleType().scg_removingTupleLabels()
         }
     }
 
@@ -154,7 +154,7 @@ class BindingEngine {
     func returnTypeForRule(_ rule: InternalGrammar.Rule) -> String {
         let returnType = typeForRule(rule) ?? defaultRuleType()
 
-        return returnType.scg_asValidSwiftType()
+        return returnType.scg_asReturnType()
     }
 
     /// Attempts to statically infer the type of a given rule.

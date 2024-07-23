@@ -335,7 +335,7 @@ public class SwiftCodeGen {
 
         let ruleName = info.name
         let ruleType = info.bindings.be_asTupleType().be_optionalWrapped()
-        let returnType = ruleType.scg_asValidSwiftType()
+        let returnType = ruleType.scg_asReturnType()
 
         // Synthesize method
         generateRuleDocComment(ruleName, info.bindings.be_asTupleType(), nil, nil, [
@@ -456,7 +456,7 @@ public class SwiftCodeGen {
         buffer.emitLine("\(linePrefix)```")
         buffer.emit("\(linePrefix)\(ruleName)")
         if let ruleType {
-            buffer.emit("[\(ruleType.scg_asValidSwiftType())]")
+            buffer.emit("[\(ruleType.scg_asReturnType())]")
         }
         buffer.emitLine(":")
         if action != nil || failAction != nil {
@@ -1198,10 +1198,13 @@ public class SwiftCodeGen {
             switch (self, other) {
             case (.rule(let lhs), .rule(let rhs)):
                 return lhs.isEquivalent(to: rhs)
+
             case (.auxiliary(let lhsRule, let lhsInfo), .auxiliary(let rhsRule, let rhsInfo)):
                 return lhsRule.isEquivalent(to: rhsRule) && lhsInfo.isEquivalent(to: rhsInfo)
+
             case (.nonStandardRepetition(let lhsRule, let lhsInfo), .nonStandardRepetition(let rhsRule, let rhsInfo)):
                 return lhsRule.isEquivalent(to: rhsRule) && lhsInfo == rhsInfo
+
             default:
                 return false
             }
@@ -1812,5 +1815,39 @@ internal extension CommonAbstract.SwiftType {
     /// valid Swift type in code.
     func scg_asValidSwiftType() -> String {
         self.description
+    }
+
+    /// Returns a string representation of this Swift type that can be used as a
+    /// valid return type for production rules.
+    func scg_asReturnType() -> String {
+        scg_removingTupleLabels().description
+    }
+
+    /// Returns a copy of this type, deeply removing all tuple labels.
+    func scg_removingTupleLabels() -> Self {
+        switch self {
+        case .tuple(let elements):
+            return .tuple(
+                elements.map({ .init(label: nil, $0.swiftType.scg_removingTupleLabels()) })
+            )
+
+        case .optional(let inner):
+            return .optional(inner.scg_removingTupleLabels())
+
+        case .array(let inner):
+            return .array(inner.scg_removingTupleLabels())
+
+        case .dictionary(let key, let value):
+            return .dictionary(
+                key: key.scg_removingTupleLabels(),
+                value: value.scg_removingTupleLabels()
+            )
+
+        case .nominal(let identifier):
+            return .nominal(identifier)
+
+        case .nested(let base, let identifier):
+            return .nested(base.scg_removingTupleLabels(), identifier)
+        }
     }
 }

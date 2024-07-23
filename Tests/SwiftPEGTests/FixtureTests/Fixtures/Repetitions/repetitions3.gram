@@ -122,13 +122,13 @@ extension Parser {
     }
 
     /// ```
-    /// _a_nsr[(b: [TokenType], c: TokenType, d: TokenType)]:
+    /// _a_nsr[([TokenType], TokenType, TokenType)]:
     ///     | b+< c ~ d
     ///     ;
     /// ```
     @memoized("_a_nsr")
     @inlinable
-    public func ___a_nsr() throws -> (b: [TokenType], c: TokenType, d: TokenType)? {
+    public func ___a_nsr() throws -> ([TokenType], TokenType, TokenType)? {
         let _mark = self.mark()
         var _cut = CutFlag()
 
@@ -156,13 +156,13 @@ extension Parser {
     }
 
     /// ```
-    /// _a_nsr1[(b: [TokenType], c: TokenType, d: TokenType)]:
+    /// _a_nsr1[([TokenType], TokenType, TokenType)]:
     ///     | b+> c ~ d
     ///     ;
     /// ```
     @memoized("_a_nsr1")
     @inlinable
-    public func ___a_nsr1() throws -> (b: [TokenType], c: TokenType, d: TokenType)? {
+    public func ___a_nsr1() throws -> ([TokenType], TokenType, TokenType)? {
         let _mark = self.mark()
         var _cut = CutFlag()
 

@@ -92,13 +92,13 @@ extension Parser {
     }
 
     /// ```
-    /// _start_nsr[(b: [B], c: C)]:
+    /// _start_nsr[([B], C)]:
     ///     | b+> c
     ///     ;
     /// ```
     @memoized("_start_nsr")
     @inlinable
-    public func ___start_nsr() throws -> (b: [B], c: C)? {
+    public func ___start_nsr() throws -> ([B], C)? {
         let _mark = self.mark()
 
         // Start by fetching as many productions as possible

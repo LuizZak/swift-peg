@@ -133,13 +133,13 @@ extension Parser {
     }
 
     /// ```
-    /// _a_nsr[([(b: Node, d: TokenType)], c: [TokenType])]:
+    /// _a_nsr[([(Node, TokenType)], [TokenType])]:
     ///     | (b d)+< c
     ///     ;
     /// ```
     @memoized("_a_nsr")
     @inlinable
-    public func ___a_nsr() throws -> ([(b: Node, d: TokenType)], c: [TokenType])? {
+    public func ___a_nsr() throws -> ([(Node, TokenType)], [TokenType])? {
         let _mark = self.mark()
 
         var _current: [(b: Node, d: TokenType)] = []
@@ -164,13 +164,13 @@ extension Parser {
     }
 
     /// ```
-    /// _e_nsr[([(b: Node, d: TokenType)], c: [TokenType])]:
+    /// _e_nsr[([(Node, TokenType)], [TokenType])]:
     ///     | (b d)+> c
     ///     ;
     /// ```
     @memoized("_e_nsr")
     @inlinable
-    public func ___e_nsr() throws -> ([(b: Node, d: TokenType)], c: [TokenType])? {
+    public func ___e_nsr() throws -> ([(Node, TokenType)], [TokenType])? {
         let _mark = self.mark()
 
         // Start by fetching as many productions as possible
@@ -203,13 +203,13 @@ extension Parser {
     }
 
     /// ```
-    /// __a_nsr__group_[(b: Node, d: TokenType)]:
+    /// __a_nsr__group_[(Node, TokenType)]:
     ///     | b d { (b: b, d: d) }
     ///     ;
     /// ```
     @memoized("__a_nsr__group_")
     @inlinable
-    public func ____a_nsr__group_() throws -> (b: Node, d: TokenType)? {
+    public func ____a_nsr__group_() throws -> (Node, TokenType)? {
         let _mark = self.mark()
 
         if

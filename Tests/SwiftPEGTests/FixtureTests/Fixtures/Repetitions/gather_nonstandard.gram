@@ -118,13 +118,13 @@ extension Parser {
     }
 
     /// ```
-    /// _a_nsr[(b: [TokenType], d: TokenType)]:
+    /// _a_nsr[([TokenType], TokenType)]:
     ///     | c.b+< d
     ///     ;
     /// ```
     @memoized("_a_nsr")
     @inlinable
-    public func ___a_nsr() throws -> (b: [TokenType], d: TokenType)? {
+    public func ___a_nsr() throws -> ([TokenType], TokenType)? {
         let _mark = self.mark()
 
         var _current: [TokenType] = []
@@ -156,13 +156,13 @@ extension Parser {
     }
 
     /// ```
-    /// _a_nsr1[(b: [TokenType], d: TokenType)]:
+    /// _a_nsr1[([TokenType], TokenType)]:
     ///     | c.b+> d
     ///     ;
     /// ```
     @memoized("_a_nsr1")
     @inlinable
-    public func ___a_nsr1() throws -> (b: [TokenType], d: TokenType)? {
+    public func ___a_nsr1() throws -> ([TokenType], TokenType)? {
         let _mark = self.mark()
 
         // Start by fetching as many productions as possible

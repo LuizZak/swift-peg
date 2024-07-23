@@ -1464,13 +1464,13 @@ class SwiftCodeGenTests: XCTestCase {
                 }
 
                 /// ```
-                /// _a__group_[(d: Node, e: Node)]:
+                /// _a__group_[(Node, Node)]:
                 ///     | d e { (d: d, e: e) }
                 ///     ;
                 /// ```
                 @memoized("_a__group_")
                 @inlinable
-                public func ___a__group_() throws -> (d: Node, e: Node)? {
+                public func ___a__group_() throws -> (Node, Node)? {
                     let _mark = self.mark()
 
                     if
@@ -1586,13 +1586,13 @@ class SwiftCodeGenTests: XCTestCase {
                 }
 
                 /// ```
-                /// _start__group_[(b: [B], cBind: C)]:
+                /// _start__group_[([B], C)]:
                 ///     | b+ cBind=c 'd' { (b: b, cBind: cBind) }
                 ///     ;
                 /// ```
                 @memoized("_start__group_")
                 @inlinable
-                public func ___start__group_() throws -> (b: [B], cBind: C)? {
+                public func ___start__group_() throws -> ([B], C)? {
                     let _mark = self.mark()
 
                     if
@@ -1711,13 +1711,13 @@ class SwiftCodeGenTests: XCTestCase {
                 }
 
                 /// ```
-                /// _start__group_[(b: [B], cBind: C)]:
+                /// _start__group_[([B], C)]:
                 ///     | b+ cBind=c 'd' { (b: b, cBind: cBind) }
                 ///     ;
                 /// ```
                 @memoized("_start__group_")
                 @inlinable
-                public func ___start__group_() throws -> (b: [B], cBind: C)? {
+                public func ___start__group_() throws -> ([B], C)? {
                     let _mark = self.mark()
 
                     if
@@ -1973,13 +1973,13 @@ class SwiftCodeGenTests: XCTestCase {
                 }
 
                 /// ```
-                /// _start__group_[(b: B, c: C)]:
+                /// _start__group_[(B, C)]:
                 ///     | b c { (b: b, c: c) }
                 ///     ;
                 /// ```
                 @memoized("_start__group_")
                 @inlinable
-                public func ___start__group_() throws -> (b: B, c: C)? {
+                public func ___start__group_() throws -> (B, C)? {
                     let _mark = self.mark()
 
                     if
@@ -2095,13 +2095,13 @@ class SwiftCodeGenTests: XCTestCase {
                 }
 
                 /// ```
-                /// _start__group_[(b: [B], cBind: C)]:
+                /// _start__group_[([B], C)]:
                 ///     | ((b+ cBind=c 'd')?)? { (b: b, cBind: cBind) }
                 ///     ;
                 /// ```
                 @memoized("_start__group_")
                 @inlinable
-                public func ___start__group_() throws -> (b: [B], cBind: C)? {
+                public func ___start__group_() throws -> ([B], C)? {
                     let _mark = self.mark()
 
                     if
@@ -2115,13 +2115,13 @@ class SwiftCodeGenTests: XCTestCase {
                 }
 
                 /// ```
-                /// __start__group___group_[(b: [B], cBind: C)]:
+                /// __start__group___group_[([B], C)]:
                 ///     | (b+ cBind=c 'd')? { (b: b, cBind: cBind) }
                 ///     ;
                 /// ```
                 @memoized("__start__group___group_")
                 @inlinable
-                public func ____start__group___group_() throws -> (b: [B], cBind: C)? {
+                public func ____start__group___group_() throws -> ([B], C)? {
                     let _mark = self.mark()
 
                     if
@@ -2135,13 +2135,13 @@ class SwiftCodeGenTests: XCTestCase {
                 }
 
                 /// ```
-                /// ___start__group___group___group_[(b: [B], cBind: C)]:
+                /// ___start__group___group___group_[([B], C)]:
                 ///     | b+ cBind=c 'd' { (b: b, cBind: cBind) }
                 ///     ;
                 /// ```
                 @memoized("___start__group___group___group_")
                 @inlinable
-                public func _____start__group___group___group_() throws -> (b: [B], cBind: C)? {
+                public func _____start__group___group___group_() throws -> ([B], C)? {
                     let _mark = self.mark()
 
                     if
@@ -2351,13 +2351,13 @@ class SwiftCodeGenTests: XCTestCase {
                 }
 
                 /// ```
-                /// _a__opt[(b: Node, c: Node)]:
+                /// _a__opt[(Node, Node)]:
                 ///     | b '\' c { (b: b, c: c) }
                 ///     ;
                 /// ```
                 @memoized("_a__opt")
                 @inlinable
-                public func ___a__opt() throws -> (b: Node, c: Node)? {
+                public func ___a__opt() throws -> (Node, Node)? {
                     let _mark = self.mark()
 
                     if

@@ -56,13 +56,13 @@ extension Parser {
     }
 
     /// ```
-    /// _a_nsr[(b: [Token], c: Token)]:
+    /// _a_nsr[([Token], Token)]:
     ///     | b+< c
     ///     ;
     /// ```
     @memoized("_a_nsr")
     @inlinable
-    public func ___a_nsr() throws -> (b: [Token], c: Token)? {
+    public func ___a_nsr() throws -> ([Token], Token)? {
         let _mark = self.mark()
 
         var _current: [Token] = []
@@ -87,13 +87,13 @@ extension Parser {
     }
 
     /// ```
-    /// _a_nsr1[(b: [Token], d: Token)]:
+    /// _a_nsr1[([Token], Token)]:
     ///     | b+< d
     ///     ;
     /// ```
     @memoized("_a_nsr1")
     @inlinable
-    public func ___a_nsr1() throws -> (b: [Token], d: Token)? {
+    public func ___a_nsr1() throws -> ([Token], Token)? {
         let _mark = self.mark()
 
         var _current: [Token] = []
