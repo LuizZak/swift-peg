@@ -47,6 +47,49 @@ public struct ParserCache<RawTokenizer: RawTokenizerType> {
         }
     }
 
+    // MARK: - Merging
+
+    /// Merges failures of a given cache into this cache instance, optionally
+    /// merging token hits and metadata as well. When a non-failure result is found,
+    /// instead of replacing the value from this cache, it is removed from this
+    /// cache altogether, requiring re-caching of the value.
+    ///
+    /// Failures are only merged for cache entries that are of `CacheEntry<T>`
+    /// type, where the appropriate initializer for the cache entry type was
+    /// used during initialization.
+    public mutating func mergeFailures(
+        _ other: Self,
+        mergeTokenHits: Bool,
+        mergeMetadata: Bool
+    ) {
+        for (key, value) in other._cache {
+            guard let cacheEntry = value as? CacheEntryType else {
+                continue
+            }
+
+            if cacheEntry.isNilValue {
+                _cache[key] = DummyCacheFailure(
+                    mark: key.mark,
+                    reach: key.mark
+                )
+            } else {
+                _cache.removeValue(forKey: key)
+            }
+        }
+
+        if mergeTokenHits {
+            for (key, value) in other._tokenHits {
+                storeUniqueTokenKinds(at: key, value)
+            }
+        }
+
+        if mergeMetadata {
+            for (key, value) in other._metadata {
+                storeMetadata(key, value)
+            }
+        }
+    }
+
     // MARK: - Token requests
 
     /// Returns `true` if there are token requests at a specified mark within this
@@ -139,12 +182,20 @@ public struct ParserCache<RawTokenizer: RawTokenizerType> {
 
     /// Performs a typed cache fetch.
     @inlinable
-    public func fetch<Value>(_ key: Key) -> CacheEntry<Value>? {
+    public func fetch<Value>(_ key: Key) -> CacheEntry<Value?>? {
         guard enabled, let cached = _cache[key] else {
             return nil
         }
 
-        return cached as? CacheEntry<Value>
+        if let cached = cached as? DummyCacheFailure {
+            return CacheEntry<Value?>(
+                mark: cached.mark,
+                reach: cached.reach,
+                result: nil
+            )
+        }
+
+        return cached as? CacheEntry<Value?>
     }
 
     /// Fetches all keys that point at a given mark.
@@ -211,7 +262,7 @@ public struct ParserCache<RawTokenizer: RawTokenizerType> {
         return _metadata[key] as? T
     }
 
-    public struct CacheEntry<T> {
+    public struct CacheEntry<T>: CacheEntryType {
         /// The tokenizer position after this cached entry's original parsing.
         public var mark: Mark
         /// The furthest reach point in the tokenizer. Used for diagnostic
@@ -219,12 +270,44 @@ public struct ParserCache<RawTokenizer: RawTokenizerType> {
         public var reach: Mark
         /// The result of this cached entry.
         public var result: T
+        /// Whether the value stored within this cached entry is an optional of
+        /// `nil` value.
+        public var isNilValue: Bool
 
         @inlinable
         public init(mark: Mark, reach: Mark, result: T) {
             self.mark = mark
             self.reach = reach
             self.result = result
+            self.isNilValue = false
+        }
+
+        @inlinable
+        public init<U>(mark: Mark, reach: Mark, result: U?) where T == U? {
+            self.mark = mark
+            self.reach = reach
+            self.result = result
+            self.isNilValue = result == nil
+        }
+    }
+
+    /// A non-realized cache failure that is awaiting to be fetches in a strong-typed
+    /// context to be materialized.
+    public struct DummyCacheFailure: CacheEntryType {
+        /// The tokenizer position after this cached entry's original parsing.
+        public var mark: Mark
+        /// The furthest reach point in the tokenizer. Used for diagnostic
+        /// purposes.
+        public var reach: Mark
+        /// Whether the value stored within this cached entry is an optional of
+        /// `nil` value.
+        public var isNilValue: Bool
+
+        @inlinable
+        public init(mark: Mark, reach: Mark) {
+            self.mark = mark
+            self.reach = reach
+            self.isNilValue = true
         }
     }
 
@@ -245,4 +328,11 @@ public struct ParserCache<RawTokenizer: RawTokenizerType> {
             self.arguments = arguments
         }
     }
+}
+
+/// A type-erased wrapper for `CacheEntry<T>` values.
+public protocol CacheEntryType {
+    /// Whether the value stored within this cached entry is an optional of
+    /// `nil` value.
+    var isNilValue: Bool { get }
 }
