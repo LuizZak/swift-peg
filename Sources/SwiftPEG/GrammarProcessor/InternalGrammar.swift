@@ -259,8 +259,9 @@ public enum InternalGrammar {
         }
     }
 
-    /// `namedItems action?`
+    /// `altLabel? namedItems action?`
     public struct Alt: Hashable, CustomStringConvertible {
+        public var label: String?
         public var namedItems: [NamedItem]
         public var action: Action? = nil
         public var failAction: Action? = nil
@@ -326,7 +327,7 @@ public enum InternalGrammar {
         }
 
         /// Returns `true` if both `self` and `other` execute equivalent productions,
-        /// ignoring associated actions.
+        /// ignoring associated actions and labels.
         func isEquivalent(to other: Self) -> Bool {
             let selfCut = self.removingCuts
             let otherCut = other.removingCuts
@@ -368,6 +369,7 @@ public enum InternalGrammar {
             _ node: SwiftPEGGrammar.Alt
         ) -> Self {
             .init(
+                label: (node.altLabel?.name.string).map(String.init),
                 namedItems: node.namedItems.map(NamedItem.from),
                 action: node.action.map(Action.from),
                 failAction: node.failAction.map(Action.from)

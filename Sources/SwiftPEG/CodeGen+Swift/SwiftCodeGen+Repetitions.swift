@@ -142,7 +142,7 @@ extension SwiftCodeGen {
                 declContext.push()
                 defer { declContext.pop() }
 
-                try generateAtom(separator, in: info.production)
+                try generateAtom(separator, unwrapped: true, in: info.production)
             }
             buffer.emit(", item: ")
             try buffer.emitInlinedBlock {

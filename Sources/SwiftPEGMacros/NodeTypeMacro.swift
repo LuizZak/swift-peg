@@ -164,7 +164,7 @@ class NodeTypeMacroImplementation {
         return """
         \(node.comments)
         \(_synthesizedComment())
-        \(node.accessLevel)var \(property): \(node.childNodeType.type) {
+        \(node.accessLevel)var \(property): \(node.childNodeType.type.trimmed) {
             get { \(field) }
             set {
                 \(node.synthesizeAssignParent("nil"))
@@ -626,6 +626,7 @@ class NodeTypeMacroImplementation {
         var accessLevel: TokenSyntax?
         var comments: Trivia
         var childNodeType: ChildNodeType
+        var initializer: InitializerClauseSyntax?
 
         var memberName: String { member.description }
         var synthesizedName: String { String(memberName.trimmingPrefix("_")) }
@@ -700,7 +701,8 @@ class NodeTypeMacroImplementation {
                     diagnosticSyntax: binding.binding,
                     accessLevel: accessLevel,
                     comments: member.ext_docComments(),
-                    childNodeType: .fromType(type)
+                    childNodeType: .fromType(type),
+                    initializer: binding.binding.initializer
                 )
                 result.append(entry)
             }
@@ -710,11 +712,14 @@ class NodeTypeMacroImplementation {
 
         /// Synthesizes a function parameter from this node's declaration.
         func synthesizeFunctionParameter(needsComma: Bool = false) -> FunctionParameterSyntax {
-            FunctionParameterSyntax(
+            let paramSyntax = FunctionParameterSyntax(
                 firstName: .identifier(synthesizedName),
                 type: childNodeType.type.trimmed,
+                defaultValue: initializer,
                 trailingComma: needsComma ? .commaToken().withTrailingSpace() : nil
             )
+
+            return paramSyntax
         }
 
         /// Synthesizes a function argument from this node's declaration.

@@ -1,2 +1,2 @@
-swift run -c=release --skip-build > Sources/SwiftPEG/Grammar/GrammarParser.swift
-swift run -c=release --skip-build SwiftPEGSample --emit-token > Sources/SwiftPEG/Grammar/GrammarParserToken.swift
+swift package -c=release --allow-writing-to-package-directory generate-parser generate --output Sources/SwiftPEG/Grammar/GrammarParser.swift --grammar-file ./Sources/SwiftPEG/Grammar/metagrammar.gram
+swift package -c=release --allow-writing-to-package-directory generate-parser token-type --grammar-file ./Sources/SwiftPEG/Grammar/metagrammar.gram --output Sources/SwiftPEG/Grammar/GrammarParserToken.swift --access-level=public --inlinable

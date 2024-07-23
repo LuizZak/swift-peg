@@ -1,0 +1,481 @@
+@grammar """
+@token A  ; @token B  ; @token C   ; @token D   ; @token E   ; @token F   ;
+@token AA ; @token BB ; @token CC  ; @token DD  ; @token EE  ; @token FF  ;
+                        @token CCC ; @token DDD ; @token EEE ; @token FFF ;
+start: a | b | c | d | e | f ;
+a: (A? AA)+ ;
+b: (B? BB)* ;
+c: (C? CC)+> CCC ;
+d: (D? DD)+< DDD ;
+e: (E? EE)*> EEE ;
+f: (F? FF)*< FFF ;
+""" ;
+@implicitBindings true ;
+
+@expectedParser """
+extension Parser {
+    /// ```
+    /// start:
+    ///     | a
+    ///     | b
+    ///     | c
+    ///     | d
+    ///     | e
+    ///     | f
+    ///     ;
+    /// ```
+    @memoized("start")
+    @inlinable
+    public func __start() throws -> Node? {
+        let _mark = self.mark()
+
+        if
+            let a = try self.a()
+        {
+            return a
+        }
+
+        self.restore(_mark)
+
+        if
+            let b = try self.b()
+        {
+            return b
+        }
+
+        self.restore(_mark)
+
+        if
+            let c = try self.c()
+        {
+            return c
+        }
+
+        self.restore(_mark)
+
+        if
+            let d = try self.d()
+        {
+            return d
+        }
+
+        self.restore(_mark)
+
+        if
+            let e = try self.e()
+        {
+            return e
+        }
+
+        self.restore(_mark)
+
+        if
+            let f = try self.f()
+        {
+            return f
+        }
+
+        self.restore(_mark)
+        return nil
+    }
+
+    /// ```
+    /// a:
+    ///     | (A? AA)+
+    ///     ;
+    /// ```
+    @memoized("a")
+    @inlinable
+    public func __a() throws -> Node? {
+        let _mark = self.mark()
+
+        if
+            let _ = try self.repeatOneOrMore({
+                try self._a__group_()
+            })
+        {
+            return Node()
+        }
+
+        self.restore(_mark)
+        return nil
+    }
+
+    /// ```
+    /// b:
+    ///     | (B? BB)*
+    ///     ;
+    /// ```
+    @memoized("b")
+    @inlinable
+    public func __b() throws -> Node? {
+        let _mark = self.mark()
+
+        if
+            let _ = try self.repeatZeroOrMore({
+                try self._b__group_()
+            })
+        {
+            return Node()
+        }
+
+        self.restore(_mark)
+        return nil
+    }
+
+    /// ```
+    /// c:
+    ///     | (C? CC)+> CCC
+    ///     ;
+    /// ```
+    @memoized("c")
+    @inlinable
+    public func __c() throws -> Node? {
+        let _mark = self.mark()
+
+        if
+            case let (_?, ccc?) = self.shuffleTuple(try self._c_nsr())
+        {
+            return Node()
+        }
+
+        self.restore(_mark)
+        return nil
+    }
+
+    /// ```
+    /// d:
+    ///     | (D? DD)+< DDD
+    ///     ;
+    /// ```
+    @memoized("d")
+    @inlinable
+    public func __d() throws -> Node? {
+        let _mark = self.mark()
+
+        if
+            case let (_?, ddd?) = self.shuffleTuple(try self._d_nsr())
+        {
+            return Node()
+        }
+
+        self.restore(_mark)
+        return nil
+    }
+
+    /// ```
+    /// e:
+    ///     | (E? EE)*> EEE
+    ///     ;
+    /// ```
+    @memoized("e")
+    @inlinable
+    public func __e() throws -> Node? {
+        let _mark = self.mark()
+
+        if
+            case let (_?, eee?) = self.shuffleTuple(try self._e_nsr())
+        {
+            return Node()
+        }
+
+        self.restore(_mark)
+        return nil
+    }
+
+    /// ```
+    /// f:
+    ///     | (F? FF)*< FFF
+    ///     ;
+    /// ```
+    @memoized("f")
+    @inlinable
+    public func __f() throws -> Node? {
+        let _mark = self.mark()
+
+        if
+            case let (_?, fff?) = self.shuffleTuple(try self._f_nsr())
+        {
+            return Node()
+        }
+
+        self.restore(_mark)
+        return nil
+    }
+
+    /// ```
+    /// _a__group_[(Token?, Token)]:
+    ///     | A? AA { (a: a, aa: aa) }
+    ///     ;
+    /// ```
+    @memoized("_a__group_")
+    @inlinable
+    public func ___a__group_() throws -> (Token?, Token)? {
+        let _mark = self.mark()
+
+        if
+            case let a = try self.A(),
+            let aa = try self.AA()
+        {
+            return (a: a, aa: aa)
+        }
+
+        self.restore(_mark)
+        return nil
+    }
+
+    /// ```
+    /// _b__group_[(Token?, Token)]:
+    ///     | B? BB { (b: b, bb: bb) }
+    ///     ;
+    /// ```
+    @memoized("_b__group_")
+    @inlinable
+    public func ___b__group_() throws -> (Token?, Token)? {
+        let _mark = self.mark()
+
+        if
+            case let b = try self.B(),
+            let bb = try self.BB()
+        {
+            return (b: b, bb: bb)
+        }
+
+        self.restore(_mark)
+        return nil
+    }
+
+    /// ```
+    /// _c_nsr[([(Token?, Token)], Token)]:
+    ///     | (C? CC)+> CCC
+    ///     ;
+    /// ```
+    @memoized("_c_nsr")
+    @inlinable
+    public func ___c_nsr() throws -> ([(Token?, Token)], Token)? {
+        let _mark = self.mark()
+
+        // Start by fetching as many productions as possible
+        guard
+            var _current: [(Mark, (c: Token?, cc: Token))] = try self.repeatOneOrMore({
+                if case let (c?, cc?) = self.shuffleTuple(try self.__c_nsr__group_()) { return (self.mark(), (c, cc)) }
+                return nil
+            })
+        else {
+            return nil
+        }
+
+        while let _endMark = _current.last?.0 {
+            self.restore(_endMark)
+
+            if
+                let ccc = try self.CCC()
+            {
+                return (_current.map(\\.1), ccc)
+            } else if _current.count <= 1 {
+                break
+            }
+
+            // Drop an item, backtrack the parser, and try again
+            _current.removeLast()
+        }
+
+        self.restore(_mark)
+        return nil
+    }
+
+    /// ```
+    /// _d_nsr[([(Token?, Token)], Token)]:
+    ///     | (D? DD)+< DDD
+    ///     ;
+    /// ```
+    @memoized("_d_nsr")
+    @inlinable
+    public func ___d_nsr() throws -> ([(Token?, Token)], Token)? {
+        let _mark = self.mark()
+
+        var _current: [(d: Token?, dd: Token)] = []
+
+        while
+            case let (d?, dd?) = self.shuffleTuple(try self.__d_nsr__group_())
+        {
+            _current.append((d, dd))
+            let _mark1 = self.mark()
+
+            if
+                let ddd = try self.DDD()
+            {
+                return (_current, ddd)
+            }
+
+            self.restore(_mark1)
+        }
+
+        self.restore(_mark)
+        return nil
+    }
+
+    /// ```
+    /// _e_nsr[([(Token?, Token)], Token)]:
+    ///     | (E? EE)*> EEE
+    ///     ;
+    /// ```
+    @memoized("_e_nsr")
+    @inlinable
+    public func ___e_nsr() throws -> ([(Token?, Token)], Token)? {
+        let _mark = self.mark()
+
+        // Start by fetching as many productions as possible
+        guard
+            var _current: [(Mark, (e: Token?, ee: Token))] = try self.repeatZeroOrMore({
+                if case let (e?, ee?) = self.shuffleTuple(try self.__e_nsr__group_()) { return (self.mark(), (e, ee)) }
+                return nil
+            })
+        else {
+            return nil
+        }
+
+        while true {
+            let _endMark = _current.last?.0 ?? _mark
+            self.restore(_endMark)
+
+            if
+                let eee = try self.EEE()
+            {
+                return (_current.map(\\.1), eee)
+            } else if _current.isEmpty {
+                break
+            }
+
+            // Drop an item, backtrack the parser, and try again
+            _current.removeLast()
+        }
+
+        self.restore(_mark)
+        return nil
+    }
+
+    /// ```
+    /// _f_nsr[([(Token?, Token)], Token)]:
+    ///     | (F? FF)*< FFF
+    ///     ;
+    /// ```
+    @memoized("_f_nsr")
+    @inlinable
+    public func ___f_nsr() throws -> ([(Token?, Token)], Token)? {
+        let _mark = self.mark()
+
+        var _current: [(f: Token?, ff: Token)] = []
+
+        while true {
+            let _mark1 = self.mark()
+
+            if
+                let fff = try self.FFF()
+            {
+                return (_current, fff)
+            }
+
+            self.restore(_mark1)
+
+            // Collect an extra item and try again
+            if
+                case let (f?, ff?) = self.shuffleTuple(try self.__f_nsr__group_())
+            {
+                _current.append((f, ff))
+            } else {
+                break
+            }
+        }
+
+        self.restore(_mark)
+        return nil
+    }
+
+    /// ```
+    /// __c_nsr__group_[(Token?, Token)]:
+    ///     | C? CC { (c: c, cc: cc) }
+    ///     ;
+    /// ```
+    @memoized("__c_nsr__group_")
+    @inlinable
+    public func ____c_nsr__group_() throws -> (Token?, Token)? {
+        let _mark = self.mark()
+
+        if
+            case let c = try self.C(),
+            let cc = try self.CC()
+        {
+            return (c: c, cc: cc)
+        }
+
+        self.restore(_mark)
+        return nil
+    }
+
+    /// ```
+    /// __d_nsr__group_[(Token?, Token)]:
+    ///     | D? DD { (d: d, dd: dd) }
+    ///     ;
+    /// ```
+    @memoized("__d_nsr__group_")
+    @inlinable
+    public func ____d_nsr__group_() throws -> (Token?, Token)? {
+        let _mark = self.mark()
+
+        if
+            case let d = try self.D(),
+            let dd = try self.DD()
+        {
+            return (d: d, dd: dd)
+        }
+
+        self.restore(_mark)
+        return nil
+    }
+
+    /// ```
+    /// __e_nsr__group_[(Token?, Token)]:
+    ///     | E? EE { (e: e, ee: ee) }
+    ///     ;
+    /// ```
+    @memoized("__e_nsr__group_")
+    @inlinable
+    public func ____e_nsr__group_() throws -> (Token?, Token)? {
+        let _mark = self.mark()
+
+        if
+            case let e = try self.E(),
+            let ee = try self.EE()
+        {
+            return (e: e, ee: ee)
+        }
+
+        self.restore(_mark)
+        return nil
+    }
+
+    /// ```
+    /// __f_nsr__group_[(Token?, Token)]:
+    ///     | F? FF { (f: f, ff: ff) }
+    ///     ;
+    /// ```
+    @memoized("__f_nsr__group_")
+    @inlinable
+    public func ____f_nsr__group_() throws -> (Token?, Token)? {
+        let _mark = self.mark()
+
+        if
+            case let f = try self.F(),
+            let ff = try self.FF()
+        {
+            return (f: f, ff: ff)
+        }
+
+        self.restore(_mark)
+        return nil
+    }
+}
+""" ;
+
+start: '' ;

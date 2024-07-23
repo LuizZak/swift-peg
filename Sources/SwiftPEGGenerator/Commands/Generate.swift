@@ -65,6 +65,26 @@ struct Generate: ParsableCommand {
 
         @Flag(
             help: """
+            Emits an accompanying protocol that is expected to be used to generate \
+            a parser's alt's results, and can be swapped out by different implementations.
+
+            A default implementation containing the actions for each alt is also \
+            generated.
+            """
+        )
+        var emitProducerProtocol: Bool = false
+
+        @Flag(
+            help: """
+            Assuming --emit-producer-protocol is passed, emits an accompanying \
+            protocol implementation of the producer protocol that returns a Void \
+            value for all productions.
+            """
+        )
+        var emitVoidProducer: Bool = false
+
+        @Flag(
+            help: """
             Avoid emitting 'mark()'/'restore(mark)' calls if the parsing methods \
             don't require them.
 
@@ -78,7 +98,9 @@ struct Generate: ParsableCommand {
             .init(
                 omitUnreachable: omitUnreachable,
                 emitTypesInBindings: emitTypesInBindings,
-                omitRedundantMarkRestores: omitRedundantMarkRestores
+                omitRedundantMarkRestores: omitRedundantMarkRestores,
+                emitProducerProtocol: emitProducerProtocol,
+                emitVoidProducer: emitVoidProducer
             )
         }
     }

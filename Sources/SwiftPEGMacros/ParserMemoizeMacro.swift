@@ -151,15 +151,7 @@ class ParserMemoizeMacroImplementation {
                         return cached.result
                     }
                     \(cache).incrementMetadata("cacheMiss")
-                    let result = \(invocation)
-                    let mark = self.mark()
-                    let priorReach = self.resetReach(mark)
-                    \(cache).store(
-                        key,
-                        value: CacheEntry(mark: self.mark(), reach: self.reach, result: result)
-                    )
-                    let reach = self.resetReach(priorReach)
-                    self.updateReach(reach)
+                    \(cacheMiss)
 
                     return result
                 }

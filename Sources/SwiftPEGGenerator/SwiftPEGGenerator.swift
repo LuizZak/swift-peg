@@ -12,6 +12,7 @@ struct SwiftPEGGenerator: ParsableCommand {
             Generate.self,
             Validate.self,
             GenerateTokenType.self,
+            GenerateTokenLayout.self,
         ],
         defaultSubcommand: Generate.self
     )

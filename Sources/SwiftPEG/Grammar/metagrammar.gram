@@ -50,7 +50,11 @@ alts[[SwiftPEGGrammar.Alt]]:
     ;
 
 alt[SwiftPEGGrammar.Alt]:
-    | namedItems action? failAction?            { self.setLocation(.init(namedItems: namedItems, action: action, failAction: failAction), at: _mark) }
+    | altLabel? namedItems action? failAction?  { self.setLocation(.init(altLabel: altLabel, namedItems: namedItems, action: action, failAction: failAction), at: _mark) }
+    ;
+
+altLabel[SwiftPEGGrammar.AltLabel]:
+    | label=IDENTIFIER ':'                      { self.setLocation(.init(name: label.rawToken), at: _mark) }
     ;
 
 namedItems[[SwiftPEGGrammar.NamedItem]]:
@@ -66,13 +70,13 @@ namedItem[SwiftPEGGrammar.NamedItem]:
 
 lookahead[SwiftPEGGrammar.LookaheadOrCut]:
     | '&''&' ~ atom   { self.setLocation(SwiftPEGGrammar.Forced(atom: atom), at: _mark) }
-    | '&' ~ atom    { self.setLocation(SwiftPEGGrammar.PositiveLookahead(atom: atom), at: _mark) }
-    | '!' ~ atom    { self.setLocation(SwiftPEGGrammar.NegativeLookahead(atom: atom), at: _mark) }
-    | '~'           { self.setLocation(SwiftPEGGrammar.Cut(), at: _mark) }
+    | '&' ~ atom      { self.setLocation(SwiftPEGGrammar.PositiveLookahead(atom: atom), at: _mark) }
+    | '!' ~ atom      { self.setLocation(SwiftPEGGrammar.NegativeLookahead(atom: atom), at: _mark) }
+    | '~'             { self.setLocation(SwiftPEGGrammar.Cut(), at: _mark) }
     ;
 
 item[SwiftPEGGrammar.Item]:
-    | '[' ~ alts ']'                                { self.setLocation(SwiftPEGGrammar.OptionalItems(alts: alts), at: _mark) }
+    |  '[' ~ alts ']'                               { self.setLocation(SwiftPEGGrammar.OptionalItems(alts: alts), at: _mark) }
     |  atom '?'                                     { self.setLocation(SwiftPEGGrammar.OptionalItem(atom: atom), at: _mark) }
     |  atom '*' repetitionMode?                     { self.setLocation(SwiftPEGGrammar.ZeroOrMoreItem(atom: atom, repetitionMode: repetitionMode ?? .standard), at: _mark) }
     |  atom '+' repetitionMode?                     { self.setLocation(SwiftPEGGrammar.OneOrMoreItem(atom: atom, repetitionMode: repetitionMode ?? .standard), at: _mark) }

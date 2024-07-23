@@ -6,6 +6,9 @@ public indirect enum SyntaxNodeLayout: Equatable {
     /// A rule name.
     case rule(String)
 
+    /// A node layout that has been labeled with an identifier.
+    case labeled(String, SyntaxNodeLayout)
+
     /// Indicates the optional presence of a layout.
     case optional(SyntaxNodeLayout)
 
@@ -23,7 +26,7 @@ public indirect enum SyntaxNodeLayout: Equatable {
     /// layouts, or an empty array, if not.
     public var subLayouts: [SyntaxNodeLayout] {
         switch self {
-        case .optional(let inner), .collectionOf(let inner):
+        case .optional(let inner), .collectionOf(let inner), .labeled(_, let inner):
             return [inner]
 
         case .oneOf(let layouts):
@@ -47,6 +50,13 @@ public indirect enum SyntaxNodeLayout: Equatable {
     public var isRule: Bool {
         switch self {
         case .rule: true
+        default: false
+        }
+    }
+
+    public var isLabeled: Bool {
+        switch self {
+        case .labeled: true
         default: false
         }
     }
@@ -83,6 +93,9 @@ public indirect enum SyntaxNodeLayout: Equatable {
     /// element into that element itself.
     func flattened() -> Self {
         switch self {
+        case .labeled(let label, let inner):
+            return .labeled(label, inner.flattened())
+
         case .oneOf(let items) where items.count == 1:
             return items[0].flattened()
 
@@ -146,7 +159,7 @@ public indirect enum SyntaxNodeLayout: Equatable {
             let layout = layout.deduplicating(with: delegate)
             return .collectionOf(layout)
 
-        case .token, .rule:
+        case .token, .rule, .labeled:
             return self
         }
     }
@@ -170,6 +183,9 @@ public indirect enum SyntaxNodeLayout: Equatable {
             for layout in layouts {
                 result = max(result, layout.minimumSize())
             }
+
+        case .labeled(_, let inner):
+            result = inner.minimumSize()
 
         case .optional:
             result = 1
@@ -480,6 +496,13 @@ extension SyntaxNodeLayout {
 
         case .rule(let rule):
             line(hasSiblings: false, "rule: \(rule.debugDescription)")
+
+        case .labeled(let label, let layout):
+            line("labeled: \(label.debugDescription)")
+
+            output.indented(hasSiblings: false) {
+                layout.debugPrint(to: output)
+            }
 
         case .optional(let layout):
             line("optional:")

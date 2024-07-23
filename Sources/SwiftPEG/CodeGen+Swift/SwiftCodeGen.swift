@@ -76,6 +76,13 @@ public class SwiftCodeGen {
         SwiftKeywords.keywords
     }
 
+    /// Set of identifiers that cannot be used as bare labels in labeled expressions
+    /// in Swift, and must be escaped with backticks (`) to allow usage in labeled
+    /// expressions.
+    public static var invalidBareLabels: Set<String> {
+        ["inout"]
+    }
+
     /// Used to keep track of reentrance in `typeForRule()` calls.
     var _typeForRuleOngoing: Set<String> = []
 
@@ -105,6 +112,7 @@ public class SwiftCodeGen {
     var implicitReturns: Bool = true
     var implicitBindings: Bool = true
     var bindTokenLiterals: Bool = false
+    var producerProtocol: ProducerProtocolInfo?
 
     var bindingEngine: BindingEngine
 
@@ -203,6 +211,28 @@ public class SwiftCodeGen {
 
         declContext = DeclarationsContext()
         declContext.push() // No need to pop as the context is meant to be replaced in new generate calls
+
+        if settings.emitProducerProtocol {
+            let protocolInfo = producerProtocolInfo()
+            try generateProducerProtocol(protocolInfo)
+
+            let ruleReturnAliases: [String: CommonAbstract.SwiftType] =
+                protocolInfo
+                .ruleReturnType.mapValues { identifier in
+                    .nested(.typeName(self.producerGenericParameterName()), identifier)
+                }
+
+            let info = generateDefaultProducerImplementationInfo()
+            try generateDefaultProducerProtocol(protocolInfo, info)
+
+            if settings.emitVoidProducer {
+                let info = generateVoidProducerImplementationInfo()
+                try generateDefaultProducerProtocol(protocolInfo, info)
+            }
+
+            self.producerProtocol = protocolInfo
+            bindingEngine = bindingEngine.withCustomRuleResultMappings(ruleReturnAliases)
+        }
 
         self.remaining = grammar.rules.map(RemainingProduction.rule)
 
@@ -314,9 +344,15 @@ public class SwiftCodeGen {
                 generateAction(action)
             }
 
-            for alt in rule.alts {
+            for (altIndex, alt) in rule.alts.enumerated() {
                 conditional.ensureEmptyLine()
-                try generateAlt(alt, in: production, backtrackBlock: markerBlock, cutFlagBlock: cutBlock)
+                try generateAlt(
+                    alt,
+                    altIndex,
+                    in: production,
+                    backtrackBlock: markerBlock,
+                    cutFlagBlock: cutBlock
+                )
             }
 
             bailBlock()
@@ -503,6 +539,7 @@ public class SwiftCodeGen {
 
     func generateAlt(
         _ alt: InternalGrammar.Alt,
+        _ altIndex: Int,
         in production: RemainingProduction,
         backtrackBlock: () -> Void,
         cutFlagBlock: () -> Void
@@ -522,7 +559,11 @@ public class SwiftCodeGen {
 
         // Successful alt match
         buffer.emitBlock {
-            generateOnAltMatchBlock(alt, in: production)
+            generateOnAltMatchBlock(
+                alt,
+                altIndex,
+                in: production
+            )
         }
 
         buffer.emitNewline()
@@ -550,35 +591,46 @@ public class SwiftCodeGen {
     /// of the action's resolved string.
     func generateOnAltMatchBlock(
         _ alt: InternalGrammar.Alt,
+        _ altIndex: Int,
         in production: RemainingProduction
     ) {
+        if
+            let producerProtocol,
+            production.isGrammarRule,
+            let producer = producerProtocol.ruleProducer(
+                forRuleName: production.name,
+                altIndex: altIndex
+            )
+        {
+            buffer.emitLine("return try \(producerMemberName()).\(producer.makeCallExpression(escapeIdentifier))")
+            return
+        }
+
         if implicitReturns {
             buffer.emit("return ")
         }
 
+        generateOnAltMatchBlockInterior(
+            alt,
+            production.productionType
+        )
+    }
+
+    func generateOnAltMatchBlockInterior(
+        _ alt: InternalGrammar.Alt,
+        _ productionType: CommonAbstract.SwiftType?
+    ) {
         if let action = alt.action {
             generateAction(action)
             return
         }
 
-        // If no action is specified, attempt to return instead the named
-        // item within the alt, if it's the only named item in the alt.
-        if alt.namedItems.count == 1 {
-            let bindings = bindingEngine.computeBindings(alt)
-            if bindings.count == 1, let label = bindings[0].label {
-                buffer.emitLine(escapeIdentifier(label))
-                return
-            }
-        }
+        let expression = defaultReturnExpression(
+            for: alt,
+            productionType: productionType
+        )
 
-        // Fallback: Return an initialization of the associated node type, assuming
-        // it is not `nil` and is not a known existential type, otherwise return
-        // `Node()`.
-        if let type = production.productionType?.description, type != "Any" {
-            buffer.emitLine("\(type)()")
-        } else {
-            buffer.emitLine("Node()")
-        }
+        buffer.emitLine(expression)
     }
 
     /// Generates a given action as an in-line string terminated with a newline.
@@ -710,12 +762,13 @@ public class SwiftCodeGen {
     ) throws {
         switch item {
         case .optional(let atom):
-            try generateAtom(atom, in: production)
+            try generateAtom(atom, unwrapped: false, in: production)
 
         case .optionalItems(let alts):
             let aux = enqueueAuxiliaryRule(
                 for: production,
                 suffix: "_opt",
+                unwrapped: true,
                 alts: alts
             )
             buffer.emit("try self.\(aux)()")
@@ -723,30 +776,30 @@ public class SwiftCodeGen {
         case .gather(let sep, let item, _):
             buffer.emit("try self.gather(separator: ")
                 try buffer.emitInlinedBlock {
-                    try generateAtom(sep, in: production)
+                    try generateAtom(sep, unwrapped: false, in: production)
                 }
             buffer.emit(", item: ")
                 try buffer.emitInlinedBlock {
-                    try generateAtom(item, in: production)
+                    try generateAtom(item, unwrapped: false, in: production)
                 }
             buffer.emit(")")
 
         case .zeroOrMore(let atom, _):
             buffer.emit("try self.repeatZeroOrMore(")
             try buffer.emitInlinedBlock {
-                try generateAtom(atom, in: production)
+                try generateAtom(atom, unwrapped: false, in: production)
             }
             buffer.emit(")")
 
         case .oneOrMore(let atom, _):
             buffer.emit("try self.repeatOneOrMore(")
             try buffer.emitInlinedBlock {
-                try generateAtom(atom, in: production)
+                try generateAtom(atom, unwrapped: false, in: production)
             }
             buffer.emit(")")
 
         case .atom(let atom):
-            try generateAtom(atom, in: production)
+            try generateAtom(atom, unwrapped: false, in: production)
         }
     }
 
@@ -758,21 +811,21 @@ public class SwiftCodeGen {
         case .forced(let atom):
             buffer.emit("try self.expectForced(")
             try buffer.emitInlinedBlock {
-                try generateAtom(atom, in: production)
+                try generateAtom(atom, unwrapped: true, in: production)
             }
             buffer.emit(#", \#(atom.description.debugDescription))"#)
 
         case .positive(let atom):
             buffer.emit("try self.positiveLookahead(")
             try buffer.emitInlinedBlock {
-                try generateAtom(atom, in: production)
+                try generateAtom(atom, unwrapped: true, in: production)
             }
             buffer.emit(")")
 
         case .negative(let atom):
             buffer.emit("try self.negativeLookahead(")
             try buffer.emitInlinedBlock {
-                try generateAtom(atom, in: production)
+                try generateAtom(atom, unwrapped: true, in: production)
             }
             buffer.emit(")")
 
@@ -783,6 +836,7 @@ public class SwiftCodeGen {
 
     func generateAtom(
         _ atom: InternalGrammar.Atom,
+        unwrapped: Bool,
         in production: RemainingProduction
     ) throws {
         switch atom {
@@ -790,6 +844,7 @@ public class SwiftCodeGen {
             let aux = enqueueAuxiliaryRule(
                 for: production,
                 suffix: "_group_",
+                unwrapped: unwrapped,
                 alts: group
             )
 
@@ -983,7 +1038,9 @@ public class SwiftCodeGen {
         public static let `default`: Self = Self(
             omitUnreachable: false,
             emitTypesInBindings: false,
-            omitRedundantMarkRestores: false
+            omitRedundantMarkRestores: false,
+            emitProducerProtocol: false,
+            emitVoidProducer: false
         )
 
         /// Whether to omit unreachable rules, as detected by a `GrammarProcessor`
@@ -1013,14 +1070,33 @@ public class SwiftCodeGen {
         /// measurable bottleneck.
         public var omitRedundantMarkRestores: Bool
 
+        /// Whether to emit a `<Parser>Producer` protocol alongside the main parser
+        /// extension which implements the actual production of alternatives, and
+        /// can be swapped out for different implementations.
+        ///
+        /// This makes the main parser extension require a second generic type
+        /// argument which takes in the producer that is used to produce the
+        /// alternative results in its place.
+        public var emitProducerProtocol: Bool
+
+        /// If `emitProducerProtocol` is `true`, whether to emit another implementation
+        /// of the protocol that produces all `Void` return values.
+        ///
+        /// If `emitProducerProtocol` is not `true`, this setting has no effect.
+        public var emitVoidProducer: Bool
+
         public init(
             omitUnreachable: Bool,
             emitTypesInBindings: Bool,
-            omitRedundantMarkRestores: Bool
+            omitRedundantMarkRestores: Bool,
+            emitProducerProtocol: Bool,
+            emitVoidProducer: Bool
         ) {
             self.omitUnreachable = omitUnreachable
             self.emitTypesInBindings = emitTypesInBindings
             self.omitRedundantMarkRestores = omitRedundantMarkRestores
+            self.emitProducerProtocol = emitProducerProtocol
+            self.emitVoidProducer = emitVoidProducer
         }
 
         /// Returns a copy of `self` with a given keypath modified to be `value`.
@@ -1215,6 +1291,35 @@ public class SwiftCodeGen {
 // MARK: - Auxiliary method management
 
 extension SwiftCodeGen {
+    /// Generates a default expression representing the return of an alternative,
+    /// ignoring its associated action.
+    func defaultReturnExpression(
+        for alt: InternalGrammar.Alt,
+        productionType: CommonAbstract.SwiftType?
+    ) -> String {
+        // If no action is specified, attempt to return instead the named
+        // item within the alt, if it's the only named item in the alt.
+        if alt.namedItems.count == 1 {
+            let bindings = bindingEngine.computeBindings(alt)
+            if bindings.count == 1, let label = bindings[0].label {
+                return escapeIdentifier(label)
+            }
+        }
+
+        // Fallback: Return an initialization of the associated node type, assuming
+        // it is not `nil` and is not a known existential type.
+        if let type = productionType?.description, type != "Any" {
+            if type == "Void" || type == "()" {
+                return "()"
+            } else {
+                return "\(type)()"
+            }
+        }
+
+        // If no other option was found, default to 'Node()'
+        return "Node()"
+    }
+
     /// Attempts to compute a default return action for a given set of return
     /// elements of a rule or auxiliary rule.
     func defaultReturnAction(
@@ -1272,15 +1377,20 @@ extension SwiftCodeGen {
     func enqueueAuxiliaryRule(
         for production: RemainingProduction,
         suffix: String,
+        unwrapped: Bool,
         alts: [InternalGrammar.Alt]
     ) -> String {
 
         var alts = alts
 
-        let elements = bindingEngine.computeBindings(alts)
+        var elements = bindingEngine.computeBindings(alts)
+        if unwrapped {
+            elements = elements.be_unwrapped()
+        }
+
         let type: CommonAbstract.SwiftType =
             if elements.isEmpty {
-                "Any"
+                "Void"
             } else if elements.count == 1 {
                 elements[0].type
             } else {
@@ -1292,7 +1402,7 @@ extension SwiftCodeGen {
         // Produce a common action that passes the bound elements back to the
         // caller
         var action: InternalGrammar.Action = .init(string: " () ")
-        if type != "Any" {
+        if type != "Void" {
             action = defaultReturnAction(for: elements)
         }
         alts = alts.map { alt in
@@ -1325,7 +1435,7 @@ extension SwiftCodeGen {
         namedItem: InternalGrammar.NamedItem
     ) -> String {
 
-        enqueueAuxiliaryRule(for: production, suffix: suffix, alts: [
+        enqueueAuxiliaryRule(for: production, suffix: suffix, unwrapped: true, alts: [
             .init(namedItems: [namedItem])
         ])
     }
@@ -1478,12 +1588,20 @@ extension SwiftCodeGen {
     }
 }
 
+// MARK: - Rule return type management
+
+extension SwiftCodeGen {
+    func returnType(for rule: InternalGrammar.Rule) -> CommonAbstract.SwiftType {
+        bindingEngine.returnTypeForRule(rule)
+    }
+}
+
 // MARK: - Identifier/token management
 
 extension SwiftCodeGen {
     /// Escapes the given identifier to something that can be declared as a local
     /// or member name in Swift.
-    func escapeIdentifier(_ ident: String) -> String {
+    func escapeIdentifier(_ ident: String, isLabel: Bool = false) -> String {
         // Wildcard; return unchanged
         if ident == "_" {
             return ident
@@ -1494,7 +1612,15 @@ extension SwiftCodeGen {
             return ident
         }
 
-        if Self.invalidBareIdentifiers.contains(ident) {
+        var requiresEscaping = false
+
+        if isLabel {
+            requiresEscaping = Self.invalidBareLabels.contains(ident)
+        } else {
+            requiresEscaping = Self.invalidBareIdentifiers.contains(ident)
+        }
+
+        if requiresEscaping {
             return "`\(ident)`"
         }
 

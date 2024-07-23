@@ -515,6 +515,525 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
+    func testGenerateParser_omitRedundantMarkRestores_true() throws {
+        let grammar = makeGrammar([
+            .init(name: "a", alts: [
+                .init(namedItems: [
+                    .item("'+'"),
+                ]),
+            ]),
+            .init(name: "b", alts: [
+                .init(namedItems: [
+                    .item("'*'"),
+                    .item("a"),
+                ]),
+                .init(namedItems: [
+                    .item("'-'"),
+                ]),
+            ]),
+        ])
+        let tokens = [
+            makeTokenDef(name: "ADD", literal: "+"),
+            makeTokenDef(name: "MUL", literal: "*"),
+            makeTokenDef(name: "SUB", literal: "-"),
+        ]
+        let sut = makeSut(grammar, tokens)
+
+        let result = try sut.generateParser(
+            settings: .default.with(\.omitRedundantMarkRestores, value: true)
+        )
+
+        diffTest(expected: """
+            // TestParser
+            extension TestParser {
+                /// ```
+                /// a:
+                ///     | '+'
+                ///     ;
+                /// ```
+                @memoized("a")
+                @inlinable
+                public func __a() throws -> Node? {
+                    if
+                        let _ = try self.expect(.ADD)
+                    {
+                        return Node()
+                    }
+
+                    return nil
+                }
+
+                /// ```
+                /// b:
+                ///     | '*' a
+                ///     | '-'
+                ///     ;
+                /// ```
+                @memoized("b")
+                @inlinable
+                public func __b() throws -> Node? {
+                    let _mark = self.mark()
+
+                    if
+                        let _ = try self.expect(.MUL),
+                        let a = try self.a()
+                    {
+                        return Node()
+                    }
+
+                    self.restore(_mark)
+
+                    if
+                        let _ = try self.expect(.SUB)
+                    {
+                        return Node()
+                    }
+
+                    return nil
+                }
+            }
+            """).diff(result)
+    }
+
+    func testGenerateParser_emitProducerProtocol_true() throws {
+        let grammar = makeGrammar([
+            .init(name: "a", alts: [
+                .init(namedItems: [
+                    .item("'+'"),
+                ]),
+            ]),
+            .init(name: "b", alts: [
+                .init(
+                    namedItems: [
+                        .item("MUL"),
+                        .item("a"),
+                    ],
+                    action: "action1()"
+                ),
+                .init(namedItems: [
+                    .item("'-'"),
+                ]),
+            ]),
+            .init(name: "aAndB", alts: [
+                .init(namedItems: [
+                    .item("a"),
+                    .item("b"),
+                ]),
+                .init(namedItems: [
+                    .item("a"),
+                    .item("b"),
+                    .item("a"),
+                ]),
+            ]),
+        ])
+        let tokens = [
+            makeTokenDef(name: "ADD", literal: "+"),
+            makeTokenDef(name: "MUL", literal: "*"),
+            makeTokenDef(name: "SUB", literal: "-"),
+        ]
+        let sut = makeSut(grammar, tokens)
+
+        let result = try sut.generateParser(
+            settings: .default.with(\.emitProducerProtocol, value: true)
+        )
+
+        diffTest(expected: """
+            // TestParser
+            public protocol TestParserProducer {
+                associatedtype Mark
+                associatedtype Token
+
+                associatedtype AProduction
+                associatedtype BProduction
+                associatedtype AAndBProduction
+
+                func produce_a_alt1(_mark: Mark) throws -> AProduction
+
+                func produce_b_alt1(_mark: Mark, mul: Token, a: AProduction) throws -> BProduction
+                func produce_b_alt2(_mark: Mark) throws -> BProduction
+
+                func produce_aAndB_alt1(_mark: Mark, a: AProduction, b: BProduction) throws -> AAndBProduction
+                func produce_aAndB_alt2(_mark: Mark, a: AProduction, b: BProduction, a1: AProduction) throws -> AAndBProduction
+            }
+            
+            public class DefaultTestParserProducer<RawTokenizer: RawTokenizerType>: TestParserProducer {
+                public typealias Mark = Tokenizer<RawTokenizer>.Mark
+                public typealias Token = Tokenizer<RawTokenizer>.Token
+
+                public typealias AProduction = Node
+                public typealias BProduction = Node
+                public typealias AAndBProduction = Node
+
+                @inlinable
+                public func produce_a_alt1(_mark: Mark) throws -> AProduction {
+                    return Node()
+                }
+
+                @inlinable
+                public func produce_b_alt1(_mark: Mark, mul: Token, a: AProduction) throws -> BProduction {
+                    return action1()
+                }
+                @inlinable
+                public func produce_b_alt2(_mark: Mark) throws -> BProduction {
+                    return Node()
+                }
+
+                @inlinable
+                public func produce_aAndB_alt1(_mark: Mark, a: AProduction, b: BProduction) throws -> AAndBProduction {
+                    return Node()
+                }
+                @inlinable
+                public func produce_aAndB_alt2(_mark: Mark, a: AProduction, b: BProduction, a1: AProduction) throws -> AAndBProduction {
+                    return Node()
+                }
+            }
+
+            extension TestParser {
+                /// ```
+                /// a:
+                ///     | '+'
+                ///     ;
+                /// ```
+                @memoized("a")
+                @inlinable
+                public func __a() throws -> Producer.AProduction? {
+                    let _mark = self.mark()
+
+                    if
+                        let _ = try self.expect(.ADD)
+                    {
+                        return try _producer.produce_a_alt1(_mark: _mark)
+                    }
+
+                    self.restore(_mark)
+                    return nil
+                }
+
+                /// ```
+                /// b:
+                ///     | MUL a {action1()}
+                ///     | '-'
+                ///     ;
+                /// ```
+                @memoized("b")
+                @inlinable
+                public func __b() throws -> Producer.BProduction? {
+                    let _mark = self.mark()
+
+                    if
+                        let mul = try self.expect(.MUL),
+                        let a = try self.a()
+                    {
+                        return try _producer.produce_b_alt1(_mark: _mark, mul: mul, a: a)
+                    }
+
+                    self.restore(_mark)
+
+                    if
+                        let _ = try self.expect(.SUB)
+                    {
+                        return try _producer.produce_b_alt2(_mark: _mark)
+                    }
+
+                    self.restore(_mark)
+                    return nil
+                }
+
+                /// ```
+                /// aAndB:
+                ///     | a b
+                ///     | a b a
+                ///     ;
+                /// ```
+                @memoized("aAndB")
+                @inlinable
+                public func __aAndB() throws -> Producer.AAndBProduction? {
+                    let _mark = self.mark()
+
+                    if
+                        let a = try self.a(),
+                        let b = try self.b()
+                    {
+                        return try _producer.produce_aAndB_alt1(_mark: _mark, a: a, b: b)
+                    }
+
+                    self.restore(_mark)
+
+                    if
+                        let a = try self.a(),
+                        let b = try self.b(),
+                        let a1 = try self.a()
+                    {
+                        return try _producer.produce_aAndB_alt2(_mark: _mark, a: a, b: b, a1: a1)
+                    }
+
+                    self.restore(_mark)
+                    return nil
+                }
+            }
+            """).diff(result)
+    }
+
+    func testGenerateParser_emitProducerProtocol_true_escapesIdentifiers() throws {
+        let grammar = makeGrammar([
+            .init(name: "a", alts: [
+                .init(namedItems: [
+                    .item("inout"),
+                ]),
+                .init(namedItems: [
+                    .item("in"),
+                ]),
+            ]),
+        ])
+        let tokens = [
+            makeTokenDef(name: "inout", literal: "inout"),
+        ]
+        let sut = makeSut(grammar, tokens)
+
+        let result = try sut.generateParser(
+            settings: .default.with(\.emitProducerProtocol, value: true)
+        )
+
+        diffTest(expected: """
+            // TestParser
+            public protocol TestParserProducer {
+                associatedtype Mark
+                associatedtype Token
+
+                associatedtype AProduction
+
+                func produce_a_alt1(_mark: Mark, `inout`: Node) throws -> AProduction
+                func produce_a_alt2(_mark: Mark, `in`: Node) throws -> AProduction
+            }
+
+            public class DefaultTestParserProducer<RawTokenizer: RawTokenizerType>: TestParserProducer {
+                public typealias Mark = Tokenizer<RawTokenizer>.Mark
+                public typealias Token = Tokenizer<RawTokenizer>.Token
+
+                public typealias AProduction = Node
+
+                @inlinable
+                public func produce_a_alt1(_mark: Mark, `inout`: Node) throws -> AProduction {
+                    return `inout`
+                }
+                @inlinable
+                public func produce_a_alt2(_mark: Mark, `in`: Node) throws -> AProduction {
+                    return `in`
+                }
+            }
+
+            extension TestParser {
+                /// ```
+                /// a:
+                ///     | inout
+                ///     | in
+                ///     ;
+                /// ```
+                @memoized("a")
+                @inlinable
+                public func __a() throws -> Producer.AProduction? {
+                    let _mark = self.mark()
+
+                    if
+                        let `inout` = try self.`inout`()
+                    {
+                        return try _producer.produce_a_alt1(_mark: _mark, `inout`: `inout`)
+                    }
+
+                    self.restore(_mark)
+
+                    if
+                        let `in` = try self.`in`()
+                    {
+                        return try _producer.produce_a_alt2(_mark: _mark, in: `in`)
+                    }
+
+                    self.restore(_mark)
+                    return nil
+                }
+            }
+            """).diff(result)
+    }
+
+    func testGenerateParser_emitProducerProtocol_true_optionalGroup() throws {
+        let grammar = try parseInternalGrammar(#"""
+        @parserName TestParser ;
+        @token ADD ; @token MUL ;
+        a: (ADD+)? ;
+        """#, entryRuleName: "a")
+        let tokens = [
+            makeTokenDef(name: "ADD", literal: "+"),
+        ]
+        let sut = makeSut(grammar, tokens)
+
+        let result = try sut.generateParser(
+            settings: .default.with(\.emitProducerProtocol, value: true)
+        )
+
+        diffTest(expected: """
+            public protocol TestParserProducer {
+                associatedtype Mark
+                associatedtype Token
+
+                associatedtype AProduction
+
+                func produce_a_alt1(_mark: Mark, add: [Token]?) throws -> AProduction
+            }
+            
+            public class DefaultTestParserProducer<RawTokenizer: RawTokenizerType>: TestParserProducer {
+                public typealias Mark = Tokenizer<RawTokenizer>.Mark
+                public typealias Token = Tokenizer<RawTokenizer>.Token
+
+                public typealias AProduction = Node
+
+                @inlinable
+                public func produce_a_alt1(_mark: Mark, add: [Token]?) throws -> AProduction {
+                    return add
+                }
+            }
+
+            extension TestParser {
+                /// ```
+                /// a:
+                ///     | (ADD+)?
+                ///     ;
+                /// ```
+                @memoized("a")
+                @inlinable
+                public func __a() throws -> Producer.AProduction? {
+                    let _mark = self.mark()
+
+                    if
+                        case let add = try self._a__group_()
+                    {
+                        return try _producer.produce_a_alt1(_mark: _mark, add: add)
+                    }
+
+                    self.restore(_mark)
+                    return nil
+                }
+
+                /// ```
+                /// _a__group_[[Token]]:
+                ///     | ADD+ { add }
+                ///     ;
+                /// ```
+                @memoized("_a__group_")
+                @inlinable
+                public func ___a__group_() throws -> [Token]? {
+                    let _mark = self.mark()
+
+                    if
+                        let add = try self.repeatOneOrMore({
+                            try self.expect(.ADD)
+                        })
+                    {
+                        return add
+                    }
+
+                    self.restore(_mark)
+                    return nil
+                }
+            }
+            """).diff(result)
+    }
+
+    func testGenerateParser_emitProducerProtocol_true_emitVoidProducer_true() throws {
+        let grammar = try parseInternalGrammar(#"""
+        @parserName TestParser ;
+        @token ADD ; @token MUL ;
+        a: (ADD+)? ;
+        """#, entryRuleName: "a")
+        let tokens = [
+            makeTokenDef(name: "ADD", literal: "+"),
+        ]
+        let sut = makeSut(grammar, tokens)
+
+        let result = try sut.generateParser(
+            settings: .default
+                .with(\.emitProducerProtocol, value: true)
+                .with(\.emitVoidProducer, value: true)
+        )
+
+        diffTest(expected: """
+            public protocol TestParserProducer {
+                associatedtype Mark
+                associatedtype Token
+
+                associatedtype AProduction
+
+                func produce_a_alt1(_mark: Mark, add: [Token]?) throws -> AProduction
+            }
+            
+            public class DefaultTestParserProducer<RawTokenizer: RawTokenizerType>: TestParserProducer {
+                public typealias Mark = Tokenizer<RawTokenizer>.Mark
+                public typealias Token = Tokenizer<RawTokenizer>.Token
+
+                public typealias AProduction = Node
+
+                @inlinable
+                public func produce_a_alt1(_mark: Mark, add: [Token]?) throws -> AProduction {
+                    return add
+                }
+            }
+            
+            public class VoidTestParserProducer<RawTokenizer: RawTokenizerType>: TestParserProducer {
+                public typealias Mark = Tokenizer<RawTokenizer>.Mark
+                public typealias Token = Tokenizer<RawTokenizer>.Token
+
+                public typealias AProduction = Void
+
+                @inlinable
+                public func produce_a_alt1(_mark: Mark, add: [Token]?) throws -> AProduction {
+                }
+            }
+
+            extension TestParser {
+                /// ```
+                /// a:
+                ///     | (ADD+)?
+                ///     ;
+                /// ```
+                @memoized("a")
+                @inlinable
+                public func __a() throws -> Producer.AProduction? {
+                    let _mark = self.mark()
+
+                    if
+                        case let add = try self._a__group_()
+                    {
+                        return try _producer.produce_a_alt1(_mark: _mark, add: add)
+                    }
+
+                    self.restore(_mark)
+                    return nil
+                }
+
+                /// ```
+                /// _a__group_[[Token]]:
+                ///     | ADD+ { add }
+                ///     ;
+                /// ```
+                @memoized("_a__group_")
+                @inlinable
+                public func ___a__group_() throws -> [Token]? {
+                    let _mark = self.mark()
+
+                    if
+                        let add = try self.repeatOneOrMore({
+                            try self.expect(.ADD)
+                        })
+                    {
+                        return add
+                    }
+
+                    self.restore(_mark)
+                    return nil
+                }
+            }
+            """).diff(result)
+    }
+
     func testGenerateParser_respectsTokenCallMeta() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
@@ -1360,14 +1879,14 @@ class SwiftCodeGenTests: XCTestCase {
                 }
 
                 /// ```
-                /// _start__group_[Any]:
+                /// _start__group_[Void]:
                 ///     | 'a' { () }
                 ///     | 'b' { () }
                 ///     ;
                 /// ```
                 @memoized("_start__group_")
                 @inlinable
-                public func ___start__group_() throws -> Any? {
+                public func ___start__group_() throws -> Void? {
                     let _mark = self.mark()
 
                     if
@@ -2095,13 +2614,13 @@ class SwiftCodeGenTests: XCTestCase {
                 }
 
                 /// ```
-                /// _start__group_[([B], C)]:
+                /// _start__group_[([B]??, C??)]:
                 ///     | ((b+ cBind=c 'd')?)? { (b: b, cBind: cBind) }
                 ///     ;
                 /// ```
                 @memoized("_start__group_")
                 @inlinable
-                public func ___start__group_() throws -> ([B], C)? {
+                public func ___start__group_() throws -> ([B]??, C??)? {
                     let _mark = self.mark()
 
                     if
@@ -2115,13 +2634,13 @@ class SwiftCodeGenTests: XCTestCase {
                 }
 
                 /// ```
-                /// __start__group___group_[([B], C)]:
+                /// __start__group___group_[([B]?, C?)]:
                 ///     | (b+ cBind=c 'd')? { (b: b, cBind: cBind) }
                 ///     ;
                 /// ```
                 @memoized("__start__group___group_")
                 @inlinable
-                public func ____start__group___group_() throws -> ([B], C)? {
+                public func ____start__group___group_() throws -> ([B]?, C?)? {
                     let _mark = self.mark()
 
                     if
@@ -3122,6 +3641,7 @@ private func makeTokenDef(
 
 private func parseInternalGrammar(
     _ grammar: String,
+    entryRuleName: String = "start",
     file: StaticString = #file,
     line: UInt = #line
 ) throws -> InternalGrammar.Grammar {
@@ -3129,5 +3649,5 @@ private func parseInternalGrammar(
     let grammar = try parseGrammar(grammar, file: file, line: line)
 
     let processor = GrammarProcessor(delegate: nil)
-    return try processor.process(grammar).grammar
+    return try processor.process(grammar, entryRuleName: entryRuleName).grammar
 }

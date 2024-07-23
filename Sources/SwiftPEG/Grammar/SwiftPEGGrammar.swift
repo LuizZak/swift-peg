@@ -98,7 +98,7 @@ extension SwiftPEGGrammar {
     ///
     /// Represents the construct:
     /// ```
-    /// metaValueIdent: IDENT ;
+    /// metaValueIdent: IDENTIFIER ;
     /// ```
     @GeneratedNodeType<Node>(overrideDeepCopyType: "MetaValue")
     public final class MetaIdentifierValue: MetaValue {
@@ -248,11 +248,15 @@ extension SwiftPEGGrammar {
     /// Represents the construct:
     /// ```
     /// alt:
-    ///     | namedItems action? failAction?
+    ///     | altLabel? namedItems action? failAction?
     ///     ;
     /// ```
     @GeneratedNodeType<Node>
     public final class Alt: GrammarNode {
+        /// An optional label associated with this alternative.
+        @NodeProperty
+        var _altLabel: AltLabel? = nil
+
         /// The items belonging to this alt.
         @NodeProperty
         var _namedItems: [NamedItem]
@@ -300,13 +304,29 @@ extension SwiftPEGGrammar {
         }
     }
 
+    /// An optional label attached to an alternative, used during syntax node
+    /// layout.
+    ///
+    /// Represents the construct:
+    /// ```
+    /// altLabel:
+    ///     | name=IDENTIFIER ':'
+    ///     ;
+    /// ```
+    @GeneratedNodeType<Node>
+    public final class AltLabel: GrammarNode {
+        /// The identifier associated with this alt label.
+        @NodeRequired
+        public var name: Token
+    }
+
     /// An item, or segment of an alt, for which a name can be attributed.
     ///
     /// Represents the construct:
     /// ```
     /// namedItem:
-    ///     | name=IDENT '[' type=swiftType ']' '=' ~ item
-    ///     | name=IDENT '=' ~ item
+    ///     | name=IDENTIFIER '[' type=swiftType ']' '=' ~ item
+    ///     | name=IDENTIFIER '=' ~ item
     ///     | item
     ///     | lookahead
     ///     ;
@@ -773,7 +793,7 @@ extension SwiftPEGGrammar {
     /// ```
     /// atom:
     ///     | '(' ~ alts ')'
-    ///     | IDENT
+    ///     | IDENTIFIER
     ///     | string
     ///     ;
     /// ```
@@ -870,7 +890,7 @@ extension SwiftPEGGrammar {
     ///
     /// Represents the construct:
     /// ```
-    /// atom: IDENT ;
+    /// atom: IDENTIFIER ;
     /// ```
     @GeneratedNodeType<Node>(overrideDeepCopyType: "Atom")
     public final class IdentAtom: Atom {

@@ -310,6 +310,13 @@ class NodeLayoutDebugBuffer {
                 }
             }
 
+        case .labeled(let label, let layout):
+            line("labeled:")
+            indented {
+                line(label)
+                add(layout)
+            }
+
         case .rule(let name):
             line(name)
 

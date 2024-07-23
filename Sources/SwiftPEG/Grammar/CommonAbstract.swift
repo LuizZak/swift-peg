@@ -198,7 +198,12 @@ public enum CommonAbstract {
         /// Initializes this `SwiftType` as a nominal type of the given identifier
         /// string.
         public init(stringLiteral value: String) {
-            self = .nominal(.init(identifier: value))
+            self = Self.typeName(value)
+        }
+
+        /// Generates a nominal Swift type with a given identifier.
+        static func typeName(_ identifier: String) -> Self {
+            .nominal(.init(identifier: identifier))
         }
     }
 

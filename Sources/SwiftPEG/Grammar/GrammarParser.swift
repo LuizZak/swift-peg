@@ -193,7 +193,7 @@ extension GrammarParser {
 
     /// ```
     /// alt[SwiftPEGGrammar.Alt]:
-    ///     | namedItems action? failAction? { self.setLocation(.init(namedItems: namedItems, action: action, failAction: failAction), at: _mark) }
+    ///     | altLabel? namedItems action? failAction? { self.setLocation(.init(altLabel: altLabel, namedItems: namedItems, action: action, failAction: failAction), at: _mark) }
     ///     ;
     /// ```
     @memoized("alt")
@@ -202,11 +202,33 @@ extension GrammarParser {
         let _mark = self.mark()
 
         if
+            case let altLabel = try self.altLabel(),
             let namedItems = try self.namedItems(),
             case let action = try self.action(),
             case let failAction = try self.failAction()
         {
-            return self.setLocation(.init(namedItems: namedItems, action: action, failAction: failAction), at: _mark)
+            return self.setLocation(.init(altLabel: altLabel, namedItems: namedItems, action: action, failAction: failAction), at: _mark)
+        }
+
+        self.restore(_mark)
+        return nil
+    }
+
+    /// ```
+    /// altLabel[SwiftPEGGrammar.AltLabel]:
+    ///     | label=IDENTIFIER ':' { self.setLocation(.init(name: label.rawToken), at: _mark) }
+    ///     ;
+    /// ```
+    @memoized("altLabel")
+    @inlinable
+    public func __altLabel() throws -> SwiftPEGGrammar.AltLabel? {
+        let _mark = self.mark()
+
+        if
+            let label = try self.expect(kind: .identifier),
+            let _ = try self.expect(kind: .colon)
+        {
+            return self.setLocation(.init(name: label.rawToken), at: _mark)
         }
 
         self.restore(_mark)

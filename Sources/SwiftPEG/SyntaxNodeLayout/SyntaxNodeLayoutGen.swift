@@ -85,6 +85,10 @@ public class SyntaxNodeLayoutGen {
             fixedEntries.append(fixedEntry)
         }
 
+        if let label = alt.label {
+            return .labeled(label, .fixed(fixedEntries))
+        }
+
         return .fixed(fixedEntries)
     }
 

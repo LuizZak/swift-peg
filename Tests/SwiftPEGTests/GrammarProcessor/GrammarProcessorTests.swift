@@ -255,6 +255,29 @@ class GrammarProcessorTests: XCTestCase {
             Minimal repetition 'a*<' @ line 8 column 9 at the end of an alternative will behave as a standard repetition.
             """)
     }
+
+    func testDiagnoseRepeatedAltLabel() throws {
+        let grammarString = """
+        @token A ; @token B ; @token C ;
+        start:
+            | a: a
+            | b: b
+            | a: c
+            ;
+        a: A ;
+        b: B ;
+        c: c: (c: C C | c: C) ;
+        """
+        let grammar = try parseGrammar(grammarString)
+        let sut = makeSut()
+
+        _ = try sut.process(grammar)
+
+        assertEqual(sut.test_diagnosticMessages(), """
+            Alternatives have repeated label a @ line 5 column 7 defined before @ line 3 column 7 in rule SwiftPEG.SwiftPEGGrammar.RuleName @ line 2 column 1
+            Alternatives have repeated label c @ line 9 column 17 defined before @ line 9 column 8 in rule SwiftPEG.SwiftPEGGrammar.RuleName @ line 9 column 1
+            """)
+    }
 }
 
 // MARK: - Test internals
