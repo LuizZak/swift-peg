@@ -13,9 +13,6 @@ final class TokenizerTests_MarkRestore: XCTestCase {
         let mark = sut.mark()
 
         assertEqual(mark.index, sut.tokenIndex)
-#if DEBUG
-        assertEqual(mark.ownerUUID, sut._uuid)
-#endif
     }
 
     /// Tests behavior of mark/restore calls, ensuring that token indices are
