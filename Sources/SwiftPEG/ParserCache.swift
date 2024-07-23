@@ -56,7 +56,7 @@ public struct ParserCache<RawTokenizer: RawTokenizerType> {
     ///
     /// Failures are only merged for cache entries that are of `CacheEntry<T>`
     /// type, where the appropriate initializer for the cache entry type was
-    /// used during initialization.
+    /// used during initialization (`CacheEntry.init<U>(mark: Mark, reach: Mark, result: U?) where T == U?`)
     public mutating func mergeFailures(
         _ other: Self,
         mergeTokenHits: Bool,
