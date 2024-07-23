@@ -70,6 +70,8 @@ extension FixtureTestRunner {
             let settings = file.test_parserSettings()
             let shortMessages = file.test_shortMessages()
 
+            file.test_configureCodeGen(codeGen)
+
             let parser = try codeGen.generateParser(settings: settings).trimmingWhitespaceTrail()
 
             context.diffTest(
@@ -111,6 +113,8 @@ extension FixtureTestRunner {
             let settings = file.test_tokenTypeSettings()
             let shortMessages = file.test_shortMessages()
 
+            file.test_configureCodeGen(codeGen)
+
             let parser = try codeGen.generateTokenType(settings: settings).trimmingWhitespaceTrail()
 
             context.diffTest(
@@ -151,6 +155,17 @@ extension SwiftPEGGrammar.Grammar {
         }
 
         return settings
+    }
+
+    /// `@implicitBindings <true/false>`
+    /// `@implicitReturns <true/false>`
+    func test_configureCodeGen(_ codeGen: SwiftCodeGen) {
+        if let implicitBindings = test_stringOrIdentMetaValue(named: "implicitBindings") {
+            codeGen.implicitBindings = implicitBindings == "true"
+        }
+        if let implicitReturns = test_stringOrIdentMetaValue(named: "implicitReturns") {
+            codeGen.implicitReturns = implicitReturns == "true"
+        }
     }
 
     /// `@expectedTokenType_accessLevel <true/false>`

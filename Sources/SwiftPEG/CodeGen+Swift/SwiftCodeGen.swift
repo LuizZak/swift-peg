@@ -776,30 +776,30 @@ public class SwiftCodeGen {
         case .gather(let sep, let item, _):
             buffer.emit("try self.gather(separator: ")
                 try buffer.emitInlinedBlock {
-                    try generateAtom(sep, unwrapped: true, in: production)
+                    try generateAtom(sep, unwrapped: false, in: production)
                 }
             buffer.emit(", item: ")
                 try buffer.emitInlinedBlock {
-                    try generateAtom(item, unwrapped: true, in: production)
+                    try generateAtom(item, unwrapped: false, in: production)
                 }
             buffer.emit(")")
 
         case .zeroOrMore(let atom, _):
             buffer.emit("try self.repeatZeroOrMore(")
             try buffer.emitInlinedBlock {
-                try generateAtom(atom, unwrapped: true, in: production)
+                try generateAtom(atom, unwrapped: false, in: production)
             }
             buffer.emit(")")
 
         case .oneOrMore(let atom, _):
             buffer.emit("try self.repeatOneOrMore(")
             try buffer.emitInlinedBlock {
-                try generateAtom(atom, unwrapped: true, in: production)
+                try generateAtom(atom, unwrapped: false, in: production)
             }
             buffer.emit(")")
 
         case .atom(let atom):
-            try generateAtom(atom, unwrapped: true, in: production)
+            try generateAtom(atom, unwrapped: false, in: production)
         }
     }
 
