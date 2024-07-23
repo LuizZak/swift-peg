@@ -358,6 +358,57 @@ class NodeTypeMacroTests: XCTestCase {
             macros: testMacros)
     }
 
+    func testNodeTypeMacro_copiesInitializer() {
+        assertMacroExpansion("""
+            @NodeType<BaseNode>
+            class Node: BaseNode {
+                /// First subnode
+                @NodeProperty
+                private var _subNode: SubNode? = nil
+            }
+            """,
+            expandedSource: #"""
+            class Node: BaseNode {
+                /// First subnode
+                @NodeProperty
+                private var _subNode: SubNode? = nil
+
+                /// First subnode
+                /// Synthesized with `NodeTypeMacro`.
+                var subNode: SubNode? {
+                    get {
+                        _subNode
+                    }
+                    set {
+                        _subNode?.parent = nil
+                        _subNode = newValue
+                        _subNode?.parent = self
+                    }
+                }
+
+                /// Synthesized with `NodeTypeMacro`.
+                override var children: [BaseNode] {
+                    Self.makeNodeList(nodes: subNode)
+                }
+
+                /// Synthesized with `NodeTypeMacro`.
+                init(subNode: SubNode? = nil) {
+                    self._subNode = subNode
+
+                    super.init()
+
+                    self._subNode?.parent = self
+                }
+
+                /// Synthesized with `NodeTypeMacro`.
+                func deepCopy() -> Node {
+                    return Node(subNode: subNode?.deepCopy())
+                }
+            }
+            """#,
+            macros: testMacros)
+    }
+
     func testNodeTypeMacro_inheritsAccessLevelFromClass() {
         assertMacroExpansion("""
             @NodeType<BaseNode>

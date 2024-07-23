@@ -87,6 +87,7 @@ public class GrammarProcessor {
 
         let (tokenNames, fragments) = try collectTokenNames(in: grammar, tokensFile: tokensFile)
         try validateReferences(in: grammar, tokens: tokenNames, fragments: fragments)
+        diagnoseAltLabels(in: grammar)
         try validateNamedItems(in: grammar)
 
         diagnoseAltOrder(in: grammar)
@@ -298,6 +299,48 @@ public class GrammarProcessor {
         throw firstError!
     }
 
+    func diagnoseAltLabels(in grammar: SwiftPEGGrammar.Grammar) {
+        var altsByParent: [(ObjectIdentifier, [(rule: SwiftPEGGrammar.Rule, label: SwiftPEGGrammar.AltLabel)])] = []
+        let visitor = AltLabelVisitor { (rule, alt, label) in
+            guard let parent = alt.parent.map(ObjectIdentifier.init) else {
+                return
+            }
+
+            if let index = altsByParent.firstIndex(where: { $0.0 == parent }) {
+                altsByParent[index].1.append(
+                    (rule, label)
+                )
+            } else {
+                altsByParent.append(
+                    (parent, [(rule, label)])
+                )
+            }
+        }
+
+        let walker = NodeWalker(visitor: visitor)
+        try? walker.walk(grammar)
+
+        for (_, entries) in altsByParent {
+            var firstDefinition: [String: SwiftPEGGrammar.AltLabel] = [:]
+
+            for entry in entries {
+                let key = entry.label.name.description
+
+                if let prior = firstDefinition[key] {
+                    diagnostics.append(
+                        .repeatedAltLabels(
+                            rule: entry.rule,
+                            label: entry.label,
+                            previousOccurrence: prior
+                        )
+                    )
+                } else {
+                    firstDefinition[key] = entry.label
+                }
+            }
+        }
+    }
+
     func validateNamedItems(in grammar: SwiftPEGGrammar.Grammar) throws {
         let visitor = NamedItemVisitor { node in
             guard let name = node.name?.string, name != "_" else {
@@ -451,6 +494,14 @@ public class GrammarProcessor {
     public enum GrammarProcessorDiagnostic {
         // MARK: - Grammar file diagnostics
 
+        /// A set of alternatives has two alternatives with the same label on the
+        /// same depth.
+        case repeatedAltLabels(
+            rule: SwiftPEGGrammar.Rule,
+            label: SwiftPEGGrammar.AltLabel,
+            previousOccurrence: SwiftPEGGrammar.AltLabel
+        )
+
         /// An alt that executes before another, if it succeeds, will always
         /// prevent the other alt from being attempted.
         case altOrderIssue(
@@ -502,6 +553,12 @@ public class GrammarProcessor {
 
         public var description: String {
             switch self {
+            case .repeatedAltLabels(let rule, let prior, let former):
+                return """
+                    Alternatives have repeated label \(prior.name.description) @ \(prior.location) \
+                    defined before @ \(former.location) in rule \(rule.name) @ \(rule.location)
+                    """
+
             case .altOrderIssue(let rule, let prior, let former):
                 func describe(_ alt: InternalGrammar.Alt) -> String {
                     if alt == alt.reduced { return "'\(alt)'" }
@@ -660,6 +717,42 @@ private extension GrammarProcessor {
                 try callback(currentRule, node, node.repetitionMode)
             default:
                 break
+            }
+
+            return .visitChildren
+        }
+
+        func didVisit(_ node: Node) {
+            if node === currentRule {
+                currentRule = nil
+            }
+        }
+    }
+
+    /// Visitor used to diagnose repeated alternative labels in grammars.
+    final class AltLabelVisitor: SwiftPEGGrammar.GrammarNodeVisitorType {
+        typealias Callback = (SwiftPEGGrammar.Rule, SwiftPEGGrammar.Alt, SwiftPEGGrammar.AltLabel) throws -> Void
+
+        var currentRule: SwiftPEGGrammar.Rule?
+        var callback: Callback
+
+        init(_ callback: @escaping Callback) {
+            self.callback = callback
+        }
+
+        func willVisit(_ node: Node) {
+            if let rule = node as? SwiftPEGGrammar.Rule {
+                currentRule = rule
+            }
+        }
+
+        func visit(_ node: SwiftPEGGrammar.Alt) throws -> NodeVisitChildrenResult {
+            guard let currentRule else {
+                return .visitChildren
+            }
+
+            if let altLabel = node.altLabel {
+                try callback(currentRule, node, altLabel)
             }
 
             return .visitChildren

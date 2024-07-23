@@ -339,6 +339,47 @@ class SyntaxNodeLayoutGenTests: XCTestCase {
         ])
     }
 
+    func testGenerateSyntaxNodes_labeledAlt_rule() throws {
+        let processed = try processGrammar(tokens: #"""
+        $B: 'b' ;
+        """#, grammar: #"""
+        @tokensFile "tokens.tokens" ;
+
+        a: b: 'b' ;
+        """#, entryRuleName: "a")
+        let sut = makeSut(processed)
+
+        let result = try sut.generateSyntaxNodes()
+
+        assertSyntaxNodesEqual(result, [
+            .init(name: "a", layout: .labeled("b", .makeFixed([
+                "B": .token("B"),
+            ]))),
+        ])
+    }
+
+    func testGenerateSyntaxNodes_labeledAlt_group() throws {
+        let processed = try processGrammar(tokens: #"""
+        $A: 'a' ; $B: 'b' ;
+        """#, grammar: #"""
+        @tokensFile "tokens.tokens" ;
+
+        a: A (b: 'b') ;
+        """#, entryRuleName: "a")
+        let sut = makeSut(processed)
+
+        let result = try sut.generateSyntaxNodes()
+
+        assertSyntaxNodesEqual(result, [
+            .init(name: "a", layout: .makeFixed([
+                "A": .token("A"),
+                "_n1": .labeled("b", .makeFixed([
+                    "B": .token("B"),
+                ]))
+            ])),
+        ])
+    }
+
     func testGenerateSyntaxNodes_sample_tokenSyntaxAtom() throws {
         let processed = try processGrammar(tokens: #"""
         $IDENTIFIER: 'a'...'z'+ ;
