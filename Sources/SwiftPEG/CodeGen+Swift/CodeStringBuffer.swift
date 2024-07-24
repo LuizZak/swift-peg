@@ -40,12 +40,11 @@ public class CodeStringBuffer {
     ///
     /// Returns the contents of the buffer.
     public func finishBuffer(addTrailingNewline: Bool = false) -> String {
+        while buffer.hasSuffix("\n") {
+            buffer.removeLast()
+        }
         if addTrailingNewline {
             ensureNewline()
-        } else {
-            while buffer.hasSuffix("\n") {
-                buffer.removeLast()
-            }
         }
 
         return buffer
@@ -69,29 +68,38 @@ public class CodeStringBuffer {
     /// the buffer even after text has been emitted past it. Invokes the closure
     /// only once, even if called multiple times.
     ///
-    /// - note: Behavior of code if multiple overlapping insertion points exist
-    /// at the same time, and are used to emit text interchangeably is not defined.
+    /// - note: Behavior of code is not defined if multiple overlapping insertion
+    /// points exist at the same time and are used to emit text interchangeably.
     /// - seealso: ``makeInsertionMarker()``
     public func startDelayedEmission(_ block: @escaping (CodeStringBuffer) -> Void) -> DelayedEmissionMarker {
         DelayedEmissionMarker(marker: makeInsertionMarker(), block)
     }
 
-    /// Returns `true` if the last character of the buffer is a line feed (\n).
+    /// Returns `true` if the last character of the buffer is a line feed character,
+    /// according to `Character.isNewline`.
     public func isOnNewline() -> Bool {
-        buffer.hasSuffix("\n")
+        buffer.last?.isNewline ?? false
     }
 
     /// Returns `true` if the last character of the buffer is a space or line
     /// feed (\n).
     /// Also returns `true` if the buffer is empty.
     public func isOnSpaceSeparator() -> Bool {
-        buffer.isEmpty || isOnNewline() || buffer.hasSuffix(" ")
+        buffer.isEmpty || (buffer.last?.isWhitespace ?? false)
     }
 
-    /// Returns `true` if the last two characters of the buffer are line feeds
-    /// (\n\n).
+    /// Returns `true` if the last two characters of the buffer are line feed
+    /// characters, according to `Character.isNewline`.
     public func isOnDoubleNewline() -> Bool {
-        buffer.hasSuffix("\n\n")
+        guard buffer.count > 1 else {
+            return false
+        }
+        let lastIndex = buffer.index(buffer.indices.endIndex, offsetBy: -1)
+        let secondLastIndex = buffer.index(buffer.indices.endIndex, offsetBy: -2)
+        let last = buffer[lastIndex]
+        let secondLast = buffer[secondLastIndex]
+
+        return last.isNewline && secondLast.isNewline
     }
 
     /// Returns the string form of the indentation to put on lines.
@@ -123,7 +131,7 @@ public class CodeStringBuffer {
     /// If `text` is empty, no change to the buffer is made.
     public func emit(_ text: some StringProtocol) {
         if text.isEmpty { return }
-        if !text.hasPrefix("\n") {
+        if !(text.first?.isNewline ?? false) {
             ensureIndentation()
         }
 
@@ -141,7 +149,9 @@ public class CodeStringBuffer {
     /// Indentation of the incoming text is appended to the current indentation
     /// level of the buffer.
     public func emitMultiline(_ text: some StringProtocol) {
-        let lines = text.split(separator: "\n", omittingEmptySubsequences: false)
+        let lines = text.split(omittingEmptySubsequences: false) {
+            $0.isNewline
+        }
 
         for line in lines {
             emitLine(line)
@@ -195,6 +205,7 @@ public class CodeStringBuffer {
         switch prefix {
         case .docComment(let line):
             emitDocComment(line)
+
         case .lineComment(let line):
             emitComment(line)
         }
@@ -497,7 +508,7 @@ public class CodeStringBuffer {
         }
     }
 
-    enum IndentationMode {
+    enum IndentationMode: Hashable {
         case spaces(Int)
         case tabs(Int)
 
