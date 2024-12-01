@@ -1,4 +1,3 @@
-import XCTest
 import Testing
 
 @testable import SwiftPEG
@@ -540,8 +539,7 @@ private func stubDelegate(tokensFile: String) -> TestGrammarProcessorDelegate {
 private func assertSyntaxNodesEqual(
     _ actual: [SyntaxNode],
     _ expected: [SyntaxNode],
-    file: StaticString = #file,
-    line: UInt = #line
+    sourceLocation: SourceLocation = #_sourceLocation
 ) {
     guard actual != expected else { return }
 
@@ -562,7 +560,7 @@ private func assertSyntaxNodesEqual(
 
     // If the arrays match content-wise, they must mismatch order-wise.
     if remaining.isEmpty && unmatched.isEmpty {
-        fail("Nodes are in a different order:", file: file, line: line)
+        fail("Nodes are in a different order:", sourceLocation: sourceLocation)
 
         for (expectedIndex, actualIndex) in zip(expectedIndexOnActual.indices, expectedIndexOnActual) {
             guard expectedIndex != actualIndex else {
@@ -577,7 +575,7 @@ private func assertSyntaxNodesEqual(
         return
     }
 
-    fail("Node sequences aren't equal", file: file, line: line)
+    fail("Node sequences aren't equal", sourceLocation: sourceLocation)
 
     // Attempt to pair remaining/unmatched by name
     let byName = Dictionary(grouping: (unmatched + remaining), by: {
@@ -598,9 +596,8 @@ private func assertSyntaxNodesEqual(
             stdout.diffTest(
                 expected: expected,
                 highlightLineInEditor: false,
-                file: file,
-                line: line
-            ).diff(actual, file: file, line: line)
+                sourceLocation: sourceLocation
+            ).diff(actual, file: sourceLocation.fileName, line: sourceLocation.line)
         } else {
             print("Found multiple mismatched nodes named '\(name)':")
 

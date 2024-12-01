@@ -1,4 +1,3 @@
-import XCTest
 import Testing
 
 @testable import SwiftPEG

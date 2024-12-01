@@ -1,4 +1,3 @@
-import XCTest
 import Testing
 
 @testable import SwiftPEG
@@ -6,8 +5,8 @@ import Testing
 public protocol DiffTestCaseFailureReporter {
     func _recordFailure(
         withDescription description: String,
-        inFile filePath: StaticString,
-        atLine lineNumber: UInt,
+        inFile filePath: String,
+        atLine lineNumber: Int,
         expected: Bool
     )
 }
@@ -18,11 +17,10 @@ public extension DiffTestCaseFailureReporter {
         expected input: String,
         highlightLineInEditor: Bool = true,
         diffOnly: Bool = false,
-        file: StaticString = #filePath,
-        line: UInt = #line
+        sourceLocation: SourceLocation = #_sourceLocation
     ) -> DiffingTest {
 
-        let location = DiffLocation(file: file, line: line)
+        let location = DiffLocation(sourceLocation: sourceLocation)
         let diffable = DiffableString(string: input, location: location)
 
         return DiffingTest(
@@ -36,12 +34,14 @@ public extension DiffTestCaseFailureReporter {
 
 /// Represents a location for a diff'd string
 public struct DiffLocation {
-    var file: StaticString
-    var line: UInt
+    var sourceLocation: SourceLocation
 
-    public init(file: StaticString, line: UInt) {
-        self.file = file
-        self.line = line
+    var line: Int {
+        sourceLocation.line
+    }
+
+    public init(sourceLocation: SourceLocation) {
+        self.sourceLocation = sourceLocation
     }
 }
 
@@ -76,8 +76,8 @@ public class DiffingTest {
 
     public func diff(
         _ actual: String,
-        file: StaticString = #filePath,
-        line: UInt = #line
+        file: String = #filePath,
+        line: Int = #line
     ) {
 
         if expectedDiff.string == actual {
@@ -115,7 +115,7 @@ public class DiffingTest {
 
                 \(message)
                 """,
-                line: expectedDiff.location.line + UInt(diffStartLine)
+                line: expectedDiff.location.line + diffStartLine
             )
         } else if actualLineRanges.count < expectedLineRanges.count {
             let isAtLastColumn: Bool = {
@@ -137,7 +137,7 @@ public class DiffingTest {
 
                     \(message)
                     """,
-                    line: expectedDiff.location.line + UInt(diffStartLine + 1)
+                    line: expectedDiff.location.line + diffStartLine + 1
                 )
             } else {
                 let actualLineContent = actual[actualLineRanges[max(0, diffStartLine - 1)]]
@@ -148,7 +148,7 @@ public class DiffingTest {
 
                     \(message)
                     """,
-                    line: expectedDiff.location.line + UInt(diffStartLine)
+                    line: expectedDiff.location.line + diffStartLine
                 )
             }
         } else if diffStartLine - 1 < expectedLineRanges.count {
@@ -160,7 +160,7 @@ public class DiffingTest {
 
                 \(message)
                 """,
-                line: expectedDiff.location.line + UInt(diffStartLine)
+                line: expectedDiff.location.line + diffStartLine
             )
         } else {
             fail(
@@ -169,15 +169,15 @@ public class DiffingTest {
 
                 \(message)
                 """,
-                line: expectedDiff.location.line + UInt(expectedLineRanges.count)
+                line: expectedDiff.location.line + expectedLineRanges.count
             )
         }
     }
 
-    func fail(message: String, line: UInt) {
+    func fail(message: String, line: Int) {
         testCase._recordFailure(
             withDescription: message,
-            inFile: expectedDiff.location.file,
+            inFile: expectedDiff.location.sourceLocation.fileName,
             atLine: line,
             expected: true
         )
@@ -282,6 +282,7 @@ public class DiffingTest {
     }
 }
 
+/*
 // MARK: - XCTestCase: TestCaseFailureReporter
 extension XCTestCase: DiffTestCaseFailureReporter {
     public func _recordFailure(
@@ -328,17 +329,18 @@ extension XCTestCase: DiffTestCaseFailureReporter {
         #endif // #if os(macOS)
     }
 }
+*/
 
 struct SwiftTestingDiffTestCaseFailureReporter: DiffTestCaseFailureReporter {
     func _recordFailure(
         withDescription description: String,
-        inFile filePath: StaticString,
-        atLine lineNumber: UInt,
+        inFile filePath: String,
+        atLine lineNumber: Int,
         expected: Bool
     ) {
         Issue.record(
             Comment(stringLiteral: description),
-            sourceLocation: .init(fileID: "", filePath: filePath.description, line: Int(lineNumber), column: 0)
+            sourceLocation: .init(fileID: "", filePath: filePath.description, line: lineNumber, column: 0)
         )
     }
 }
@@ -347,8 +349,8 @@ struct StandardOutputDiffTestCaseFailureReporter: DiffTestCaseFailureReporter {
 
     func _recordFailure(
         withDescription description: String,
-        inFile filePath: StaticString,
-        atLine lineNumber: UInt,
+        inFile filePath: String,
+        atLine lineNumber: Int,
         expected: Bool
     ) {
         print("\(filePath):\(lineNumber): \(description)")
@@ -359,11 +361,10 @@ func diffTest(
     expected input: String,
     highlightLineInEditor: Bool = true,
     diffOnly: Bool = false,
-    file: StaticString = #filePath,
-    line: UInt = #line
+    sourceLocation: SourceLocation = #_sourceLocation
 ) -> DiffingTest {
 
-    let location = DiffLocation(file: file, line: line)
+    let location = DiffLocation(sourceLocation: sourceLocation)
     let diffable = DiffableString(string: input, location: location)
 
     return DiffingTest(

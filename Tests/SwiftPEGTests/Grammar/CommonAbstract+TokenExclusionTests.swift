@@ -1,4 +1,3 @@
-import XCTest
 import Testing
 
 @testable import SwiftPEG
@@ -86,27 +85,23 @@ struct CommonAbstract_TokenExclusionTests {
 func assertExcludes(
     _ sut: CommonAbstract.TokenExclusion,
     terminal: CommonAbstract.TokenTerminal,
-    file: StaticString = #file,
-    line: UInt = #line
+    sourceLocation: SourceLocation = #_sourceLocation
 ) {
     assertTrue(
         sut.excludes(terminal),
         message: "Expected '\(sut)' to exclude '\(terminal)'",
-        file: file,
-        line: line
+        sourceLocation: sourceLocation
     )
 }
 
 func assertDoesNotExclude(
     _ sut: CommonAbstract.TokenExclusion,
     terminal: CommonAbstract.TokenTerminal,
-    file: StaticString = #file,
-    line: UInt = #line
+    sourceLocation: SourceLocation = #_sourceLocation
 ) {
     assertFalse(
         sut.excludes(terminal),
         message: "Expected '\(sut)' to not exclude '\(terminal)'",
-        file: file,
-        line: line
+        sourceLocation: sourceLocation
     )
 }

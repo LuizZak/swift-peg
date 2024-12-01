@@ -1,4 +1,3 @@
-import XCTest
 import Testing
 
 @testable import SwiftPEG
@@ -205,15 +204,13 @@ private func parseMetaProperties(
 
 private func assertNoDiagnostics(
     _ sut: MetaPropertyManager,
-    file: StaticString = #file,
-    line: UInt = #line
+    sourceLocation: SourceLocation = #_sourceLocation
 ) {
 
     assertEmpty(
         sut.diagnostics,
         message: "Unexpected diagnostics",
-        file: file,
-        line: line
+        sourceLocation: sourceLocation
     )
 }
 
@@ -221,8 +218,7 @@ private func assertDiagnosticCount(
     _ sut: MetaPropertyManager,
     expected: Int,
     matching predicate: (MetaPropertyManager.Diagnostic) -> Bool,
-    file: StaticString = #file,
-    line: UInt = #line
+    sourceLocation: SourceLocation = #_sourceLocation
 ) {
 
     let diagnostics = sut.diagnostics.filter(predicate)
@@ -232,16 +228,14 @@ private func assertDiagnosticCount(
         count,
         expected,
         message: "Did not match expected diagnostics. All diagnostics: \(sut.diagnostics)",
-        file: file,
-        line: line
+        sourceLocation: sourceLocation
     )
 }
 
 private func assertDidNotDiagnoseMeta(
     _ sut: MetaPropertyManager,
     meta: SwiftPEGGrammar.Meta,
-    file: StaticString = #file,
-    line: UInt = #line
+    sourceLocation: SourceLocation = #_sourceLocation
 ) {
 
     let diagnostics = sut.diagnostics.filter({ diag in
@@ -256,8 +250,7 @@ private func assertDidNotDiagnoseMeta(
     if !diagnostics.isEmpty {
         fail(
             "Expected no diagnostics for meta @\(meta.name.string) but found \(diagnostics). All diagnostics: \(sut.diagnostics)",
-            file: file,
-            line: line
+            sourceLocation: sourceLocation
         )
     }
 }
@@ -266,8 +259,7 @@ private func assertDiagnosedMeta(
     _ sut: MetaPropertyManager,
     meta: SwiftPEGGrammar.Meta,
     count: Int? = nil,
-    file: StaticString = #file,
-    line: UInt = #line
+    sourceLocation: SourceLocation = #_sourceLocation
 ) {
 
     let diagnostics = sut.diagnostics.filter({ diag in
@@ -283,8 +275,7 @@ private func assertDiagnosedMeta(
         if count != diagnostics.count {
             fail(
                 "Expected \(count) diagnostics for meta @\(meta.name.string) but found \(diagnostics.count). All diagnostics: \(sut.diagnostics)",
-                file: file,
-                line: line
+                sourceLocation: sourceLocation
             )
         }
         return
@@ -293,8 +284,7 @@ private func assertDiagnosedMeta(
     if diagnostics.isEmpty {
         fail(
             "Expected diagnostics for meta @\(meta.name.string) but found none. All diagnostics: \(sut.diagnostics)",
-            file: file,
-            line: line
+            sourceLocation: sourceLocation
         )
     }
 }

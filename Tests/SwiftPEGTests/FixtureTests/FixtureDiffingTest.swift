@@ -19,7 +19,7 @@ class FixtureDiffingTest: DiffingTest {
         )
     }
 
-    override func fail(message: String, line: UInt) {
+    override func fail(message: String, line: Int) {
         target.diagnoseError(message: message, line: Int(line))
     }
 

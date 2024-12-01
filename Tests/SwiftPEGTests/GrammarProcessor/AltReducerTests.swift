@@ -1,4 +1,3 @@
-import XCTest
 import Testing
 
 @testable import SwiftPEG
@@ -218,8 +217,7 @@ private func makeSut(_ alt: InternalGrammar.Alt) -> AltReducer {
 private func assertEqual(
     _ lhs: [InternalGrammar.Alt],
     _ rhs: [InternalGrammar.Alt],
-    file: StaticString = #file,
-    line: UInt = #line
+    sourceLocation: SourceLocation = #_sourceLocation
 ) {
     guard lhs != rhs else {
         return success()
@@ -246,8 +244,7 @@ private func assertEqual(
 
         \(makeBuffer(rhs))
         """,
-        file: file,
-        line: line
+        sourceLocation: sourceLocation
     )
 }
 

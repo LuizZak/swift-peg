@@ -1,4 +1,3 @@
-import XCTest
 import Testing
 
 @testable import SwiftPEG
@@ -197,13 +196,13 @@ struct CodeStringBufferTests {
 
     @Test
     func isOnNewline() {
-        func assertIsOnNewline_true(_ input: String, line: UInt = #line) {
+        func assertIsOnNewline_true(_ input: String, sourceLocation: SourceLocation = #_sourceLocation) {
             let sut = makeSut(input)
-            assertTrue(sut.isOnNewline(), file: #file, line: line)
+            assertTrue(sut.isOnNewline(), sourceLocation: sourceLocation)
         }
-        func assertIsOnNewline_false(_ input: String, line: UInt = #line) {
+        func assertIsOnNewline_false(_ input: String, sourceLocation: SourceLocation = #_sourceLocation) {
             let sut = makeSut(input)
-            assertFalse(sut.isOnNewline(), file: #file, line: line)
+            assertFalse(sut.isOnNewline(), sourceLocation: sourceLocation)
         }
 
         assertIsOnNewline_false("")
@@ -216,13 +215,13 @@ struct CodeStringBufferTests {
 
     @Test
     func isOnSpaceSeparator() {
-        func assertIsOnSpaceSeparator_true(_ input: String, line: UInt = #line) {
+        func assertIsOnSpaceSeparator_true(_ input: String, sourceLocation: SourceLocation = #_sourceLocation) {
             let sut = makeSut(input)
-            assertTrue(sut.isOnSpaceSeparator(), file: #file, line: line)
+            assertTrue(sut.isOnSpaceSeparator(), sourceLocation: sourceLocation)
         }
-        func assertIsOnSpaceSeparator_false(_ input: String, line: UInt = #line) {
+        func assertIsOnSpaceSeparator_false(_ input: String, sourceLocation: SourceLocation = #_sourceLocation) {
             let sut = makeSut(input)
-            assertFalse(sut.isOnSpaceSeparator(), file: #file, line: line)
+            assertFalse(sut.isOnSpaceSeparator(), sourceLocation: sourceLocation)
         }
 
         assertIsOnSpaceSeparator_false(" _")
@@ -237,13 +236,13 @@ struct CodeStringBufferTests {
 
     @Test
     func isOnDoubleNewline() {
-        func assertIsOnDoubleNewline_true(_ input: String, line: UInt = #line) {
+        func assertIsOnDoubleNewline_true(_ input: String, sourceLocation: SourceLocation = #_sourceLocation) {
             let sut = makeSut(input)
-            assertTrue(sut.isOnDoubleNewline(), file: #file, line: line)
+            assertTrue(sut.isOnDoubleNewline(), sourceLocation: sourceLocation)
         }
-        func assertIsOnDoubleNewline_false(_ input: String, line: UInt = #line) {
+        func assertIsOnDoubleNewline_false(_ input: String, sourceLocation: SourceLocation = #_sourceLocation) {
             let sut = makeSut(input)
-            assertFalse(sut.isOnDoubleNewline(), file: #file, line: line)
+            assertFalse(sut.isOnDoubleNewline(), sourceLocation: sourceLocation)
         }
 
         assertIsOnDoubleNewline_false("")
@@ -1295,11 +1294,10 @@ private func makeSut(_ preBuffer: String = "") -> CodeStringBuffer {
 private extension CodeStringBuffer {
     func assertBuffer(
         _ expected: String,
-        file: StaticString = #file,
-        line: UInt = #line
+        sourceLocation: SourceLocation = #_sourceLocation
     ) {
         SwiftTestingDiffTestCaseFailureReporter()
-            .diffTest(expected: expected, file: file, line: line)
-            .diff(buffer, file: file, line: line)
+            .diffTest(expected: expected, sourceLocation: sourceLocation)
+            .diff(buffer, file: sourceLocation.fileName, line: sourceLocation.line)
     }
 }

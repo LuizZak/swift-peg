@@ -1,4 +1,3 @@
-import XCTest
 import Testing
 
 @testable import SwiftPEG
@@ -442,17 +441,16 @@ private func assertParses(
     _ sut: Sut,
     _ token: InternalGrammar.TokenDefinition,
     input: String,
-    file: StaticString = #file,
-    line: UInt = #line
+    sourceLocation: SourceLocation = #_sourceLocation
 ) {
     do {
         var stream = StringStream(source: input)
 
         let result = try sut.parse(token, from: &stream)
 
-        assertTrue(result, file: file, line: line)
+        assertTrue(result, sourceLocation: sourceLocation)
     } catch {
-        fail("Unexpected error \(error)", file: file, line: line)
+        fail("Unexpected error \(error)", sourceLocation: sourceLocation)
     }
 }
 
@@ -460,8 +458,7 @@ private func assertDoesNotParse(
     _ sut: Sut,
     _ token: InternalGrammar.TokenDefinition,
     input: String,
-    file: StaticString = #file,
-    line: UInt = #line
+    sourceLocation: SourceLocation = #_sourceLocation
 ) {
     do {
         var stream = StringStream(source: input)
@@ -469,15 +466,14 @@ private func assertDoesNotParse(
 
         let result = try sut.parse(token, from: &stream)
 
-        assertFalse(result, file: file, line: line)
+        assertFalse(result, sourceLocation: sourceLocation)
         assertEqual(
             stream.save(),
             state,
             message: "Expected failed parse to restore stream state back to where it found it",
-            file: file,
-            line: line
+            sourceLocation: sourceLocation
         )
     } catch {
-        fail("Unexpected error \(error)", file: file, line: line)
+        fail("Unexpected error \(error)", sourceLocation: sourceLocation)
     }
 }

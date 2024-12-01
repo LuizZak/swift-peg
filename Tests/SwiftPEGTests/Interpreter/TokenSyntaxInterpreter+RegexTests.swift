@@ -1,4 +1,3 @@
-import XCTest
 import Testing
 
 @testable import SwiftPEG
@@ -361,8 +360,7 @@ private func makeSut(_ tokens: [InternalGrammar.TokenDefinition]) -> TokenSyntax
 
 private func parseTokenDefinitions(
     _ grammar: String,
-    file: StaticString = #file,
-    line: UInt = #line
+    sourceLocation: SourceLocation = #_sourceLocation
 ) throws -> [InternalGrammar.TokenDefinition] {
     let tokenizer = GrammarRawTokenizer(source: grammar)
     let parser = GrammarParser(raw: tokenizer)
@@ -377,47 +375,41 @@ private func parseTokenDefinitions(
 private func assertWholeMatches(
     _ regex: Regex<Substring>,
     input: String,
-    file: StaticString = #file,
-    line: UInt = #line
+    sourceLocation: SourceLocation = #_sourceLocation
 ) {
 
     let result = input.wholeMatch(of: regex)
 
     assertNotNil(
         result,
-        file: file,
-        line: line
+        sourceLocation: sourceLocation
     )
 }
 
 private func assertPrefixMatches(
     _ regex: Regex<Substring>,
     input: String,
-    file: StaticString = #file,
-    line: UInt = #line
+    sourceLocation: SourceLocation = #_sourceLocation
 ) {
 
     let result = input.prefixMatch(of: regex)
 
     assertNotNil(
         result,
-        file: file,
-        line: line
+        sourceLocation: sourceLocation
     )
 }
 
 private func assertNoMatch(
     _ regex: Regex<Substring>,
     input: String,
-    file: StaticString = #file,
-    line: UInt = #line
+    sourceLocation: SourceLocation = #_sourceLocation
 ) {
 
     let result = input.firstMatch(of: regex)
 
     assertNil(
         result,
-        file: file,
-        line: line
+        sourceLocation: sourceLocation
     )
 }

@@ -1,4 +1,3 @@
-import XCTest
 import Testing
 
 private func _formatMessage(_ msg: String) -> String {
@@ -14,8 +13,12 @@ private func _formatMessage(_ msg: String) -> String {
 func success() {}
 
 /// Fails a test with a given message.
-func fail(_ message: String, file: StaticString = #file, line: UInt = #line) {
-    XCTFail(message, file: file, line: line)
+func fail(
+    _ message: String,
+    sourceLocation: SourceLocation = #_sourceLocation
+) {
+
+    Issue.record(Comment(stringLiteral: message), sourceLocation: sourceLocation)
 }
 
 /// Asserts a given Optional is not nil, returning its value, throwing if it is
@@ -23,10 +26,10 @@ func fail(_ message: String, file: StaticString = #file, line: UInt = #line) {
 func assertUnwrap<T>(
     _ value: T?,
     message: @autoclosure () -> String = "",
-    file: StaticString = #file,
-    line: UInt = #line
+    sourceLocation: SourceLocation = #_sourceLocation
 ) throws -> T {
-    try XCTUnwrap(value, message(), file: file, line: line)
+
+    return try #require(value, Comment(stringLiteral: message()), sourceLocation: sourceLocation)
 }
 
 /// Asserts that a value of type `T` can be dynamically cast to `U`, throwing if
@@ -35,15 +38,13 @@ func assertCast<T, U>(
     _ value: T,
     to type: U.Type = U.self,
     message: @autoclosure () -> String = "",
-    file: StaticString = #file,
-    line: UInt = #line
+    sourceLocation: SourceLocation = #_sourceLocation
 ) throws -> U {
 
     try assertUnwrap(
         value as? U,
         message: "\(#function) failure: \(value) cannot be cast to \(U.self) \(message())",
-        file: file,
-        line: line
+        sourceLocation: sourceLocation
     )
 }
 
@@ -53,15 +54,13 @@ func assertCast<T, U>(
     _ value: T?,
     to type: U.Type = U.self,
     message: @autoclosure () -> String = "",
-    file: StaticString = #file,
-    line: UInt = #line
+    sourceLocation: SourceLocation = #_sourceLocation
 ) throws -> U {
 
     try assertUnwrap(
         value as? U,
         message: "\(#function) failure: \(String(describing: value)) cannot be cast to \(U.self) \(message())",
-        file: file,
-        line: line
+        sourceLocation: sourceLocation
     )
 }
 
@@ -69,40 +68,36 @@ func assertCast<T, U>(
 func assertNotNil<T>(
     _ value: T?,
     message: @autoclosure () -> String = "",
-    file: StaticString = #file,
-    line: UInt = #line
+    sourceLocation: SourceLocation = #_sourceLocation
 ) {
-    XCTAssertNotNil(value, message(), file: file, line: line)
+    #expect(value != nil, Comment(stringLiteral: message()), sourceLocation: sourceLocation)
 }
 
 /// Asserts a given Optional is nil.
 func assertNil<T>(
     _ value: T?,
     message: @autoclosure () -> String = "",
-    file: StaticString = #file,
-    line: UInt = #line
+    sourceLocation: SourceLocation = #_sourceLocation
 ) {
-    XCTAssertNil(value, message(), file: file, line: line)
+    #expect(value == nil, Comment(stringLiteral: message()), sourceLocation: sourceLocation)
 }
 
 /// Asserts a given Bool is `true`.
 func assertTrue(
     _ value: Bool,
     message: @autoclosure () -> String = "",
-    file: StaticString = #file,
-    line: UInt = #line
+    sourceLocation: SourceLocation = #_sourceLocation
 ) {
-    XCTAssertTrue(value, message(), file: file, line: line)
+    #expect(value == true, Comment(stringLiteral: message()), sourceLocation: sourceLocation)
 }
 
 /// Asserts a given Bool is `false`.
 func assertFalse(
     _ value: Bool,
     message: @autoclosure () -> String = "",
-    file: StaticString = #file,
-    line: UInt = #line
+    sourceLocation: SourceLocation = #_sourceLocation
 ) {
-    XCTAssertFalse(value, message(), file: file, line: line)
+    #expect(value == false, Comment(stringLiteral: message()), sourceLocation: sourceLocation)
 }
 
 /// Asserts two reference values point to the same object.
@@ -110,11 +105,10 @@ func assertIdentical<T>(
     _ lhs: T?,
     _ rhs: T?,
     message: @autoclosure () -> String = "",
-    file: StaticString = #file,
-    line: UInt = #line
+    sourceLocation: SourceLocation = #_sourceLocation
 ) where T: AnyObject {
 
-    XCTAssertIdentical(lhs, rhs, message(), file: file, line: line)
+    #expect(lhs === rhs, Comment(stringLiteral: message()), sourceLocation: sourceLocation)
 }
 
 /// Asserts two equatable values are the same.
@@ -122,11 +116,10 @@ func assertEqual<T>(
     _ lhs: T,
     _ rhs: T,
     message: @autoclosure () -> String = "",
-    file: StaticString = #file,
-    line: UInt = #line
+    sourceLocation: SourceLocation = #_sourceLocation
 ) where T: Equatable {
 
-    XCTAssertEqual(lhs, rhs, message(), file: file, line: line)
+    #expect(lhs == rhs, Comment(stringLiteral: message()), sourceLocation: sourceLocation)
 }
 
 /// Asserts an equatable value is equal to one of the provided array of values.
@@ -135,15 +128,13 @@ func assertEqualsOneOf<T>(
     _ lhs: T,
     _ rhs: T...,
     message: @autoclosure () -> String = "",
-    file: StaticString = #file,
-    line: UInt = #line
+    sourceLocation: SourceLocation = #_sourceLocation
 ) where T: Equatable {
 
     if !rhs.contains(lhs) {
         fail(
             "Expected \(lhs) to be contained in one of: \(rhs)",
-            file: file,
-            line: line
+            sourceLocation: sourceLocation
         )
     }
 }
@@ -154,16 +145,13 @@ func assertEqual<T>(
     _ lhs: T,
     _ rhs: T,
     message: @autoclosure () -> String = "",
-    file: StaticString = #file,
-    line: UInt = #line
+    sourceLocation: SourceLocation = #_sourceLocation
 ) where T: Equatable & CustomDebugStringConvertible {
 
-    XCTAssertEqual(
-        lhs,
-        rhs,
-        message() + " lhs: \(lhs.debugDescription) rhs: \(rhs.debugDescription)",
-        file: file,
-        line: line
+    #expect(
+        lhs == rhs,
+        Comment(stringLiteral: message() + " lhs: \(lhs.debugDescription) rhs: \(rhs.debugDescription)"),
+        sourceLocation: sourceLocation
     )
 }
 
@@ -172,19 +160,17 @@ func assertEqual<T, E>(
     _ lhs: Result<T, E>,
     _ rhs: Result<T, E>,
     message: @autoclosure () -> String = "",
-    file: StaticString = #file,
-    line: UInt = #line
+    sourceLocation: SourceLocation = #_sourceLocation
 ) where T: Equatable, E: Equatable {
 
-    XCTAssertEqual(lhs, rhs, message(), file: file, line: line)
+    #expect(lhs == rhs, Comment(stringLiteral: message()), sourceLocation: sourceLocation)
 }
 
 /// Asserts a block does not throw an error.
 func assertNoThrow<T>(
     _ block: () throws -> T,
     message: @autoclosure () -> String = "",
-    file: StaticString = #file,
-    line: UInt = #line
+    sourceLocation: SourceLocation = #_sourceLocation
 ) throws -> T {
 
     do {
@@ -192,8 +178,7 @@ func assertNoThrow<T>(
     } catch {
         fail(
             "Expected no error to be thrown \(_formatMessage(message()))",
-            file: file,
-            line: line
+            sourceLocation: sourceLocation
         )
 
         throw TestError.unexpectedThrow("")
@@ -204,15 +189,13 @@ func assertNoThrow<T>(
 func assertThrows<T>(
     _ block: () throws -> T,
     message: @autoclosure () -> String = "",
-    file: StaticString = #file,
-    line: UInt = #line
+    sourceLocation: SourceLocation = #_sourceLocation
 ) {
     do {
         _=try block()
         fail(
             "Expected error to be thrown \(_formatMessage(message()))",
-            file: file,
-            line: line
+            sourceLocation: sourceLocation
         )
     } catch {
         success()
@@ -226,23 +209,20 @@ func assertThrows<T, E: Error>(
     errorType: E.Type,
     _ block: () throws -> T,
     message: @autoclosure () -> String = "",
-    file: StaticString = #file,
-    line: UInt = #line
+    sourceLocation: SourceLocation = #_sourceLocation
 ) -> E? {
     do {
         _=try block()
         fail(
             "Expected error to be thrown \(_formatMessage(message()))",
-            file: file,
-            line: line
+            sourceLocation: sourceLocation
         )
     } catch let error as E {
         return error
     } catch {
         fail(
             "Expected thrown error to be of type \(E.self), found \(type(of: error)) \(_formatMessage(message()))",
-            file: file,
-            line: line
+            sourceLocation: sourceLocation
         )
     }
 
@@ -253,13 +233,12 @@ func assertThrows<T, E: Error>(
 func assertFailure<T>(
     _ value: Result<T, any Error>,
     message: @autoclosure () -> String = "",
-    file: StaticString = #file,
-    line: UInt = #line
+    sourceLocation: SourceLocation = #_sourceLocation
 ) {
 
     switch value {
     case .success(let value):
-        fail("Expected .failure() case, got: .success(\(value))", file: file, line: line)
+        fail("Expected .failure() case, got: .success(\(value))", sourceLocation: sourceLocation)
     case .failure:
         success()
     }
@@ -271,33 +250,29 @@ func assertSuccessEqual<T>(
     _ lhs: Result<T, any Error>,
     _ rhs: Result<T, any Error>,
     message: @autoclosure () -> String = "",
-    file: StaticString = #file,
-    line: UInt = #line
+    sourceLocation: SourceLocation = #_sourceLocation
 ) where T: Equatable {
 
     switch (lhs, rhs) {
     case (.success(let lhs), .success(let rhs)):
-        assertEqual(lhs, rhs, message: message(), file: file, line: line)
+        assertEqual(lhs, rhs, message: message(), sourceLocation: sourceLocation)
 
     case (.failure(let lhs), .failure(let rhs)):
         fail(
             "Expected success in lhs and rhs, got: \(lhs) \(rhs)\(_formatMessage(message()))",
-            file: file,
-            line: line
+            sourceLocation: sourceLocation
         )
 
     case (.failure(let lhs), _):
         fail(
             "Expected success in lhs, got: \(lhs)\(_formatMessage(message()))",
-            file: file,
-            line: line
+            sourceLocation: sourceLocation
         )
 
     case (_, .failure(let rhs)):
         fail(
             "Expected success in rhs, got: \(rhs)\(_formatMessage(message()))",
-            file: file,
-            line: line
+            sourceLocation: sourceLocation
         )
     }
 }
@@ -308,33 +283,29 @@ func assertSuccessEqual<T>(
     _ lhs: Result<T?, any Error>,
     _ rhs: Result<T, any Error>,
     message: @autoclosure () -> String = "",
-    file: StaticString = #file,
-    line: UInt = #line
+    sourceLocation: SourceLocation = #_sourceLocation
 ) where T: Equatable {
 
     switch (lhs, rhs) {
     case (.success(let lhs), .success(let rhs)):
-        assertEqual(lhs, rhs, message: message(), file: file, line: line)
+        assertEqual(lhs, rhs, message: message(), sourceLocation: sourceLocation)
 
     case (.failure(let lhs), .failure(let rhs)):
         fail(
             "Expected success in lhs and rhs, got: \(lhs) \(rhs)\(_formatMessage(message()))",
-            file: file,
-            line: line
+            sourceLocation: sourceLocation
         )
 
     case (.failure(let lhs), _):
         fail(
             "Expected success in lhs, got: \(lhs)\(_formatMessage(message()))",
-            file: file,
-            line: line
+            sourceLocation: sourceLocation
         )
 
     case (_, .failure(let rhs)):
         fail(
             "Expected success in rhs, got: \(rhs)\(_formatMessage(message()))",
-            file: file,
-            line: line
+            sourceLocation: sourceLocation
         )
     }
 }
@@ -347,8 +318,7 @@ func assertSuccessEqual<T>(
 func assertSuccessesEqual<T>(
     _ lhs: some Sequence<Result<T?, any Error>>,
     _ rhs: some Sequence<Result<T?, any Error>>,
-    file: StaticString = #file,
-    line: UInt = #line
+    sourceLocation: SourceLocation = #_sourceLocation
 ) where T: Equatable {
 
     let lhsArray = Array(lhs)
@@ -357,8 +327,7 @@ func assertSuccessesEqual<T>(
     guard lhsArray.count == rhsArray.count else {
         fail(
             "Expected lhs and rhs to have same count, got: lhs = \(lhsArray.count) / rhs = \(rhsArray.count)",
-            file: file,
-            line: line
+            sourceLocation: sourceLocation
         )
         return
     }
@@ -368,8 +337,7 @@ func assertSuccessesEqual<T>(
             lhsEntry,
             rhsEntry,
             message: "at index \(i)",
-            file: file,
-            line: line
+            sourceLocation: sourceLocation
         )
     }
 }
@@ -377,16 +345,14 @@ func assertSuccessesEqual<T>(
 /// Asserts that for a sequence of `Result` values with, all cases are `.failure()`.
 func assertFailures<T>(
     _ value: some Sequence<Result<T?, any Error>>,
-    file: StaticString = #file,
-    line: UInt = #line
+    sourceLocation: SourceLocation = #_sourceLocation
 ) where T: Equatable {
 
     for (i, valueEntry) in value.enumerated() {
         assertFailure(
             valueEntry,
             message: "at index \(i)",
-            file: file,
-            line: line
+            sourceLocation: sourceLocation
         )
     }
 }
@@ -397,15 +363,13 @@ func assertFailures<T>(
 func assertEmpty(
     _ value: some Collection,
     message: @autoclosure () -> String = "",
-    file: StaticString = #file,
-    line: UInt = #line
+    sourceLocation: SourceLocation = #_sourceLocation
 ) {
 
     if !value.isEmpty {
         fail(
             "Collection is not empty: \(value) \(message())",
-            file: file,
-            line: line
+            sourceLocation: sourceLocation
         )
     }
 }
@@ -415,15 +379,13 @@ func assertCount(
     _ value: some Collection,
     _ count: Int,
     message: @autoclosure () -> String = "",
-    file: StaticString = #file,
-    line: UInt = #line
+    sourceLocation: SourceLocation = #_sourceLocation
 ) {
 
     if value.count != count {
         fail(
             "Expected collection to have \(count) item(s) but found \(value.count): \(value) \(message())",
-            file: file,
-            line: line
+            sourceLocation: sourceLocation
         )
     }
 }
@@ -434,8 +396,7 @@ func assertEqualUnordered<T>(
     _ lhs: some Collection<T>,
     _ rhs: some Collection<T>,
     message: @autoclosure () -> String = "",
-    file: StaticString = #file,
-    line: UInt = #line
+    sourceLocation: SourceLocation = #_sourceLocation
 ) where T: Equatable {
 
     assertEqualUnordered(
@@ -443,8 +404,7 @@ func assertEqualUnordered<T>(
         rhs,
         compare: ==,
         message: message(),
-        file: file,
-        line: line
+        sourceLocation: sourceLocation
     )
 }
 
@@ -455,15 +415,13 @@ func assertEqualUnordered<T>(
     _ rhs: some Collection<T>,
     compare: (T, T) -> Bool,
     message: @autoclosure () -> String = "",
-    file: StaticString = #file,
-    line: UInt = #line
+    sourceLocation: SourceLocation = #_sourceLocation
 ) {
 
     if lhs.count != rhs.count {
         fail(
             "lhs.count != rhs.count (\(lhs.count) != \(rhs.count)) lhs: \(lhs) rhs: \(rhs) \(message())",
-            file: file,
-            line: line
+            sourceLocation: sourceLocation
         )
         return
     }
@@ -471,8 +429,7 @@ func assertEqualUnordered<T>(
     let signal: (String) -> Void = {
         fail(
             "lhs != rhs (\(lhs) != \(rhs)) \($0)",
-            file: file,
-            line: line
+            sourceLocation: sourceLocation
         )
     }
 

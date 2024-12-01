@@ -1,4 +1,3 @@
-import XCTest
 import Testing
 
 struct FixtureTests {

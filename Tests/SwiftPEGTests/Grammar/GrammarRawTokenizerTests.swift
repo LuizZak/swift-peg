@@ -1,4 +1,3 @@
-import XCTest
 import Testing
 
 @testable import SwiftPEG
@@ -119,16 +118,14 @@ private func makeLocation(line: Int, column: Int) -> FileSourceLocation {
 private func assertTokens(
     _ sut: GrammarRawTokenizer,
     _ tokens: [SwiftPEGGrammar.Token],
-    file: StaticString = #file,
-    line: UInt = #line
+    sourceLocation: SourceLocation = #_sourceLocation
 ) throws {
 
     for (i, expected) in tokens.enumerated() {
         guard let next = try sut.next() else {
             fail(
                 "Unexpected nil token at index \(i)",
-                file: file,
-                line: line
+                sourceLocation: sourceLocation
             )
             return
         }
@@ -139,8 +136,7 @@ private func assertTokens(
             debugPrint(next, to: &nextStr)
             fail(
                 "Mismatched raw token at index \(i): Expected \(expected) found \(next)",
-                file: file,
-                line: line
+                sourceLocation: sourceLocation
             )
             return
         }
@@ -150,24 +146,21 @@ private func assertTokens(
 private func assertTokensAndLocations(
     _ sut: GrammarRawTokenizer,
     _ values: [(SwiftPEGGrammar.Token, FileSourceLocation)],
-    file: StaticString = #file,
-    line: UInt = #line
+    sourceLocation: SourceLocation = #_sourceLocation
 ) throws {
 
     for (i, expected) in values.enumerated() {
         guard let next = try sut.next() else {
             fail(
                 "Unexpected nil token at index \(i)",
-                file: file,
-                line: line
+                sourceLocation: sourceLocation
             )
             return
         }
         if expected != next {
             fail(
                 "Mismatched token/location at index \(i): Expected \(expected) found \(next)",
-                file: file,
-                line: line
+                sourceLocation: sourceLocation
             )
             return
         }

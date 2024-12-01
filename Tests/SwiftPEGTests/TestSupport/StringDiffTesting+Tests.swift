@@ -1,4 +1,3 @@
-import XCTest
 import Testing
 
 struct StringDiffTestingTests {
@@ -61,7 +60,7 @@ struct StringDiffTestingTests {
         testReporter.diffTest(expected: "").diff("")
         #sourceLocation()
 
-        XCTAssertEqual(testReporter.messages.count, 0)
+        #expect(testReporter.messages.count == 0)
     }
 
     @Test
@@ -81,7 +80,7 @@ struct StringDiffTestingTests {
             )
         #sourceLocation()
 
-        XCTAssertEqual(testReporter.messages.count, 0)
+        #expect(testReporter.messages.count == 0)
     }
 
     @Test
@@ -613,11 +612,10 @@ extension StringDiffTestingTests {
     public func diffTest(
         expected input: String,
         diffOnly: Bool = false,
-        file: StaticString = #filePath,
-        line: UInt = #line
+        sourceLocation: SourceLocation = #_sourceLocation
     ) -> DiffingTest {
 
-        let location = DiffLocation(file: file, line: line)
+        let location = DiffLocation(sourceLocation: sourceLocation)
         let diffable = DiffableString(string: input, location: location)
 
         return DiffingTest(
@@ -634,8 +632,8 @@ class TestDiffReporter: DiffTestCaseFailureReporter {
 
     func _recordFailure(
         withDescription description: String,
-        inFile filePath: StaticString,
-        atLine lineNumber: UInt,
+        inFile filePath: String,
+        atLine lineNumber: Int,
         expected: Bool
     ) {
 
@@ -646,24 +644,22 @@ class TestDiffReporter: DiffTestCaseFailureReporter {
 private func assertLinesMatch(
     _ actual: String?,
     _ expected: String?,
-    file: StaticString = #file,
-    line: UInt = #line
+    sourceLocation: SourceLocation = #_sourceLocation
 ) {
     guard actual != expected else {
         return
     }
     guard let actual, let expected else {
-        XCTAssertEqual(actual, expected, file: file, line: line)
+        #expect(actual == expected, sourceLocation: sourceLocation)
         return
     }
     let linesActual = actual.split(separator: "\n", omittingEmptySubsequences: false)
     let linesExpected = expected.split(separator: "\n", omittingEmptySubsequences: false)
 
     guard linesActual.count > 1 && linesExpected.count > 1 else {
-        XCTFail(
+        Issue.record(
             "Strings don't match:\n\(actual)\n\nvs\n\n\(expected)",
-            file: file,
-            line: line
+            sourceLocation: sourceLocation
         )
         return
     }
@@ -673,15 +669,14 @@ private func assertLinesMatch(
         .first(where: { $0.element.0 != $0.element.1 })
 
     guard let firstChangedLine else {
-        XCTFail(
+        Issue.record(
             "Strings don't match:\n\(actual)\n\nvs\n\n\(expected)",
-            file: file,
-            line: line
+            sourceLocation: sourceLocation
         )
         return
     }
 
-    XCTFail("""
+    Issue.record("""
         Strings don't match starting at line \(firstChangedLine.offset):
         --
         \(firstChangedLine.element.0)
@@ -696,8 +691,7 @@ private func assertLinesMatch(
         
         \(expected)
         """,
-        file: file,
-        line: line
+        sourceLocation: sourceLocation
     )
 }
 

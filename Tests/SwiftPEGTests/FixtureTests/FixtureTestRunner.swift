@@ -1,5 +1,4 @@
 import Foundation
-import XCTest
 import Testing
 
 @testable import SwiftPEG
@@ -230,7 +229,7 @@ class FixtureTestRunner {
         diffOnly: Bool = false
     ) -> DiffingTest {
 
-        let location = DiffLocation(file: #file, line: UInt(lineOffset))
+        let location = DiffLocation(sourceLocation: .init(fileID: "", filePath: #file, line: lineOffset, column: 0))
         let diffable = DiffableString(string: input, location: location)
 
         return FixtureDiffingTest(

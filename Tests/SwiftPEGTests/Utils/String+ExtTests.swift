@@ -1,4 +1,3 @@
-import XCTest
 import Testing
 
 @testable import SwiftPEG
@@ -6,41 +5,41 @@ import Testing
 struct StringTests {
     @Test
     func startsUppercased() {
-        XCTAssert("Abc".startsUppercased)
-        XCTAssert("A".startsUppercased)
-        XCTAssertFalse("abc".startsUppercased)
-        XCTAssertFalse("a".startsUppercased)
-        XCTAssertFalse("0".startsUppercased)
-        XCTAssertFalse(" ".startsUppercased)
-        XCTAssertFalse("".startsUppercased)
+        #expect("Abc".startsUppercased)
+        #expect("A".startsUppercased)
+        #expect("abc".startsUppercased == false)
+        #expect("a".startsUppercased == false)
+        #expect("0".startsUppercased == false)
+        #expect(" ".startsUppercased == false)
+        #expect("".startsUppercased == false)
     }
 
     @Test
     func lowercasedFirstLetter() {
-        XCTAssertEqual("a", "A".lowercasedFirstLetter)
-        XCTAssertEqual("abc", "Abc".lowercasedFirstLetter)
-        XCTAssertEqual("abc", "abc".lowercasedFirstLetter)
-        XCTAssertEqual("ábc", "Ábc".lowercasedFirstLetter)
-        XCTAssertEqual("aBC", "ABC".lowercasedFirstLetter)
-        XCTAssertEqual("aBc", "aBc".lowercasedFirstLetter)
-        XCTAssertEqual("ábC", "ÁbC".lowercasedFirstLetter)
-        XCTAssertEqual("0", "0".lowercasedFirstLetter)
-        XCTAssertEqual("", "".lowercasedFirstLetter)
-        XCTAssertEqual(" ", " ".lowercasedFirstLetter)
+        assertEqual("a", "A".lowercasedFirstLetter)
+        assertEqual("abc", "Abc".lowercasedFirstLetter)
+        assertEqual("abc", "abc".lowercasedFirstLetter)
+        assertEqual("ábc", "Ábc".lowercasedFirstLetter)
+        assertEqual("aBC", "ABC".lowercasedFirstLetter)
+        assertEqual("aBc", "aBc".lowercasedFirstLetter)
+        assertEqual("ábC", "ÁbC".lowercasedFirstLetter)
+        assertEqual("0", "0".lowercasedFirstLetter)
+        assertEqual("", "".lowercasedFirstLetter)
+        assertEqual(" ", " ".lowercasedFirstLetter)
     }
 
     @Test
     func uppercasedFirstLetter() {
-        XCTAssertEqual("A", "a".uppercasedFirstLetter)
-        XCTAssertEqual("Abc", "abc".uppercasedFirstLetter)
-        XCTAssertEqual("Abc", "Abc".uppercasedFirstLetter)
-        XCTAssertEqual("Ábc", "ábc".uppercasedFirstLetter)
-        XCTAssertEqual("ABC", "aBC".uppercasedFirstLetter)
-        XCTAssertEqual("ABc", "ABc".uppercasedFirstLetter)
-        XCTAssertEqual("ÁbC", "ábC".uppercasedFirstLetter)
-        XCTAssertEqual("0", "0".uppercasedFirstLetter)
-        XCTAssertEqual("", "".uppercasedFirstLetter)
-        XCTAssertEqual(" ", " ".uppercasedFirstLetter)
+        assertEqual("A", "a".uppercasedFirstLetter)
+        assertEqual("Abc", "abc".uppercasedFirstLetter)
+        assertEqual("Abc", "Abc".uppercasedFirstLetter)
+        assertEqual("Ábc", "ábc".uppercasedFirstLetter)
+        assertEqual("ABC", "aBC".uppercasedFirstLetter)
+        assertEqual("ABc", "ABc".uppercasedFirstLetter)
+        assertEqual("ÁbC", "ábC".uppercasedFirstLetter)
+        assertEqual("0", "0".uppercasedFirstLetter)
+        assertEqual("", "".uppercasedFirstLetter)
+        assertEqual(" ", " ".uppercasedFirstLetter)
     }
 
     @Test
@@ -54,7 +53,7 @@ struct StringTests {
 
         let result = str1.makeDifferenceMarkString(against: str2)
 
-        XCTAssertEqual(
+        assertEqual(
             """
             Abcdef
             ~~^ Difference starts here
@@ -78,7 +77,7 @@ struct StringTests {
 
         let result = str1.makeDifferenceMarkString(against: str2)
 
-        XCTAssertEqual(
+        assertEqual(
             """
             Abc
             Def
@@ -104,7 +103,7 @@ struct StringTests {
 
         let result = str1.makeDifferenceMarkString(against: str2)
 
-        XCTAssertEqual(
+        assertEqual(
             """
             Abc
             Def
@@ -126,7 +125,7 @@ struct StringTests {
 
         let result = str1.makeDifferenceMarkString(against: str2)
 
-        XCTAssertEqual(
+        assertEqual(
             """
             Abc
             ^ Difference starts here
@@ -138,7 +137,7 @@ struct StringTests {
     @Test
     func commentSectionRangesInEmptyString() {
         let ranges = "".cStyleCommentSectionRanges()
-        XCTAssertEqual(ranges.count, 0)
+        assertEqual(ranges.count, 0)
     }
 
     @Test
@@ -153,9 +152,9 @@ struct StringTests {
             """
 
         let ranges = input.cStyleCommentSectionRanges()
-        XCTAssertEqual(ranges.count, 2)
-        XCTAssertEqual(ranges[0], input.range(of: "// A comment!\n"))
-        XCTAssertEqual(
+        assertEqual(ranges.count, 2)
+        assertEqual(ranges[0], input.range(of: "// A comment!\n"))
+        assertEqual(
             ranges[1],
             input.range(
                 of: """
@@ -172,8 +171,8 @@ struct StringTests {
         let input = "// A comment!"
 
         let ranges = input.cStyleCommentSectionRanges()
-        XCTAssertEqual(ranges.count, 1)
-        XCTAssertEqual(ranges[0], input.startIndex..<input.endIndex)
+        assertEqual(ranges.count, 1)
+        assertEqual(ranges[0], input.startIndex..<input.endIndex)
     }
 
     @Test
@@ -181,8 +180,8 @@ struct StringTests {
         let input = "/* A comment! \n*/"
 
         let ranges = input.cStyleCommentSectionRanges()
-        XCTAssertEqual(ranges.count, 1)
-        XCTAssertEqual(ranges[0], input.startIndex..<input.endIndex)
+        assertEqual(ranges.count, 1)
+        assertEqual(ranges[0], input.startIndex..<input.endIndex)
     }
 
     @Test
@@ -190,8 +189,8 @@ struct StringTests {
         let input = "/* A comment! \n"
 
         let ranges = input.cStyleCommentSectionRanges()
-        XCTAssertEqual(ranges.count, 1)
-        XCTAssertEqual(ranges[0], input.startIndex..<input.endIndex)
+        assertEqual(ranges.count, 1)
+        assertEqual(ranges[0], input.startIndex..<input.endIndex)
     }
 
     @Test
@@ -199,7 +198,7 @@ struct StringTests {
         let input = "\"A comment in a string: // etc.\""
 
         let ranges = input.cStyleCommentSectionRanges()
-        XCTAssertEqual(ranges.count, 0)
+        assertEqual(ranges.count, 0)
     }
 
     @Test
@@ -207,8 +206,8 @@ struct StringTests {
         let input = "/* A comment! \"A string\" \n"
 
         let ranges = input.cStyleCommentSectionRanges()
-        XCTAssertEqual(ranges.count, 1)
-        XCTAssertEqual(ranges[0], input.startIndex..<input.endIndex)
+        assertEqual(ranges.count, 1)
+        assertEqual(ranges[0], input.startIndex..<input.endIndex)
     }
 
     @Test
@@ -219,8 +218,8 @@ struct StringTests {
             """
 
         let ranges = input.cStyleCommentSectionRanges()
-        XCTAssertEqual(ranges.count, 1)
-        XCTAssertEqual(
+        assertEqual(ranges.count, 1)
+        assertEqual(
             ranges[0],
             input.range(
                 of: """
@@ -240,16 +239,16 @@ struct StringTests {
             """
 
         let ranges = input.lineRanges()
-        XCTAssertEqual(ranges.count, 3)
-        XCTAssertEqual(ranges[0], input.range(of: "1"))
-        XCTAssertEqual(ranges[1], input.range(of: "2"))
-        XCTAssertEqual(ranges[2], input.range(of: "3"))
+        assertEqual(ranges.count, 3)
+        assertEqual(ranges[0], input.range(of: "1"))
+        assertEqual(ranges[1], input.range(of: "2"))
+        assertEqual(ranges[2], input.range(of: "3"))
 
         let rangesWithLineBreaks = input.lineRanges(includeLineBreak: true)
-        XCTAssertEqual(rangesWithLineBreaks.count, 3)
-        XCTAssertEqual(rangesWithLineBreaks[0], input.range(of: "1\n"))
-        XCTAssertEqual(rangesWithLineBreaks[1], input.range(of: "2\n"))
-        XCTAssertEqual(rangesWithLineBreaks[2], input.range(of: "3"))
+        assertEqual(rangesWithLineBreaks.count, 3)
+        assertEqual(rangesWithLineBreaks[0], input.range(of: "1\n"))
+        assertEqual(rangesWithLineBreaks[1], input.range(of: "2\n"))
+        assertEqual(rangesWithLineBreaks[2], input.range(of: "3"))
     }
 
     @Test
@@ -261,22 +260,22 @@ struct StringTests {
             """
 
         let ranges = input.lineRanges()
-        XCTAssertEqual(ranges.count, 3)
-        XCTAssertEqual(ranges[0], input.range(of: "1"))
-        XCTAssertEqual(
+        assertEqual(ranges.count, 3)
+        assertEqual(ranges[0], input.range(of: "1"))
+        assertEqual(
             ranges[1],
             input.range(of: "1\n")!.upperBound..<input.range(of: "\n3")!.lowerBound
         )
-        XCTAssertEqual(ranges[2], input.range(of: "3"))
+        assertEqual(ranges[2], input.range(of: "3"))
 
         let rangesWithLineBreaks = input.lineRanges(includeLineBreak: true)
-        XCTAssertEqual(rangesWithLineBreaks.count, 3)
-        XCTAssertEqual(rangesWithLineBreaks[0], input.range(of: "1\n"))
-        XCTAssertEqual(
+        assertEqual(rangesWithLineBreaks.count, 3)
+        assertEqual(rangesWithLineBreaks[0], input.range(of: "1\n"))
+        assertEqual(
             rangesWithLineBreaks[1],
             input.range(of: "1\n")!.upperBound..<input.range(of: "3")!.lowerBound
         )
-        XCTAssertEqual(rangesWithLineBreaks[2], input.range(of: "3"))
+        assertEqual(rangesWithLineBreaks[2], input.range(of: "3"))
     }
 
     @Test
@@ -287,14 +286,14 @@ struct StringTests {
             """
 
         let ranges = input.lineRanges()
-        XCTAssertEqual(ranges.count, 2)
-        XCTAssertEqual(ranges[0], input.range(of: "1"))
-        XCTAssertEqual(ranges[1], input.range(of: "1\n")!.upperBound..<input.endIndex)
+        assertEqual(ranges.count, 2)
+        assertEqual(ranges[0], input.range(of: "1"))
+        assertEqual(ranges[1], input.range(of: "1\n")!.upperBound..<input.endIndex)
 
         let rangesWithLineBreaks = input.lineRanges(includeLineBreak: true)
-        XCTAssertEqual(rangesWithLineBreaks.count, 2)
-        XCTAssertEqual(rangesWithLineBreaks[0], input.range(of: "1\n"))
-        XCTAssertEqual(rangesWithLineBreaks[1], input.range(of: "1\n")!.upperBound..<input.endIndex)
+        assertEqual(rangesWithLineBreaks.count, 2)
+        assertEqual(rangesWithLineBreaks[0], input.range(of: "1\n"))
+        assertEqual(rangesWithLineBreaks[1], input.range(of: "1\n")!.upperBound..<input.endIndex)
     }
 
     @Test
@@ -306,16 +305,16 @@ struct StringTests {
             """
 
         let ranges = input.lineRanges()
-        XCTAssertEqual(ranges.count, 3)
-        XCTAssertEqual(ranges[0], input.intRange(0..<1))
-        XCTAssertEqual(ranges[1], input.intRange(2..<2))
-        XCTAssertEqual(ranges[2], input.intRange(3..<3))
+        assertEqual(ranges.count, 3)
+        assertEqual(ranges[0], input.intRange(0..<1))
+        assertEqual(ranges[1], input.intRange(2..<2))
+        assertEqual(ranges[2], input.intRange(3..<3))
 
         let rangesWithLineBreaks = input.lineRanges(includeLineBreak: true)
-        XCTAssertEqual(rangesWithLineBreaks.count, 3)
-        XCTAssertEqual(rangesWithLineBreaks[0], input.intRange(0..<2))
-        XCTAssertEqual(rangesWithLineBreaks[1], input.intRange(2..<3))
-        XCTAssertEqual(rangesWithLineBreaks[2], input.intRange(3..<3))
+        assertEqual(rangesWithLineBreaks.count, 3)
+        assertEqual(rangesWithLineBreaks[0], input.intRange(0..<2))
+        assertEqual(rangesWithLineBreaks[1], input.intRange(2..<3))
+        assertEqual(rangesWithLineBreaks[2], input.intRange(3..<3))
     }
 
     @Test
@@ -323,12 +322,12 @@ struct StringTests {
         let input = "123"
 
         let ranges = input.lineRanges()
-        XCTAssertEqual(ranges.count, 1)
-        XCTAssertEqual(ranges[0], input.startIndex..<input.endIndex)
+        assertEqual(ranges.count, 1)
+        assertEqual(ranges[0], input.startIndex..<input.endIndex)
 
         let rangesWithLineBreaks = input.lineRanges(includeLineBreak: true)
-        XCTAssertEqual(rangesWithLineBreaks.count, 1)
-        XCTAssertEqual(rangesWithLineBreaks[0], input.startIndex..<input.endIndex)
+        assertEqual(rangesWithLineBreaks.count, 1)
+        assertEqual(rangesWithLineBreaks[0], input.startIndex..<input.endIndex)
     }
 
     @Test
@@ -336,12 +335,12 @@ struct StringTests {
         let input = ""
 
         let ranges = input.lineRanges()
-        XCTAssertEqual(ranges.count, 1)
-        XCTAssertEqual(ranges[0], input.startIndex..<input.endIndex)
+        assertEqual(ranges.count, 1)
+        assertEqual(ranges[0], input.startIndex..<input.endIndex)
 
         let rangesWithLineBreaks = input.lineRanges(includeLineBreak: true)
-        XCTAssertEqual(rangesWithLineBreaks.count, 1)
-        XCTAssertEqual(rangesWithLineBreaks[0], input.startIndex..<input.endIndex)
+        assertEqual(rangesWithLineBreaks.count, 1)
+        assertEqual(rangesWithLineBreaks[0], input.startIndex..<input.endIndex)
     }
 
     @Test
@@ -349,59 +348,59 @@ struct StringTests {
         let input = "\n"
 
         let ranges = input.lineRanges()
-        XCTAssertEqual(ranges.count, 2)
-        XCTAssertEqual(ranges[0], input.startIndex..<input.startIndex)
-        XCTAssertEqual(ranges[1], input.endIndex..<input.endIndex)
+        assertEqual(ranges.count, 2)
+        assertEqual(ranges[0], input.startIndex..<input.startIndex)
+        assertEqual(ranges[1], input.endIndex..<input.endIndex)
 
         let rangesWithLineBreaks = input.lineRanges(includeLineBreak: true)
-        XCTAssertEqual(rangesWithLineBreaks.count, 2)
-        XCTAssertEqual(rangesWithLineBreaks[0], input.startIndex..<input.endIndex)
-        XCTAssertEqual(rangesWithLineBreaks[1], input.endIndex..<input.endIndex)
+        assertEqual(rangesWithLineBreaks.count, 2)
+        assertEqual(rangesWithLineBreaks[0], input.startIndex..<input.endIndex)
+        assertEqual(rangesWithLineBreaks[1], input.endIndex..<input.endIndex)
     }
 
     @Test
     func trimWhitespace() {
-        XCTAssertEqual(SwiftPEG.trimWhitespace(""), "")
-        XCTAssertEqual(SwiftPEG.trimWhitespace("  "), "")
-        XCTAssertEqual(SwiftPEG.trimWhitespace("a "), "a")
-        XCTAssertEqual(SwiftPEG.trimWhitespace(" a"), "a")
-        XCTAssertEqual(SwiftPEG.trimWhitespace("abc"), "abc")
-        XCTAssertEqual(SwiftPEG.trimWhitespace("abc "), "abc")
-        XCTAssertEqual(SwiftPEG.trimWhitespace(" abc"), "abc")
-        XCTAssertEqual(SwiftPEG.trimWhitespace("  abc "), "abc")
-        XCTAssertEqual(SwiftPEG.trimWhitespace("\nabc\n"), "abc")
-        XCTAssertEqual(SwiftPEG.trimWhitespace("\n abc def \t "), "abc def")
-        XCTAssertEqual(SwiftPEG.trimWhitespace("  abc def "), "abc def")
+        assertEqual(SwiftPEG.trimWhitespace(""), "")
+        assertEqual(SwiftPEG.trimWhitespace("  "), "")
+        assertEqual(SwiftPEG.trimWhitespace("a "), "a")
+        assertEqual(SwiftPEG.trimWhitespace(" a"), "a")
+        assertEqual(SwiftPEG.trimWhitespace("abc"), "abc")
+        assertEqual(SwiftPEG.trimWhitespace("abc "), "abc")
+        assertEqual(SwiftPEG.trimWhitespace(" abc"), "abc")
+        assertEqual(SwiftPEG.trimWhitespace("  abc "), "abc")
+        assertEqual(SwiftPEG.trimWhitespace("\nabc\n"), "abc")
+        assertEqual(SwiftPEG.trimWhitespace("\n abc def \t "), "abc def")
+        assertEqual(SwiftPEG.trimWhitespace("  abc def "), "abc def")
     }
 
     @Test
     func trimWhitespaceLead() {
-        XCTAssertEqual(SwiftPEG.trimWhitespaceLead(""), "")
-        XCTAssertEqual(SwiftPEG.trimWhitespaceLead("  "), "")
-        XCTAssertEqual(SwiftPEG.trimWhitespaceLead("a "), "a ")
-        XCTAssertEqual(SwiftPEG.trimWhitespaceLead(" a"), "a")
-        XCTAssertEqual(SwiftPEG.trimWhitespaceLead("abc"), "abc")
-        XCTAssertEqual(SwiftPEG.trimWhitespaceLead("abc "), "abc ")
-        XCTAssertEqual(SwiftPEG.trimWhitespaceLead(" abc"), "abc")
-        XCTAssertEqual(SwiftPEG.trimWhitespaceLead("  abc "), "abc ")
-        XCTAssertEqual(SwiftPEG.trimWhitespaceLead("\nabc\n"), "abc\n")
-        XCTAssertEqual(SwiftPEG.trimWhitespaceLead("\n abc def \t "), "abc def \t ")
-        XCTAssertEqual(SwiftPEG.trimWhitespaceLead("  abc def "), "abc def ")
+        assertEqual(SwiftPEG.trimWhitespaceLead(""), "")
+        assertEqual(SwiftPEG.trimWhitespaceLead("  "), "")
+        assertEqual(SwiftPEG.trimWhitespaceLead("a "), "a ")
+        assertEqual(SwiftPEG.trimWhitespaceLead(" a"), "a")
+        assertEqual(SwiftPEG.trimWhitespaceLead("abc"), "abc")
+        assertEqual(SwiftPEG.trimWhitespaceLead("abc "), "abc ")
+        assertEqual(SwiftPEG.trimWhitespaceLead(" abc"), "abc")
+        assertEqual(SwiftPEG.trimWhitespaceLead("  abc "), "abc ")
+        assertEqual(SwiftPEG.trimWhitespaceLead("\nabc\n"), "abc\n")
+        assertEqual(SwiftPEG.trimWhitespaceLead("\n abc def \t "), "abc def \t ")
+        assertEqual(SwiftPEG.trimWhitespaceLead("  abc def "), "abc def ")
     }
 
     @Test
     func trimWhitespaceTrail() {
-        XCTAssertEqual(SwiftPEG.trimWhitespaceTrail(""), "")
-        XCTAssertEqual(SwiftPEG.trimWhitespaceTrail("  "), "")
-        XCTAssertEqual(SwiftPEG.trimWhitespaceTrail("a "), "a")
-        XCTAssertEqual(SwiftPEG.trimWhitespaceTrail(" a"), " a")
-        XCTAssertEqual(SwiftPEG.trimWhitespaceTrail("abc"), "abc")
-        XCTAssertEqual(SwiftPEG.trimWhitespaceTrail("abc "), "abc")
-        XCTAssertEqual(SwiftPEG.trimWhitespaceTrail(" abc"), " abc")
-        XCTAssertEqual(SwiftPEG.trimWhitespaceTrail("  abc "), "  abc")
-        XCTAssertEqual(SwiftPEG.trimWhitespaceTrail("\nabc\n"), "\nabc")
-        XCTAssertEqual(SwiftPEG.trimWhitespaceTrail("\n abc def \t "), "\n abc def")
-        XCTAssertEqual(SwiftPEG.trimWhitespaceTrail("  abc def "), "  abc def")
+        assertEqual(SwiftPEG.trimWhitespaceTrail(""), "")
+        assertEqual(SwiftPEG.trimWhitespaceTrail("  "), "")
+        assertEqual(SwiftPEG.trimWhitespaceTrail("a "), "a")
+        assertEqual(SwiftPEG.trimWhitespaceTrail(" a"), " a")
+        assertEqual(SwiftPEG.trimWhitespaceTrail("abc"), "abc")
+        assertEqual(SwiftPEG.trimWhitespaceTrail("abc "), "abc")
+        assertEqual(SwiftPEG.trimWhitespaceTrail(" abc"), " abc")
+        assertEqual(SwiftPEG.trimWhitespaceTrail("  abc "), "  abc")
+        assertEqual(SwiftPEG.trimWhitespaceTrail("\nabc\n"), "\nabc")
+        assertEqual(SwiftPEG.trimWhitespaceTrail("\n abc def \t "), "\n abc def")
+        assertEqual(SwiftPEG.trimWhitespaceTrail("  abc def "), "  abc def")
     }
 }
 
