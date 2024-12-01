@@ -1,5 +1,3 @@
-import SwiftPEGMacros
-
 /// Namespace for SwiftPEG grammar grammar objects.
 public enum SwiftPEGGrammar {}
 

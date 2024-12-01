@@ -20,10 +20,10 @@ let package = Package(
         )
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-syntax.git", exact: "510.0.0"),
+        .package(url: "https://github.com/apple/swift-syntax.git", exact: "600.0.0"),
         .package(url: "https://github.com/apple/swift-argument-parser.git", exact: "1.4.0"),
         .package(url: "https://github.com/LuizZak/Console.git", exact: "0.14.1"),
-        .package(url: "https://github.com/LuizZak/MiniDigraph.git", exact: "0.5.0"),
+        .package(url: "https://github.com/LuizZak/MiniDigraph.git", exact: "0.8.0"),
     ],
     targets: [
         .macro(

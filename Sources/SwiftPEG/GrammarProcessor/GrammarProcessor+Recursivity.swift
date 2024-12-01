@@ -36,7 +36,7 @@ extension GrammarProcessor {
         for component in graph.stronglyConnectedComponents() {
             if component.count == 1, let first = component.first {
                 // Check if the rule is re-entrant into itself
-                if graph.edge(from: first, to: first) != nil {
+                if !graph.edges(from: first, to: first).isEmpty {
                     guard let rule = rules[first] else { continue }
 
                     rule.isLeftRecursive = true

@@ -1,5 +1,3 @@
-import SwiftPEGMacros
-
 /// A terminal Token node.
 open class TokenNode<RawTokenizer>: Node where RawTokenizer: RawTokenizerType {
     public typealias RawToken = RawTokenizer.RawToken

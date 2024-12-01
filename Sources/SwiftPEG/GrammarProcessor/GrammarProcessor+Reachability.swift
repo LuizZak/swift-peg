@@ -1,3 +1,5 @@
+import MiniDigraph
+
 extension GrammarProcessor {
     /// Diagnoses unreachable rules, when starting from a given entry rule name.
     func diagnoseUnreachableRules(
@@ -54,7 +56,7 @@ extension GrammarProcessor {
         }
 
         var unreachable: Set<String> = Set(rules.keys)
-        graph.breadthFirstVisit(start: startNode) { visit in
+        graph.breadthFirstVisit(start: DirectedGraphVisitElement.start(startNode)) { visit in
             unreachable.remove(visit.node)
             return true
         }
