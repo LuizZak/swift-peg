@@ -1,9 +1,11 @@
 import XCTest
+import Testing
 
 @testable import SwiftPEG
 
-class GrammarInterpreterTests: XCTestCase {
-    func testProduceRule_tokensAndString() throws {
+struct GrammarInterpreterTests {
+    @Test
+    func produceRule_tokensAndString() throws {
         let source = """
         a , b
         """;
@@ -30,7 +32,8 @@ class GrammarInterpreterTests: XCTestCase {
         assertEqual(result as? String, "Success!")
     }
 
-    func testProduceRule_multiAlt() throws {
+    @Test
+    func produceRule_multiAlt() throws {
         let source = """
         a , b
         """;
@@ -58,7 +61,8 @@ class GrammarInterpreterTests: XCTestCase {
         assertEqual(result as? String, "Success!")
     }
 
-    func testProduceRule_nestedRules() throws {
+    @Test
+    func produceRule_nestedRules() throws {
         let source = """
         a , b + c
         """;
@@ -96,7 +100,8 @@ class GrammarInterpreterTests: XCTestCase {
         assertEqual(result as? String, "Success!")
     }
 
-    func testProduceRule_isCached() throws {
+    @Test
+    func produceRule_isCached() throws {
         let source = """
         b
         """;
@@ -135,7 +140,8 @@ class GrammarInterpreterTests: XCTestCase {
         assertEqual(delegate.countOfAlts(actionName: ruleBActionName), 1)
     }
 
-    func testProduceRule_recursiveRule() throws {
+    @Test
+    func produceRule_recursiveRule() throws {
         let source = """
         a , a , a
         """;
@@ -163,7 +169,8 @@ class GrammarInterpreterTests: XCTestCase {
         assertEqual(result as? String, "a , a , a")
     }
 
-    func testProduceRule_nonStandardRepetition() throws {
+    @Test
+    func produceRule_nonStandardRepetition() throws {
         let source = """
         a, b, c, and d
         """
@@ -216,7 +223,8 @@ class GrammarInterpreterTests: XCTestCase {
         assertEqual(result as? String, "a, b, c, and d")
     }
 
-    func testProduceRule_nonStandardGather() throws {
+    @Test
+    func produceRule_nonStandardGather() throws {
         let source = """
         a, b, c, and d
         """

@@ -1,28 +1,32 @@
 import XCTest
+import Testing
 
 @testable import SwiftPEG
 
-class CodeStringBufferTests: XCTestCase {
-    func testEphemeral() {
+struct CodeStringBufferTests {
+    @Test
+    func ephemeral() {
         let sut = makeSut()
 
-        sut.assertBuffer(self, #""#)
+        sut.assertBuffer(#""#)
         assertEqual(sut.indentation, 0)
         assertEqual(sut.indentationMode, .spaces(4))
     }
 
-    func testResetState() {
+    @Test
+    func resetState() {
         let sut = makeSut()
         sut.emitLine("line")
         sut.indent()
 
         sut.resetState()
 
-        sut.assertBuffer(self, #""#)
+        sut.assertBuffer(#""#)
         assertEqual(sut.indentation, 0)
     }
 
-    func testFinishBuffer_addTrailingNewline_false() {
+    @Test
+    func finishBuffer_addTrailingNewline_false() {
         let sut = makeSut()
         sut.emitLine("line")
         sut.emitNewline()
@@ -35,7 +39,8 @@ class CodeStringBufferTests: XCTestCase {
             .diff(result)
     }
 
-    func testFinishBuffer_addTrailingNewline_true() {
+    @Test
+    func finishBuffer_addTrailingNewline_true() {
         let sut = makeSut()
         sut.emitLine("line")
         sut.emitNewline()
@@ -49,52 +54,56 @@ class CodeStringBufferTests: XCTestCase {
             .diff(result)
     }
 
-    func testStartConditionalEmitter_emit_unchanged() {
+    @Test
+    func startConditionalEmitter_emit_unchanged() {
         let sut = makeSut()
         sut.emitLine("line")
         let emitter = sut.startConditionalEmitter()
 
         emitter.emit("conditional")
 
-        sut.assertBuffer(self, """
+        sut.assertBuffer("""
             line
 
             """)
     }
 
-    func testStartConditionalEmitter_emit_changed() {
-        let sut = makeSut()
-        sut.emitLine("line")
-        let emitter = sut.startConditionalEmitter()
-        sut.emitLine("another line")
-
-        emitter.emit("conditional")
-
-        sut.assertBuffer(self, """
-            line
-            another line
-            conditional
-            """)
-    }
-
-    func testStartConditionalEmitter_emit_idempotent() {
+    @Test
+    func startConditionalEmitter_emit_changed() {
         let sut = makeSut()
         sut.emitLine("line")
         let emitter = sut.startConditionalEmitter()
         sut.emitLine("another line")
 
         emitter.emit("conditional")
-        emitter.emit("conditional")
-        emitter.emit("conditional")
 
-        sut.assertBuffer(self, """
+        sut.assertBuffer("""
             line
             another line
             conditional
             """)
     }
 
-    func testMakeInsertionMarker() {
+    @Test
+    func startConditionalEmitter_emit_idempotent() {
+        let sut = makeSut()
+        sut.emitLine("line")
+        let emitter = sut.startConditionalEmitter()
+        sut.emitLine("another line")
+
+        emitter.emit("conditional")
+        emitter.emit("conditional")
+        emitter.emit("conditional")
+
+        sut.assertBuffer("""
+            line
+            another line
+            conditional
+            """)
+    }
+
+    @Test
+    func makeInsertionMarker() {
         let sut = makeSut()
         sut.emit("insertion (")
         let marker = sut.makeInsertionMarker()
@@ -104,13 +113,14 @@ class CodeStringBufferTests: XCTestCase {
             buffer.emit("marker")
         }
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
             insertion (marker)
 
             """#)
     }
 
-    func testMakeInsertionMarker_repeated() {
+    @Test
+    func makeInsertionMarker_repeated() {
         let sut = makeSut()
         sut.emit("insertion (")
         let marker = sut.makeInsertionMarker()
@@ -123,13 +133,14 @@ class CodeStringBufferTests: XCTestCase {
             buffer.emit("marker")
         }
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
             insertion (markermarker)
 
             """#)
     }
 
-    func testMakeInsertionMarker_insertOnce_idempotent() {
+    @Test
+    func makeInsertionMarker_insertOnce_idempotent() {
         let sut = makeSut()
         sut.emit("insertion (")
         let marker = sut.makeInsertionMarker()
@@ -142,13 +153,14 @@ class CodeStringBufferTests: XCTestCase {
             buffer.emit("marker")
         }
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
             insertion (marker)
 
             """#)
     }
 
-    func testStartDelayedEmission() {
+    @Test
+    func startDelayedEmission() {
         let sut = makeSut()
         sut.emit("delayed (")
         let emission = sut.startDelayedEmission { buffer in
@@ -158,13 +170,14 @@ class CodeStringBufferTests: XCTestCase {
 
         emission.emit()
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
             delayed (emission)
 
             """#)
     }
 
-    func testStartDelayedEmission_idempotent() {
+    @Test
+    func startDelayedEmission_idempotent() {
         let sut = makeSut()
         sut.emit("delayed (")
         let emission = sut.startDelayedEmission { buffer in
@@ -176,13 +189,14 @@ class CodeStringBufferTests: XCTestCase {
         emission.emit()
         emission.emit()
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
             delayed (emission)
 
             """#)
     }
 
-    func testIsOnNewline() {
+    @Test
+    func isOnNewline() {
         func assertIsOnNewline_true(_ input: String, line: UInt = #line) {
             let sut = makeSut(input)
             assertTrue(sut.isOnNewline(), file: #file, line: line)
@@ -200,7 +214,8 @@ class CodeStringBufferTests: XCTestCase {
         assertIsOnNewline_true("\r\n")
     }
 
-    func testIsOnSpaceSeparator() {
+    @Test
+    func isOnSpaceSeparator() {
         func assertIsOnSpaceSeparator_true(_ input: String, line: UInt = #line) {
             let sut = makeSut(input)
             assertTrue(sut.isOnSpaceSeparator(), file: #file, line: line)
@@ -220,7 +235,8 @@ class CodeStringBufferTests: XCTestCase {
         assertIsOnSpaceSeparator_true("\r\n")
     }
 
-    func testIsOnDoubleNewline() {
+    @Test
+    func isOnDoubleNewline() {
         func assertIsOnDoubleNewline_true(_ input: String, line: UInt = #line) {
             let sut = makeSut(input)
             assertTrue(sut.isOnDoubleNewline(), file: #file, line: line)
@@ -242,7 +258,8 @@ class CodeStringBufferTests: XCTestCase {
         assertIsOnDoubleNewline_true("\r\n\n")
     }
 
-    func testIndentationString_spaces() {
+    @Test
+    func indentationString_spaces() {
         let sut = makeSut()
 
         assertEqual(sut.indentationString(), "")
@@ -256,7 +273,8 @@ class CodeStringBufferTests: XCTestCase {
         assertEqual(sut.indentationString(), "        ")
     }
 
-    func testIndentationString_tabs() {
+    @Test
+    func indentationString_tabs() {
         let sut = makeSut()
         sut.indentationMode = .tabs(1)
 
@@ -271,7 +289,8 @@ class CodeStringBufferTests: XCTestCase {
         assertEqual(sut.indentationString(), "\t\t")
     }
 
-    func testIndent() {
+    @Test
+    func indent() {
         let sut = makeSut()
 
         sut.indent()
@@ -283,7 +302,8 @@ class CodeStringBufferTests: XCTestCase {
         assertEqual(sut.indentation, 2)
     }
 
-    func testUnindent() {
+    @Test
+    func unindent() {
         let sut = makeSut()
         sut.indent()
         sut.indent()
@@ -301,75 +321,82 @@ class CodeStringBufferTests: XCTestCase {
         assertEqual(sut.indentation, 0)
     }
 
-    func testEmitRaw() {
+    @Test
+    func emitRaw() {
         let sut = makeSut()
         sut.indent()
 
         sut.emitRaw("text")
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
             text
             """#)
     }
 
-    func testEmit() {
+    @Test
+    func emit() {
         let sut = makeSut()
 
         sut.emit("text")
         sut.emit("text")
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
             texttext
             """#)
     }
 
-    func testEmit_prefixesWithIndentation() {
+    @Test
+    func emit_prefixesWithIndentation() {
         let sut = makeSut()
         sut.indent()
 
         sut.emit("text")
         sut.emit("text")
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
                 texttext
             """#)
     }
 
-    func testEmit_prefixesWithIndentation_skipsIfInputIsEmpty() {
+    @Test
+    func emit_prefixesWithIndentation_skipsIfInputIsEmpty() {
         let sut = makeSut()
         sut.indent()
 
         sut.emit("")
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
             """#)
     }
 
-    func testEmit_prefixesWithIndentation_skipsIfTextLeadsWithNewline() {
+    @Test
+    func emit_prefixesWithIndentation_skipsIfTextLeadsWithNewline() {
         let sut = makeSut()
         sut.indent()
 
         sut.emit("\ntext")
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
 
             text
             """#)
     }
 
-    func testEmitNewline() {
+    @Test
+    func emitNewline() {
         let sut = makeSut()
         sut.indent()
 
         sut.emitNewline()
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
 
 
             """#)
     }
 
-    func testEmitMultiline() {
+    @Test
+    func emitMultiline() {
         let sut = makeSut()
 
         sut.emitMultiline("""
@@ -378,7 +405,7 @@ class CodeStringBufferTests: XCTestCase {
         string
         """)
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
             a
             multiline
             string
@@ -386,12 +413,13 @@ class CodeStringBufferTests: XCTestCase {
             """#)
     }
 
-    func testEmitMultiline_splitsOnKnownNewlines() {
+    @Test
+    func emitMultiline_splitsOnKnownNewlines() {
         let sut = makeSut()
 
         sut.emitMultiline("a\nmultiline\rstring")
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
             a
             multiline
             string
@@ -399,7 +427,8 @@ class CodeStringBufferTests: XCTestCase {
             """#)
     }
 
-    func testEmitMultiline_keepsEmptyLines() {
+    @Test
+    func emitMultiline_keepsEmptyLines() {
         let sut = makeSut()
 
         sut.emitMultiline("""
@@ -411,7 +440,7 @@ class CodeStringBufferTests: XCTestCase {
             string
             """)
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
             a
 
 
@@ -422,7 +451,8 @@ class CodeStringBufferTests: XCTestCase {
             """#)
     }
 
-    func testEmitMultiline_usesIndentation() {
+    @Test
+    func emitMultiline_usesIndentation() {
         let sut = makeSut()
         sut.indent()
 
@@ -432,7 +462,7 @@ class CodeStringBufferTests: XCTestCase {
         string
         """)
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
                 a
                 multiline
                 string
@@ -440,7 +470,8 @@ class CodeStringBufferTests: XCTestCase {
             """#)
     }
 
-    func testEmitMultiline_usesIndentation_keepsEmptyLines() {
+    @Test
+    func emitMultiline_usesIndentation_keepsEmptyLines() {
         let sut = makeSut()
 
         sut.emitMultiline("""
@@ -452,7 +483,7 @@ class CodeStringBufferTests: XCTestCase {
                 string
             """)
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
                 a
 
 
@@ -463,53 +494,58 @@ class CodeStringBufferTests: XCTestCase {
             """#)
     }
 
-    func testEmitLine() {
+    @Test
+    func emitLine() {
         let sut = makeSut()
 
         sut.emitLine("a line")
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
             a line
 
             """#)
     }
 
-    func testEmitLine_usesIndentation() {
+    @Test
+    func emitLine_usesIndentation() {
         let sut = makeSut()
         sut.indent()
 
         sut.emitLine("a line")
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
                 a line
 
             """#)
     }
 
-    func testEmitSpaceSeparator() {
+    @Test
+    func emitSpaceSeparator() {
         let sut = makeSut()
 
         sut.emit("a")
         sut.emitSpaceSeparator()
         sut.emit("line")
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
             a line
             """#)
     }
 
-    func testEmitComment() {
+    @Test
+    func emitComment() {
         let sut = makeSut()
 
         sut.emitComment("a comment")
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
             // a comment
 
             """#)
     }
 
-    func testEmitCommentBlock() {
+    @Test
+    func emitCommentBlock() {
         let sut = makeSut()
 
         sut.emitCommentBlock("""
@@ -518,7 +554,7 @@ class CodeStringBufferTests: XCTestCase {
             block
             """)
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
             /* a
             comment
             block */
@@ -526,18 +562,20 @@ class CodeStringBufferTests: XCTestCase {
             """#)
     }
 
-    func testEmitDocComment() {
+    @Test
+    func emitDocComment() {
         let sut = makeSut()
 
         sut.emitDocComment("a comment")
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
             /// a comment
 
             """#)
     }
 
-    func testEmitDocCommentBlock() {
+    @Test
+    func emitDocCommentBlock() {
         let sut = makeSut()
 
         sut.emitDocCommentBlock("""
@@ -546,7 +584,7 @@ class CodeStringBufferTests: XCTestCase {
             block
             """)
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
             /** a
             comment
             block */
@@ -554,41 +592,45 @@ class CodeStringBufferTests: XCTestCase {
             """#)
     }
 
-    func testEmitPrefix() {
+    @Test
+    func emitPrefix() {
         let sut = makeSut()
 
         sut.emitPrefix(.lineComment("a line comment"))
         sut.emitPrefix(.docComment("a doc comment"))
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
             // a line comment
             /// a doc comment
 
             """#)
     }
 
-    func testEmitPendingPrefix_empty() {
+    @Test
+    func emitPendingPrefix_empty() {
         let sut = makeSut()
 
         sut.emitPendingPrefix()
 
-        sut.assertBuffer(self, "")
+        sut.assertBuffer("")
     }
 
-    func testEmitLineWith() {
+    @Test
+    func emitLineWith() {
         let sut = makeSut()
 
         sut.emitLineWith {
             sut.emit("a line")
         }
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
             a line
 
             """#)
     }
 
-    func testEmitLineWith_emitsLineOnError() {
+    @Test
+    func emitLineWith_emitsLineOnError() {
         let sut = makeSut()
 
         try? sut.emitLineWith {
@@ -596,113 +638,124 @@ class CodeStringBufferTests: XCTestCase {
             throw TestError.unexpectedThrow("dummy error")
         }
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
             a line
 
             """#)
     }
 
-    func testEmitLineWith_avoidEmittingExtraNewline() {
+    @Test
+    func emitLineWith_avoidEmittingExtraNewline() {
         let sut = makeSut()
 
         sut.emitLineWith {
             sut.emitLine("a line")
         }
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
             a line
 
             """#)
     }
 
-    func testEmitWithSeparators() {
+    @Test
+    func emitWithSeparators() {
         let sut = makeSut()
 
         sut.emitWithSeparators(["a", "b", "c"], separator: ", ")
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
             a, b, c
             """#)
     }
 
-    func testEmitWithSeparators_emptyInput() {
+    @Test
+    func emitWithSeparators_emptyInput() {
         let sut = makeSut()
 
         sut.emitWithSeparators([] as [String], separator: ", ")
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
             """#)
     }
 
-    func testEmitWithSeparatorsProducer() {
+    @Test
+    func emitWithSeparatorsProducer() {
         let sut = makeSut()
 
         sut.emitWithSeparators([0, 1, 2], separator: ", ") { item in
             sut.emit(item.description)
         }
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
             0, 1, 2
             """#)
     }
 
-    func testEmitWithSeparatorsProducer_emptyInput() {
+    @Test
+    func emitWithSeparatorsProducer_emptyInput() {
         let sut = makeSut()
 
         sut.emitWithSeparators([] as [Int], separator: ", ") { item in
             sut.emit(item.description)
         }
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
             """#)
     }
 
-    func testBacktrackWhitespace() {
+    @Test
+    func backtrackWhitespace() {
         let sut = makeSut(" \n   a line\r\n \t")
 
         sut.backtrackWhitespace()
 
-        sut.assertBuffer(self, " \n   a line")
+        sut.assertBuffer(" \n   a line")
     }
 
-    func testBacktrackWhitespace_noWhitespaceTrailing() {
+    @Test
+    func backtrackWhitespace_noWhitespaceTrailing() {
         let sut = makeSut(" \n   a line")
 
         sut.backtrackWhitespace()
 
-        sut.assertBuffer(self, " \n   a line")
+        sut.assertBuffer(" \n   a line")
     }
 
-    func testBacktrackWhitespace_emptyBuffer() {
+    @Test
+    func backtrackWhitespace_emptyBuffer() {
         let sut = makeSut("")
 
         sut.backtrackWhitespace()
 
-        sut.assertBuffer(self, "")
+        sut.assertBuffer("")
     }
 
-    func testBacktrackWhitespace_whitespaceOnlyBuffer() {
+    @Test
+    func backtrackWhitespace_whitespaceOnlyBuffer() {
         let sut = makeSut(" \n   \r\n \t")
 
         sut.backtrackWhitespace()
 
-        sut.assertBuffer(self, "")
+        sut.assertBuffer("")
     }
 
-    func testEnsureNewline() {
+    @Test
+    func ensureNewline() {
         let sut = makeSut(#"""
             a line
             """#)
 
         sut.ensureNewline()
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
             a line
 
             """#)
     }
 
-    func testEnsureNewline_idempotent() {
+    @Test
+    func ensureNewline_idempotent() {
         let sut = makeSut(#"""
             a line
             """#)
@@ -711,13 +764,14 @@ class CodeStringBufferTests: XCTestCase {
         sut.ensureNewline()
         sut.ensureNewline()
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
             a line
 
             """#)
     }
 
-    func testEnsureNewline_newlineTrailing() {
+    @Test
+    func ensureNewline_newlineTrailing() {
         let sut = makeSut(#"""
             a line
 
@@ -725,77 +779,85 @@ class CodeStringBufferTests: XCTestCase {
 
         sut.ensureNewline()
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
             a line
 
             """#)
     }
 
-    func testEnsureNewline_emptyBuffer() {
+    @Test
+    func ensureNewline_emptyBuffer() {
         let sut = makeSut("")
 
         sut.ensureNewline()
 
-        sut.assertBuffer(self, "\n")
+        sut.assertBuffer("\n")
     }
 
-    func testEnsureSpaceSeparator() {
+    @Test
+    func ensureSpaceSeparator() {
         let sut = makeSut("text")
 
         sut.ensureSpaceSeparator()
 
-        sut.assertBuffer(self, "text ")
+        sut.assertBuffer("text ")
     }
 
-    func testEnsureSpaceSeparator_idempotent() {
+    @Test
+    func ensureSpaceSeparator_idempotent() {
         let sut = makeSut("text")
 
         sut.ensureSpaceSeparator()
         sut.ensureSpaceSeparator()
         sut.ensureSpaceSeparator()
 
-        sut.assertBuffer(self, "text ")
+        sut.assertBuffer("text ")
     }
 
-    func testEnsureSpaceSeparator_spaceTrailing() {
+    @Test
+    func ensureSpaceSeparator_spaceTrailing() {
         let sut = makeSut("text")
 
         sut.ensureSpaceSeparator()
 
-        sut.assertBuffer(self, "text ")
+        sut.assertBuffer("text ")
     }
 
-    func testEnsureSpaceSeparator_emptyBuffer() {
+    @Test
+    func ensureSpaceSeparator_emptyBuffer() {
         let sut = makeSut("")
 
         sut.ensureSpaceSeparator()
 
-        sut.assertBuffer(self, "")
+        sut.assertBuffer("")
     }
 
-    func testEnsureEmptyLine() {
+    @Test
+    func ensureEmptyLine() {
         let sut = makeSut(#"""
             a line
             """#)
 
         sut.ensureEmptyLine()
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
             a line
 
 
             """#)
     }
 
-    func testEnsureEmptyLine_emptyBuffer() {
+    @Test
+    func ensureEmptyLine_emptyBuffer() {
         let sut = makeSut("")
 
         sut.ensureEmptyLine()
 
-        sut.assertBuffer(self, "")
+        sut.assertBuffer("")
     }
 
-    func testEnsureEmptyLine_idempotent() {
+    @Test
+    func ensureEmptyLine_idempotent() {
         let sut = makeSut(#"""
             a line
             """#)
@@ -804,14 +866,15 @@ class CodeStringBufferTests: XCTestCase {
         sut.ensureEmptyLine()
         sut.ensureEmptyLine()
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
             a line
 
 
             """#)
     }
 
-    func testEnsureEmptyLine_newlineTrailing() {
+    @Test
+    func ensureEmptyLine_newlineTrailing() {
         let sut = makeSut(#"""
             a line
 
@@ -819,40 +882,43 @@ class CodeStringBufferTests: XCTestCase {
 
         sut.ensureEmptyLine()
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
             a line
 
 
             """#)
     }
 
-    func testEnsureDoubleNewline() {
+    @Test
+    func ensureDoubleNewline() {
         let sut = makeSut(#"""
             a line
             """#)
 
         sut.ensureDoubleNewline()
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
             a line
 
 
             """#)
     }
 
-    func testEnsureDoubleNewline_emptyBuffer() {
+    @Test
+    func ensureDoubleNewline_emptyBuffer() {
         let sut = makeSut("")
 
         sut.ensureDoubleNewline()
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
 
 
 
             """#)
     }
 
-    func testEnsureDoubleNewline_idempotent() {
+    @Test
+    func ensureDoubleNewline_idempotent() {
         let sut = makeSut(#"""
             a line
             """#)
@@ -861,14 +927,15 @@ class CodeStringBufferTests: XCTestCase {
         sut.ensureDoubleNewline()
         sut.ensureDoubleNewline()
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
             a line
 
 
             """#)
     }
 
-    func testEnsureDoubleNewline_newlineTrailing() {
+    @Test
+    func ensureDoubleNewline_newlineTrailing() {
         let sut = makeSut(#"""
             a line
 
@@ -876,32 +943,35 @@ class CodeStringBufferTests: XCTestCase {
 
         sut.ensureDoubleNewline()
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
             a line
 
 
             """#)
     }
 
-    func testEnsureIndentation() {
+    @Test
+    func ensureIndentation() {
         let sut = makeSut("")
         sut.indent()
 
         sut.ensureIndentation()
 
-        sut.assertBuffer(self, "    ")
+        sut.assertBuffer("    ")
     }
 
-    func testEnsureIndentation_nonEmptyBuffer() {
+    @Test
+    func ensureIndentation_nonEmptyBuffer() {
         let sut = makeSut("text")
         sut.indent()
 
         sut.ensureIndentation()
 
-        sut.assertBuffer(self, "text")
+        sut.assertBuffer("text")
     }
 
-    func testEnsureIndentation_idempotent() {
+    @Test
+    func ensureIndentation_idempotent() {
         let sut = makeSut("")
         sut.indent()
 
@@ -909,42 +979,46 @@ class CodeStringBufferTests: XCTestCase {
         sut.ensureIndentation()
         sut.ensureIndentation()
 
-        sut.assertBuffer(self, "    ")
+        sut.assertBuffer("    ")
     }
 
-    func testEnsureIndentation_spaceTrailing() {
+    @Test
+    func ensureIndentation_spaceTrailing() {
         let sut = makeSut(" ")
         sut.indent()
 
         sut.ensureIndentation()
 
-        sut.assertBuffer(self, " ")
+        sut.assertBuffer(" ")
     }
 
-    func testEnsureIndentation_newlineTrailing() {
+    @Test
+    func ensureIndentation_newlineTrailing() {
         let sut = makeSut(" \n")
         sut.indent()
 
         sut.ensureIndentation()
 
-        sut.assertBuffer(self, " \n    ")
+        sut.assertBuffer(" \n    ")
     }
 
-    func testQueuePrefix() {
+    @Test
+    func queuePrefix() {
         let sut = makeSut()
 
         sut.queuePrefix(.lineComment("a comment"))
         sut.queuePrefix(.docComment("another comment"))
         sut.emitPendingPrefix()
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
             // a comment
             /// another comment
 
             """#)
     }
 
-    func testQueuePrefix_usesIndentation() {
+    @Test
+    func queuePrefix_usesIndentation() {
         let sut = makeSut()
         sut.indent()
 
@@ -952,26 +1026,28 @@ class CodeStringBufferTests: XCTestCase {
         sut.queuePrefix(.docComment("another comment"))
         sut.emitPendingPrefix()
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
                 // a comment
                 /// another comment
 
             """#)
     }
 
-    func testQueuePrefix_delaysEmission() {
+    @Test
+    func queuePrefix_delaysEmission() {
         let sut = makeSut()
 
         sut.queuePrefix(.lineComment("a comment"))
         sut.emitLine("a line")
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
             a line
 
             """#)
     }
 
-    func testIndented() {
+    @Test
+    func indented() {
         let sut = makeSut()
         sut.indent()
 
@@ -980,14 +1056,15 @@ class CodeStringBufferTests: XCTestCase {
         }
         sut.emitLine("an indented line")
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
                     a doubly-indented line
                 an indented line
 
             """#)
     }
 
-    func testIndented_resetsIndentationOnError() {
+    @Test
+    func indented_resetsIndentationOnError() {
         let sut = makeSut()
         sut.indent()
 
@@ -997,14 +1074,15 @@ class CodeStringBufferTests: XCTestCase {
         }
         sut.emitLine("an indented line")
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
                     a doubly-indented line
                 an indented line
 
             """#)
     }
 
-    func testEmitBlock() {
+    @Test
+    func emitBlock() {
         let sut = makeSut()
         sut.indent()
 
@@ -1013,7 +1091,7 @@ class CodeStringBufferTests: XCTestCase {
         }
         sut.emitLine("an indented line")
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
                 {
                     a doubly-indented line
                 }
@@ -1022,7 +1100,8 @@ class CodeStringBufferTests: XCTestCase {
             """#)
     }
 
-    func testEmitBlock_respectsTrailingNewlines() {
+    @Test
+    func emitBlock_respectsTrailingNewlines() {
         let sut = makeSut()
 
         sut.emitBlock {
@@ -1030,7 +1109,7 @@ class CodeStringBufferTests: XCTestCase {
             sut.emitNewline()
         }
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
             {
                 an indented line
 
@@ -1039,7 +1118,8 @@ class CodeStringBufferTests: XCTestCase {
             """#)
     }
 
-    func testEmitBlock_keepsCurrentLine() {
+    @Test
+    func emitBlock_keepsCurrentLine() {
         let sut = makeSut()
         sut.indent()
         sut.emit("a leading")
@@ -1049,7 +1129,7 @@ class CodeStringBufferTests: XCTestCase {
         }
         sut.emitLine("an indented line")
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
                 a leading{
                     a doubly-indented line
                 }
@@ -1058,14 +1138,15 @@ class CodeStringBufferTests: XCTestCase {
             """#)
     }
 
-    func testEmitBlock_ensuresNewlineOnClosingBrace() {
+    @Test
+    func emitBlock_ensuresNewlineOnClosingBrace() {
         let sut = makeSut()
 
         sut.emitBlock {
             sut.emit("non-newline terminated")
         }
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
             {
                 non-newline terminated
             }
@@ -1073,7 +1154,8 @@ class CodeStringBufferTests: XCTestCase {
             """#)
     }
 
-    func testEmitBlockWithLead() {
+    @Test
+    func emitBlockWithLead() {
         let sut = makeSut()
         sut.indent()
 
@@ -1082,7 +1164,7 @@ class CodeStringBufferTests: XCTestCase {
         }
         sut.emitLine("an indented line")
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
                 block {
                     a doubly-indented line
                 }
@@ -1091,7 +1173,8 @@ class CodeStringBufferTests: XCTestCase {
             """#)
     }
 
-    func testEmitBlockWithLead_keepsCurrentLine() {
+    @Test
+    func emitBlockWithLead_keepsCurrentLine() {
         let sut = makeSut()
         sut.indent()
         sut.emit("a leading")
@@ -1101,7 +1184,7 @@ class CodeStringBufferTests: XCTestCase {
         }
         sut.emitLine("an indented line")
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
                 a leadingblock {
                     a doubly-indented line
                 }
@@ -1110,14 +1193,15 @@ class CodeStringBufferTests: XCTestCase {
             """#)
     }
 
-    func testEmitBlockWithLead_ensuresNewlineOnClosingBrace() {
+    @Test
+    func emitBlockWithLead_ensuresNewlineOnClosingBrace() {
         let sut = makeSut()
 
         sut.emitBlock("block") {
             sut.emit("non-newline terminated")
         }
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
             block {
                 non-newline terminated
             }
@@ -1125,7 +1209,8 @@ class CodeStringBufferTests: XCTestCase {
             """#)
     }
 
-    func testEmitMembersBlock() {
+    @Test
+    func emitMembersBlock() {
         let sut = makeSut()
         sut.indent()
         sut.emit("a leading")
@@ -1135,7 +1220,7 @@ class CodeStringBufferTests: XCTestCase {
         }
         sut.emitLine("an indented line")
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
                 a leading{
                     a doubly-indented line
                 }
@@ -1144,7 +1229,8 @@ class CodeStringBufferTests: XCTestCase {
             """#)
     }
 
-    func testEmitMembersBlock_erasesNewlineTrailing() {
+    @Test
+    func emitMembersBlock_erasesNewlineTrailing() {
         let sut = makeSut()
         sut.emit("a leading")
 
@@ -1153,7 +1239,7 @@ class CodeStringBufferTests: XCTestCase {
             sut.emitNewline()
         }
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
             a leading{
                 an indented line
             }
@@ -1161,7 +1247,8 @@ class CodeStringBufferTests: XCTestCase {
             """#)
     }
 
-    func testEmitInlinedBlock() {
+    @Test
+    func emitInlinedBlock() {
         let sut = makeSut()
         sut.emit("a leading")
 
@@ -1171,7 +1258,7 @@ class CodeStringBufferTests: XCTestCase {
         }
         sut.emitLine("a trailing")
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
             a leading{
                 an indented line
 
@@ -1180,14 +1267,15 @@ class CodeStringBufferTests: XCTestCase {
             """#)
     }
 
-    func testEmitEmptyBlock() {
+    @Test
+    func emitEmptyBlock() {
         let sut = makeSut()
         sut.emit("a leading")
 
         sut.emitEmptyBlock()
         sut.emitLine("a trailing")
 
-        sut.assertBuffer(self, #"""
+        sut.assertBuffer(#"""
             a leading{
             }
             a trailing
@@ -1206,12 +1294,11 @@ private func makeSut(_ preBuffer: String = "") -> CodeStringBuffer {
 
 private extension CodeStringBuffer {
     func assertBuffer(
-        _ tester: XCTestCase,
         _ expected: String,
         file: StaticString = #file,
         line: UInt = #line
     ) {
-        tester
+        SwiftTestingDiffTestCaseFailureReporter()
             .diffTest(expected: expected, file: file, line: line)
             .diff(buffer, file: file, line: line)
     }

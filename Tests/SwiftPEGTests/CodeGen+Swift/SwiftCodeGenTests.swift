@@ -1,9 +1,11 @@
 import XCTest
+import Testing
 
 @testable import SwiftPEG
 
-class SwiftCodeGenTests: XCTestCase {
-    func testGenerateParser_emptyGrammar() throws {
+struct SwiftCodeGenTests {
+    @Test
+    func generateParser_emptyGrammar() throws {
         let grammar = makeGrammar([])
         let sut = makeSut(grammar)
 
@@ -16,7 +18,8 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
-    func testGenerateParser_anyTokenAtom_returnsNextToken() throws {
+    @Test
+    func generateParser_anyTokenAtom_returnsNextToken() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
                 .init(namedItems: [
@@ -54,7 +57,8 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
-    func testGenerateParser_anyReturn_returnsNode() throws {
+    @Test
+    func generateParser_anyReturn_returnsNode() throws {
         let grammar = makeGrammar([
             .init(name: "a", type: "Any", alts: [
                 .init(namedItems: [
@@ -92,7 +96,8 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
-    func testGenerateParser_omitUnreachableRules_true() throws {
+    @Test
+    func generateParser_omitUnreachableRules_true() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
                 .init(namedItems: [
@@ -113,7 +118,8 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
-    func testGenerateParser_omitUnreachableRules_false() throws {
+    @Test
+    func generateParser_omitUnreachableRules_false() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
                 .init(namedItems: [
@@ -153,7 +159,8 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
-    func testGenerateParser_emitTypesInBindings() throws {
+    @Test
+    func generateParser_emitTypesInBindings() throws {
         let grammar = try parseInternalGrammar("""
         start: a ;
         a: 'a' | 'b' c+ ;
@@ -289,7 +296,8 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
-    func testGenerateParser_implicitBindings_false() throws {
+    @Test
+    func generateParser_implicitBindings_false() throws {
         let grammar = try parseInternalGrammar("""
         @implicitBindings "false" ;
 
@@ -427,7 +435,8 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
-    func testGenerateParser_implicitBindings_true_bindTokenLiterals_true() throws {
+    @Test
+    func generateParser_implicitBindings_true_bindTokenLiterals_true() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
                 .init(namedItems: [
@@ -471,7 +480,8 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
-    func testGenerateParser_implicitBindings_false_bindTokenLiterals_true() throws {
+    @Test
+    func generateParser_implicitBindings_false_bindTokenLiterals_true() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
                 .init(namedItems: [
@@ -515,7 +525,8 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
-    func testGenerateParser_omitRedundantMarkRestores_true() throws {
+    @Test
+    func generateParser_omitRedundantMarkRestores_true() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
                 .init(namedItems: [
@@ -595,7 +606,8 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
-    func testGenerateParser_emitProducerProtocol_true() throws {
+    @Test
+    func generateParser_emitProducerProtocol_true() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
                 .init(namedItems: [
@@ -774,7 +786,8 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
-    func testGenerateParser_emitProducerProtocol_true_escapesIdentifiers() throws {
+    @Test
+    func generateParser_emitProducerProtocol_true_escapesIdentifiers() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
                 .init(namedItems: [
@@ -855,7 +868,8 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
-    func testGenerateParser_emitProducerProtocol_true_optionalGroup() throws {
+    @Test
+    func generateParser_emitProducerProtocol_true_optionalGroup() throws {
         let grammar = try parseInternalGrammar(#"""
         @parserName TestParser ;
         @token ADD ; @token MUL ;
@@ -938,7 +952,8 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
-    func testGenerateParser_emitProducerProtocol_true_emitVoidProducer_true() throws {
+    @Test
+    func generateParser_emitProducerProtocol_true_emitVoidProducer_true() throws {
         let grammar = try parseInternalGrammar(#"""
         @parserName TestParser ;
         @token ADD ; @token MUL ;
@@ -1034,7 +1049,8 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
-    func testGenerateParser_respectsTokenCallMeta() throws {
+    @Test
+    func generateParser_respectsTokenCallMeta() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
                 .init(namedItems: [
@@ -1078,7 +1094,8 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
-    func testGenerateParser_escapesBackSlashLiterals() throws {
+    @Test
+    func generateParser_escapesBackSlashLiterals() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
                 .init(namedItems: [
@@ -1120,7 +1137,8 @@ class SwiftCodeGenTests: XCTestCase {
             """#).diff(result)
     }
 
-    func testGenerateParser_escapesInvalidSwiftIdentifiers() throws {
+    @Test
+    func generateParser_escapesInvalidSwiftIdentifiers() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
                 .init(namedItems: [
@@ -1218,7 +1236,8 @@ class SwiftCodeGenTests: XCTestCase {
             """#).diff(result)
     }
 
-    func testGenerateParser_usesTokensStaticToken() throws {
+    @Test
+    func generateParser_usesTokensStaticToken() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
                 .init(namedItems: [
@@ -1297,7 +1316,8 @@ class SwiftCodeGenTests: XCTestCase {
             """#).diff(result)
     }
 
-    func testGenerateParser_useImplicitTokenNameForSyntaxTokens() throws {
+    @Test
+    func generateParser_useImplicitTokenNameForSyntaxTokens() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
                 .init(namedItems: [
@@ -1378,7 +1398,8 @@ class SwiftCodeGenTests: XCTestCase {
             """#).diff(result)
     }
 
-    func testGenerateParser_respectsImplicitReturns_false() throws {
+    @Test
+    func generateParser_respectsImplicitReturns_false() throws {
         let grammar = makeGrammar([
             .init(name: "a", type: "Any", alts: [
                 .init(namedItems: [
@@ -1418,7 +1439,8 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
-    func testGenerateParser_respectsImplicitReturns_true() throws {
+    @Test
+    func generateParser_respectsImplicitReturns_true() throws {
         let grammar = makeGrammar([
             .init(name: "a", type: "Any", alts: [
                 .init(namedItems: [
@@ -1458,7 +1480,8 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
-    func testGenerateParser_deduplicatesIdentifiers() throws {
+    @Test
+    func generateParser_deduplicatesIdentifiers() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
                 .init(namedItems: [
@@ -1500,7 +1523,8 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
-    func testGenerateParser_deduplication_runsPerAlt() throws {
+    @Test
+    func generateParser_deduplication_runsPerAlt() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
                 .init(namedItems: [
@@ -1558,7 +1582,8 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
-    func testGenerateParser_wildcardName() throws {
+    @Test
+    func generateParser_wildcardName() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
                 .init(namedItems: [
@@ -1600,7 +1625,8 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
-    func testGenerateParser_tokenLiteral_expectKind_withStaticToken() throws {
+    @Test
+    func generateParser_tokenLiteral_expectKind_withStaticToken() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
                 .init(namedItems: [
@@ -1643,7 +1669,8 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
-    func testGenerateParser_soleTokenRule_doesNotEmitTokenNameAsReturnAction() throws {
+    @Test
+    func generateParser_soleTokenRule_doesNotEmitTokenNameAsReturnAction() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
                 .init(namedItems: [
@@ -1684,7 +1711,8 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
-    func testGenerateParser_altReturnsSingleNamedItemIfNoActionSpecified() throws {
+    @Test
+    func generateParser_altReturnsSingleNamedItemIfNoActionSpecified() throws {
         let grammar = makeGrammar([
             .init(name: "a", type: "SomeType", alts: [
                 .init(namedItems: ["b"])
@@ -1720,7 +1748,8 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
-    func testGenerateParser_gather() throws {
+    @Test
+    func generateParser_gather() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
                 .init(namedItems: [.item(.gather(sep: "b", node: "c"))]),
@@ -1760,7 +1789,8 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
-    func testGenerateParser_altAction() throws {
+    @Test
+    func generateParser_altAction() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
                 .init(namedItems: ["b"], action: " CustomAction() ")
@@ -1796,7 +1826,8 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
-    func testGenerateParser_altFailAction() throws {
+    @Test
+    func generateParser_altFailAction() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
                 .init(namedItems: ["b"], failAction: " CustomAction() "),
@@ -1844,7 +1875,8 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
-    func testGenerateParser_expectForced() throws {
+    @Test
+    func generateParser_expectForced() throws {
         let grammar = try parseInternalGrammar("""
         start:
             | &&('a' | 'b')
@@ -1910,7 +1942,8 @@ class SwiftCodeGenTests: XCTestCase {
             """#).diff(result)
     }
 
-    func testGenerateParser_singleRule() throws {
+    @Test
+    func generateParser_singleRule() throws {
         let grammar = makeGrammar([
             .init(name: "a", type: "ANode", alts: [
                 ["b", "c", .item(.optional("d"))],
@@ -1947,7 +1980,8 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
-    func testGenerateParser_groupInAtom() throws {
+    @Test
+    func generateParser_groupInAtom() throws {
         let grammar = makeGrammar([
             .init(name: "a", type: "ANode", alts: [
                 ["b", "c", .item(.atom(.group([["d", "e"]])))],
@@ -2006,7 +2040,8 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
-    func testGenerateParser_groupInAtom_exposesBindings() throws {
+    @Test
+    func generateParser_groupInAtom_exposesBindings() throws {
         let grammar = try parseInternalGrammar("""
         @token d; @tokenCallKind "expectKind" ;
         start: a (b+ cBind=c 'd') ;
@@ -2131,7 +2166,8 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
-    func testGenerateParser_optionalAtom_exposesNestedBindings() throws {
+    @Test
+    func generateParser_optionalAtom_exposesNestedBindings() throws {
         let grammar = try parseInternalGrammar("""
         @token d; @tokenCallKind "expectKind" ;
         start: a (b+ cBind=c 'd')? ;
@@ -2256,7 +2292,8 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
-    func testGenerateParser_groupWithMultipleAlts_exposesCommonBindingsOnly() throws {
+    @Test
+    func generateParser_groupWithMultipleAlts_exposesCommonBindingsOnly() throws {
         let grammar = try parseInternalGrammar("""
         @token d; @token e; @tokenCallKind "expectKind" ;
         start: a (b+ cBind=c 'd' | b=e cBind=c) ;
@@ -2391,7 +2428,8 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
-    func testGenerateParser_repetitionWithMultipleBindings() throws {
+    @Test
+    func generateParser_repetitionWithMultipleBindings() throws {
         let grammar = try parseInternalGrammar("""
         @tokenCallKind "expectKind" ;
         start: a (b c)+ ;
@@ -2515,7 +2553,8 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
-    func testGenerateParser_deeplyNestedOptionalGroups() throws {
+    @Test
+    func generateParser_deeplyNestedOptionalGroups() throws {
         let grammar = try parseInternalGrammar("""
         @token d; @token e; @tokenCallKind "expectKind" ;
         start: a (((b+ cBind=c 'd')?)?)? ;
@@ -2680,7 +2719,8 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
-    func testGenerateParser_generateCut() throws {
+    @Test
+    func generateParser_generateCut() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
                 .init(namedItems: ["b", .lookahead(.cut), "c"]),
@@ -2734,7 +2774,8 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
-    func testGenerateParser_leftRecursiveRule() throws {
+    @Test
+    func generateParser_leftRecursiveRule() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
                 .init(namedItems: ["b"])
@@ -2770,7 +2811,8 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
-    func testGenerateParser_nestedLeftRecursiveRule() throws {
+    @Test
+    func generateParser_nestedLeftRecursiveRule() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
                 .init(namedItems: ["b"])
@@ -2828,7 +2870,8 @@ class SwiftCodeGenTests: XCTestCase {
             """).diff(result)
     }
 
-    func testGenerateParser_optionalGroup() throws {
+    @Test
+    func generateParser_optionalGroup() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
                 .init(namedItems: [
@@ -2894,7 +2937,8 @@ class SwiftCodeGenTests: XCTestCase {
             """#).diff(result)
     }
 
-    func testGenerateParser_optionalGroup_named() throws {
+    @Test
+    func generateParser_optionalGroup_named() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [
                 .init(namedItems: [
@@ -2960,7 +3004,8 @@ class SwiftCodeGenTests: XCTestCase {
             """#).diff(result)
     }
 
-    func testGenerateParser_fullGrammar() throws {
+    @Test
+    func generateParser_fullGrammar() throws {
         let parserHeader = #"""
         // HEADS UP! Automatically generated by SwiftCodeGenTests.swift
         @testable import SwiftPEG

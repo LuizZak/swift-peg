@@ -1,9 +1,11 @@
 import XCTest
+import Testing
 
 @testable import SwiftPEG
 
-class SwiftPEGGrammar_StringTests: XCTestCase {
-    func testGrammarString_fromStringToken_tripleQuote_ignoresLeadingNewline() throws {
+struct SwiftPEGGrammar_StringTests {
+    @Test
+    func grammarString_fromStringToken_tripleQuote_ignoresLeadingNewline() throws {
         let token = makeStringToken("\"\"\"\na\n\"\"\"")
 
         let result = try makeSut(fromStringToken: token)
@@ -11,7 +13,8 @@ class SwiftPEGGrammar_StringTests: XCTestCase {
         assertEqual(result.rawContents(), "a\n")
     }
 
-    func testGrammarString_fromStringToken_interpolatedEscapeSequence() throws {
+    @Test
+    func grammarString_fromStringToken_interpolatedEscapeSequence() throws {
         let token = makeStringToken(#""a\(bc)""#)
 
         let result = try makeSut(fromStringToken: token)

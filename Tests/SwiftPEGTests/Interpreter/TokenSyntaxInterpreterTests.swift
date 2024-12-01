@@ -1,9 +1,11 @@
 import XCTest
+import Testing
 
 @testable import SwiftPEG
 
-class TokenSyntaxInterpreterTests: XCTestCase {
-    func testParseToken_ignoresFragments() throws {
+struct TokenSyntaxInterpreterTests {
+    @Test
+    func parseToken_ignoresFragments() throws {
         let tokens = try parseTokenDefinitions(#"""
         $a: 'a' ;
         %b: 'b' ;
@@ -17,7 +19,8 @@ class TokenSyntaxInterpreterTests: XCTestCase {
         assertNil(result)
     }
 
-    func testParseToken_success_returnsLongestMatch() throws {
+    @Test
+    func parseToken_success_returnsLongestMatch() throws {
         let tokens = try parseTokenDefinitions(#"""
         $a: 'a' ;
         $b: 'abc' ;
@@ -33,7 +36,8 @@ class TokenSyntaxInterpreterTests: XCTestCase {
         assertEqual(stream.index, stream.source.index(stream.source.startIndex, offsetBy: 3))
     }
 
-    func testParseToken_failure_resetsStreamPosition() throws {
+    @Test
+    func parseToken_failure_resetsStreamPosition() throws {
         let tokens = try parseTokenDefinitions(#"""
         $a: 'a' ;
         $b: 'abc' ;
@@ -51,7 +55,8 @@ class TokenSyntaxInterpreterTests: XCTestCase {
         assertEqual(stream.index, stream.source.index(stream.source.startIndex, offsetBy: 1))
     }
 
-    func testParse_literal() throws {
+    @Test
+    func parse_literal() throws {
         let tokens = try parseTokenDefinitions(#"""
         $a: 'abc' ;
         """#)
@@ -62,7 +67,8 @@ class TokenSyntaxInterpreterTests: XCTestCase {
         assertDoesNotParse(sut, tokens[0], input: "ab")
     }
 
-    func testParse_rangeLiteral() throws {
+    @Test
+    func parse_rangeLiteral() throws {
         let tokens = try parseTokenDefinitions(#"""
         $a: 'a'...'c' ;
         """#)
@@ -74,7 +80,8 @@ class TokenSyntaxInterpreterTests: XCTestCase {
         assertDoesNotParse(sut, tokens[0], input: "d")
     }
 
-    func testParse_identifier() throws {
+    @Test
+    func parse_identifier() throws {
         let tokens = try parseTokenDefinitions(#"""
         $a: b ;
         $b: 'b' ;
@@ -84,7 +91,8 @@ class TokenSyntaxInterpreterTests: XCTestCase {
         assertParses(sut, tokens[0], input: "b")
     }
 
-    func testParse_identifier_optionalProduction_inOneOrMore() throws {
+    @Test
+    func parse_identifier_optionalProduction_inOneOrMore() throws {
         let tokens = try parseTokenDefinitions(#"""
         $a: b+ ;
         $b: 'b'? ;
@@ -94,7 +102,8 @@ class TokenSyntaxInterpreterTests: XCTestCase {
         assertParses(sut, tokens[0], input: "")
     }
 
-    func testParse_identifier_optionalProduction_inZeroOrMore() throws {
+    @Test
+    func parse_identifier_optionalProduction_inZeroOrMore() throws {
         let tokens = try parseTokenDefinitions(#"""
         $a: b* ;
         $b: 'b'? ;
@@ -104,7 +113,8 @@ class TokenSyntaxInterpreterTests: XCTestCase {
         assertParses(sut, tokens[0], input: "")
     }
 
-    func testParse_any() throws {
+    @Test
+    func parse_any() throws {
         let tokens = try parseTokenDefinitions(#"""
         $a: . ;
         """#)
@@ -118,7 +128,8 @@ class TokenSyntaxInterpreterTests: XCTestCase {
         assertDoesNotParse(sut, tokens[0], input: "")
     }
 
-    func testParse_exclusion_literal() throws {
+    @Test
+    func parse_exclusion_literal() throws {
         let tokens = try parseTokenDefinitions(#"""
         $a: !'b' !'c' 'a'...'d' ;
         """#)
@@ -130,7 +141,8 @@ class TokenSyntaxInterpreterTests: XCTestCase {
         assertDoesNotParse(sut, tokens[0], input: "c")
     }
 
-    func testParse_exclusion_range() throws {
+    @Test
+    func parse_exclusion_range() throws {
         let tokens = try parseTokenDefinitions(#"""
         $a: !'b'...'c' 'a'...'d' ;
         """#)
@@ -142,7 +154,8 @@ class TokenSyntaxInterpreterTests: XCTestCase {
         assertDoesNotParse(sut, tokens[0], input: "c")
     }
 
-    func testParse_exclusion_identifier() throws {
+    @Test
+    func parse_exclusion_identifier() throws {
         let tokens = try parseTokenDefinitions(#"""
         $a: !b 'a'...'d' ;
         $b: 'b'...'c' ;
@@ -155,7 +168,8 @@ class TokenSyntaxInterpreterTests: XCTestCase {
         assertDoesNotParse(sut, tokens[0], input: "c")
     }
 
-    func testParse_zeroOrMore() throws {
+    @Test
+    func parse_zeroOrMore() throws {
         let tokens = try parseTokenDefinitions(#"""
         $a: 'a' 'b'* ;
         """#)
@@ -168,7 +182,8 @@ class TokenSyntaxInterpreterTests: XCTestCase {
         assertDoesNotParse(sut, tokens[0], input: "ba")
     }
 
-    func testParse_zeroOrMore_preventInfiniteNullableLoops() throws {
+    @Test
+    func parse_zeroOrMore_preventInfiniteNullableLoops() throws {
         let tokens = try parseTokenDefinitions(#"""
         $a: 'a' b* ;
         $b: 'b'? ;
@@ -182,7 +197,8 @@ class TokenSyntaxInterpreterTests: XCTestCase {
         assertDoesNotParse(sut, tokens[0], input: "ba")
     }
 
-    func testParse_oneOrMore() throws {
+    @Test
+    func parse_oneOrMore() throws {
         let tokens = try parseTokenDefinitions(#"""
         $a: 'a' 'b'+ ;
         """#)
@@ -195,7 +211,8 @@ class TokenSyntaxInterpreterTests: XCTestCase {
         assertDoesNotParse(sut, tokens[0], input: "ba")
     }
 
-    func testParse_oneOrMore_preventInfiniteNullableLoops() throws {
+    @Test
+    func parse_oneOrMore_preventInfiniteNullableLoops() throws {
         let tokens = try parseTokenDefinitions(#"""
         $a: 'a' b+ ;
         $b: 'b'? ;
@@ -209,7 +226,8 @@ class TokenSyntaxInterpreterTests: XCTestCase {
         assertDoesNotParse(sut, tokens[0], input: "ba")
     }
 
-    func testParse_group() throws {
+    @Test
+    func parse_group() throws {
         let tokens = try parseTokenDefinitions(#"""
         $a: 'a' ('b' | 'c' | 'd') ;
         """#)
@@ -223,7 +241,8 @@ class TokenSyntaxInterpreterTests: XCTestCase {
         assertDoesNotParse(sut, tokens[0], input: "ba")
     }
 
-    func testParse_optionalGroup() throws {
+    @Test
+    func parse_optionalGroup() throws {
         let tokens = try parseTokenDefinitions(#"""
         $a: 'a' ('b' | 'c' | 'd')? ;
         """#)
@@ -237,7 +256,8 @@ class TokenSyntaxInterpreterTests: XCTestCase {
         assertDoesNotParse(sut, tokens[0], input: "ba")
     }
 
-    func testParse_alt_trailExclusions() throws {
+    @Test
+    func parse_alt_trailExclusions() throws {
         let tokens = try parseTokenDefinitions(#"""
         $a: 'a' !'b';
         """#)
@@ -251,7 +271,8 @@ class TokenSyntaxInterpreterTests: XCTestCase {
 
     // MARK: - Diagnostics tests
 
-    func testParse_error_noTokenSyntax() throws {
+    @Test
+    func parse_error_noTokenSyntax() throws {
         let tokens = [
             InternalGrammar.TokenDefinition(name: "a", isFragment: false)
         ]
@@ -270,7 +291,8 @@ class TokenSyntaxInterpreterTests: XCTestCase {
         }
     }
 
-    func testParse_error_unknownIdentifier() throws {
+    @Test
+    func parse_error_unknownIdentifier() throws {
         let tokens = try parseTokenDefinitions(#"""
         $a: b ;
         """#)
@@ -289,7 +311,8 @@ class TokenSyntaxInterpreterTests: XCTestCase {
         }
     }
 
-    func testParse_error_incompatibleRangeLiteral_start() throws {
+    @Test
+    func parse_error_incompatibleRangeLiteral_start() throws {
         let tokens = try parseTokenDefinitions(#"""
         $a: 'aa'...'b' ;
         """#)
@@ -308,7 +331,8 @@ class TokenSyntaxInterpreterTests: XCTestCase {
         }
     }
 
-    func testParse_error_incompatibleRangeLiteral_end() throws {
+    @Test
+    func parse_error_incompatibleRangeLiteral_end() throws {
         let tokens = try parseTokenDefinitions(#"""
         $a: 'a'...'bb' ;
         """#)
@@ -327,7 +351,8 @@ class TokenSyntaxInterpreterTests: XCTestCase {
         }
     }
 
-    func testParse_error_exclusion_incompatibleRangeLiteral_start() throws {
+    @Test
+    func parse_error_exclusion_incompatibleRangeLiteral_start() throws {
         let tokens = try parseTokenDefinitions(#"""
         $a: !'aa'...'b' 'c' ;
         """#)
@@ -346,7 +371,8 @@ class TokenSyntaxInterpreterTests: XCTestCase {
         }
     }
 
-    func testParse_error_exclusion_incompatibleRangeLiteral_end() throws {
+    @Test
+    func parse_error_exclusion_incompatibleRangeLiteral_end() throws {
         let tokens = try parseTokenDefinitions(#"""
         $a: !'a'...'bb' 'c' ;
         """#)
@@ -365,7 +391,8 @@ class TokenSyntaxInterpreterTests: XCTestCase {
         }
     }
 
-    func testParse_error_characterPredicateUnsupported() throws {
+    @Test
+    func parse_error_characterPredicateUnsupported() throws {
         let tokens = try parseTokenDefinitions(#"""
         $a: a { a == "a" } ;
         """#)

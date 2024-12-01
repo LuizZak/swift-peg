@@ -1,9 +1,11 @@
 import XCTest
+import Testing
 
 @testable import SwiftPEG
 
-class GrammarProcessor_AltOrderingTests: XCTestCase {
-    func testAltOrderDiagnostics() throws {
+struct GrammarProcessor_AltOrderingTests {
+    @Test
+    func altOrderDiagnostics() throws {
         let start = makeRule(name: "start", [
             makeAlt([ makeItem("rule1") ]),
         ])
@@ -41,7 +43,8 @@ class GrammarProcessor_AltOrderingTests: XCTestCase {
             """)
     }
 
-    func testAltOrderDiagnostics_inspectsNestedAlts() throws {
+    @Test
+    func altOrderDiagnostics_inspectsNestedAlts() throws {
         let start = makeRule(name: "start", [
             makeAlt([ makeItem("rule1") ]),
         ])
@@ -80,7 +83,8 @@ class GrammarProcessor_AltOrderingTests: XCTestCase {
             """)
     }
 
-    func testAltOrderDiagnostics_inspectsAltsByReduction() throws {
+    @Test
+    func altOrderDiagnostics_inspectsAltsByReduction() throws {
         // Ensure that alts are checked against each other based on their reduced
         // form, i.e. removing any optional production
         let grammar = try parseGrammar("""
@@ -110,7 +114,8 @@ class GrammarProcessor_AltOrderingTests: XCTestCase {
             """)
     }
 
-    func testAltOrderDiagnostics_detectsNullableEarlyAlt() throws {
+    @Test
+    func altOrderDiagnostics_detectsNullableEarlyAlt() throws {
         let grammar = try parseGrammar("""
         @token a; @token b; @token c;
 
@@ -140,7 +145,8 @@ class GrammarProcessor_AltOrderingTests: XCTestCase {
             """)
     }
 
-    func testAltOrderDiagnostics_computesPermutations() throws {
+    @Test
+    func altOrderDiagnostics_computesPermutations() throws {
         let grammar = try parseGrammar("""
         @token a; @token b; @token c; @token d; @token e;
 
@@ -172,7 +178,8 @@ class GrammarProcessor_AltOrderingTests: XCTestCase {
             """)
     }
 
-    func testAltOrderDiagnostics_computesPermutations_ignoresOptionalPrefixInLatterAlts() throws {
+    @Test
+    func altOrderDiagnostics_computesPermutations_ignoresOptionalPrefixInLatterAlts() throws {
         let grammar = try parseGrammar("""
         @token a; @token b; @token c; @token d; @token e;
 
@@ -198,7 +205,8 @@ class GrammarProcessor_AltOrderingTests: XCTestCase {
         assertEqual(sut.test_diagnosticMessages(), "")
     }
 
-    func testAltOrderDiagnostics_stressMaxPermutations() throws {
+    @Test
+    func altOrderDiagnostics_stressMaxPermutations() throws {
         let grammar = try parseGrammar("""
         @token a; @token b; @token c; @token d; @token e;
 

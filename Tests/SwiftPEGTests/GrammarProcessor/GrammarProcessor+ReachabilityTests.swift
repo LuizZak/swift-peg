@@ -1,9 +1,11 @@
 import XCTest
+import Testing
 
 @testable import SwiftPEG
 
-class GrammarProcessor_ReachabilityTests: XCTestCase {
-    func testUnreachableRuleDiagnostics() throws {
+struct GrammarProcessor_ReachabilityTests {
+    @Test
+    func unreachableRuleDiagnostics() throws {
         let start = makeRule(name: "start", [
             makeAlt([ makeNamedItem("rule1") ]),
         ])
@@ -67,7 +69,8 @@ class GrammarProcessor_ReachabilityTests: XCTestCase {
             """)
     }
 
-    func testUnreachableRuleDiagnostics_searchesNestedIdentifiers() throws {
+    @Test
+    func unreachableRuleDiagnostics_searchesNestedIdentifiers() throws {
         var makeRef = _RuleGen()
         let grammarString = """
         start:
@@ -102,7 +105,8 @@ class GrammarProcessor_ReachabilityTests: XCTestCase {
         assertEmpty(diagnostics, message: "in grammar \(grammarString)")
     }
 
-    func testUnreachableRuleDiagnostics_recursiveRules() throws {
+    @Test
+    func unreachableRuleDiagnostics_recursiveRules() throws {
         let grammarString = """
         @token a; @token b; @token c; @token d;
 
@@ -127,7 +131,8 @@ class GrammarProcessor_ReachabilityTests: XCTestCase {
         assertEmpty(diagnostics, message: "in grammar \(grammarString)")
     }
 
-    func testUnreachableRuleDiagnostics_sharedDependency() throws {
+    @Test
+    func unreachableRuleDiagnostics_sharedDependency() throws {
         let grammarString = #"""
         @token a; @token b; @token c; @token d;
 

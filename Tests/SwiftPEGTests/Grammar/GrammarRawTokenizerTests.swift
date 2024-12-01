@@ -1,9 +1,11 @@
 import XCTest
+import Testing
 
 @testable import SwiftPEG
 
-class GrammarRawTokenizerTests: XCTestCase {
-    func testParseTokens() throws {
+struct GrammarRawTokenizerTests {
+    @Test
+    func parseTokens() throws {
         let sut = makeSut(#"""
         "a"  'b' ; 
         $ [ ] abc 123 """
@@ -44,7 +46,8 @@ class GrammarRawTokenizerTests: XCTestCase {
         ])
     }
 
-    func testParseTokens_onNewlineLocations() throws {
+    @Test
+    func parseTokens_onNewlineLocations() throws {
         let sut = makeSut(#"""
         @token a ;
         @token b ;
@@ -67,7 +70,8 @@ class GrammarRawTokenizerTests: XCTestCase {
         ])
     }
 
-    func testStringEscapeSequences() throws {
+    @Test
+    func stringEscapeSequences() throws {
         let sut = makeSut(#"""
         'a\nb\'c\\'
         """#)
@@ -77,7 +81,8 @@ class GrammarRawTokenizerTests: XCTestCase {
         ])
     }
 
-    func testSkipsComments() throws {
+    @Test
+    func skipsComments() throws {
         let sut = makeSut(#"""
         # A line comment
         a b c

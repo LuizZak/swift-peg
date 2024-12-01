@@ -1,9 +1,11 @@
 import XCTest
+import Testing
 
 @testable import SwiftPEG
 
-class CommonAbstract_TokenAltTests: XCTestCase {
-    func testIsPrefix() throws {
+struct CommonAbstract_TokenAltTests {
+    @Test
+    func isPrefix() throws {
         let sut = try parseTokenAlt(#"""
         'a' ('b')+
         """#)

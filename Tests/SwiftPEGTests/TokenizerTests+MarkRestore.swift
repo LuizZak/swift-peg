@@ -1,10 +1,13 @@
 import XCTest
+import Testing
+
 @testable import SwiftPEG
 
-final class TokenizerTests_MarkRestore: XCTestCase {
+struct TokenizerTests_MarkRestore {
     // MARK: - Marking/restoring
 
-    func testMark_internals() throws {
+    @Test
+    func mark_internals() throws {
         let stubRaw = stubTestRawTokenizer([
             0, 1,
         ])
@@ -17,7 +20,8 @@ final class TokenizerTests_MarkRestore: XCTestCase {
 
     /// Tests behavior of mark/restore calls, ensuring that token indices are
     /// correctly backtracked.
-    func testMarkRestore_results() throws {
+    @Test
+    func markRestore_results() throws {
         let stubRaw = stubTestRawTokenizer([
             0, 1, 2, 3,
         ])
@@ -50,7 +54,8 @@ final class TokenizerTests_MarkRestore: XCTestCase {
     /// Tests behavior of mark/restore calls when dealing with the underlying
     /// raw tokenizer, ensuring no more calls to `next()` are made than necessary
     /// to fulfill the requests.
-    func testMarkRestore_rawTokenizerBehavior() throws {
+    @Test
+    func markRestore_rawTokenizerBehavior() throws {
         let stubRaw = stubTestRawTokenizer([
             0, 1, 2, 3,
         ])
@@ -70,7 +75,8 @@ final class TokenizerTests_MarkRestore: XCTestCase {
     }
 
     /// Mark/restore pairs when the tokenizer has not moved should be a noop.
-    func testMarkRestore_samePosition_noop() throws {
+    @Test
+    func markRestore_samePosition_noop() throws {
         let stubRaw = stubTestRawTokenizer([
             0,
         ])

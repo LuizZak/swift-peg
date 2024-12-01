@@ -1,8 +1,10 @@
 import XCTest
+import Testing
 
-class FixtureTests: XCTestCase {
-    func testFixtures() throws {
-        let runner = FixtureTestRunner(tester: self)
+struct FixtureTests {
+    @Test
+    func fixtures() throws {
+        let runner = FixtureTestRunner()
         try runner.runFixtures()
     }
 }

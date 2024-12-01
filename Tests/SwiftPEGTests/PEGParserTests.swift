@@ -1,9 +1,11 @@
 import XCTest
+import Testing
 
 @testable import SwiftPEG
 
-class PEGParserTests: XCTestCase {
-    func testExpect_success() throws {
+struct PEGParserTests {
+    @Test
+    func expect_success() throws {
         let stubTokenizer = stubTestTokenizer([
             0, 1, 2,
         ])
@@ -17,7 +19,8 @@ class PEGParserTests: XCTestCase {
         assertEqual(stubTokenizer.tokenIndex, 1)
     }
 
-    func testExpect_failure() throws {
+    @Test
+    func expect_failure() throws {
         let stubTokenizer = stubTestTokenizer([
             0, 1, 2,
         ])
@@ -31,7 +34,8 @@ class PEGParserTests: XCTestCase {
         assertEqual(stubTokenizer.tokenIndex, 0)
     }
 
-    func testExpect_failure_repeated_isNotCached() throws {
+    @Test
+    func expect_failure_repeated_isNotCached() throws {
         let stubTokenizer = stubTestTokenizer([
             0, 1, 2,
         ])
@@ -49,7 +53,8 @@ class PEGParserTests: XCTestCase {
         assertEqual(stubTokenizer.tokenIndex, 0)
     }
 
-    func testExpect_failure_repeated_isNotCached_perToken() throws {
+    @Test
+    func expect_failure_repeated_isNotCached_perToken() throws {
         let stubTokenizer = stubTestTokenizer([
             0, 1, 2,
         ])
@@ -65,7 +70,8 @@ class PEGParserTests: XCTestCase {
         assertEqual(stubTokenizer.tokenIndex, 0)
     }
 
-    func testExpect_restoresLocationIfSuccessful() throws {
+    @Test
+    func expect_restoresLocationIfSuccessful() throws {
         let stubTokenizer = stubTestTokenizer([
             0, 1, 2,
         ])
@@ -81,7 +87,8 @@ class PEGParserTests: XCTestCase {
         assertEqual(stubTokenizer.tokenIndex, 1)
     }
 
-    func testGather() throws {
+    @Test
+    func gather() throws {
         let stubTokenizer = stubTestTokenizer([
             0, 1, 0, 1, 0, 1, 0, 2,
         ])
@@ -101,7 +108,8 @@ class PEGParserTests: XCTestCase {
         assertEqual(stubTokenizer.tokenIndex, 7)
     }
 
-    func testGather_trailingSeparator_returnsNil() throws {
+    @Test
+    func gather_trailingSeparator_returnsNil() throws {
         let stubTokenizer = stubTestTokenizer([
             0, 1, 0, 1, 0, 1, 2,
         ])
@@ -121,7 +129,8 @@ class PEGParserTests: XCTestCase {
         assertEqual(stubTokenizer.tokenIndex, 5)
     }
 
-    func testPositiveLookahead_success() throws {
+    @Test
+    func positiveLookahead_success() throws {
         let stubTokenizer = stubTestTokenizer([
             0, 1, 2,
         ])
@@ -134,7 +143,8 @@ class PEGParserTests: XCTestCase {
         assertEqual(stubTokenizer.tokenIndex, 0)
     }
 
-    func testPositiveLookahead_failure() throws {
+    @Test
+    func positiveLookahead_failure() throws {
         let stubTokenizer = stubTestTokenizer([
             0, 1, 2,
         ])
@@ -147,7 +157,8 @@ class PEGParserTests: XCTestCase {
         assertEqual(stubTokenizer.tokenIndex, 0)
     }
 
-    func testNegativeLookahead_success() throws {
+    @Test
+    func negativeLookahead_success() throws {
         let stubTokenizer = stubTestTokenizer([
             0, 1, 2,
         ])
@@ -160,7 +171,8 @@ class PEGParserTests: XCTestCase {
         assertEqual(stubTokenizer.tokenIndex, 0)
     }
 
-    func testNegativeLookahead_failure() throws {
+    @Test
+    func negativeLookahead_failure() throws {
         let stubTokenizer = stubTestTokenizer([
             0, 1, 2,
         ])

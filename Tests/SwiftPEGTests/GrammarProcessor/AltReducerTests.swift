@@ -1,9 +1,11 @@
 import XCTest
+import Testing
 
 @testable import SwiftPEG
 
-class AltReducerTests: XCTestCase {
-    func testReduce_staticAlt() throws {
+struct AltReducerTests {
+    @Test
+    func reduce_staticAlt() throws {
         let alt = try parseAlt("""
         a b 'c'
         """)
@@ -14,7 +16,8 @@ class AltReducerTests: XCTestCase {
         assertEqual(result, alt)
     }
 
-    func testReduce_optionalItem() throws {
+    @Test
+    func reduce_optionalItem() throws {
         let alt = try parseAlt("""
         a b? (c d)? e
         """)
@@ -30,7 +33,8 @@ class AltReducerTests: XCTestCase {
         )
     }
 
-    func testReduce_optionalItems() throws {
+    @Test
+    func reduce_optionalItems() throws {
         let alt = try parseAlt("""
         a b ['c'] d [e [f] g.h+]
         """)
@@ -46,7 +50,8 @@ class AltReducerTests: XCTestCase {
         )
     }
 
-    func testReduce_zeroOrMore() throws {
+    @Test
+    func reduce_zeroOrMore() throws {
         let alt = try parseAlt("""
         a b* c
         """)
@@ -62,7 +67,8 @@ class AltReducerTests: XCTestCase {
         )
     }
 
-    func testReduce_gatherSeparator_returnsOneOrMoreNode() throws {
+    @Test
+    func reduce_gatherSeparator_returnsOneOrMoreNode() throws {
         let alt = try parseAlt("""
         a (b?).c+
         """)
@@ -78,7 +84,8 @@ class AltReducerTests: XCTestCase {
         )
     }
 
-    func testReduce_gatherNode_elidesGather() throws {
+    @Test
+    func reduce_gatherNode_elidesGather() throws {
         let alt = try parseAlt("""
         a b.(c?)+
         """)
@@ -94,7 +101,8 @@ class AltReducerTests: XCTestCase {
         )
     }
 
-    func testPermute_zeroOrMore() throws {
+    @Test
+    func permute_zeroOrMore() throws {
         let alt = try parseAlt("""
         a b*
         """)
@@ -108,7 +116,8 @@ class AltReducerTests: XCTestCase {
         ])
     }
 
-    func testPermute_leadingOptional() throws {
+    @Test
+    func permute_leadingOptional() throws {
         let alt = try parseAlt("""
         a? b? c? d? e
         """)
@@ -136,7 +145,8 @@ class AltReducerTests: XCTestCase {
         ])
     }
 
-    func testPermute_optionalsInGroup() throws {
+    @Test
+    func permute_optionalsInGroup() throws {
         let alt = try parseAlt("""
         e (a b? | c? d)
         """)
@@ -152,7 +162,8 @@ class AltReducerTests: XCTestCase {
         ])
     }
 
-    func testPermute_optionalsInGroup_flattensEmptyGroups() throws {
+    @Test
+    func permute_optionalsInGroup_flattensEmptyGroups() throws {
         let alt = try parseAlt("""
         e (a? b? | c? d?)
         """)
@@ -180,7 +191,8 @@ class AltReducerTests: XCTestCase {
         ])
     }
 
-    func testPermute_depthLimit() throws {
+    @Test
+    func permute_depthLimit() throws {
         let alt = try parseAlt("""
         e (a? b? | c? d?)
         """)

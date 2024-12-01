@@ -1,9 +1,11 @@
 import XCTest
+import Testing
 
 @testable import SwiftPEG
 
-class GrammarProcessor_TokenSyntaxTests: XCTestCase {
-    func testDiagnoseRepeatedTokenName() throws {
+struct GrammarProcessor_TokenSyntaxTests {
+    @Test
+    func diagnoseRepeatedTokenName() throws {
         let delegate = stubDelegate(tokensFile: """
         $token1 ;
         $token2: 'a' ;
@@ -21,7 +23,8 @@ class GrammarProcessor_TokenSyntaxTests: XCTestCase {
         """)
     }
 
-    func testDiagnoseRepeatedTokenName_fragmentsCountAsTokens() throws {
+    @Test
+    func diagnoseRepeatedTokenName_fragmentsCountAsTokens() throws {
         let delegate = stubDelegate(tokensFile: """
         $token1 ;
         %token2: 'a' ;
@@ -39,7 +42,8 @@ class GrammarProcessor_TokenSyntaxTests: XCTestCase {
         """)
     }
 
-    func testDiagnoseReentrantToken() throws {
+    @Test
+    func diagnoseReentrantToken() throws {
         let delegate = stubDelegate(tokensFile: """
         $a: b 'c' d ;
         $b: 'b' ;
@@ -63,7 +67,8 @@ class GrammarProcessor_TokenSyntaxTests: XCTestCase {
         )
     }
 
-    func testMergesSequentialTokenTerminals() throws {
+    @Test
+    func mergesSequentialTokenTerminals() throws {
         let delegate = stubDelegate(tokensFile: """
         $a: 'a' 'b' | 'c'+ 'd' 'e' | 'f' 'g'+ 'h';
         """)
@@ -78,7 +83,8 @@ class GrammarProcessor_TokenSyntaxTests: XCTestCase {
         assertEqualUnordered(processed.tokens, expected)
     }
 
-    func testInlineFragments_literalTerminals() throws {
+    @Test
+    func inlineFragments_literalTerminals() throws {
         let delegate = stubDelegate(tokensFile: """
         $a: b "c" !d e;
         $b: "b" ;
@@ -97,7 +103,8 @@ class GrammarProcessor_TokenSyntaxTests: XCTestCase {
         assertEqualUnordered(processed.tokens, expected)
     }
 
-    func testInlineFragments_terminals() throws {
+    @Test
+    func inlineFragments_terminals() throws {
         let delegate = stubDelegate(tokensFile: """
         $a: b d e ;
         $b: "b" ;
@@ -116,7 +123,8 @@ class GrammarProcessor_TokenSyntaxTests: XCTestCase {
         assertEqualUnordered(processed.tokens, expected)
     }
 
-    func testInlineFragments_groups() throws {
+    @Test
+    func inlineFragments_groups() throws {
         let delegate = stubDelegate(tokensFile: """
         $a: b ("c" | d);
         $b: "b" ;
@@ -134,7 +142,8 @@ class GrammarProcessor_TokenSyntaxTests: XCTestCase {
         assertEqualUnordered(processed.tokens, expected)
     }
 
-    func testInlineFragments_alts() throws {
+    @Test
+    func inlineFragments_alts() throws {
         let delegate = stubDelegate(tokensFile: """
         $a: b | "c" | d | f;
         $b: "b" ;
@@ -153,7 +162,8 @@ class GrammarProcessor_TokenSyntaxTests: XCTestCase {
         assertEqualUnordered(processed.tokens, expected)
     }
 
-    func testInlineFragments_alts_copiesTrailExclusions() throws {
+    @Test
+    func inlineFragments_alts_copiesTrailExclusions() throws {
         let delegate = stubDelegate(tokensFile: """
         $a: b | "c" | d | f !"j" ;
         $b: "b" ;
@@ -172,7 +182,8 @@ class GrammarProcessor_TokenSyntaxTests: XCTestCase {
         assertEqualUnordered(processed.tokens, expected)
     }
 
-    func testInlineFragments_repeatedFragments() throws {
+    @Test
+    func inlineFragments_repeatedFragments() throws {
         let delegate = stubDelegate(tokensFile: #"""
         $STRING[".string"]:
             | tripleQuote ('\\"""' | backslashEscape | !tripleQuote .)* tripleQuote
@@ -200,7 +211,8 @@ class GrammarProcessor_TokenSyntaxTests: XCTestCase {
         assertEqualUnordered(processed.tokens, expected)
     }
 
-    func testInlineFragments_sequentialFragments() throws {
+    @Test
+    func inlineFragments_sequentialFragments() throws {
         let delegate = stubDelegate(tokensFile: #"""
         $a: b c ;
         %b: 'b' ;
@@ -217,7 +229,8 @@ class GrammarProcessor_TokenSyntaxTests: XCTestCase {
         assertEqualUnordered(processed.tokens, expected)
     }
 
-    func testInlineFragments_nestedFragments() throws {
+    @Test
+    func inlineFragments_nestedFragments() throws {
         let delegate = stubDelegate(tokensFile: #"""
         $a: b ;
         %b: 'b' c ;
@@ -236,7 +249,8 @@ class GrammarProcessor_TokenSyntaxTests: XCTestCase {
         assertEqualUnordered(processed.tokens, expected)
     }
 
-    func testInlineFragments_exclusions() throws {
+    @Test
+    func inlineFragments_exclusions() throws {
         let delegate = stubDelegate(tokensFile: """
         $a: b !d "c";
         $b: "b" ;
@@ -254,7 +268,8 @@ class GrammarProcessor_TokenSyntaxTests: XCTestCase {
         assertEqualUnordered(processed.tokens, expected)
     }
 
-    func testInlineFragments_exclusions_expandsGroups() throws {
+    @Test
+    func inlineFragments_exclusions_expandsGroups() throws {
         let delegate = stubDelegate(tokensFile: """
         $a: b !d "c";
         $b: "b" ;
@@ -272,7 +287,8 @@ class GrammarProcessor_TokenSyntaxTests: XCTestCase {
         assertEqualUnordered(processed.tokens, expected)
     }
 
-    func testInlineFragments_altTrailExclusions() throws {
+    @Test
+    func inlineFragments_altTrailExclusions() throws {
         let delegate = stubDelegate(tokensFile: """
         $a: b d !e ;
         $b: "b" ;
@@ -291,7 +307,8 @@ class GrammarProcessor_TokenSyntaxTests: XCTestCase {
         assertEqualUnordered(processed.tokens, expected)
     }
 
-    func testSortTokens() throws {
+    @Test
+    func sortTokens() throws {
         let delegate = stubDelegate(tokensFile: #"""
         $a: 'a'+ ;
         $b: 'b' ;
@@ -312,7 +329,8 @@ class GrammarProcessor_TokenSyntaxTests: XCTestCase {
         assertEqual(processed.tokens, expected)
     }
 
-    func testSortTokens_staticTerminals_preferPrefixesLast() throws {
+    @Test
+    func sortTokens_staticTerminals_preferPrefixesLast() throws {
         let delegate = stubDelegate(tokensFile: #"""
         $a: 'abc'+ ;
         $b: 'a' ;
@@ -333,7 +351,8 @@ class GrammarProcessor_TokenSyntaxTests: XCTestCase {
         assertEqual(processed.tokens, expected)
     }
 
-    func testTokenOcclusionGraph_noOcclusions() throws {
+    @Test
+    func tokenOcclusionGraph_noOcclusions() throws {
         let delegate = stubDelegate(tokensFile: #"""
         $a: 'abc' ;
         $b: 'b'+ ;
@@ -347,7 +366,8 @@ class GrammarProcessor_TokenSyntaxTests: XCTestCase {
         assertEmpty(processed.tokenOcclusionGraph.edges)
     }
 
-    func testTokenOcclusionGraph_ignoresFragments_fragmentOccludesToken() throws {
+    @Test
+    func tokenOcclusionGraph_ignoresFragments_fragmentOccludesToken() throws {
         let delegate = stubDelegate(tokensFile: #"""
         $a: 'a' ;
         %b: 'a'+ | 'a'+ ;
@@ -363,7 +383,8 @@ class GrammarProcessor_TokenSyntaxTests: XCTestCase {
         assertEmpty(processed.tokenOcclusionGraph.edges)
     }
 
-    func testTokenOcclusionGraph_ignoresFragments_tokenOccludesFragment() throws {
+    @Test
+    func tokenOcclusionGraph_ignoresFragments_tokenOccludesFragment() throws {
         let delegate = stubDelegate(tokensFile: #"""
         %a: 'a' ;
         $b: 'a'+ | 'a'+ ;
@@ -379,7 +400,8 @@ class GrammarProcessor_TokenSyntaxTests: XCTestCase {
         assertEmpty(processed.tokenOcclusionGraph.edges)
     }
 
-    func testTokenOcclusionGraph_occlusion_doesNotCheckAlts() throws {
+    @Test
+    func tokenOcclusionGraph_occlusion_doesNotCheckAlts() throws {
         let delegate = stubDelegate(tokensFile: #"""
         $a: 'a' | 'aa' | 'aaa';
         $b: 'a'+ ;
@@ -394,7 +416,8 @@ class GrammarProcessor_TokenSyntaxTests: XCTestCase {
         assertEmpty(processed.tokenOcclusionGraph.edges)
     }
 
-    func testTokenOcclusionGraph_partialOcclusion() throws {
+    @Test
+    func tokenOcclusionGraph_partialOcclusion() throws {
         let delegate = stubDelegate(tokensFile: #"""
         $a: 'abc' ;
         $b: 'a'+ ;
@@ -409,7 +432,8 @@ class GrammarProcessor_TokenSyntaxTests: XCTestCase {
         assertEmpty(processed.tokenOcclusionGraph.edges)
     }
 
-    func testTokenOcclusionGraph_occlusion() throws {
+    @Test
+    func tokenOcclusionGraph_occlusion() throws {
         let delegate = stubDelegate(tokensFile: #"""
         $a: 'a' ;
         $b: 'a'+ ;
@@ -428,7 +452,8 @@ class GrammarProcessor_TokenSyntaxTests: XCTestCase {
         ])
     }
 
-    func testDiagnostics_unfulfillableAtom() throws {
+    @Test
+    func diagnostics_unfulfillableAtom() throws {
         let delegate = stubDelegate(tokensFile: #"""
         $a: !'a' 'a' ;
         """#)
@@ -446,7 +471,8 @@ class GrammarProcessor_TokenSyntaxTests: XCTestCase {
 
 #if PERFORMANCE_TESTS
 
-    func testTokenOcclusionGraph_performance_manyDynamicTokens_manyStaticTokens() throws {
+    @Test
+    func tokenOcclusionGraph_performance_manyDynamicTokens_manyStaticTokens() throws {
         let dynamicTokenCount = 1000
         let staticTokenCount = 1000
 

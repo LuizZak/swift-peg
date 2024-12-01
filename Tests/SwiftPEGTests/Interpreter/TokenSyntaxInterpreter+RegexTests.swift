@@ -1,11 +1,13 @@
 import XCTest
+import Testing
 
 @testable import SwiftPEG
 
-class TokenSyntaxInterpreter_RegexTests: XCTestCase {
+struct TokenSyntaxInterpreter_RegexTests {
     // MARK: Terminal
 
-    func testRegexConversion_terminal_literal() throws {
+    @Test
+    func regexConversion_terminal_literal() throws {
         let tokens = try parseTokenDefinitions(#"""
         $a: 'a' ;
         """#)
@@ -18,7 +20,8 @@ class TokenSyntaxInterpreter_RegexTests: XCTestCase {
         assertNoMatch(resultUnwrap, input: "b")
     }
 
-    func testRegexConversion_terminal_rangeLiteral() throws {
+    @Test
+    func regexConversion_terminal_rangeLiteral() throws {
         let tokens = try parseTokenDefinitions(#"""
         $a: 'a'...'c' ;
         """#)
@@ -33,7 +36,8 @@ class TokenSyntaxInterpreter_RegexTests: XCTestCase {
         assertNoMatch(resultUnwrap, input: "d")
     }
 
-    func testRegexConversion_terminal_identifier() throws {
+    @Test
+    func regexConversion_terminal_identifier() throws {
         let tokens = try parseTokenDefinitions(#"""
         $a: 'a' b 'a' ;
         $b: 'a' ;
@@ -47,7 +51,8 @@ class TokenSyntaxInterpreter_RegexTests: XCTestCase {
         assertNoMatch(resultUnwrap, input: "aba")
     }
 
-    func testRegexConversion_terminal_identifier_noTokenSyntax() throws {
+    @Test
+    func regexConversion_terminal_identifier_noTokenSyntax() throws {
         let tokens = try parseTokenDefinitions(#"""
         $a: 'a' b 'a' ;
         $b ;
@@ -59,7 +64,8 @@ class TokenSyntaxInterpreter_RegexTests: XCTestCase {
         assertNil(result)
     }
 
-    func testRegexConversion_terminal_any() throws {
+    @Test
+    func regexConversion_terminal_any() throws {
         let tokens = try parseTokenDefinitions(#"""
         $a: . ;
         """#)
@@ -75,7 +81,8 @@ class TokenSyntaxInterpreter_RegexTests: XCTestCase {
         assertNoMatch(resultUnwrap, input: "")
     }
 
-    func testRegexConversion_terminal_characterPredicate() throws {
+    @Test
+    func regexConversion_terminal_characterPredicate() throws {
         let tokens = try parseTokenDefinitions(#"""
         $a: b { b != "" } ;
         """#)
@@ -88,7 +95,8 @@ class TokenSyntaxInterpreter_RegexTests: XCTestCase {
 
     // MARK: Exclusion
 
-    func testRegexConversion_exclusion_literal() throws {
+    @Test
+    func regexConversion_exclusion_literal() throws {
         let tokens = try parseTokenDefinitions(#"""
         $a: !'b' 'a'...'c' ;
         """#)
@@ -102,7 +110,8 @@ class TokenSyntaxInterpreter_RegexTests: XCTestCase {
         assertNoMatch(resultUnwrap, input: "b")
     }
 
-    func testRegexConversion_exclusion_many_literal() throws {
+    @Test
+    func regexConversion_exclusion_many_literal() throws {
         let tokens = try parseTokenDefinitions(#"""
         $a: !'b' !'d' 'a'...'e' ;
         """#)
@@ -118,7 +127,8 @@ class TokenSyntaxInterpreter_RegexTests: XCTestCase {
         assertNoMatch(resultUnwrap, input: "d")
     }
 
-    func testRegexConversion_exclusion_rangeLiteral() throws {
+    @Test
+    func regexConversion_exclusion_rangeLiteral() throws {
         let tokens = try parseTokenDefinitions(#"""
         $a: !'b'...'d' 'a'...'e' ;
         """#)
@@ -134,7 +144,8 @@ class TokenSyntaxInterpreter_RegexTests: XCTestCase {
         assertNoMatch(resultUnwrap, input: "d")
     }
 
-    func testRegexConversion_exclusion_identifier() throws {
+    @Test
+    func regexConversion_exclusion_identifier() throws {
         let tokens = try parseTokenDefinitions(#"""
         $a: !b 'a'...'e' ;
         $b: 'b'...'d' ;
@@ -153,7 +164,8 @@ class TokenSyntaxInterpreter_RegexTests: XCTestCase {
 
     // MARK: Item
 
-    func testRegexConversion_item_zeroOrMore() throws {
+    @Test
+    func regexConversion_item_zeroOrMore() throws {
         let tokens = try parseTokenDefinitions(#"""
         $a: 'a'* ;
         """#)
@@ -168,7 +180,8 @@ class TokenSyntaxInterpreter_RegexTests: XCTestCase {
         assertPrefixMatches(resultUnwrap, input: "e")
     }
 
-    func testRegexConversion_item_oneOrMore() throws {
+    @Test
+    func regexConversion_item_oneOrMore() throws {
         let tokens = try parseTokenDefinitions(#"""
         $a: 'a'+ ;
         """#)
@@ -184,7 +197,8 @@ class TokenSyntaxInterpreter_RegexTests: XCTestCase {
         assertNoMatch(resultUnwrap, input: "e")
     }
 
-    func testRegexConversion_item_optionalGroup() throws {
+    @Test
+    func regexConversion_item_optionalGroup() throws {
         let tokens = try parseTokenDefinitions(#"""
         $a: ('a' | 'b' | 'c')? ;
         """#)
@@ -200,7 +214,8 @@ class TokenSyntaxInterpreter_RegexTests: XCTestCase {
         assertPrefixMatches(resultUnwrap, input: "e")
     }
 
-    func testRegexConversion_item_group() throws {
+    @Test
+    func regexConversion_item_group() throws {
         let tokens = try parseTokenDefinitions(#"""
         $a: ('a' | 'b' | 'c') ;
         """#)
@@ -216,7 +231,8 @@ class TokenSyntaxInterpreter_RegexTests: XCTestCase {
         assertNoMatch(resultUnwrap, input: "")
     }
 
-    func testRegexConversion_item_optionalAtom() throws {
+    @Test
+    func regexConversion_item_optionalAtom() throws {
         let tokens = try parseTokenDefinitions(#"""
         $a: 'a'? ;
         """#)
@@ -232,7 +248,8 @@ class TokenSyntaxInterpreter_RegexTests: XCTestCase {
 
     // MARK: Alt
 
-    func testRegexConversion_alt_items() throws {
+    @Test
+    func regexConversion_alt_items() throws {
         let tokens = try parseTokenDefinitions(#"""
         $a: 'a' 'b' 'c' ;
         """#)
@@ -248,7 +265,8 @@ class TokenSyntaxInterpreter_RegexTests: XCTestCase {
         assertNoMatch(resultUnwrap, input: "ab")
     }
 
-    func testRegexConversion_alt_trailExclusions() throws {
+    @Test
+    func regexConversion_alt_trailExclusions() throws {
         let tokens = try parseTokenDefinitions(#"""
         $a: 'a' 'b' 'c' !'e' ;
         """#)
@@ -267,7 +285,8 @@ class TokenSyntaxInterpreter_RegexTests: XCTestCase {
 
     // MARK: Syntax
 
-    func testRegexConversion_syntax_alts() throws {
+    @Test
+    func regexConversion_syntax_alts() throws {
         let tokens = try parseTokenDefinitions(#"""
         $a: 'a' | 'b' 'c' | !'e' 'd'...'f' ;
         """#)
@@ -289,7 +308,8 @@ class TokenSyntaxInterpreter_RegexTests: XCTestCase {
         assertNoMatch(resultUnwrap, input: "e")
     }
 
-    func testRegexConversion_syntax_characterPredicates_returnsNil() throws {
+    @Test
+    func regexConversion_syntax_characterPredicates_returnsNil() throws {
         let tokens = try parseTokenDefinitions(#"""
         $a: 'a' | 'b' 'c' | !'e' 'd'...'f' | g { g == "g" } ;
         """#)
@@ -302,7 +322,8 @@ class TokenSyntaxInterpreter_RegexTests: XCTestCase {
 
     // MARK: Structured samples
 
-    func testRegexConversion_sample_stringSyntax() throws {
+    @Test
+    func regexConversion_sample_stringSyntax() throws {
         let tokens = try parseTokenDefinitions(#"""
         $STRING[".string"]:
             | tripleQuote ( '\\"""' | backslashEscape | !tripleQuote . )* tripleQuote

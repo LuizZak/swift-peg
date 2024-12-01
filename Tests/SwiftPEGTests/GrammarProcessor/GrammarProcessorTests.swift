@@ -1,9 +1,11 @@
 import XCTest
+import Testing
 
 @testable import SwiftPEG
 
-class GrammarProcessorTests: XCTestCase {
-    func testRuleDependencyGraph() throws {
+struct GrammarProcessorTests {
+    @Test
+    func ruleDependencyGraph() throws {
         let grammar = try parseGrammar("""
         start: a ;
         a: b | c ;
@@ -30,7 +32,8 @@ class GrammarProcessorTests: XCTestCase {
         ])
     }
 
-    func testAnyToken() throws {
+    @Test
+    func anyToken() throws {
         let atom = makeAtom(ident: "ANY", identity: .unresolved)
         let start = makeRule(name: "start", [
             makeAlt([ makeNamedItem(atom: atom) ]),
@@ -55,7 +58,8 @@ class GrammarProcessorTests: XCTestCase {
         }
     }
 
-    func testErrorInvalidNamedItem() throws {
+    @Test
+    func errorInvalidNamedItem() throws {
         let start = makeRule(name: "start", [
             makeAlt([ makeNamedItem(name: "_a", "a") ]),
         ])
@@ -75,7 +79,8 @@ class GrammarProcessorTests: XCTestCase {
             """)
     }
 
-    func testErrorUnknownReference() throws {
+    @Test
+    func errorUnknownReference() throws {
         let start = makeRule(name: "start", [
             makeAlt([ makeNamedItem("a") ]),
         ])
@@ -95,7 +100,8 @@ class GrammarProcessorTests: XCTestCase {
             """)
     }
 
-    func testErrorFragmentReferenceInParser() throws {
+    @Test
+    func errorFragmentReferenceInParser() throws {
         let delegate = stubDelegate(tokensFile: """
         %a: 'a' ;
         """)
@@ -119,7 +125,8 @@ class GrammarProcessorTests: XCTestCase {
             """)
     }
 
-    func testDiagnoseFragmentSpecifiesStaticToken() throws {
+    @Test
+    func diagnoseFragmentSpecifiesStaticToken() throws {
         let delegate = stubDelegate(tokensFile: """
         $a: 'a' ;
         %b[".b"]: 'b' ;
@@ -143,7 +150,8 @@ class GrammarProcessorTests: XCTestCase {
             """)
     }
 
-    func testDiagnoseAnyToken_noValue() throws {
+    @Test
+    func diagnoseAnyToken_noValue() throws {
         let start = makeRule(name: "start", [
             makeAlt([ makeNamedItem("a") ]),
         ])
@@ -165,7 +173,8 @@ class GrammarProcessorTests: XCTestCase {
             """)
     }
 
-    func testDiagnoseAnyToken_stringValue() throws {
+    @Test
+    func diagnoseAnyToken_stringValue() throws {
         let start = makeRule(name: "start", [
             makeAlt([ makeNamedItem("a") ]),
         ])
@@ -187,7 +196,8 @@ class GrammarProcessorTests: XCTestCase {
             """)
     }
 
-    func testDiagnoseRedefinedToken() throws {
+    @Test
+    func diagnoseRedefinedToken() throws {
         let grammarString = """
         @token a ;
         @token b ;
@@ -219,7 +229,8 @@ class GrammarProcessorTests: XCTestCase {
             """)
     }
 
-    func testDiagnoseNonStandardRepetitionAsLastItem() throws {
+    @Test
+    func diagnoseNonStandardRepetitionAsLastItem() throws {
         let grammarString = """
         @token A ; @token B ; @token C ;
         start:
@@ -256,7 +267,8 @@ class GrammarProcessorTests: XCTestCase {
             """)
     }
 
-    func testDiagnoseRepeatedAltLabel() throws {
+    @Test
+    func diagnoseRepeatedAltLabel() throws {
         let grammarString = """
         @token A ; @token B ; @token C ;
         start:

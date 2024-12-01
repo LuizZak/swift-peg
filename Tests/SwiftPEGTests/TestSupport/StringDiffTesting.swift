@@ -1,4 +1,5 @@
 import XCTest
+import Testing
 
 @testable import SwiftPEG
 
@@ -328,6 +329,20 @@ extension XCTestCase: DiffTestCaseFailureReporter {
     }
 }
 
+struct SwiftTestingDiffTestCaseFailureReporter: DiffTestCaseFailureReporter {
+    func _recordFailure(
+        withDescription description: String,
+        inFile filePath: StaticString,
+        atLine lineNumber: UInt,
+        expected: Bool
+    ) {
+        Issue.record(
+            Comment(stringLiteral: description),
+            sourceLocation: .init(fileID: "", filePath: filePath.description, line: Int(lineNumber), column: 0)
+        )
+    }
+}
+
 struct StandardOutputDiffTestCaseFailureReporter: DiffTestCaseFailureReporter {
 
     func _recordFailure(
@@ -338,4 +353,23 @@ struct StandardOutputDiffTestCaseFailureReporter: DiffTestCaseFailureReporter {
     ) {
         print("\(filePath):\(lineNumber): \(description)")
     }
+}
+
+func diffTest(
+    expected input: String,
+    highlightLineInEditor: Bool = true,
+    diffOnly: Bool = false,
+    file: StaticString = #filePath,
+    line: UInt = #line
+) -> DiffingTest {
+
+    let location = DiffLocation(file: file, line: line)
+    let diffable = DiffableString(string: input, location: location)
+
+    return DiffingTest(
+        expected: diffable,
+        testCase: SwiftTestingDiffTestCaseFailureReporter(),
+        highlightLineInEditor: highlightLineInEditor,
+        diffOnly: diffOnly
+    )
 }

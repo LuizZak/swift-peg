@@ -1,28 +1,33 @@
 import XCTest
+import Testing
 
 @testable import SwiftPEG
 
-class PEGParserLargeGrammarsTests: XCTestCase {
+struct PEGParserLargeGrammarsTests {
     static let grammarLines = """
         1 + 2 + 4 + 5 + 6 + 7 + 8 + 9 + 10 + ((((((11 * 12 * 13 * 14 * 15 + 16 * 17 + 18 * 19 * 20))))))
         2*3 + 4*5*6
         12 + (2 * 3 * 4 * 5 + 6 + 7 * 8)
         """
 
-    func testGrammar_1_copy() throws {
+    @Test
+    func grammar_1_copy() throws {
         try runTest(copies: 1)
     }
 
-    func testGrammar_10_copies() throws {
+    @Test
+    func grammar_10_copies() throws {
         try runTest(copies: 10)
     }
 
-    func testGrammar_100_copies() throws {
+    @Test
+    func grammar_100_copies() throws {
         try runTest(copies: 100)
     }
 
 #if !DEBUG
-    func testGrammar_10_000_copies() throws {
+    @Test
+    func grammar_10_000_copies() throws {
         try runTest(copies: 10_000)
     }
 #endif

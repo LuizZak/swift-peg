@@ -1,9 +1,11 @@
 import XCTest
+import Testing
 
 @testable import SwiftPEG
 
-class StringTests: XCTestCase {
-    func testStartsUppercased() {
+struct StringTests {
+    @Test
+    func startsUppercased() {
         XCTAssert("Abc".startsUppercased)
         XCTAssert("A".startsUppercased)
         XCTAssertFalse("abc".startsUppercased)
@@ -13,7 +15,8 @@ class StringTests: XCTestCase {
         XCTAssertFalse("".startsUppercased)
     }
 
-    func testLowercasedFirstLetter() {
+    @Test
+    func lowercasedFirstLetter() {
         XCTAssertEqual("a", "A".lowercasedFirstLetter)
         XCTAssertEqual("abc", "Abc".lowercasedFirstLetter)
         XCTAssertEqual("abc", "abc".lowercasedFirstLetter)
@@ -26,7 +29,8 @@ class StringTests: XCTestCase {
         XCTAssertEqual(" ", " ".lowercasedFirstLetter)
     }
 
-    func testUppercasedFirstLetter() {
+    @Test
+    func uppercasedFirstLetter() {
         XCTAssertEqual("A", "a".uppercasedFirstLetter)
         XCTAssertEqual("Abc", "abc".uppercasedFirstLetter)
         XCTAssertEqual("Abc", "Abc".uppercasedFirstLetter)
@@ -39,7 +43,8 @@ class StringTests: XCTestCase {
         XCTAssertEqual(" ", " ".uppercasedFirstLetter)
     }
 
-    func testMakeDifference() {
+    @Test
+    func makeDifference() {
         let str1 = """
             Abcdef
             """
@@ -58,7 +63,8 @@ class StringTests: XCTestCase {
         )
     }
 
-    func testMakeDifferenceBetweenLines() {
+    @Test
+    func makeDifferenceBetweenLines() {
         let str1 = """
             Abc
             Def
@@ -83,7 +89,8 @@ class StringTests: XCTestCase {
         )
     }
 
-    func testMakeDifferenceBetweenEqualStrings() {
+    @Test
+    func makeDifferenceBetweenEqualStrings() {
         let str1 = """
             Abc
             Def
@@ -108,7 +115,8 @@ class StringTests: XCTestCase {
         )
     }
 
-    func testMakeDifferenceBetweenStringsAtBeginning() {
+    @Test
+    func makeDifferenceBetweenStringsAtBeginning() {
         let str1 = """
             Abc
             """
@@ -127,12 +135,14 @@ class StringTests: XCTestCase {
         )
     }
 
-    func testCommentSectionRangesInEmptyString() {
+    @Test
+    func commentSectionRangesInEmptyString() {
         let ranges = "".cStyleCommentSectionRanges()
         XCTAssertEqual(ranges.count, 0)
     }
 
-    func testCommentSectionRanges() {
+    @Test
+    func commentSectionRanges() {
         let input = """
             // A comment!
             Not a comment.
@@ -157,7 +167,8 @@ class StringTests: XCTestCase {
         )
     }
 
-    func testCommentSectionRangesEntireString() {
+    @Test
+    func commentSectionRangesEntireString() {
         let input = "// A comment!"
 
         let ranges = input.cStyleCommentSectionRanges()
@@ -165,7 +176,8 @@ class StringTests: XCTestCase {
         XCTAssertEqual(ranges[0], input.startIndex..<input.endIndex)
     }
 
-    func testCommentSectionRangesEntireStringMultiLine() {
+    @Test
+    func commentSectionRangesEntireStringMultiLine() {
         let input = "/* A comment! \n*/"
 
         let ranges = input.cStyleCommentSectionRanges()
@@ -173,7 +185,8 @@ class StringTests: XCTestCase {
         XCTAssertEqual(ranges[0], input.startIndex..<input.endIndex)
     }
 
-    func testCommentSectionRangesOpenMultiLineComment() {
+    @Test
+    func commentSectionRangesOpenMultiLineComment() {
         let input = "/* A comment! \n"
 
         let ranges = input.cStyleCommentSectionRanges()
@@ -181,14 +194,16 @@ class StringTests: XCTestCase {
         XCTAssertEqual(ranges[0], input.startIndex..<input.endIndex)
     }
 
-    func testCommentSectionRangesIgnoresCommentsInStringLiterals() {
+    @Test
+    func commentSectionRangesIgnoresCommentsInStringLiterals() {
         let input = "\"A comment in a string: // etc.\""
 
         let ranges = input.cStyleCommentSectionRanges()
         XCTAssertEqual(ranges.count, 0)
     }
 
-    func testCommentSectionRangesIgnoresStringLiteralsWithinSingleLineComments() {
+    @Test
+    func commentSectionRangesIgnoresStringLiteralsWithinSingleLineComments() {
         let input = "/* A comment! \"A string\" \n"
 
         let ranges = input.cStyleCommentSectionRanges()
@@ -196,7 +211,8 @@ class StringTests: XCTestCase {
         XCTAssertEqual(ranges[0], input.startIndex..<input.endIndex)
     }
 
-    func testCommentSectionRangesIgnoresStringLiteralsWithinMultiLineComments() {
+    @Test
+    func commentSectionRangesIgnoresStringLiteralsWithinMultiLineComments() {
         let input = """
             /* A comment! "An unterminated string literal
             */ "A string /* */"
@@ -215,7 +231,8 @@ class StringTests: XCTestCase {
         )
     }
 
-    func testLineRangesWithCountedLines() {
+    @Test
+    func lineRangesWithCountedLines() {
         let input = """
             1
             2
@@ -235,7 +252,8 @@ class StringTests: XCTestCase {
         XCTAssertEqual(rangesWithLineBreaks[2], input.range(of: "3"))
     }
 
-    func testLineRangesWithEmptyLines() {
+    @Test
+    func lineRangesWithEmptyLines() {
         let input = """
             1
 
@@ -261,7 +279,8 @@ class StringTests: XCTestCase {
         XCTAssertEqual(rangesWithLineBreaks[2], input.range(of: "3"))
     }
 
-    func testLineRangesWithEmptyFinalLine() {
+    @Test
+    func lineRangesWithEmptyFinalLine() {
         let input = """
             1
 
@@ -278,7 +297,8 @@ class StringTests: XCTestCase {
         XCTAssertEqual(rangesWithLineBreaks[1], input.range(of: "1\n")!.upperBound..<input.endIndex)
     }
 
-    func testLineRangesWithTwoEmptyFinalLines() {
+    @Test
+    func lineRangesWithTwoEmptyFinalLines() {
         let input = """
             1
 
@@ -298,7 +318,8 @@ class StringTests: XCTestCase {
         XCTAssertEqual(rangesWithLineBreaks[2], input.intRange(3..<3))
     }
 
-    func testLineRangesWithSingleLine() {
+    @Test
+    func lineRangesWithSingleLine() {
         let input = "123"
 
         let ranges = input.lineRanges()
@@ -310,7 +331,8 @@ class StringTests: XCTestCase {
         XCTAssertEqual(rangesWithLineBreaks[0], input.startIndex..<input.endIndex)
     }
 
-    func testLineRangesWithEmptyString() {
+    @Test
+    func lineRangesWithEmptyString() {
         let input = ""
 
         let ranges = input.lineRanges()
@@ -322,7 +344,8 @@ class StringTests: XCTestCase {
         XCTAssertEqual(rangesWithLineBreaks[0], input.startIndex..<input.endIndex)
     }
 
-    func testLineRangesWithSingleEmptyLine() {
+    @Test
+    func lineRangesWithSingleEmptyLine() {
         let input = "\n"
 
         let ranges = input.lineRanges()
@@ -336,46 +359,49 @@ class StringTests: XCTestCase {
         XCTAssertEqual(rangesWithLineBreaks[1], input.endIndex..<input.endIndex)
     }
 
-    func testTrimWhitespace() {
-        XCTAssertEqual(trimWhitespace(""), "")
-        XCTAssertEqual(trimWhitespace("  "), "")
-        XCTAssertEqual(trimWhitespace("a "), "a")
-        XCTAssertEqual(trimWhitespace(" a"), "a")
-        XCTAssertEqual(trimWhitespace("abc"), "abc")
-        XCTAssertEqual(trimWhitespace("abc "), "abc")
-        XCTAssertEqual(trimWhitespace(" abc"), "abc")
-        XCTAssertEqual(trimWhitespace("  abc "), "abc")
-        XCTAssertEqual(trimWhitespace("\nabc\n"), "abc")
-        XCTAssertEqual(trimWhitespace("\n abc def \t "), "abc def")
-        XCTAssertEqual(trimWhitespace("  abc def "), "abc def")
+    @Test
+    func trimWhitespace() {
+        XCTAssertEqual(SwiftPEG.trimWhitespace(""), "")
+        XCTAssertEqual(SwiftPEG.trimWhitespace("  "), "")
+        XCTAssertEqual(SwiftPEG.trimWhitespace("a "), "a")
+        XCTAssertEqual(SwiftPEG.trimWhitespace(" a"), "a")
+        XCTAssertEqual(SwiftPEG.trimWhitespace("abc"), "abc")
+        XCTAssertEqual(SwiftPEG.trimWhitespace("abc "), "abc")
+        XCTAssertEqual(SwiftPEG.trimWhitespace(" abc"), "abc")
+        XCTAssertEqual(SwiftPEG.trimWhitespace("  abc "), "abc")
+        XCTAssertEqual(SwiftPEG.trimWhitespace("\nabc\n"), "abc")
+        XCTAssertEqual(SwiftPEG.trimWhitespace("\n abc def \t "), "abc def")
+        XCTAssertEqual(SwiftPEG.trimWhitespace("  abc def "), "abc def")
     }
 
-    func testTrimWhitespaceLead() {
-        XCTAssertEqual(trimWhitespaceLead(""), "")
-        XCTAssertEqual(trimWhitespaceLead("  "), "")
-        XCTAssertEqual(trimWhitespaceLead("a "), "a ")
-        XCTAssertEqual(trimWhitespaceLead(" a"), "a")
-        XCTAssertEqual(trimWhitespaceLead("abc"), "abc")
-        XCTAssertEqual(trimWhitespaceLead("abc "), "abc ")
-        XCTAssertEqual(trimWhitespaceLead(" abc"), "abc")
-        XCTAssertEqual(trimWhitespaceLead("  abc "), "abc ")
-        XCTAssertEqual(trimWhitespaceLead("\nabc\n"), "abc\n")
-        XCTAssertEqual(trimWhitespaceLead("\n abc def \t "), "abc def \t ")
-        XCTAssertEqual(trimWhitespaceLead("  abc def "), "abc def ")
+    @Test
+    func trimWhitespaceLead() {
+        XCTAssertEqual(SwiftPEG.trimWhitespaceLead(""), "")
+        XCTAssertEqual(SwiftPEG.trimWhitespaceLead("  "), "")
+        XCTAssertEqual(SwiftPEG.trimWhitespaceLead("a "), "a ")
+        XCTAssertEqual(SwiftPEG.trimWhitespaceLead(" a"), "a")
+        XCTAssertEqual(SwiftPEG.trimWhitespaceLead("abc"), "abc")
+        XCTAssertEqual(SwiftPEG.trimWhitespaceLead("abc "), "abc ")
+        XCTAssertEqual(SwiftPEG.trimWhitespaceLead(" abc"), "abc")
+        XCTAssertEqual(SwiftPEG.trimWhitespaceLead("  abc "), "abc ")
+        XCTAssertEqual(SwiftPEG.trimWhitespaceLead("\nabc\n"), "abc\n")
+        XCTAssertEqual(SwiftPEG.trimWhitespaceLead("\n abc def \t "), "abc def \t ")
+        XCTAssertEqual(SwiftPEG.trimWhitespaceLead("  abc def "), "abc def ")
     }
 
-    func testTrimWhitespaceTrail() {
-        XCTAssertEqual(trimWhitespaceTrail(""), "")
-        XCTAssertEqual(trimWhitespaceTrail("  "), "")
-        XCTAssertEqual(trimWhitespaceTrail("a "), "a")
-        XCTAssertEqual(trimWhitespaceTrail(" a"), " a")
-        XCTAssertEqual(trimWhitespaceTrail("abc"), "abc")
-        XCTAssertEqual(trimWhitespaceTrail("abc "), "abc")
-        XCTAssertEqual(trimWhitespaceTrail(" abc"), " abc")
-        XCTAssertEqual(trimWhitespaceTrail("  abc "), "  abc")
-        XCTAssertEqual(trimWhitespaceTrail("\nabc\n"), "\nabc")
-        XCTAssertEqual(trimWhitespaceTrail("\n abc def \t "), "\n abc def")
-        XCTAssertEqual(trimWhitespaceTrail("  abc def "), "  abc def")
+    @Test
+    func trimWhitespaceTrail() {
+        XCTAssertEqual(SwiftPEG.trimWhitespaceTrail(""), "")
+        XCTAssertEqual(SwiftPEG.trimWhitespaceTrail("  "), "")
+        XCTAssertEqual(SwiftPEG.trimWhitespaceTrail("a "), "a")
+        XCTAssertEqual(SwiftPEG.trimWhitespaceTrail(" a"), " a")
+        XCTAssertEqual(SwiftPEG.trimWhitespaceTrail("abc"), "abc")
+        XCTAssertEqual(SwiftPEG.trimWhitespaceTrail("abc "), "abc")
+        XCTAssertEqual(SwiftPEG.trimWhitespaceTrail(" abc"), " abc")
+        XCTAssertEqual(SwiftPEG.trimWhitespaceTrail("  abc "), "  abc")
+        XCTAssertEqual(SwiftPEG.trimWhitespaceTrail("\nabc\n"), "\nabc")
+        XCTAssertEqual(SwiftPEG.trimWhitespaceTrail("\n abc def \t "), "\n abc def")
+        XCTAssertEqual(SwiftPEG.trimWhitespaceTrail("  abc def "), "  abc def")
     }
 }
 

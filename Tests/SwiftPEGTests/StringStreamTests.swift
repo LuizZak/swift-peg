@@ -1,35 +1,41 @@
 import XCTest
+import Testing
 
 @testable import SwiftPEG
 
-class StringStreamTests: XCTestCase {
-    func testRange_atStart_returnsZeroRange() {
+struct StringStreamTests {
+    @Test
+    func range_atStart_returnsZeroRange() {
         let sut = makeSut("a")
 
         assertEqual(sut.range, makeRange(sut, start: 0, end: 0))
     }
 
-    func testRange_nonStart_returnsNonZeroRange() {
+    @Test
+    func range_nonStart_returnsNonZeroRange() {
         var sut = makeSut("abc")
         sut.advance()
 
         assertEqual(sut.range, makeRange(sut, start: 0, end: 1))
     }
 
-    func testSubstring_atStart_returnsEmptySubstring() {
+    @Test
+    func substring_atStart_returnsEmptySubstring() {
         let sut = makeSut("a")
 
         assertEqual(sut.substring, "")
     }
 
-    func testSubstring_nonStart_returnsNonEmptySubstring() {
+    @Test
+    func substring_nonStart_returnsNonEmptySubstring() {
         var sut = makeSut("abc")
         sut.advance()
 
         assertEqual(sut.substring, "a")
     }
 
-    func testSubstring_nonStart_nonStartSubstringStartIndex_returnsNonEmptySubstring() {
+    @Test
+    func substring_nonStart_nonStartSubstringStartIndex_returnsNonEmptySubstring() {
         var sut = makeSut("abc")
         sut.advance()
         sut.markSubstringStart()
@@ -38,20 +44,23 @@ class StringStreamTests: XCTestCase {
         assertEqual(sut.substring, "b")
     }
 
-    func testSubstringLength_atStart_returnsZero() {
+    @Test
+    func substringLength_atStart_returnsZero() {
         let sut = makeSut("a")
 
         assertEqual(sut.substringLength, 0)
     }
 
-    func testSubstringLength_nonStart() {
+    @Test
+    func substringLength_nonStart() {
         var sut = makeSut("abc")
         sut.advance()
 
         assertEqual(sut.substringLength, 1)
     }
 
-    func testSubstringLength_negativeRange() {
+    @Test
+    func substringLength_negativeRange() {
         var sut = makeSut("abc")
         sut.advance()
         sut.markSubstringStart()
@@ -60,31 +69,36 @@ class StringStreamTests: XCTestCase {
         assertEqual(sut.substringLength, 0)
     }
 
-    func testIsEof_emptyString_returnsTrue() {
+    @Test
+    func isEof_emptyString_returnsTrue() {
         let sut = makeSut("")
 
         assertTrue(sut.isEof)
     }
 
-    func testIsEof_emptySubstring_returnsTrue() {
+    @Test
+    func isEof_emptySubstring_returnsTrue() {
         let sut = makeSut("a".dropFirst())
 
         assertTrue(sut.isEof)
     }
 
-    func testIsEof_nonEmptyString_returnsFalse() {
+    @Test
+    func isEof_nonEmptyString_returnsFalse() {
         let sut = makeSut("a")
 
         assertFalse(sut.isEof)
     }
 
-    func testIsEof_nonEmptySubstring_returnsFalse() {
+    @Test
+    func isEof_nonEmptySubstring_returnsFalse() {
         let sut = makeSut("a"[...])
 
         assertFalse(sut.isEof)
     }
 
-    func testRecordRestore() {
+    @Test
+    func recordRestore() {
         var sut = makeSut("abcd")
         sut.advance()
         sut.markSubstringStart()
@@ -101,7 +115,8 @@ class StringStreamTests: XCTestCase {
         assertEqual(sut.index, makeIndex(sut, 2))
     }
 
-    func testIsEofPast_zero_returnsIsEofValue() {
+    @Test
+    func isEofPast_zero_returnsIsEofValue() {
         var sut = makeSut("a")
 
         assertFalse(sut.isEofPast(0))
@@ -111,7 +126,8 @@ class StringStreamTests: XCTestCase {
         assertTrue(sut.isEofPast(0))
     }
 
-    func testIsEofPast_noZero() {
+    @Test
+    func isEofPast_noZero() {
         var sut = makeSut("ab")
 
         assertFalse(sut.isEofPast(1))
@@ -121,7 +137,8 @@ class StringStreamTests: XCTestCase {
         assertTrue(sut.isEofPast(1))
     }
 
-    func testPeek() {
+    @Test
+    func peek() {
         var sut = makeSut("abc")
 
         assertEqual(sut.peek(), "a")
@@ -131,7 +148,8 @@ class StringStreamTests: XCTestCase {
         assertEqual(sut.peek(), "b")
     }
 
-    func testPeekOffset() {
+    @Test
+    func peekOffset() {
         var sut = makeSut("abc")
 
         assertEqual(sut.peek(1), "b")
@@ -141,7 +159,8 @@ class StringStreamTests: XCTestCase {
         assertEqual(sut.peek(1), "c")
     }
 
-    func testSafePeek() {
+    @Test
+    func safePeek() {
         var sut = makeSut("ab")
 
         assertEqual(sut.safePeek(), "a")
@@ -153,7 +172,8 @@ class StringStreamTests: XCTestCase {
         assertNil(sut.safePeek())
     }
 
-    func testIsNext_smallMatchString() {
+    @Test
+    func isNext_smallMatchString() {
         var sut = makeSut("abc")
 
         assertTrue(sut.isNext("a"))
@@ -164,7 +184,8 @@ class StringStreamTests: XCTestCase {
         assertTrue(sut.isNext("b"))
     }
 
-    func testIsNext_largerMatchString() {
+    @Test
+    func isNext_largerMatchString() {
         var sut = makeSut("abc")
 
         assertTrue(sut.isNext("abc"))
@@ -174,7 +195,8 @@ class StringStreamTests: XCTestCase {
         assertFalse(sut.isNext("abc"))
     }
 
-    func testIsNext_atEof_alwaysReturnsFalseForNonEmptyStrings() {
+    @Test
+    func isNext_atEof_alwaysReturnsFalseForNonEmptyStrings() {
         var sut = makeSut("a")
         sut.advance()
 
@@ -183,7 +205,8 @@ class StringStreamTests: XCTestCase {
         assertFalse(sut.isNext("b"))
     }
 
-    func testIsNextInRange_openRange() {
+    @Test
+    func isNextInRange_openRange() {
         let sut = makeSut("J")
 
         assertTrue(sut.isNextInRange("J"..<"Z"))
@@ -194,7 +217,8 @@ class StringStreamTests: XCTestCase {
         assertFalse(sut.isNextInRange("a"..<"z"))
     }
 
-    func testIsNextInRange_closedRange() {
+    @Test
+    func isNextInRange_closedRange() {
         let sut = makeSut("J")
 
         assertTrue(sut.isNextInRange("A"..."J"))
@@ -205,7 +229,8 @@ class StringStreamTests: XCTestCase {
         assertFalse(sut.isNextInRange("a"..."z"))
     }
 
-    func testAdvanceIfNext_advancesOnMatch() {
+    @Test
+    func advanceIfNext_advancesOnMatch() {
         var sut = makeSut("abc")
 
         assertTrue(sut.advanceIfNext("a"))
@@ -213,7 +238,8 @@ class StringStreamTests: XCTestCase {
         assertEqual(sut.index, makeIndex(sut, 1))
     }
 
-    func testAdvanceIfNext_doesNotAdvanceOnFailedMatch() {
+    @Test
+    func advanceIfNext_doesNotAdvanceOnFailedMatch() {
         var sut = makeSut("abc")
 
         assertFalse(sut.advanceIfNext("b"))
@@ -221,7 +247,8 @@ class StringStreamTests: XCTestCase {
         assertEqual(sut.index, makeIndex(sut, 0))
     }
 
-    func testAdvanceIfNext_largerMatchString() {
+    @Test
+    func advanceIfNext_largerMatchString() {
         var sut = makeSut("abc")
 
         assertTrue(sut.advanceIfNext("abc"))
@@ -231,7 +258,8 @@ class StringStreamTests: XCTestCase {
         assertFalse(sut.advanceIfNext("abc"))
     }
 
-    func testNext() {
+    @Test
+    func next() {
         var sut = makeSut("abc")
 
         assertEqual(sut.next(), "a")
@@ -242,7 +270,8 @@ class StringStreamTests: XCTestCase {
         assertEqual(sut.index, makeIndex(sut, 3))
     }
 
-    func testAdvance() {
+    @Test
+    func advance() {
         var sut = makeSut("abc")
 
         sut.advance()
@@ -253,7 +282,8 @@ class StringStreamTests: XCTestCase {
         assertEqual(sut.index, makeIndex(sut, 3))
     }
 
-    func testAdvanceDistance() {
+    @Test
+    func advanceDistance() {
         var sut = makeSut("abcdefg")
 
         sut.advance(1)
@@ -264,7 +294,8 @@ class StringStreamTests: XCTestCase {
         assertEqual(sut.index, makeIndex(sut, 3))
     }
 
-    func testAdvanceIfNextMatches() {
+    @Test
+    func advanceIfNextMatches() {
         var sut = makeSut("abcdefg")
 
         assertTrue(sut.advanceIfNext(matches: #/abc/#))
@@ -273,7 +304,8 @@ class StringStreamTests: XCTestCase {
         assertEqual(sut.index, makeIndex(sut, 6))
     }
 
-    func testAdvanceIfNextMatches_noMatch() {
+    @Test
+    func advanceIfNextMatches_noMatch() {
         var sut = makeSut("abcdefg")
 
         assertFalse(sut.advanceIfNext(matches: #/def/#))

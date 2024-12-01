@@ -1,9 +1,11 @@
 import XCTest
+import Testing
 
 @testable import SwiftPEG
 
-class TokenSyntaxInterpreter_TokenDelegateTests: XCTestCase {
-    func testProduceToken_parseByLength() throws {
+struct TokenSyntaxInterpreter_TokenDelegateTests {
+    @Test
+    func produceToken_parseByLength() throws {
         let tokens = try parseTokenDefinitions(#"""
         $minus: '-' ;
         $arrow: '->' ;
@@ -19,7 +21,8 @@ class TokenSyntaxInterpreter_TokenDelegateTests: XCTestCase {
         assertEqual(resultArrow.length, 2)
     }
 
-    func testProduceToken_ignoreFragments() throws {
+    @Test
+    func produceToken_ignoreFragments() throws {
         let tokens = try parseTokenDefinitions(#"""
         $arrow: minus '>' ;
         %minus: '-' ;
@@ -34,7 +37,8 @@ class TokenSyntaxInterpreter_TokenDelegateTests: XCTestCase {
         assertEqual(resultArrow.length, 2)
     }
 
-    func testTokenResult_matchesTokenName_correctMatches() throws {
+    @Test
+    func tokenResult_matchesTokenName_correctMatches() throws {
         let tokens = try parseTokenDefinitions(#"""
         $minus: '-' ;
         $arrow: '->' ;
@@ -45,7 +49,8 @@ class TokenSyntaxInterpreter_TokenDelegateTests: XCTestCase {
         assertTrue(sut.tokenResult(("->", 2), matchesTokenName: "arrow"))
     }
 
-    func testTokenResult_matchesTokenName_incorrectMatches() throws {
+    @Test
+    func tokenResult_matchesTokenName_incorrectMatches() throws {
         let tokens = try parseTokenDefinitions(#"""
         $minus: '-' ;
         $arrow: '->' ;
@@ -57,7 +62,8 @@ class TokenSyntaxInterpreter_TokenDelegateTests: XCTestCase {
         assertFalse(sut.tokenResult(("->", 1), matchesTokenName: "arrow"))
     }
 
-    func testTokenResult_matchesTokenLiteral_correctMatches() throws {
+    @Test
+    func tokenResult_matchesTokenLiteral_correctMatches() throws {
         let tokens = try parseTokenDefinitions(#"""
         $minus: '-' ;
         $arrow: '->' ;
@@ -68,7 +74,8 @@ class TokenSyntaxInterpreter_TokenDelegateTests: XCTestCase {
         assertTrue(sut.tokenResult(("->", 2), matchesTokenLiteral: "->"))
     }
 
-    func testTokenResult_matchesTokenLiteral_incorrectMatches() throws {
+    @Test
+    func tokenResult_matchesTokenLiteral_incorrectMatches() throws {
         let tokens = try parseTokenDefinitions(#"""
         $minus: '-' ;
         $arrow: '->' ;

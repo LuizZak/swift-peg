@@ -1,9 +1,11 @@
 import XCTest
+import Testing
 
 @testable import SwiftPEG
 
-class SyntaxNodeLayoutGenTests: XCTestCase {
-    func testGenerateSyntaxNodes() throws {
+struct SyntaxNodeLayoutGenTests {
+    @Test
+    func generateSyntaxNodes() throws {
         let processed = try processGrammar(tokens: #"""
         $A: 'a' ; $B: 'b' ; $C: 'c' ;
         """#, grammar: #"""
@@ -36,7 +38,8 @@ class SyntaxNodeLayoutGenTests: XCTestCase {
         ])
     }
 
-    func testGenerateSyntaxNodes_factorTogglingElements() throws {
+    @Test
+    func generateSyntaxNodes_factorTogglingElements() throws {
         let processed = try processGrammar(tokens: #"""
         $A: 'a' ; $B: 'b' ; $C: 'c' ; $D: 'd' ;
         """#, grammar: #"""
@@ -70,7 +73,8 @@ class SyntaxNodeLayoutGenTests: XCTestCase {
         ])
     }
 
-    func testGenerateSyntaxNodes_factorTogglingElements_factorOptionalVariations() throws {
+    @Test
+    func generateSyntaxNodes_factorTogglingElements_factorOptionalVariations() throws {
         let processed = try processGrammar(tokens: #"""
         $A: 'a' ; $B: 'b' ; $C: 'c' ; $D: 'd' ;
         """#, grammar: #"""
@@ -104,7 +108,8 @@ class SyntaxNodeLayoutGenTests: XCTestCase {
         ])
     }
 
-    func testGenerateSyntaxNodes_factorTogglingElements_abortOnUnmatchedElement() throws {
+    @Test
+    func generateSyntaxNodes_factorTogglingElements_abortOnUnmatchedElement() throws {
         let processed = try processGrammar(tokens: #"""
         $A: 'a' ; $B: 'b' ; $C: 'c' ; $D: 'd' ;
         """#, grammar: #"""
@@ -154,7 +159,8 @@ class SyntaxNodeLayoutGenTests: XCTestCase {
         ])
     }
 
-    func testGenerateSyntaxNodes_factorTogglingElements_abortOnMultipleLongestElements() throws {
+    @Test
+    func generateSyntaxNodes_factorTogglingElements_abortOnMultipleLongestElements() throws {
         let processed = try processGrammar(tokens: #"""
         $A: 'a' ; $B: 'b' ; $C: 'c' ; $D: 'd' ;
         """#, grammar: #"""
@@ -190,7 +196,8 @@ class SyntaxNodeLayoutGenTests: XCTestCase {
         ])
     }
 
-    func testGenerateSyntaxNodes_factorCommonElements() throws {
+    @Test
+    func generateSyntaxNodes_factorCommonElements() throws {
         let processed = try processGrammar(tokens: #"""
         $A: 'a' ; $B: 'b' ; $C: 'c' ;
         """#, grammar: #"""
@@ -219,7 +226,8 @@ class SyntaxNodeLayoutGenTests: XCTestCase {
         ])
     }
 
-    func testGenerateSyntaxNodes_factorCommonElements_duplicated() throws {
+    @Test
+    func generateSyntaxNodes_factorCommonElements_duplicated() throws {
         let processed = try processGrammar(tokens: #"""
         $A: 'a' ; $B: 'b' ; $C: 'c' ;
         """#, grammar: #"""
@@ -249,7 +257,8 @@ class SyntaxNodeLayoutGenTests: XCTestCase {
         ])
     }
 
-    func testGenerateSyntaxNodes_factorCommonElements_suffix() throws {
+    @Test
+    func generateSyntaxNodes_factorCommonElements_suffix() throws {
         let processed = try processGrammar(tokens: #"""
         $A: 'a' ; $B: 'b' ; $C: 'c' ;
         """#, grammar: #"""
@@ -279,7 +288,8 @@ class SyntaxNodeLayoutGenTests: XCTestCase {
         ])
     }
 
-    func testGenerateSyntaxNodes_gather() throws {
+    @Test
+    func generateSyntaxNodes_gather() throws {
         let processed = try processGrammar(tokens: #"""
         $A: 'a' ; $B: 'b' ; $C: 'c' ;
         """#, grammar: #"""
@@ -309,7 +319,8 @@ class SyntaxNodeLayoutGenTests: XCTestCase {
         ])
     }
 
-    func testGenerateSyntaxNodes_gather_groupNode() throws {
+    @Test
+    func generateSyntaxNodes_gather_groupNode() throws {
         let processed = try processGrammar(tokens: #"""
         $A: 'a' ; $B: 'b' ; $C: 'c' ;
         """#, grammar: #"""
@@ -339,7 +350,8 @@ class SyntaxNodeLayoutGenTests: XCTestCase {
         ])
     }
 
-    func testGenerateSyntaxNodes_labeledAlt_rule() throws {
+    @Test
+    func generateSyntaxNodes_labeledAlt_rule() throws {
         let processed = try processGrammar(tokens: #"""
         $B: 'b' ;
         """#, grammar: #"""
@@ -358,7 +370,8 @@ class SyntaxNodeLayoutGenTests: XCTestCase {
         ])
     }
 
-    func testGenerateSyntaxNodes_labeledAlt_group() throws {
+    @Test
+    func generateSyntaxNodes_labeledAlt_group() throws {
         let processed = try processGrammar(tokens: #"""
         $A: 'a' ; $B: 'b' ;
         """#, grammar: #"""
@@ -380,7 +393,8 @@ class SyntaxNodeLayoutGenTests: XCTestCase {
         ])
     }
 
-    func testGenerateSyntaxNodes_sample_tokenSyntaxAtom() throws {
+    @Test
+    func generateSyntaxNodes_sample_tokenSyntaxAtom() throws {
         let processed = try processGrammar(tokens: #"""
         $IDENTIFIER: 'a'...'z'+ ;
         $STRING: '"' (!'"' .)+ '"' ;
@@ -468,7 +482,8 @@ class SyntaxNodeLayoutGenTests: XCTestCase {
         ])
     }
 
-    func testGenerateSyntaxNodes_error_unrecognizedTokenLiteral() throws {
+    @Test
+    func generateSyntaxNodes_error_unrecognizedTokenLiteral() throws {
         let processed = try processGrammar(tokens: #"""
         """#, grammar: #"""
         @tokensFile "tokens.tokens" ;

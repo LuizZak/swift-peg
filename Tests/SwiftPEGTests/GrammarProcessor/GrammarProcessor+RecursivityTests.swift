@@ -1,9 +1,11 @@
 import XCTest
+import Testing
 
 @testable import SwiftPEG
 
-class GrammarProcessor_RecursivityTests: XCTestCase {
-    func testDetectLeftRecursiveRules_indirect() throws {
+struct GrammarProcessor_RecursivityTests {
+    @Test
+    func detectLeftRecursiveRules_indirect() throws {
         let start = makeRule(name: "start", [
             makeAlt([ makeItem("rule1") ]),
         ])
@@ -33,7 +35,8 @@ class GrammarProcessor_RecursivityTests: XCTestCase {
         assertEmpty(sut.diagnostics)
     }
 
-    func testLeftRecursive() throws {
+    @Test
+    func leftRecursive() throws {
         let grammarString = #"""
         start: rule1 ;
 

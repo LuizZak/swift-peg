@@ -1,4 +1,5 @@
 import XCTest
+import Testing
 
 private func _formatMessage(_ msg: String) -> String {
     if msg.isEmpty {

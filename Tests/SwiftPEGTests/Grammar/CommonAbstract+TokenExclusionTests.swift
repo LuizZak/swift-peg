@@ -1,15 +1,18 @@
 import XCTest
+import Testing
 
 @testable import SwiftPEG
 
-class CommonAbstract_TokenExclusionTests: XCTestCase {
-    func testExcludes_anyTerminal() {
+struct CommonAbstract_TokenExclusionTests {
+    @Test
+    func excludes_anyTerminal() {
         assertDoesNotExclude(.identifier("ident"), terminal: .any)
         assertDoesNotExclude(.rangeLiteral("a", "z"), terminal: .any)
         assertDoesNotExclude(.literal("literal"), terminal: .any)
     }
 
-    func testExcludes_characterPredicate() {
+    @Test
+    func excludes_characterPredicate() {
         let terminal = CommonAbstract.TokenTerminal.characterPredicate("a", #"a != """#)
 
         assertDoesNotExclude(.identifier("ident"), terminal: terminal)
@@ -17,7 +20,8 @@ class CommonAbstract_TokenExclusionTests: XCTestCase {
         assertDoesNotExclude(.literal("literal"), terminal: terminal)
     }
 
-    func testExcludes_identifierExclusion() {
+    @Test
+    func excludes_identifierExclusion() {
         assertExcludes(.identifier("ident"), terminal: .identifier("ident"))
         assertDoesNotExclude(.identifier("ident"), terminal: .identifier("b"))
         assertDoesNotExclude(.identifier("ident"), terminal: .literal("literal"))
@@ -25,7 +29,8 @@ class CommonAbstract_TokenExclusionTests: XCTestCase {
         assertDoesNotExclude(.identifier("ident"), terminal: .any)
     }
 
-    func testExcludes_literalExclusion() {
+    @Test
+    func excludes_literalExclusion() {
         assertExcludes(.literal("a"), terminal: .literal("a"))
         assertExcludes(.literal("a"), terminal: .rangeLiteral("a", "a"))
         assertDoesNotExclude(.literal("a"), terminal: .identifier("a"))
@@ -34,15 +39,18 @@ class CommonAbstract_TokenExclusionTests: XCTestCase {
         assertDoesNotExclude(.literal("a"), terminal: .any)
     }
 
-    func testExcludes_literalExclusion_literalTerminal_exclusionIsPrefix() {
+    @Test
+    func excludes_literalExclusion_literalTerminal_exclusionIsPrefix() {
         assertExcludes(.literal("a"), terminal: .literal("abc"))
     }
 
-    func testExcludes_literalExclusion_literalTerminal_terminalIsPrefix() {
+    @Test
+    func excludes_literalExclusion_literalTerminal_terminalIsPrefix() {
         assertDoesNotExclude(.literal("abc"), terminal: .literal("a"))
     }
 
-    func testExcludes_rangeLiteralExclusion() {
+    @Test
+    func excludes_rangeLiteralExclusion() {
         assertExcludes(.rangeLiteral("a", "d"), terminal: .rangeLiteral("a", "d"))
         assertExcludes(.rangeLiteral("a", "d"), terminal: .literal("a"))
         assertDoesNotExclude(.rangeLiteral("a", "d"), terminal: .identifier("a"))
@@ -50,20 +58,24 @@ class CommonAbstract_TokenExclusionTests: XCTestCase {
         assertDoesNotExclude(.rangeLiteral("b", "d"), terminal: .rangeLiteral("a", "d"))
     }
 
-    func testExcludes_rangeLiteralExclusion_literalTerminal_longerLiteral() {
+    @Test
+    func excludes_rangeLiteralExclusion_literalTerminal_longerLiteral() {
         assertExcludes(.rangeLiteral("a", "d"), terminal: .literal("abc"))
     }
 
-    func testExcludes_rangeLiteralExclusion_rangeLiteralTerminal_overlap() {
+    @Test
+    func excludes_rangeLiteralExclusion_rangeLiteralTerminal_overlap() {
         assertDoesNotExclude(.rangeLiteral("a", "d"), terminal: .rangeLiteral("b", "e"))
     }
 
-    func testExcludes_rangeLiteralExclusion_rangeLiteralTerminal_exclusionContainsTerminal() {
+    @Test
+    func excludes_rangeLiteralExclusion_rangeLiteralTerminal_exclusionContainsTerminal() {
         assertExcludes(.rangeLiteral("a", "d"), terminal: .rangeLiteral("a", "c"))
         assertExcludes(.rangeLiteral("a", "d"), terminal: .rangeLiteral("b", "d"))
     }
 
-    func testExcludes_rangeLiteralExclusion_rangeLiteralTerminal_terminalContainsExclusion() {
+    @Test
+    func excludes_rangeLiteralExclusion_rangeLiteralTerminal_terminalContainsExclusion() {
         assertDoesNotExclude(.rangeLiteral("a", "c"), terminal: .rangeLiteral("a", "d"))
         assertDoesNotExclude(.rangeLiteral("b", "d"), terminal: .rangeLiteral("a", "d"))
     }

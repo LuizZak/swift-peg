@@ -1,9 +1,11 @@
 import XCTest
+import Testing
 
 @testable import SwiftPEG
 
-class InternalGrammarTests: XCTestCase {
-    func testAction_description() {
+struct InternalGrammarTests {
+    @Test
+    func action_description() {
         let tokens = makeTokenSequence([
             .whitespace(" "), .identifier("a"), .period, .identifier("b"), .whitespace(" "),
         ])
@@ -14,7 +16,8 @@ class InternalGrammarTests: XCTestCase {
         assertEqual(result.description, "{ a.b }")
     }
 
-    func testAlt_description() {
+    @Test
+    func alt_description() {
         let tokens = makeTokenSequence([
             .whitespace(" "), .identifier("a"), .period, .identifier("b"), .whitespace(" "),
         ])

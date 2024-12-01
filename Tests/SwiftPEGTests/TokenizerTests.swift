@@ -1,10 +1,13 @@
 import XCTest
+import Testing
+
 @testable import SwiftPEG
 
-final class TokenizerTests: XCTestCase {
+struct TokenizerTests {
     /// Ensure that the tokenizer doesn't probe the raw tokenizer before a request
     /// for tokens is made.
-    func testInit() throws {
+    @Test
+    func ephemeral() throws {
         let rawStub = stubTestRawTokenizer([0])
         _ = makeSut(rawStub)
 
@@ -13,7 +16,8 @@ final class TokenizerTests: XCTestCase {
 
     /// On initialization, `isEOF` must be `false` if the raw tokenizer's own
     /// `isEOF` is `false`.
-    func testIsEOF_onInit_notEof_returnsFalse() throws {
+    @Test
+    func isEOF_onInit_notEof_returnsFalse() throws {
         let rawStub = stubTestRawTokenizer([
             0,
         ])
@@ -24,7 +28,8 @@ final class TokenizerTests: XCTestCase {
 
     /// On initialization, `isEOF` must be `false` even if the raw tokenizer's own
     /// `isEOF` is `true` until the tokenizer attempts to parse a token.
-    func testIsEOF_onInit_atEof_returnsFalseUntilPeekToken() throws {
+    @Test
+    func isEOF_onInit_atEof_returnsFalseUntilPeekToken() throws {
         let rawStub = stubTestRawTokenizer(Array<Int>())
         let sut = makeSut(rawStub)
 
@@ -37,7 +42,8 @@ final class TokenizerTests: XCTestCase {
 
     /// After `next()`, `isEOF` must be `false` if the raw tokenizer's own
     /// `isEOF` is `false`.
-    func testIsEOF_onNext_notEof_returnsFalse() throws {
+    @Test
+    func isEOF_onNext_notEof_returnsFalse() throws {
         let rawStub = stubTestRawTokenizer([
             0, 1,
         ])
@@ -50,7 +56,8 @@ final class TokenizerTests: XCTestCase {
 
     /// After `next()`, `isEOF` must be `true` if the raw tokenizer's own
     /// `isEOF` is `true`.
-    func testIsEOF_onNext_atEof_returnsTrue() throws {
+    @Test
+    func isEOF_onNext_atEof_returnsTrue() throws {
         let rawStub = stubTestRawTokenizer([
             0,
         ])
@@ -63,7 +70,8 @@ final class TokenizerTests: XCTestCase {
 
     /// Calling `Tokenizer.next()` when not at EOF should return the token from
     /// the raw tokenizer.
-    func testNext_nonNil_returnsToken() throws {
+    @Test
+    func next_nonNil_returnsToken() throws {
         let rawStub = stubTestRawTokenizer([
             0, 1, 2, 3,
         ])
@@ -85,7 +93,8 @@ final class TokenizerTests: XCTestCase {
     }
 
     /// Calling `Tokenizer.next()` when at EOF should return nil.
-    func testNext_eof_returnsNil() throws {
+    @Test
+    func next_eof_returnsNil() throws {
         let rawStub = stubTestRawTokenizer([
             0,
         ])
@@ -103,7 +112,8 @@ final class TokenizerTests: XCTestCase {
 
     /// Calling `Tokenizer.next()` should return any error that the raw tokenizer
     /// has raised.
-    func testNext_forwardsErrors() throws {
+    @Test
+    func next_forwardsErrors() throws {
         let rawStub = stubTestRawTokenizer([
             0,
         ])

@@ -1,9 +1,11 @@
 import XCTest
+import Testing
 
 @testable import SwiftPEG
 
-class SwiftCodeGen_TokenTests: XCTestCase {
-    func testGenerateTokenParseCheck_noDependantTokens() throws {
+struct SwiftCodeGen_TokenTests {
+    @Test
+    func generateTokenParseCheck_noDependantTokens() throws {
         let tokens = try parseTokenDefinitions(#"""
         $leftSquare: '[' ;
         """#)
@@ -24,7 +26,8 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         """#).diff(sut.buffer.finishBuffer())
     }
 
-    func testGenerateTokenParseCheck_withDependantTokens() throws {
+    @Test
+    func generateTokenParseCheck_withDependantTokens() throws {
         let tokens = try parseTokenDefinitions(#"""
         $identifier: ("a"..."z")+ ;
         $keyword: "keyword" ;
@@ -55,7 +58,8 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         """#).diff(sut.buffer.finishBuffer())
     }
 
-    func testGenerateTokenParseCheck_withDependantTokens_convertsQuotes() throws {
+    @Test
+    func generateTokenParseCheck_withDependantTokens_convertsQuotes() throws {
         let tokens = try parseTokenDefinitions(#"""
         $identifier: ("a"..."z")+ ;
         $keyword: 'keyword' ;
@@ -86,7 +90,8 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         """#).diff(sut.buffer.finishBuffer())
     }
 
-    func testGenerateTokenParseCheck_ignoresFragments() throws {
+    @Test
+    func generateTokenParseCheck_ignoresFragments() throws {
         let tokens = try parseTokenDefinitions(#"""
         $identifier: ("a"..."z")+ ;
         %keyword: 'keyword' ;
@@ -117,7 +122,8 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         """#).diff(sut.buffer.finishBuffer())
     }
 
-    func testGenerateTokenParseCheck_emitLengthSwitchPhaseInTokenOcclusionSwitch_generateLengthSwitch() throws {
+    @Test
+    func generateTokenParseCheck_emitLengthSwitchPhaseInTokenOcclusionSwitch_generateLengthSwitch() throws {
         let tokens = try parseTokenDefinitions(#"""
         $identifier: ("a"..."z") ("a"..."z" | "0"..."9")* ;
         $foobar1: "foobar1" ;
@@ -186,7 +192,8 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         """#).diff(sut.buffer.finishBuffer())
     }
 
-    func testGenerateTokenParseCheck_withDependantTokens_skipEmittedTokens() throws {
+    @Test
+    func generateTokenParseCheck_withDependantTokens_skipEmittedTokens() throws {
         let tokens = try parseTokenDefinitions(#"""
         $identifier: ("a"..."z")+ ;
         $keyword: "keyword" ;
@@ -212,7 +219,8 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         """#).diff(sut.buffer.finishBuffer())
     }
 
-    func testGenerateTokenParser_modifiers() throws {
+    @Test
+    func generateTokenParser_modifiers() throws {
         let tokens = try parseTokenDefinitions(#"""
         $leftSquare: '[' ;
         """#)
@@ -232,7 +240,8 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         """#).diff(sut.buffer.finishBuffer())
     }
 
-    func testGenerateTokenParser_singleCharacter() throws {
+    @Test
+    func generateTokenParser_singleCharacter() throws {
         let tokens = try parseTokenDefinitions(#"""
         $leftSquare: '[' ;
         """#)
@@ -252,7 +261,8 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         """#).diff(sut.buffer.finishBuffer())
     }
 
-    func testGenerateTokenParser_optionalGroup() throws {
+    @Test
+    func generateTokenParser_optionalGroup() throws {
         let tokens = try parseTokenDefinitions(#"""
         $syntax: '[' ('0'...'9' | '_')? ']' ;
         """#)
@@ -299,7 +309,8 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         """#).diff(sut.buffer.finishBuffer())
     }
 
-    func testGenerateTokenParser_optionalAtom() throws {
+    @Test
+    func generateTokenParser_optionalAtom() throws {
         let tokens = try parseTokenDefinitions(#"""
         $syntax: '[' !'5' '0'...'9'? ']' ;
         """#)
@@ -344,7 +355,8 @@ class SwiftCodeGen_TokenTests: XCTestCase {
     }
 
 
-    func testGenerateTokenParser_anyPattern() throws {
+    @Test
+    func generateTokenParser_anyPattern() throws {
         let tokens = try parseTokenDefinitions(#"""
         $syntax:
             | '[' (']' | .)
@@ -383,7 +395,8 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         """#).diff(sut.buffer.finishBuffer())
     }
 
-    func testGenerateTokenParser_identifierToken() throws {
+    @Test
+    func generateTokenParser_identifierToken() throws {
         let tokens = try parseTokenDefinitions(#"""
         $syntax:
             | 'a' (b | 'c')+
@@ -437,7 +450,8 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         """#).diff(sut.buffer.finishBuffer())
     }
 
-    func testGenerateTokenParser_identifierExclusion() throws {
+    @Test
+    func generateTokenParser_identifierExclusion() throws {
         let tokens = try parseTokenDefinitions(#"""
         $syntax:
             | 'a' (!b 'c' | 'd')+
@@ -493,7 +507,8 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         """#).diff(sut.buffer.finishBuffer())
     }
 
-    func testGenerateTokenParser_rangeExclusion() throws {
+    @Test
+    func generateTokenParser_rangeExclusion() throws {
         let tokens = try parseTokenDefinitions(#"""
         $syntax:
             | 'a' (!"b"..."d" e | f)+
@@ -545,7 +560,8 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         """#).diff(sut.buffer.finishBuffer())
     }
 
-    func testGenerateTokenParser_mergeAtoms() throws {
+    @Test
+    func generateTokenParser_mergeAtoms() throws {
         let tokens = try parseTokenDefinitions(#"""
         $identifier:
             | ('a'...'j' | '_' | 'j'...'p' | 'p' | 'p'...'z')
@@ -579,7 +595,8 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         """#).diff(sut.buffer.finishBuffer())
     }
 
-    func testGenerateTokenParser_characterRanges() throws {
+    @Test
+    func generateTokenParser_characterRanges() throws {
         let tokens = try parseTokenDefinitions(#"""
         $identifier:
             | ('A'...'Z' | 'a'...'z' | '_') ('0'...'9' | 'A'...'Z' | 'a'...'z' | '_')*
@@ -623,7 +640,8 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         """#).diff(sut.buffer.finishBuffer())
     }
 
-    func testGenerateTokenParser_characterActionOnly() throws {
+    @Test
+    func generateTokenParser_characterActionOnly() throws {
         let tokens = try parseTokenDefinitions(#"""
         $identifier:
             | c { c.isLetter || c == "_" } (c { c.isLetter || c.isWholeNumber || c == "_" })*
@@ -665,7 +683,8 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         """#).diff(sut.buffer.finishBuffer())
     }
 
-    func testGenerateTokenParser_mixedLiteralAndCharacterActions() throws {
+    @Test
+    func generateTokenParser_mixedLiteralAndCharacterActions() throws {
         let tokens = try parseTokenDefinitions(#"""
         $identifier:
             | c { c.isLetter || c == "_" } ("_" | "A"..."Z" | c { c.isLetter || c.isWholeNumber || c == "_" } | "0"..."9")*
@@ -711,7 +730,8 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         """#).diff(sut.buffer.finishBuffer())
     }
 
-    func testGenerateTokenParser_trailExclusions() throws {
+    @Test
+    func generateTokenParser_trailExclusions() throws {
         let tokens = try parseTokenDefinitions(#"""
         $for: 'for' !letter !digit ;
         $letter: 'a'...'z' ;
@@ -751,7 +771,8 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         """#).diff(sut.buffer.finishBuffer())
     }
 
-    func testGenerateTokenParser_stringSyntax() throws {
+    @Test
+    func generateTokenParser_stringSyntax() throws {
         let tokens = try parseTokenDefinitions(#"""
         $stringLiteral:
             # Triple quote + any character that is not an unescaped triple quote + Triple quote
@@ -867,7 +888,8 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         """#).diff(sut.buffer.finishBuffer())
     }
 
-    func testGenerateTokenType_tokenTypeHeader() throws {
+    @Test
+    func generateTokenType_tokenTypeHeader() throws {
         let tokens = try parseTokenDefinitions(#"""
         $tok: 'abc' ;
         """#)
@@ -937,7 +959,8 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         """#).diff(result)
     }
 
-    func testGenerateTokenType_tokenTypeName() throws {
+    @Test
+    func generateTokenType_tokenTypeName() throws {
         let tokens = try parseTokenDefinitions(#"""
         $tok: 'abc' ;
         """#)
@@ -1004,7 +1027,8 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         """#).diff(result)
     }
 
-    func testGenerateTokenType_ignoreTokenFragmentsInTokenKindAndLexerFunction() throws {
+    @Test
+    func generateTokenType_ignoreTokenFragmentsInTokenKindAndLexerFunction() throws {
         let tokens = try parseTokenDefinitions(#"""
         $tok: 'a' frag ;
         %frag: 'bcd' ;
@@ -1093,7 +1117,8 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         """#).diff(result)
     }
 
-    func testGenerateTokenType_usesStaticTokenDefinition() throws {
+    @Test
+    func generateTokenType_usesStaticTokenDefinition() throws {
         let tokens = try parseTokenDefinitions(#"""
         $TOKEN[".tokenName"]: 'a' ;
         $TOKEN2["A.tokenName2"]: 'b';
@@ -1186,7 +1211,8 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         """#).diff(result)
     }
 
-    func testGenerateTokenType_emitInlinable() throws {
+    @Test
+    func generateTokenType_emitInlinable() throws {
         let tokens = try parseTokenDefinitions(#"""
         $tok: 'abc' ;
         """#)
@@ -1253,7 +1279,8 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         """#).diff(result)
     }
 
-    func testGenerateTokenType_accessLevel() throws {
+    @Test
+    func generateTokenType_accessLevel() throws {
         let tokens = try parseTokenDefinitions(#"""
         $tok: 'abc' ;
         """#)
@@ -1319,7 +1346,8 @@ class SwiftCodeGen_TokenTests: XCTestCase {
         """#).diff(result)
     }
 
-    func testGenerateTokenType_emitInlinable_accessLevel() throws {
+    @Test
+    func generateTokenType_emitInlinable_accessLevel() throws {
         let tokens = try parseTokenDefinitions(#"""
         $tok: 'abc' ;
         """#)

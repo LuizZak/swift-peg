@@ -1,15 +1,15 @@
 import XCTest
+import Testing
 
-class StringDiffTestingTests: XCTestCase {
-    var testReporter: TestDiffReporter!
+struct StringDiffTestingTests {
+    var testReporter: TestDiffReporter
 
-    override func setUp() {
-        super.setUp()
-
+    init() {
         testReporter = TestDiffReporter()
     }
 
-    func testDiffSimpleString() {
+    @Test
+    func diffSimpleString() {
         #sourceLocation(file: "test.swift", line: 1)
         testReporter
             .diffTest(
@@ -55,7 +55,8 @@ class StringDiffTestingTests: XCTestCase {
         )
     }
 
-    func testDiffEmptyStrings() {
+    @Test
+    func diffEmptyStrings() {
         #sourceLocation(file: "test.swift", line: 1)
         testReporter.diffTest(expected: "").diff("")
         #sourceLocation()
@@ -63,7 +64,8 @@ class StringDiffTestingTests: XCTestCase {
         XCTAssertEqual(testReporter.messages.count, 0)
     }
 
-    func testDiffEqualStrings() {
+    @Test
+    func diffEqualStrings() {
         #sourceLocation(file: "test.swift", line: 1)
         testReporter
             .diffTest(
@@ -82,7 +84,8 @@ class StringDiffTestingTests: XCTestCase {
         XCTAssertEqual(testReporter.messages.count, 0)
     }
 
-    func testDiffWhitespaceString() {
+    @Test
+    func diffWhitespaceString() {
         #sourceLocation(file: "test.swift", line: 1)
         testReporter
             .diffTest(
@@ -119,7 +122,8 @@ class StringDiffTestingTests: XCTestCase {
         )
     }
 
-    func testDiffLargerExpectedString() {
+    @Test
+    func diffLargerExpectedString() {
         #sourceLocation(file: "test.swift", line: 1)
         testReporter
             .diffTest(
@@ -167,7 +171,8 @@ class StringDiffTestingTests: XCTestCase {
         )
     }
 
-    func testDiffLargerExpectedStringWithMismatchInMiddle() {
+    @Test
+    func diffLargerExpectedStringWithMismatchInMiddle() {
         #sourceLocation(file: "test.swift", line: 1)
         testReporter
             .diffTest(
@@ -215,7 +220,8 @@ class StringDiffTestingTests: XCTestCase {
         )
     }
 
-    func testDiffLargerResultString() {
+    @Test
+    func diffLargerResultString() {
         #sourceLocation(file: "test.swift", line: 1)
         testReporter
             .diffTest(
@@ -264,7 +270,8 @@ class StringDiffTestingTests: XCTestCase {
         )
     }
 
-    func testDiffLargerResultStringWithMismatchInMiddle() {
+    @Test
+    func diffLargerResultStringWithMismatchInMiddle() {
         #sourceLocation(file: "test.swift", line: 1)
         testReporter
             .diffTest(
@@ -316,7 +323,8 @@ class StringDiffTestingTests: XCTestCase {
         )
     }
 
-    func testDiffLargerExpectedStringWithChangeAtFirstLine() {
+    @Test
+    func diffLargerExpectedStringWithChangeAtFirstLine() {
         #sourceLocation(file: "test.swift", line: 1)
         testReporter
             .diffTest(
@@ -364,7 +372,8 @@ class StringDiffTestingTests: XCTestCase {
         )
     }
 
-    func testDiffLargeMultiLineStrings() {
+    @Test
+    func diffLargeMultiLineStrings() {
         #sourceLocation(file: "test.swift", line: 1)
         testReporter
             .diffTest(
@@ -445,7 +454,8 @@ class StringDiffTestingTests: XCTestCase {
         )
     }
 
-    func testDiffLargeMultiLineStringsNoLinesOmittedBefore() {
+    @Test
+    func diffLargeMultiLineStringsNoLinesOmittedBefore() {
         #sourceLocation(file: "test.swift", line: 1)
         testReporter
             .diffTest(
@@ -504,7 +514,8 @@ class StringDiffTestingTests: XCTestCase {
         )
     }
 
-    func testDiffLargeMultiLineStringsNoLinesOmittedAfter() {
+    @Test
+    func diffLargeMultiLineStringsNoLinesOmittedAfter() {
         #sourceLocation(file: "test.swift", line: 1)
         testReporter
             .diffTest(
@@ -563,7 +574,8 @@ class StringDiffTestingTests: XCTestCase {
         )
     }
 
-    func testDiffOnly() {
+    @Test
+    func diffOnly() {
         #sourceLocation(file: "test.swift", line: 1)
         testReporter
             .diffTest(

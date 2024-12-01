@@ -1,9 +1,11 @@
 import XCTest
+import Testing
 
 @testable import SwiftPEG
 
-class MetaPropertyManagerTests: XCTestCase {
-    func testDiagnoseValue_acceptedValues_none_withValues() throws {
+struct MetaPropertyManagerTests {
+    @Test
+    func diagnoseValue_acceptedValues_none_withValues() throws {
         let known = [
             makeKnown(name: "meta1", acceptedValues: []),
             makeKnown(name: "meta2", acceptedValues: [.none]),
@@ -21,7 +23,8 @@ class MetaPropertyManagerTests: XCTestCase {
         assertDiagnosedMeta(sut, meta: metaProperties[1])
     }
 
-    func testDiagnoseValue_acceptedValues_string() throws {
+    @Test
+    func diagnoseValue_acceptedValues_string() throws {
         let known = [
             makeKnown(name: "meta1", acceptedValues: [.string()]),
             makeKnown(name: "meta2", acceptedValues: [.string()]),
@@ -42,7 +45,8 @@ class MetaPropertyManagerTests: XCTestCase {
         assertDidNotDiagnoseMeta(sut, meta: metaProperties[2])
     }
 
-    func testDiagnoseValue_acceptedValues_boolean() throws {
+    @Test
+    func diagnoseValue_acceptedValues_boolean() throws {
         let known = [
             makeKnown(name: "meta1", acceptedValues: [.boolean()]),
             makeKnown(name: "meta2", acceptedValues: [.boolean()]),
@@ -75,7 +79,8 @@ class MetaPropertyManagerTests: XCTestCase {
         assertDidNotDiagnoseMeta(sut, meta: metaProperties[6])
     }
 
-    func testDiagnoseValue_acceptedValues_mixedKinds() throws {
+    @Test
+    func diagnoseValue_acceptedValues_mixedKinds() throws {
         let known = [
             makeKnown(name: "meta1", acceptedValues: [.boolean(), .string()], repeatMode: .always),
             makeKnown(name: "meta2", acceptedValues: [.none, .identifier()], repeatMode: .always),
@@ -106,7 +111,8 @@ class MetaPropertyManagerTests: XCTestCase {
 
     // MARK: Repeat mode
 
-    func testDiagnoseRepeated_always() throws {
+    @Test
+    func diagnoseRepeated_always() throws {
         let known = [
             makeKnown(name: "meta", repeatMode: .always),
         ]
@@ -124,7 +130,8 @@ class MetaPropertyManagerTests: XCTestCase {
         assertNoDiagnostics(sut)
     }
 
-    func testDiagnoseRepeated_distinctValues_reportsAgainstFirstMetaPropertyOnly() throws {
+    @Test
+    func diagnoseRepeated_distinctValues_reportsAgainstFirstMetaPropertyOnly() throws {
         let known = [
             makeKnown(name: "meta", repeatMode: .distinctValues),
         ]

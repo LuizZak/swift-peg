@@ -1,5 +1,6 @@
 import Foundation
 import XCTest
+import Testing
 
 @testable import SwiftPEG
 
@@ -20,7 +21,6 @@ class FixtureTestRunner {
     // Test file flags
     static let focusProp = "focus"
 
-    let tester: XCTestCase
     let logger: FixtureTestRunnerLogger
 
     /// List of test results from tests executed by this runner.
@@ -29,8 +29,7 @@ class FixtureTestRunner {
     /// during fixture collection.
     var fixtureParseFailures: [URL] = []
 
-    init(tester: XCTestCase) {
-        self.tester = tester
+    init() {
         self.logger = FixtureTestRunnerLogger()
     }
 
@@ -236,7 +235,7 @@ class FixtureTestRunner {
 
         return FixtureDiffingTest(
             expected: diffable,
-            testCase: tester,
+            testCase: SwiftTestingDiffTestCaseFailureReporter(),
             highlightLineInEditor: highlightLineInEditor,
             diffOnly: diffOnly,
             target: diagnosticTarget
@@ -257,7 +256,16 @@ class FixtureTestRunner {
     }
 
     func recordFailure(_ message: String, file: String, line: Int, expected: Bool) {
-        tester.recordFailure(withDescription: message, inFile: file, atLine: line, expected: expected)
+        //tester.recordFailure(withDescription: message, inFile: file, atLine: line, expected: expected)
+        Issue.record(
+            Comment(stringLiteral: message),
+            sourceLocation: .init(
+                fileID: file,
+                filePath: file,
+                line: line,
+                column: 0
+            )
+        )
     }
 
     /// An unexpected error raised during fixture testing.
@@ -288,14 +296,18 @@ class FixtureTestRunner {
 
         func diagnoseError(message: String, line: Int) {
             switch self {
-            case .grammar(let runner, let url):
-                runner.tester.recordFailure(
-                    withDescription: message,
-                    inFile: url.path,
-                    atLine: line,
-                    expected: true
+            case .grammar(_, let url):
+                Issue.record(
+                    Comment(stringLiteral: message),
+                    sourceLocation: .init(
+                        fileID: "",
+                        filePath: url.path,
+                        line: line,
+                        column: 0
+                    )
                 )
-            case .grammarMetaProperty(let runner, let url, let meta):
+
+            case .grammarMetaProperty(_, let url, let meta):
                 let lineOffset =
                     if let location = meta.location as? FileSourceLocation {
                         location.line
@@ -303,11 +315,14 @@ class FixtureTestRunner {
                         0
                     }
 
-                runner.tester.recordFailure(
-                    withDescription: message,
-                    inFile: url.path,
-                    atLine: lineOffset + line,
-                    expected: true
+                Issue.record(
+                    Comment(stringLiteral: message),
+                    sourceLocation: .init(
+                        fileID: "",
+                        filePath: url.path,
+                        line: lineOffset + line,
+                        column: 0
+                    )
                 )
             }
         }

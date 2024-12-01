@@ -1,11 +1,13 @@
 import XCTest
+import Testing
 
 @testable import SwiftPEG
 
-class GrammarParserTests: XCTestCase {
+struct GrammarParserTests {
     typealias Sut = GrammarParser<TestGrammarTokenizer>
 
-    func testStringEscaping() throws {
+    @Test
+    func stringEscaping() throws {
         let tokenizer = rawTokenizer(#"""
         @meta "a\nb\"" ;
         start: a ;
@@ -21,7 +23,8 @@ class GrammarParserTests: XCTestCase {
         assertEqual(value.string.rawContents(), "a\nb\"")
     }
 
-    func testGrammar_emptyGrammar_returnsNil() throws {
+    @Test
+    func grammar_emptyGrammar_returnsNil() throws {
         let stubTokenizer = stubTestTokenizer([
         ])
         let sut = makeSut(stubTokenizer)
@@ -31,7 +34,8 @@ class GrammarParserTests: XCTestCase {
         assertNil(result)
     }
 
-    func testGrammar_metaPropertyOnly_returnsNil() throws {
+    @Test
+    func grammar_metaPropertyOnly_returnsNil() throws {
         let stubTokenizer = stubTestTokenizer([
             "@", "ident", ";",
         ])
@@ -52,7 +56,8 @@ class GrammarParserTests: XCTestCase {
         )
     }
 
-    func testGrammar_singleRule_returnsGrammar() throws {
+    @Test
+    func grammar_singleRule_returnsGrammar() throws {
         let stubTokenizer = stubTestTokenizer([
             "rule", ":", "'a'", ";",
         ])
@@ -64,7 +69,8 @@ class GrammarParserTests: XCTestCase {
         assertEqual(result.rules.count, 1)
     }
 
-    func testGrammar_metaPropertyAndRule_returnsGrammar() throws {
+    @Test
+    func grammar_metaPropertyAndRule_returnsGrammar() throws {
         let stubTokenizer = stubTestTokenizer([
             "@", "ident", ";",
             "rule", ":", "'a'", ";",
@@ -77,7 +83,8 @@ class GrammarParserTests: XCTestCase {
         assertEqual(result.rules.count, 1)
     }
 
-    func testGrammar_twoRule_returnsGrammar() throws {
+    @Test
+    func grammar_twoRule_returnsGrammar() throws {
         let stubTokenizer = stubTestTokenizer([
             "ruleA", ":", "'a'", ";",
             "ruleB", ":", "'b'", ";",
@@ -90,7 +97,8 @@ class GrammarParserTests: XCTestCase {
         assertEqual(result.rules.count, 2)
     }
 
-    func testGrammar_largeGrammar_returnsGrammar() throws {
+    @Test
+    func grammar_largeGrammar_returnsGrammar() throws {
         var tokens: [SwiftPEGGrammar.Token] = []
         let tokensToCopy: [SwiftPEGGrammar.Token] = [
             "ruleA", ":",
@@ -111,7 +119,8 @@ class GrammarParserTests: XCTestCase {
         assertEqual(result.rules.count, 500)
     }
 
-    func testRule_barStart_returnsRule() throws {
+    @Test
+    func rule_barStart_returnsRule() throws {
         let stubTokenizer = stubTestTokenizer([
             "ruleA", ":", "|", "'a'", ";",
         ])
@@ -122,7 +131,8 @@ class GrammarParserTests: XCTestCase {
         assertEqual(result.alts.count, 1)
     }
 
-    func testRule_twoAlts_returnsRule() throws {
+    @Test
+    func rule_twoAlts_returnsRule() throws {
         let stubTokenizer = stubTestTokenizer([
             "ruleA", ":", "'b'", "|", "'a'", ";",
         ])
@@ -133,7 +143,8 @@ class GrammarParserTests: XCTestCase {
         assertEqual(result.alts.count, 2)
     }
 
-    func testAlt_withAction_emptyAction_returnsNil() throws {
+    @Test
+    func alt_withAction_emptyAction_returnsNil() throws {
         let stubTokenizer = stubTestTokenizer([
             "'a'", "'b'", "{", "}",
         ])
@@ -144,7 +155,8 @@ class GrammarParserTests: XCTestCase {
         assertNil(result.action)
     }
 
-    func testAlt_withAction_filledAction_returnsAlt() throws {
+    @Test
+    func alt_withAction_filledAction_returnsAlt() throws {
         let stubTokenizer = stubTestTokenizer([
             "'a'", "'b'", "{", ".", ",", "}",
         ])
@@ -157,7 +169,8 @@ class GrammarParserTests: XCTestCase {
         assertEqual(result.action?.rawAction, ".,")
     }
 
-    func testAlt_withAction_whitespaceIsPreserved() throws {
+    @Test
+    func alt_withAction_whitespaceIsPreserved() throws {
         let stubTokenizer = stubTestTokenizer([
             "'a'", "{",
                 " ", ".", "\t", "[", "\n", ",", "]", "   ",
@@ -172,7 +185,8 @@ class GrammarParserTests: XCTestCase {
         assertEqual(result.action?.rawAction, " .\t[\n,]   ")
     }
 
-    func testAlt_withFailAction_filledAction_returnsAlt() throws {
+    @Test
+    func alt_withFailAction_filledAction_returnsAlt() throws {
         let stubTokenizer = stubTestTokenizer([
             "'a'", "'b'", "!!", "{", ".", ",", "}",
         ])
@@ -185,7 +199,8 @@ class GrammarParserTests: XCTestCase {
         assertEqual(result.failAction?.rawAction, ".,")
     }
 
-    func testAlt_withActionAndFailAction_filledAction_returnsAlt() throws {
+    @Test
+    func alt_withActionAndFailAction_filledAction_returnsAlt() throws {
         let stubTokenizer = stubTestTokenizer([
             "'a'", "'b'", "{", "+", "-", "}", "!!", "{", ".", ",", "}",
         ])
@@ -201,7 +216,8 @@ class GrammarParserTests: XCTestCase {
         assertEqual(result.failAction?.rawAction, ".,")
     }
 
-    func testAlt_action_consumesWhitespace() throws {
+    @Test
+    func alt_action_consumesWhitespace() throws {
         let tokenizer = rawTokenizer("""
         a { b.c() }
         """)
@@ -212,7 +228,8 @@ class GrammarParserTests: XCTestCase {
         assertEqual(result.action?.rawAction, " b.c() ")
     }
 
-    func testParseRepetitionMode() throws {
+    @Test
+    func parseRepetitionMode() throws {
         let tokenizer = rawTokenizer("""
         a* a*< a*> a+ a+< a+>
         """)
