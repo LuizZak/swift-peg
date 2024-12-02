@@ -104,7 +104,7 @@ class ParserMemoizeMacroImplementation {
         if effects?.asyncSpecifier != nil {
             invocation = "await \(invocation)"
         }
-        if effects?.throwsSpecifier != nil {
+        if effects?.throwsClause?.throwsSpecifier != nil {
             invocation = "try \(invocation)"
         }
 

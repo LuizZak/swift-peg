@@ -1,5 +1,5 @@
 import SwiftSyntax
-import SwiftSyntaxMacroExpansion
+import SwiftSyntaxMacros
 import SwiftDiagnostics
 
 extension FunctionParameterClauseSyntax {
@@ -25,7 +25,7 @@ extension FunctionParameterClauseSyntax {
 extension LabeledExprListSyntax {
     func ext_arguments() -> [(label: TokenSyntax?, value: ExprSyntax)] {
         var result: [(label: TokenSyntax?, ExprSyntax)] = []
-        
+
         for expr in self {
             result.append((label: expr.label, expr.expression))
         }
@@ -60,7 +60,7 @@ extension SyntaxProtocol {
             highlights: (highlights == nil || highlights?.count == 0) ? nil : highlights
         )
     }
-    
+
     /// Helper for generating targeted macro diagnostic warning messages from a
     /// specific syntax node from source code.
     func ext_warningDiagnostic(
@@ -113,34 +113,34 @@ extension SyntaxProtocol {
     func withTrailingSpace(count: Int = 1) -> Self {
         with(\.trailingTrivia, .spaces(count))
     }
-    
+
     /// Adds to the leading trivia a number of spaces of the given count.
     func addingLeadingSpace(count: Int = 1) -> Self {
         addingLeadingTrivia(.spaces(count))
     }
-    
+
     /// Adds to the trailing trivia a number of spaces of the given count.
     func addingTrailingSpace(count: Int = 1) -> Self {
         addingTrailingTrivia(.spaces(count))
     }
-    
+
     /// Adds to the leading trivia a given `Trivia`.
     /// Trivia is added at the end of the current trivia value.
     func addingLeadingTrivia(_ trivia: Trivia) -> Self {
         with(\.leadingTrivia, leadingTrivia + trivia)
     }
-    
+
     /// Adds to the trailing trivia a given `Trivia`.
     /// Trivia is added at the end of the current trivia value.
     func addingTrailingTrivia(_ trivia: Trivia) -> Self {
         with(\.trailingTrivia, trailingTrivia + trivia)
     }
-    
+
     /// Adds one leading/trailing spaces to the current trivia.
     func addingSurroundingSpaces() -> Self {
         addingLeadingSpace().addingTrailingSpace()
     }
-    
+
     /// Replaces the trivia with a single newline.
     func onNewline() -> Self {
         with(\.leadingTrivia, .newlines(1))
