@@ -227,7 +227,7 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
         /// `("0"..."9")+`
         case digits
 
-        /// `("a"..."z" | "A"..."Z" | "_") ("0"..."9" | "a"..."z" | "A"..."Z" | "_")*`
+        /// `identifierHead ("0"..."9" | "a"..."z" | "A"..."Z" | "_")*`
         case identifier
 
         /// ```
@@ -635,7 +635,7 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
 
     /// ```
     /// IDENTIFIER[".identifier"]:
-    ///     | ("a"..."z" | "A"..."Z" | "_") ("0"..."9" | "a"..."z" | "A"..."Z" | "_")*
+    ///     | identifierHead ("0"..."9" | "a"..."z" | "A"..."Z" | "_")*
     ///     ;
     /// ```
     @inlinable
@@ -644,12 +644,10 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            switch stream.peek() {
-            case "a"..."z", "A"..."Z", "_":
-                stream.advance()
-            default:
+            guard consume_identifierHead(from: &stream) else {
                 return false
             }
+
 
             loop:
             while !stream.isEof {
@@ -774,5 +772,52 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
         stream.restore(state)
 
         return false
+    }
+
+    /// ```
+    /// identifierHead:
+    ///     | "a"..."z"
+    ///     | "A"..."Z"
+    ///     | "_"
+    ///     ;
+    /// ```
+    @inlinable
+    public static func consume_identifierHead<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else { return false }
+        let state = stream.save()
+
+        alt:
+        do {
+            guard !stream.isEof, stream.isNextInRange("a"..."z") else {
+                break alt
+            }
+            stream.advance()
+
+            return true
+        }
+
+        stream.restore(state)
+
+        alt:
+        do {
+            guard !stream.isEof, stream.isNextInRange("A"..."Z") else {
+                break alt
+            }
+            stream.advance()
+
+            return true
+        }
+
+        stream.restore(state)
+
+        alt:
+        do {
+            guard stream.isNext("_") else {
+                return false
+            }
+            stream.advance()
+
+            return true
+        }
     }
 }

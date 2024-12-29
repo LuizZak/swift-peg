@@ -821,9 +821,6 @@ extension GrammarParser {
     /// balancedToken[SwiftPEGGrammar.TokenSequence]:
     ///     | token=WHITESPACE { .from(token) }
     ///     | l='{' ~ balancedToken* r='}' { .from(l).appending(contentsOf: balancedToken).appending(.from(r)) }
-    ///     | l='[' ~ balancedToken* r=']' { .from(l).appending(contentsOf: balancedToken).appending(.from(r)) }
-    ///     | l='<' ~ balancedToken* r='>' { .from(l).appending(contentsOf: balancedToken).appending(.from(r)) }
-    ///     | l='(' ~ balancedToken* r=')' { .from(l).appending(contentsOf: balancedToken).appending(.from(r)) }
     ///     | token=balancedTokenAtom { token }
     ///     ;
     /// ```
@@ -859,57 +856,6 @@ extension GrammarParser {
         }
 
         if
-            let l = try self.expect(kind: .leftSquare),
-            _cut.toggleOn(),
-            let balancedToken = try self.repeatZeroOrMore({
-                try self.balancedToken()
-            }),
-            let r = try self.expect(kind: .rightSquare)
-        {
-            return .from(l).appending(contentsOf: balancedToken).appending(.from(r))
-        }
-
-        self.restore(_mark)
-
-        if _cut.isOn {
-            return nil
-        }
-
-        if
-            let l = try self.expect(kind: .leftAngle),
-            _cut.toggleOn(),
-            let balancedToken = try self.repeatZeroOrMore({
-                try self.balancedToken()
-            }),
-            let r = try self.expect(kind: .rightAngle)
-        {
-            return .from(l).appending(contentsOf: balancedToken).appending(.from(r))
-        }
-
-        self.restore(_mark)
-
-        if _cut.isOn {
-            return nil
-        }
-
-        if
-            let l = try self.expect(kind: .leftParen),
-            _cut.toggleOn(),
-            let balancedToken = try self.repeatZeroOrMore({
-                try self.balancedToken()
-            }),
-            let r = try self.expect(kind: .rightParen)
-        {
-            return .from(l).appending(contentsOf: balancedToken).appending(.from(r))
-        }
-
-        self.restore(_mark)
-
-        if _cut.isOn {
-            return nil
-        }
-
-        if
             let token = try self.balancedTokenAtom()
         {
             return token
@@ -922,7 +868,7 @@ extension GrammarParser {
     /// ```
     /// balancedTokenAtom[SwiftPEGGrammar.TokenSequence]:
     ///     | string { .from(string) }
-    ///     | !"[" !"]" !"{" !"}" !"(" !")" token=ANY { .from(token) }
+    ///     | !"{" !"}" token=ANY { .from(token) }
     ///     ;
     /// ```
     @memoized("balancedTokenAtom")
@@ -940,22 +886,10 @@ extension GrammarParser {
 
         if
             try self.negativeLookahead({
-                try self.expect(kind: .leftSquare)
-            }),
-            try self.negativeLookahead({
-                try self.expect(kind: .rightSquare)
-            }),
-            try self.negativeLookahead({
                 try self.expect(kind: .leftBrace)
             }),
             try self.negativeLookahead({
                 try self.expect(kind: .rightBrace)
-            }),
-            try self.negativeLookahead({
-                try self.expect(kind: .leftParen)
-            }),
-            try self.negativeLookahead({
-                try self.expect(kind: .rightParen)
             }),
             let token = try self.nextToken()
         {

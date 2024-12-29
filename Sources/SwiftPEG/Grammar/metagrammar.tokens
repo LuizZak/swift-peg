@@ -5,7 +5,15 @@ $WHITESPACE[".whitespace"]:
     ;
 
 $IDENTIFIER[".identifier"]:
-    | ("a"..."z" | "A"..."Z" | "_") ("0"..."9" | "a"..."z" | "A"..."Z" | "_")*
+    | identifierHead identifierTrail*
+    ;
+
+%identifierHead:
+    | "a"..."z" | "A"..."Z" | "_"
+    ;
+
+%identifierTrail:
+    | "0"..."9" | "a"..."z" | "A"..."Z" | "_"
     ;
 
 $DIGITS[".digits"]:
