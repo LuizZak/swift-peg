@@ -259,7 +259,7 @@ public enum InternalGrammar {
         }
     }
 
-    /// `altLabel? namedItems action?`
+    /// `altLabel? namedItems action? failAction?`
     public struct Alt: Hashable, CustomStringConvertible {
         public var label: String?
         public var namedItems: [NamedItem]

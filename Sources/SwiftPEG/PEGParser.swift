@@ -419,8 +419,8 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
         return result
     }
 
-    /// Performs a positive lookahead for a token, returning `true` if the result
-    /// of `production()` is non-nil.
+    /// Performs a positive lookahead for a production, returning `true` if the
+    /// result of `production()` is non-nil.
     ///
     /// Restores the position of the tokenizer to the previous position
     /// before the lookahead.
@@ -431,8 +431,8 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
         return try production() != nil
     }
 
-    /// Performs a positive lookahead for a token, returning `true` if the result
-    /// of `production()` is nil.
+    /// Performs a positive lookahead for a production, returning `true` if the
+    /// result of `production()` is nil.
     ///
     /// Restores the position of the tokenizer to the previous position
     /// before the lookahead.
@@ -500,10 +500,13 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
             switch self {
             case .invalidSyntax(let desc, let mark, let location):
                 return "\(Self.self).invalidSyntax(\"\(desc)\", \(mark), location: \(location))"
+
             case .unexpectedEof(let desc, let mark, let location, let expected):
                 return "\(Self.self).unexpectedEof(\"\(desc)\", \(mark), location: \(location), expected: \(expected))"
+
             case .expectedForcedFailed(let desc, let mark, let location):
                 return "\(Self.self).expectedForcedFailed(\"\(desc)\", \(mark), location: \(location))"
+
             case .expectedToken(let desc, let mark, let location, let received, let expected):
                 return "\(Self.self).expectedToken(\"\(desc)\", \(mark), location: \(location), received: \(received), expected: \(expected))"
             }
