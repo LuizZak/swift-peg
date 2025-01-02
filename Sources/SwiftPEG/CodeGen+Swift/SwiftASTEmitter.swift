@@ -64,6 +64,7 @@ extension SwiftASTEmitter {
         emit(decl.genericArguments)
         buffer.ensureSpaceSeparator()
         emit(inheritances: decl.inheritances)
+        buffer.ensureSpaceSeparator()
         buffer.emitMembersBlock {
             for member in decl.members {
                 emit(member)
@@ -88,6 +89,7 @@ extension SwiftASTEmitter {
         emit(decl.genericArguments)
         buffer.ensureSpaceSeparator()
         emit(inheritances: decl.inheritances)
+        buffer.ensureSpaceSeparator()
         buffer.emitMembersBlock {
             for member in decl.members {
                 emit(member)
@@ -155,6 +157,7 @@ extension SwiftASTEmitter {
         buffer.ensureSpaceSeparator()
         buffer.emit("enum \(decl.name)")
         emit(inheritances: decl.inheritances)
+        buffer.ensureSpaceSeparator()
         buffer.emitMembersBlock {
             for caseDecl in decl.cases {
                 emit(caseDecl)
@@ -668,7 +671,9 @@ extension SwiftASTEmitter: StatementVisitor {
     func visitCompound(_ stmt: CompoundStatement) -> Void {
         buffer.emitLine("{")
         buffer.indented {
+            let conditional = buffer.startConditionalEmitter()
             for stmt in stmt {
+                conditional.ensureEmptyLine()
                 visitStatement(stmt)
             }
         }
@@ -1085,6 +1090,7 @@ extension SwiftASTEmitter: ExpressionVisitor {
     func visitSwitch(_ exp: SwitchExpression) -> Void {
         buffer.emit("switch ")
         visitExpression(exp.exp)
+        buffer.ensureSpaceSeparator()
         buffer.emitBlock {
             for switchCase in exp.cases {
                 visitSwitchCase(switchCase)
@@ -1100,6 +1106,7 @@ extension SwiftASTEmitter: ExpressionVisitor {
         buffer.emitWithSeparators(switchCase.casePatterns, separator: ", ") { casePattern in
             visitSwitchCasePattern(casePattern)
         }
+        buffer.emitLine(":")
         buffer.indented {
             for stmt in switchCase.statements {
                 visitStatement(stmt)

@@ -5,6 +5,15 @@ extension SwiftCodeGen {
     public func generateTokenType(
         settings: TokenTypeGenSettings = .default
     ) throws -> String {
+        let decls = try _generateTokenType(settings: settings)
+
+        let emitter = SwiftASTEmitter()
+        for decl in decls {
+            emitter.emit(decl)
+        }
+
+        return emitter.finishBuffer()
+        /*
         buffer.resetState()
 
         if let missingSyntax = tokenDefinitions.first(where: { $0.tokenSyntax == nil }) {
@@ -30,6 +39,7 @@ extension SwiftCodeGen {
         }
 
         return buffer.finishBuffer()
+        */
     }
 
     /// Generates Swift code defining the Token type of the grammar.
@@ -239,7 +249,7 @@ extension SwiftCodeGen {
             name: "length",
             type: .int,
             storage: .getter([
-                .expression(.identifier("String").dot("count"))
+                .expression(.identifier("string").dot("count"))
             ])
         )
     }
@@ -433,7 +443,8 @@ extension SwiftCodeGen {
                 parameters: [
                     .init(label: nil, name: "kind", type: "TokenKind"),
                 ],
-                returnType: "Self"
+                returnType: "Self",
+                traits: [.static]
             ),
             body: [
                 .expression(.implicitMember("init").call([
@@ -719,7 +730,7 @@ extension SwiftCodeGen {
             let exp = Expression.identifier("stream").dot("substring")
             let switchCases = try emitDependantCases(dependants.sorted(by: { $0.name < $1.name }))
             let defaultCase = SwitchDefaultCase(statements: [
-                defaultReturnStmt
+                defaultReturnStmt.copy()
             ])
 
             return .init(exp: exp, cases: switchCases, defaultCase: defaultCase)
@@ -1298,7 +1309,7 @@ extension SwiftCodeGen {
 
         if usedState {
             result.insert(
-                .variableDeclaration(identifier: "state", type: "StringStream", isConstant: true, initialization: .identifier("stream").dot("save")),
+                .variableDeclaration(identifier: "state", type: .nested(.init(base: .generic("StringStream", parameters: ["StringType"]), nested: "State")), isConstant: true, initialization: .identifier("stream").dot("save").call()),
                 at: stateInsertIndex
             )
         }
@@ -1536,21 +1547,14 @@ extension SwiftCodeGen {
     /// Generates a `while` loop that continually consumes the first matched
     /// atom in the provided list, returning
     func _generateAtomLoop(_ alts: [CommonAbstract.TokenAtom]) throws -> WhileStatement {
-        buffer.ensureDoubleNewline()
-        buffer.emitLine("loop:")
-        buffer.emit("while !stream.isEof ")
-        try buffer.emitBlock {
-            try generateAtomAlts(alts, bailStatement: .break(label: "loop"))
-        }
-
         let expr: Expression = .unary(op: .negate, .identifier("stream").dot("isEof"))
         let body = try _generateAtomAlts(alts, bailStatement: .break(label: "loop")).map { Statement.expression($0) }
 
         if let body {
-            return .while(expr, body: .init(statements: [body]))
+            return .while(expr, body: .init(statements: [body])).labeled("loop")
         }
 
-        return .while(expr, body: .init(statements: []))
+        return .while(expr, body: .init(statements: [])).labeled("loop")
     }
 
     /// Generates a series of if-else conditions that attempt to match one of
@@ -2185,7 +2189,7 @@ extension SwiftCodeGen {
 
     /// Escapes a given `DualString` into a Swift string literal expression.
     private func _tok_escapeLiteral(_ string: CommonAbstract.DualString) -> Expression {
-        .constant(.string(string.asStringLiteral))
+        .constant(.string(string.contents))
     }
 
     /// Escapes a given string into a Swift string literal expression.
