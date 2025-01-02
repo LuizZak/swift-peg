@@ -154,6 +154,15 @@ public class SwiftCodeGen {
         settings: ParserGenSettings = .default
     ) throws -> String {
 
+        let emitter = SwiftASTEmitter()
+        let decls = try _generateParser(settings: settings)
+
+        for decl in decls {
+            emitter.emit(decl)
+        }
+
+        return emitter.finishBuffer()
+        /*
         self.latestSettings = settings
 
         buffer.resetState()
@@ -242,6 +251,7 @@ public class SwiftCodeGen {
         }
 
         return buffer.finishBuffer()
+        */
     }
 
     // MARK: - Main productions

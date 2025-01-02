@@ -6,6 +6,7 @@ b[B]: 'b' ;
 c[C]: 'c'? 'e' ;
 """ ;
 
+@focus ;
 @emitTypesInBindings true ;
 @expectedParser """
 extension Parser {

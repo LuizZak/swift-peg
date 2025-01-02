@@ -259,7 +259,7 @@ class FixtureTestRunner {
         Issue.record(
             Comment(stringLiteral: message),
             sourceLocation: .init(
-                fileID: file,
+                fileID: #fileID,
                 filePath: file,
                 line: line,
                 column: 0
@@ -299,7 +299,7 @@ class FixtureTestRunner {
                 Issue.record(
                     Comment(stringLiteral: message),
                     sourceLocation: .init(
-                        fileID: "",
+                        fileID: #fileID,
                         filePath: url.path,
                         line: line,
                         column: 0
@@ -317,7 +317,7 @@ class FixtureTestRunner {
                 Issue.record(
                     Comment(stringLiteral: message),
                     sourceLocation: .init(
-                        fileID: "",
+                        fileID: #fileID,
                         filePath: url.path,
                         line: lineOffset + line,
                         column: 0

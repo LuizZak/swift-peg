@@ -99,7 +99,8 @@ extension SwiftCodeGen {
             let itemStmts: [Statement] = [
                 .if(clauses: [clause], body: [
                     .return(_defaultReturnExpression(for: mapTupleExpr))
-                ])
+                ]),
+                .return(.constant(.nil)),
             ]
             declContext.pop()
 
@@ -218,7 +219,8 @@ extension SwiftCodeGen {
             let itemStmts: [Statement] = [
                 .if(clauses: [clause], body: [
                     .return(_defaultReturnExpression(for: mapTupleExpr))
-                ])
+                ]),
+                .return(.constant(.nil)),
             ]
             declContext.pop()
 
@@ -372,7 +374,8 @@ extension SwiftCodeGen {
             let itemStmts: [Statement] = [
                 .if(clauses: [clause], body: [
                     .return(_defaultReturnExpression(for: mapTupleExpr))
-                ])
+                ]),
+                .return(.constant(.nil)),
             ]
             declContext.pop()
 
@@ -558,6 +561,10 @@ extension SwiftCodeGen {
         if let whileTail = try whileTail(ctx) {
             whileBody.append(whileTail)
         }
+
+        result.append(
+            .while(clauses: .init(clauses: whileClauses), body: .init(statements: whileBody))
+        )
 
         declContext.pop()
 
@@ -770,6 +777,10 @@ extension SwiftCodeGen {
         if let head = try whileHead(ctx) {
             whileBody.append(head)
         }
+
+        whileBody.append(
+            .expression(.identifier("self").dot("restore").call([.identifier("_endMark")]))
+        )
 
         // if let <trail> = <trail>()
         //   ...

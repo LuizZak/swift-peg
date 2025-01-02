@@ -340,7 +340,7 @@ struct SwiftTestingDiffTestCaseFailureReporter: DiffTestCaseFailureReporter {
     ) {
         Issue.record(
             Comment(stringLiteral: description),
-            sourceLocation: .init(fileID: "", filePath: filePath.description, line: lineNumber, column: 0)
+            sourceLocation: .init(fileID: #fileID, filePath: filePath.description, line: lineNumber, column: 0)
         )
     }
 }

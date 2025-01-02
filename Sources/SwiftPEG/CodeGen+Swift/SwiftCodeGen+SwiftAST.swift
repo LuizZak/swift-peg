@@ -95,7 +95,7 @@ extension SwiftCodeGen {
 
         result.append(
             .extension(
-                .init(leadingComments: [], accessLevel: .internal, members: members)
+                .init(leadingComments: [], baseType: .typeName(parserName), accessLevel: .internal, members: members)
             )
         )
 
@@ -205,13 +205,15 @@ extension SwiftCodeGen {
         var cutBlock: () -> Statement = { .do([]) }
 
         if requiresMarkers {
-            let backtrackMarkerName = generateMarkDeclaration()
+            let (stmt, backtrackMarkerName) = _generateMarkDeclaration()
+            body.appendStatement(stmt)
             markerBlock = {
                 self._generateMarkRestore(markVarName: backtrackMarkerName)
             }
         }
         if requiresCutFlag {
-            let cutFlagName = generateCutFlagDeclaration()
+            let (stmt, cutFlagName) = _generateCutFlagDeclaration()
+            body.appendStatement(stmt)
             cutBlock = {
                 self._generateCutFlagBailStatement(cutVarName: cutFlagName, bailBlock)
             }
@@ -790,7 +792,7 @@ extension SwiftCodeGen {
 
             let callArgs = self._expectArguments(forLiteral: literal, raw: raw)
 
-            return .try(.identifier("self").call(callArgs))
+            return .try(.identifier("self").dot("expect").call(callArgs))
         }
     }
 
@@ -877,6 +879,14 @@ extension SwiftCodeGen {
             } else {
                 bindingTuple.append(bindElement)
             }
+        }
+
+        if bindingTuple.count == 0 {
+            clause.pattern = .tuple(bindingTuple)
+        } else if bindingTuple.count == 1 {
+            clause.pattern = .tuple(bindingTuple)
+        } else {
+            clause.pattern = .tuple(bindingTuple)
         }
 
         if latestSettings.emitTypesInBindings && !isCasePatternBind {
@@ -1069,7 +1079,7 @@ fileprivate extension SwiftCodeGen {
             return _expectArguments(forResolvedToken: tokenCodeReference)
         }
 
-        return _expectArguments(forResolvedToken: .constant(.string(literal)))
+        return _expectArguments(forResolvedToken: .constant(.string(raw)))
     }
 
     /// Computes the static token name for a given token definition.
@@ -1144,6 +1154,7 @@ public extension SwiftCodeGen {
 
     struct ExtensionDecl {
         public var leadingComments: [SwiftComment]
+        public var baseType: SwiftType
         public var accessLevel: AccessLevel
         public var members: [MemberDecl]
     }
@@ -1153,7 +1164,7 @@ public extension SwiftCodeGen {
         public var accessLevel: AccessLevel
         public var name: String
         public var associatedTypes: [AssociatedTypeDecl]
-        public var members: [MemberDecl]
+        public var members: [ProtocolMemberDecl]
     }
 
     struct EnumDecl {
@@ -1172,6 +1183,12 @@ public extension SwiftCodeGen {
         public var rawValue: Expression?
     }
 
+    struct TypealiasDecl {
+        public var accessLevel: AccessLevel
+        public var alias: String
+        public var type: SwiftType
+    }
+
     struct AssociatedTypeDecl {
         public var name: String
     }
@@ -1181,7 +1198,7 @@ public extension SwiftCodeGen {
         case initializer(InitMemberDecl)
         case function(FunctionMemberDecl)
         case `subscript`(SubscriptMemberDecl)
-        case `typealias`(TypealiasMemberDecl)
+        case `typealias`(TypealiasDecl)
         case type(NestedTypeDecl)
     }
 
@@ -1189,6 +1206,7 @@ public extension SwiftCodeGen {
         public var leadingComments: [SwiftComment]
         public var attributes: [DeclarationAttribute]
         public var accessLevel: AccessLevel
+        public var isConstant: Bool
         public var name: String
         public var type: SwiftType
         public var storage: VariableStorage
@@ -1196,7 +1214,7 @@ public extension SwiftCodeGen {
         public enum VariableStorage {
             case stored
             case getter(CompoundStatement)
-            case getterSetter(CompoundStatement)
+            case getterSetter(CompoundStatement, (String, CompoundStatement))
         }
     }
 
@@ -1217,15 +1235,44 @@ public extension SwiftCodeGen {
 
     struct SubscriptMemberDecl {
         public var leadingComments: [SwiftComment]
+        public var attributes: [DeclarationAttribute]
         public var accessLevel: AccessLevel
         public var signature: SubscriptSignature
         public var getter: CompoundStatement
         public var setter: (String, CompoundStatement)?
     }
 
-    struct TypealiasMemberDecl {
-        public var accessLevel: AccessLevel
-        public var alias: String
+    enum ProtocolMemberDecl {
+        case variable(ProtocolVariableMemberDecl)
+        case initializer(ProtocolInitMemberDecl)
+        case function(ProtocolFunctionMemberDecl)
+        case `subscript`(ProtocolSubscriptMemberDecl)
+        case `typealias`(TypealiasDecl)
+    }
+
+    struct ProtocolVariableMemberDecl {
+        public var leadingComments: [SwiftComment]
+        public var attributes: [DeclarationAttribute]
+        public var isConstant: Bool
+        public var name: String
         public var type: SwiftType
+    }
+
+    struct ProtocolInitMemberDecl {
+        public var leadingComments: [SwiftComment]
+        public var attributes: [DeclarationAttribute]
+        public var parameters: [ParameterSignature]
+    }
+
+    struct ProtocolFunctionMemberDecl {
+        public var leadingComments: [SwiftComment]
+        public var signature: FunctionSignature
+    }
+
+    struct ProtocolSubscriptMemberDecl {
+        public var leadingComments: [SwiftComment]
+        public var attributes: [DeclarationAttribute]
+        public var signature: SubscriptSignature
+        public var hasSetter: Bool
     }
 }

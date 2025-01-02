@@ -24,7 +24,7 @@ extension SwiftCodeGen {
         let associatedTypes = try _generateProducerAssociatedTypes(protocolInfo)
         let functions = try _generateProducerMethods(protocolInfo)
 
-        let members: [MemberDecl] = functions.map { .function($0) }
+        let members: [ProtocolMemberDecl] = functions.map { .function($0) }
 
         return .init(
             leadingComments: [],
@@ -115,9 +115,9 @@ extension SwiftCodeGen {
 
     fileprivate func _generateProducerMethods(
         _ protocolInfo: ProducerProtocolInfo
-    ) throws -> [FunctionMemberDecl] {
+    ) throws -> [ProtocolFunctionMemberDecl] {
 
-        var result: [FunctionMemberDecl] = []
+        var result: [ProtocolFunctionMemberDecl] = []
 
         // Organize methods by rule name
         let byRule: [String: [ProducerMethodInfo]] =
@@ -156,8 +156,8 @@ extension SwiftCodeGen {
     fileprivate func _generateProducerMethods(
         _ protocolInfo: ProducerProtocolInfo,
         _ producerMethods: [ProducerMethodInfo]
-    ) throws -> [FunctionMemberDecl] {
-        var result: [FunctionMemberDecl] = []
+    ) throws -> [ProtocolFunctionMemberDecl] {
+        var result: [ProtocolFunctionMemberDecl] = []
 
         for producerMethod in producerMethods {
             let signature = try _generateProducerMethodSignature(
@@ -168,9 +168,7 @@ extension SwiftCodeGen {
             result.append(
                 .init(
                     leadingComments: [],
-                    accessLevel: .internal,
-                    signature: signature,
-                    body: []
+                    signature: signature
                 )
             )
         }
@@ -298,6 +296,8 @@ extension SwiftCodeGen {
         )
 
         return .init(
+            leadingComments: [],
+            accessLevel: .internal,
             name: "\(prefix)\(protocolInfo.name)",
             genericArguments: [
                 .init(name: "RawTokenizer", type: "RawTokenizerType")
@@ -342,9 +342,9 @@ extension SwiftCodeGen {
     func _generateDefaultProducerTypealiases(
         _ protocolInfo: ProducerProtocolInfo,
         _ implementationInfo: ProducerProtocolImplementationInfo
-    ) throws -> [TypealiasMemberDecl] {
+    ) throws -> [TypealiasDecl] {
 
-        var result: [TypealiasMemberDecl] = []
+        var result: [TypealiasDecl] = []
 
         // public typealias Mark = Tokenizer<RawTokenizer>.Mark
         result.append(

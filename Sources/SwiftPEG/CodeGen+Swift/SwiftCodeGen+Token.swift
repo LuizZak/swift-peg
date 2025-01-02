@@ -144,14 +144,14 @@ extension SwiftCodeGen {
         // var kind: TokenKind
         result.append(
             .variable(
-                .init(leadingComments: [], attributes: [], accessLevel: accessLevel, name: "kind", type: "TokenKind", storage: .stored)
+                .init(leadingComments: [], attributes: [], accessLevel: accessLevel, isConstant: false, name: "kind", type: "TokenKind", storage: .stored)
             )
         )
 
         // var string: Substring
         result.append(
             .variable(
-                .init(leadingComments: [], attributes: [], accessLevel: accessLevel, name: "string", type: "Substring", storage: .stored)
+                .init(leadingComments: [], attributes: [], accessLevel: accessLevel, isConstant: false, name: "string", type: "Substring", storage: .stored)
             )
         )
 
@@ -235,6 +235,7 @@ extension SwiftCodeGen {
             leadingComments: [],
             attributes: attributes,
             accessLevel: accessLevel,
+            isConstant: false,
             name: "length",
             type: .int,
             storage: .getter([
@@ -263,6 +264,7 @@ extension SwiftCodeGen {
             leadingComments: [],
             attributes: attributes,
             accessLevel: accessLevel,
+            isConstant: false,
             name: "description",
             type: .string,
             storage: .getter([
@@ -1036,6 +1038,7 @@ extension SwiftCodeGen {
             leadingComments: [],
             attributes: attributes,
             accessLevel: accessLevel,
+            isConstant: false,
             name: "description",
             type: .string,
             storage: .getter([
