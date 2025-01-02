@@ -1,3 +1,5 @@
+import SwiftAST
+
 /// A set of syntax construction structures that are neither unique to the grammar
 /// processor nor so tied to the parser that they cannot be used elsewhere in the
 /// code.
@@ -1119,5 +1121,56 @@ extension CommonAbstract {
                 return false
             }
         }
+    }
+}
+
+extension CommonAbstract.SwiftType {
+    var asSwiftASTType: SwiftAST.SwiftType {
+        switch self {
+        case .array(let inner):
+            return .array(inner.asSwiftASTType)
+
+        case .dictionary(let key, let value):
+            return .dictionary(key: key.asSwiftASTType, value: value.asSwiftASTType)
+
+        case .nested(let base, let nominal):
+            return base.asSwiftASTType.nested(nominal.asSwiftASTType)
+
+        case .nominal(let nominal):
+            return .nominal(nominal.asSwiftASTType)
+
+        case .optional(let base):
+            return .optional(base.asSwiftASTType)
+
+        case .tuple(let fields):
+            if fields.count == 0 {
+                return .tuple(.empty)
+            }
+            if fields.count == 1 {
+                return fields[0].swiftType.asSwiftASTType
+            }
+
+            return .tuple(.types(.fromCollection(fields.map {
+                if let label = $0.label {
+                    return TupleTypeEntry.labeled(label, $0.swiftType.asSwiftASTType)
+                } else {
+                    return TupleTypeEntry.unlabeled($0.swiftType.asSwiftASTType)
+                }
+            })))
+        }
+    }
+}
+
+extension CommonAbstract.IdentifierSwiftType {
+    var asSwiftASTType: SwiftAST.NominalSwiftType {
+        if self.genericArguments.isEmpty {
+            return .typeName(self.identifier)
+        }
+
+        let arguments = self.genericArguments.map { arg in
+            arg.asSwiftASTType
+        }
+
+        return .generic(self.identifier, parameters: .fromCollection(arguments))
     }
 }

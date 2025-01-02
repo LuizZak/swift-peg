@@ -1,3 +1,5 @@
+import SwiftAST
+
 extension SwiftCodeGen {
     /// Generates Swift code defining the Token type of the grammar.
     public func generateTokenType(
@@ -28,6 +30,49 @@ extension SwiftCodeGen {
         }
 
         return buffer.finishBuffer()
+    }
+
+    /// Generates Swift code defining the Token type of the grammar.
+    public func _generateTokenType(
+        settings: TokenTypeGenSettings = .default
+    ) throws -> [TopLevelDecl] {
+        var result: [TopLevelDecl] = []
+
+        buffer.resetState()
+
+        if let missingSyntax = tokenDefinitions.first(where: { $0.tokenSyntax == nil }) {
+            throw Error.tokenDefinitionMissingSyntax(missingSyntax)
+        }
+
+        if let header = grammar.tokenTypeHeader() {
+            result.append(.unknown(header))
+        }
+
+        let tokenName: String
+        if let tokenTypeName = grammar.tokenTypeName() {
+            tokenName = tokenTypeName
+        } else {
+            tokenName = "\(parserName)Token"
+        }
+
+        let sortedTokens = Self._sortTokens(tokenDefinitions)
+
+        let accessLevel = _generateAccessLevel(settings: settings)
+
+        result.append(
+            .struct(
+                .init(
+                    leadingComments: [],
+                    accessLevel: accessLevel,
+                    name: tokenName,
+                    genericArguments: [],
+                    inheritances: ["RawTokenType", "CustomStringConvertible"],
+                    members: try _generateTokenTypeMembers(settings: settings, sortedTokens: sortedTokens)
+                )
+            )
+        )
+
+        return result
     }
 
     func generateTokenTypeMembers(
@@ -88,6 +133,88 @@ extension SwiftCodeGen {
         )
     }
 
+    func _generateTokenTypeMembers(
+        settings: TokenTypeGenSettings,
+        sortedTokens: [InternalGrammar.TokenDefinition]
+    ) throws -> [MemberDecl] {
+        var result: [MemberDecl] = []
+
+        let accessLevel = _generateAccessLevel(settings: settings)
+
+        // var kind: TokenKind
+        result.append(
+            .variable(
+                .init(leadingComments: [], attributes: [], accessLevel: accessLevel, name: "kind", type: "TokenKind", storage: .stored)
+            )
+        )
+
+        // var string: Substring
+        result.append(
+            .variable(
+                .init(leadingComments: [], attributes: [], accessLevel: accessLevel, name: "string", type: "Substring", storage: .stored)
+            )
+        )
+
+        // var length: Int
+        result.append(
+            .variable(try _generateTokenTypeLength(settings: settings))
+        )
+
+        // var description: String
+        result.append(
+            .variable(try _generateTokenTypeDescription(settings: settings))
+        )
+
+        // init(kind: TokenKind, string: Substring)
+        if let initializer = try _generateTokenTypeInitializer(settings: settings) {
+            result.append(
+                .initializer(initializer)
+            )
+        }
+
+        // static func produceDummy(_ kind: TokenKind) -> Self
+        result.append(
+            .function(
+                _generateTokenTypeProduceDummy(settings: settings)
+            )
+        )
+
+        // `static func recordTokenAttempt<StringType>(...)`
+        // buffer.ensureDoubleNewline()
+        // generateRecordAttempt(settings: settings)
+
+        // func from<StringType>(stream: inout StringStream<StringType>) -> Self? where StringType.SubSequence == Substring
+        result.append(
+            .function(
+                try _generateTokenTypeParser(
+                    settings: settings,
+                    sortedTokens: sortedTokens,
+                    modifiers: ["static"]
+                )
+            )
+        )
+
+        // enum TokenKind
+        result.append(
+            .type(.enum(try _generateTokenKindEnum(
+                settings: settings,
+                sortedTokens: sortedTokens
+            )))
+        )
+
+        // func consume_<TOKEN1>
+        // func consume_<TOKEN2>
+        //   ...
+        result.append(contentsOf:
+            try _generateTokenParsers(
+                settings: settings,
+                sortedTokens: sortedTokens
+            ).map { .function($0) }
+        )
+
+        return result
+    }
+
     /// `var length: Int`
     func generateTokenTypeLength(settings: TokenTypeGenSettings) throws {
         generateInlinableAttribute(settings: settings)
@@ -99,6 +226,23 @@ extension SwiftCodeGen {
         """)
     }
 
+    /// `var length: Int`
+    func _generateTokenTypeLength(settings: TokenTypeGenSettings) throws -> VariableMemberDecl {
+        let attributes = _generateInlinableAttribute(settings: settings)
+        let accessLevel = _generateAccessLevel(settings: settings)
+
+        return .init(
+            leadingComments: [],
+            attributes: attributes,
+            accessLevel: accessLevel,
+            name: "length",
+            type: .int,
+            storage: .getter([
+                .expression(.identifier("String").dot("count"))
+            ])
+        )
+    }
+
     /// `var description: String`
     func generateTokenTypeDescription(settings: TokenTypeGenSettings) throws {
         generateInlinableAttribute(settings: settings)
@@ -108,6 +252,23 @@ extension SwiftCodeGen {
             String(string)
         }
         """)
+    }
+
+    /// `var description: String`
+    func _generateTokenTypeDescription(settings: TokenTypeGenSettings) throws -> VariableMemberDecl {
+        let attributes = _generateInlinableAttribute(settings: settings)
+        let accessLevel = _generateAccessLevel(settings: settings)
+
+        return .init(
+            leadingComments: [],
+            attributes: attributes,
+            accessLevel: accessLevel,
+            name: "description",
+            type: .string,
+            storage: .getter([
+                .expression(.identifier("String").call([.identifier("string")]))
+            ])
+        )
     }
 
     /// `init(kind: TokenKind, string: Substring)`
@@ -126,6 +287,29 @@ extension SwiftCodeGen {
             self.string = string
         }
         """)
+    }
+
+    /// `init(kind: TokenKind, string: Substring)`
+    func _generateTokenTypeInitializer(settings: TokenTypeGenSettings) throws -> InitMemberDecl? {
+        // If access level is not `nil` or "internal", produce an initializer
+        // for the token type
+        guard settings.accessLevel != nil && settings.accessLevel != "internal" else {
+            return nil
+        }
+
+        let attributes = _generateInlinableAttribute(settings: settings)
+        let accessLevel = _generateAccessLevel(settings: settings)
+
+        return .init(
+            leadingComments: [],
+            attributes: attributes,
+            accessLevel: accessLevel,
+            parameters: [.init(name: "kind", type: "TokenKind"), .init(name: "string", type: "Substring")],
+            body: [
+                .expression(.identifier("self").dot("kind").assignment(op: .assign, rhs: .identifier("kind"))),
+                .expression(.identifier("self").dot("string").assignment(op: .assign, rhs: .identifier("string"))),
+            ]
+        )
     }
 
     /// `static func recordTokenAttempt<StringType>(...)`
@@ -159,6 +343,69 @@ extension SwiftCodeGen {
         """)
     }
 
+    /// `static func recordTokenAttempt<StringType>(...)`
+    func _generateRecordAttempt(settings: TokenTypeGenSettings) -> FunctionMemberDecl {
+        let stringStreamType = SwiftType.generic("StringStream", parameters: ["StringType"])
+        let stateType: SwiftType = .nested(.init(base: stringStreamType, nested: "State"))
+        let parameters: [ParameterSignature] = [
+            .init(name: "longestAttempt", type: .tuple([.nested(.init(base: "Self", nested: "TokenKind")), .nested(.init(base: stringStreamType, nested: "State"))]), modifier: .inout),
+            .init(name: "stream", type: stringStreamType, modifier: .inout),
+            .init(
+                name: "parser",
+                type: .swiftBlock(returnType: .optional(.nested(.init(base: "Self", nested: "TokenKind"))), parameters: [
+                    .init(type: stringStreamType, modifier: .inout)
+                ])
+            )
+        ]
+
+        let body: CompoundStatement = [
+            // let state = stream.save()
+            .variableDeclaration(identifier: "state", type: stateType, initialization: .identifier("stream").dot("save").call()),
+            // stream.markSubstringStart()
+            .expression(.identifier("stream").dot("markSubstringStart").call()),
+            /*
+            if let result = parser(&stream) {
+                let newState = stream.save()
+
+                if let longest = longestAttempt {
+                    if newState.index > longest.1.index {
+                        longestAttempt = (result, newState)
+                    }
+                } else {
+                    longestAttempt = (result, newState)
+                }
+            }
+            */
+            .ifLet(.identifier("result"), .identifier("parser").call([.unary(op: .bitwiseAnd, .identifier("stream"))]), body: [
+                .variableDeclaration(identifier: "newState", type: stateType, initialization: .identifier("stream").dot("save").call()),
+                .ifLet(.identifier("longest"), .identifier("longestAttempt"), body: [
+                    .if(.identifier("newState").dot("index").binary(op: .greaterThan, rhs: .identifier("longest").dot("1").dot("index")), body: [
+                        .expression(.assignment(lhs: .identifier("longestAttempt"), op: .assign, rhs: .tuple([.identifier("result"), .identifier("newState")])))
+                    ])
+                ], else: [
+                    .expression(.assignment(lhs: .identifier("longestAttempt"), op: .assign, rhs: .tuple([.identifier("result"), .identifier("newState")])))
+                ])
+            ]),
+            // stream.restore(state)
+            .expression(.identifier("stream").dot("restore").call([.identifier("state")])),
+        ]
+
+        return .init(
+            leadingComments: [],
+            accessLevel: .internal,
+            signature: .init(
+                attributes: ["inlinable"],
+                genericParameters: ["StringType"],
+                name: "recordTokenAttempt",
+                parameters: parameters,
+                returnType: .void,
+                genericWhereClause: [.sameTypeRequirement(.nested(.init(base: "StringType", nested: "SubSequence")), "Substring")],
+                traits: [.static]
+            ),
+            body: body
+        )
+    }
+
     /// `static func produceDummy(_ kind: TokenKind) -> Self`
     func generateTokenTypeProduceDummy(settings: TokenTypeGenSettings) {
         generateInlinableAttribute(settings: settings)
@@ -168,6 +415,31 @@ extension SwiftCodeGen {
             .init(kind: kind, string: "<dummy>")
         }
         """)
+    }
+
+    /// `static func produceDummy(_ kind: TokenKind) -> Self`
+    func _generateTokenTypeProduceDummy(settings: TokenTypeGenSettings) -> FunctionMemberDecl {
+        let attributes = _generateInlinableAttribute(settings: settings)
+        let accessLevel = _generateAccessLevel(settings: settings)
+
+        return .init(
+            leadingComments: [],
+            accessLevel: accessLevel,
+            signature: .init(
+                attributes: attributes,
+                name: "produceDummy",
+                parameters: [
+                    .init(label: nil, name: "kind", type: "TokenKind"),
+                ],
+                returnType: "Self"
+            ),
+            body: [
+                .expression(.implicitMember("init").call([
+                    .init(label: "kind", expression: .identifier("kind")),
+                    .init(label: "string", expression: .constant("<dummy>")),
+                ]))
+            ]
+        )
     }
 
     /// `func from<StringType>(stream: inout StringStream<StringType>) -> Self? where StringType.SubSequence == Substring`
@@ -182,6 +454,37 @@ extension SwiftCodeGen {
         try buffer.emitBlock(" from<StringType>(stream: inout StringStream<StringType>) -> Self? where StringType.SubSequence == Substring") {
             try generateTokenTypeParserBody(settings: settings, sortedTokens: sortedTokens)
         }
+    }
+
+    /// `func from<StringType>(stream: inout StringStream<StringType>) -> Self? where StringType.SubSequence == Substring`
+    func _generateTokenTypeParser(
+        settings: TokenTypeGenSettings,
+        sortedTokens: [InternalGrammar.TokenDefinition],
+        modifiers: [String] = []
+    ) throws -> FunctionMemberDecl {
+        let attributes = _generateInlinableAttribute(settings: settings)
+        let accessLevel = _generateAccessLevel(settings: settings)
+
+        let genericArg = "StringType"
+
+        return .init(
+            leadingComments: [],
+            accessLevel: accessLevel,
+            signature: .init(
+                attributes: attributes,
+                genericParameters: [.init(typeName: genericArg)],
+                name: "from",
+                parameters: [
+                    .init(label: "stream", name: "stream", type: .generic("StringStream", parameters: [.typeName(genericArg)]), modifier: .inout),
+                ],
+                returnType: .optional("Self"),
+                genericWhereClause: [
+                    .sameTypeRequirement(.nested(.init(base: .typeName(genericArg), nested: "SubSequence")), "Substring"),
+                ],
+                traits: [.static]
+            ),
+            body: .init(statements: try _generateTokenTypeParserBody(settings: settings, sortedTokens: sortedTokens))
+        )
     }
 
     func generateTokenTypeParserBody(
@@ -214,6 +517,46 @@ extension SwiftCodeGen {
 
         buffer.ensureDoubleNewline()
         buffer.emitLine("return nil")
+    }
+
+    func _generateTokenTypeParserBody(
+        settings: TokenTypeGenSettings,
+        sortedTokens: [InternalGrammar.TokenDefinition]
+    ) throws -> [Statement] {
+        var result: [Statement] = []
+
+        result.append(contentsOf: [
+            .guard(.unary(op: .negate, .identifier("stream").dot("isEof")), else: [
+                .return(.constant(.nil))
+            ]),
+            .expression(.identifier("stream").dot("markSubstringStart").call()),
+        ])
+
+        // TODO: Attempt to generate a switch over the first peeked character
+        // TODO: like in SwiftPEGGrammar's old Token parser?
+        var emittedTokenNames: Set<String> = []
+        let nonDependants = sortedTokens.filter { token in
+            !processedGrammar
+                .tokenOcclusionGraph
+                .edges
+                .contains(where: { $0.end == token.name })
+        }
+
+        for token in nonDependants.filter(showEmitInTokenParser) {
+            let stmt = try _generateTokenParseCheck(
+                settings: settings,
+                token,
+                emittedTokenNames: &emittedTokenNames
+            )
+
+            result.append(stmt)
+        }
+
+        result.append(
+            .return(.constant(.nil))
+        )
+
+        return result
     }
 
     func generateTokenParseCheck(
@@ -331,6 +674,135 @@ extension SwiftCodeGen {
         }
     }
 
+    func _generateTokenParseCheck(
+        settings: TokenTypeGenSettings,
+        _ token: InternalGrammar.TokenDefinition,
+        emittedTokenNames: inout Set<String>
+    ) throws -> Statement {
+
+        func returnExpForToken(_ token: InternalGrammar.TokenDefinition) -> Expression {
+            let tokenName = caseName(for: token)
+
+            return .implicitMember("init").call([
+                .init(label: "kind", expression: .implicitMember(tokenName)),
+                .init(label: "string", expression: .identifier("stream").dot("substring")),
+            ])
+        }
+
+        func emitDependantCases(_ dependants: [InternalGrammar.TokenDefinition]) throws -> [SwitchCase] {
+            var result: [SwitchCase] = []
+
+            for dependant in dependants {
+                guard let staticTerminal = dependant.tokenSyntax?.staticTerminal() else {
+                    throw Error.tokenDependantIsNotStatic(token, dependant: dependant)
+                }
+
+                let pattern = SwitchCase.CasePattern(pattern: .expression(_tok_escapeLiteral(staticTerminal)))
+                let body: [Statement] = [
+                    .return(returnExpForToken(dependant))
+                ]
+
+                result.append(
+                    .init(casePatterns: [pattern], body: .init(statements: body))
+                )
+            }
+
+            return result
+        }
+
+        func emitDependantsSwitch(
+            defaultReturnStmt: ReturnStatement,
+            _ dependants: [InternalGrammar.TokenDefinition]
+        ) throws -> SwitchExpression {
+            let exp = Expression.identifier("stream").dot("substring")
+            let switchCases = try emitDependantCases(dependants.sorted(by: { $0.name < $1.name }))
+            let defaultCase = SwitchDefaultCase(statements: [
+                defaultReturnStmt
+            ])
+
+            return .init(exp: exp, cases: switchCases, defaultCase: defaultCase)
+        }
+
+        defer { emittedTokenNames.insert(token.name) }
+
+        let method = parseMethodName(for: token)
+        let parseInvocation = Expression.identifier(method).call([.init(label: "from", expression: .unary(op: .bitwiseAnd, .identifier("stream")))])
+
+        let dependants = processedGrammar
+            .tokenOcclusionGraph
+            .edges.filter({
+                $0.start == token.name && !emittedTokenNames.contains($0.end)
+            }).map(\.end).compactMap({ name in
+                processedGrammar.tokens.first(where: { $0.name == name })
+            })
+
+        emittedTokenNames.formUnion(dependants.map(\.name))
+
+        var ifStatements: [Statement] = []
+
+        ifBody:
+        do {
+            let returnStmt = ReturnStatement(exp: returnExpForToken(token))
+
+            guard !dependants.isEmpty else {
+                ifStatements.append(returnStmt)
+                break ifBody
+            }
+
+            guard settings.emitLengthSwitchPhaseInTokenOcclusionSwitch else {
+                let switchExpr = try emitDependantsSwitch(defaultReturnStmt: returnStmt, dependants)
+                ifStatements.append(.expression(switchExpr))
+                break ifBody
+            }
+
+            // Emit a switch over the stream's substring to move the result into
+            // dependant's static terminals. If the number if dependants is below
+            // a certain threshold, generate one switch, otherwise, generate a
+            // switch over the different lengths of dependants to make the process
+            // more granular.
+            var byLength: [Int: [InternalGrammar.TokenDefinition]] = [:]
+            for dependant in dependants {
+                guard let staticTerminal = dependant.tokenSyntax?.staticTerminal() else {
+                    throw Error.tokenDependantIsNotStatic(token, dependant: dependant)
+                }
+
+                byLength[staticTerminal.contents.count, default: []].append(dependant)
+            }
+
+            guard
+                byLength.count >= 3,
+                byLength.contains(where: { $0.value.count > 1 })
+            else {
+                let switchExpr = try emitDependantsSwitch(defaultReturnStmt: returnStmt, dependants)
+                ifStatements.append(.expression(switchExpr))
+                break ifBody
+            }
+
+            var switchCases: [SwitchCase] = []
+
+            for (length, dependants) in byLength.sorted(by: { $0.key > $1.key }) {
+                switchCases.append(
+                    .init(patterns: [.expression(.constant(.int(length)))], body: [
+                        .expression(
+                        try emitDependantsSwitch(
+                            defaultReturnStmt: returnStmt,
+                            dependants
+                        ))
+                    ])
+                )
+            }
+            let defaultCase: SwitchDefaultCase = .init(statements: [
+                returnStmt
+            ])
+
+            ifStatements.append(
+                .switch(.identifier("stream").dot("substringLength"), cases: switchCases, default: defaultCase)
+            )
+        }
+
+        return .if(parseInvocation, body: .init(statements: ifStatements))
+    }
+
     func generateTokenTypeParserBodyLongestParse(sortedTokens: [InternalGrammar.TokenDefinition]) throws {
         buffer.emitMultiline("""
         guard !stream.isEof else { return nil }
@@ -373,6 +845,56 @@ extension SwiftCodeGen {
         """)
     }
 
+    func _generateTokenTypeParserBodyLongestParse(
+        sortedTokens: [InternalGrammar.TokenDefinition]
+    ) throws -> [Statement] {
+        var result: [Statement] = []
+
+        result.append(contentsOf: [
+            .guard(.unary(op: .negate, .identifier("stream").dot("isEof")), else: [
+                .return(.constant(.nil))
+            ]),
+            .expression(.identifier("stream").dot("markSubstringStart").call()),
+            // var longestAttempt: (Self.TokenKind, StringStream<StringType>.State)?
+            .variableDeclaration(identifier: "longestAttempt", type: .tuple([.nested(.init(base: "Self", nested: "TokenKind")), .nested(.init(base: .generic("StringStream", parameters: ["StringType"]), nested: "State"))]), initialization: nil)
+        ])
+
+        // TODO: Attempt to generate a switch over the first peeked character
+        // TODO: like in SwiftPEGGrammar's old Token parser?
+
+        for token in sortedTokens.filter(showEmitInTokenParser) {
+            let tokenName = caseName(for: token)
+            let method = parseMethodName(for: token)
+            let parseInvocation = "\(method)(from: &stream)"
+
+            buffer.emitBlock("recordTokenAttempt(longestAttempt: &longestAttempt, stream: &stream) ") {
+                buffer.backtrackWhitespace()
+                buffer.emitLine(" stream in")
+
+                buffer.emitMultiline("""
+                if \(parseInvocation) {
+                    return .\(tokenName)
+                } else {
+                    return nil
+                }
+                """)
+            }
+        }
+
+        result.append(contentsOf: [
+            .guard(clauses: .init(pattern: .valueBindingPattern(constant: true, .identifier("longestAttempt")), expression: .identifier("longestAttempt")), else: [
+                .return(.constant(.nil))
+            ]),
+            .expression(.identifier("stream").dot("restore").call([.identifier("longestAttempt").dot("1")])),
+            .return(.implicitMember("init").call([
+                .init(label: "kind", expression: .identifier("longestAttempt").dot("0")),
+                .init(label: "string", expression: .identifier("stream").dot("substring")),
+            ])),
+        ])
+
+        return result
+    }
+
     // MARK: TokenKind generation
 
     func generateTokenKindEnum(
@@ -395,6 +917,32 @@ extension SwiftCodeGen {
         }
     }
 
+    func _generateTokenKindEnum(
+        settings: TokenTypeGenSettings,
+        sortedTokens: [InternalGrammar.TokenDefinition]
+    ) throws -> EnumDecl {
+        let accessLevel = _generateAccessLevel(settings: settings)
+
+        var cases: [EnumCaseDecl] = []
+        for token in sortedTokens.filter(self.showEmitInTokenType) {
+            cases.append(try _generateTokenKindEnumCase(token))
+        }
+
+        let tokenKindDesc = try _generateTokenKindDescription(
+            settings: settings,
+            sortedTokens: sortedTokens
+        )
+
+        return .init(
+            leadingComments: [],
+            accessLevel: accessLevel,
+            name: "TokenKind",
+            inheritances: ["TokenKindType"],
+            cases: cases,
+            members: [.variable(tokenKindDesc)]
+        )
+    }
+
     func generateTokenKindEnumCase(
         _ token: InternalGrammar.TokenDefinition,
         prevCaseSeparator: CodeStringBuffer.ConditionalEmitter
@@ -407,6 +955,20 @@ extension SwiftCodeGen {
 
         let tokenName = caseName(for: token)
         buffer.emitLine("case \(escapeIdentifier(tokenName))")
+    }
+
+    func _generateTokenKindEnumCase(
+        _ token: InternalGrammar.TokenDefinition
+    ) throws -> EnumCaseDecl {
+        var comments: [SwiftComment] = []
+        if let syntax = token.tokenSyntax {
+            /// Emit doc-comment for case
+            comments = _generateTokenDocComment(token, syntax, short: true)
+        }
+
+        let tokenName = caseName(for: token)
+
+        return .init(leadingComments: comments, name: escapeIdentifier(tokenName))
     }
 
     func generateTokenKindDescription(
@@ -436,6 +998,52 @@ extension SwiftCodeGen {
         }
     }
 
+    func _generateTokenKindDescription(
+        settings: TokenTypeGenSettings,
+        sortedTokens: [InternalGrammar.TokenDefinition]
+    ) throws -> VariableMemberDecl {
+
+        let attributes = _generateInlinableAttribute(settings: settings)
+        let accessLevel = _generateAccessLevel(settings: settings)
+
+        var switchCases: [SwitchCase] = []
+        for token in sortedTokens where showEmitInTokenType(token) {
+            guard let syntax = token.tokenSyntax else {
+                continue
+            }
+            let name = caseName(for: token)
+
+            let pattern: SwitchCase.CasePattern = .init(pattern: .expression(.implicitMember(name)))
+            let body: Statement
+
+            if let literal = syntax.staticTerminal() {
+                body = .expression(_tok_escapeLiteral(literal))
+            } else {
+                body = .expression(.constant(.string(token.name)))
+            }
+
+            switchCases.append(
+                .init(casePatterns: [pattern], body: [body])
+            )
+        }
+        let switchExpr: SwitchExpression = .switch(
+            .identifier("self"),
+            cases: switchCases,
+            default: nil
+        )
+
+        return .init(
+            leadingComments: [],
+            attributes: attributes,
+            accessLevel: accessLevel,
+            name: "description",
+            type: .string,
+            storage: .getter([
+                .expression(switchExpr)
+            ])
+        )
+    }
+
     // MARK: - consume_ method generation
 
     func generateTokenParsers(
@@ -446,6 +1054,16 @@ extension SwiftCodeGen {
         for token in sortedTokens {
             buffer.ensureDoubleNewline()
             try generateTokenParser(token, settings: settings, modifiers: ["static"])
+        }
+    }
+
+    func _generateTokenParsers(
+        settings: TokenTypeGenSettings,
+        sortedTokens: [InternalGrammar.TokenDefinition]
+    ) throws -> [FunctionMemberDecl] {
+
+        return try sortedTokens.compactMap {
+            try _generateTokenParser($0, settings: settings, modifiers: [.static])
         }
     }
 
@@ -467,6 +1085,39 @@ extension SwiftCodeGen {
         try buffer.emitBlock {
             try generateTokenParserBody(tokenSyntax)
         }
+    }
+
+    func _generateTokenParser(
+        _ token: InternalGrammar.TokenDefinition,
+        settings: TokenTypeGenSettings,
+        modifiers: FunctionSignature.Traits = []
+    ) throws -> FunctionMemberDecl? {
+        guard let tokenSyntax = token.tokenSyntax else {
+            return nil
+        }
+
+        let comments = _generateTokenDocComment(token, tokenSyntax)
+        let attributes = _generateInlinableAttribute(settings: settings)
+        let accessLevel = _generateAccessLevel(settings: settings)
+
+        let methodName = parseMethodName(for: token)
+        let signature = FunctionSignature(
+            attributes: attributes,
+            genericParameters: ["StringType"],
+            name: methodName,
+            parameters: [
+                .init(label: "from", name: "stream", type: .generic("StringStream", parameters: ["StringType"]), modifier: .inout)
+            ],
+            returnType: .bool,
+            traits: modifiers
+        )
+
+        return .init(
+            leadingComments: comments,
+            accessLevel: accessLevel,
+            signature: signature,
+            body: .init(statements: try _generateTokenParserBody(tokenSyntax))
+        )
     }
 
     func generateTokenDocComment(
@@ -493,6 +1144,38 @@ extension SwiftCodeGen {
         }
         buffer.emitLine("\(linePrefix)     ;")
         buffer.emitLine("\(linePrefix) ```")
+    }
+
+    func _generateTokenDocComment(
+        _ token: InternalGrammar.TokenDefinition,
+        _ tokenSyntax: CommonAbstract.TokenSyntax,
+        short: Bool = false
+    ) -> [SwiftComment] {
+        // Derive a doc comment for the generated syntax
+        let buffer = CodeStringBuffer()
+
+        if short && tokenSyntax.alts.count == 1 {
+            buffer.emitLine(" `\(tok_describe(tokenSyntax.alts[0]))`")
+            return [
+                .docBlock(buffer.finishBuffer(addTrailingNewline: false))
+            ]
+        }
+
+        buffer.emitLine(" ```")
+        buffer.emit(" \(token.name)")
+        if let tokenCodeReference = token.tokenCodeReference {
+            buffer.emit(#"[\#(tokenCodeReference.debugDescription)]"#)
+        }
+        buffer.emitLine(":")
+        for alt in tokenSyntax.alts {
+            buffer.emitLine("     | \(tok_describe(alt))")
+        }
+        buffer.emitLine("     ;")
+        buffer.emitLine(" ```")
+
+        return [
+            .docBlock(buffer.finishBuffer(addTrailingNewline: false))
+        ]
     }
 
     func generateTokenParserBody(_ tokenSyntax: CommonAbstract.TokenSyntax) throws {
@@ -553,6 +1236,73 @@ extension SwiftCodeGen {
         }
     }
 
+    func _generateTokenParserBody(_ tokenSyntax: CommonAbstract.TokenSyntax) throws -> [Statement] {
+        var result: [Statement] = []
+
+        // Simplify token definitions that consist of a single literal
+        if
+            let literal = tokenSyntax.staticTerminal(),
+            tokenSyntax.alts.allSatisfy({ $0.trailExclusions.isEmpty })
+        {
+            result.append(
+                .expression(.identifier("stream").dot("advanceIfNext").call([
+                    _tok_escapeLiteral(literal)
+                ]))
+            )
+
+            return result
+        }
+
+        result.append(
+            .guard(.unary(op: .negate, .identifier("stream").dot("isEof")), else: [
+                .return(.constant(false))
+            ])
+        )
+
+        var usedState = false
+        let stateInsertIndex = result.count
+
+        // TODO: Alternate do statement for an if statement depending on leading
+        // TODO: item, and remove the nesting altogether if there is only one alt
+
+        var bailStatement = BailStatementMonitor.break(label: "alt")
+        var hasFallthroughPath: Bool {
+            bailStatement.emitted
+        }
+
+        for (i, alt) in tokenSyntax.alts.enumerated() {
+            bailStatement = BailStatementMonitor.break(label: "alt")
+
+            let canReturnAsBail = i == tokenSyntax.alts.count - 1
+
+            result.append(
+                .do(.init(statements: try _generateTokenParserAlt(alt, canReturnAsBail: canReturnAsBail, bailStatement: bailStatement)))
+                .labeled("alt")
+            )
+
+            if !canReturnAsBail || hasFallthroughPath {
+                usedState = true
+
+                result.append(
+                    .expression(.identifier("stream").dot("restore").call([.identifier("state")]))
+                )
+            }
+        }
+
+        if hasFallthroughPath {
+            result.append(.return(.constant(false)))
+        }
+
+        if usedState {
+            result.insert(
+                .variableDeclaration(identifier: "state", type: "StringStream", isConstant: true, initialization: .identifier("stream").dot("save")),
+                at: stateInsertIndex
+            )
+        }
+
+        return result
+    }
+
     func generateTokenParserAlt(
         _ alt: CommonAbstract.TokenAlt,
         canReturnAsBail: Bool,
@@ -582,6 +1332,40 @@ extension SwiftCodeGen {
         }
 
         buffer.emitLine("return true")
+    }
+
+    func _generateTokenParserAlt(
+        _ alt: CommonAbstract.TokenAlt,
+        canReturnAsBail: Bool,
+        bailStatement: BailStatementMonitor
+    ) throws -> [Statement] {
+        var result: [Statement] = []
+
+        for (i, item) in alt.items.enumerated() {
+            var bailStatement = bailStatement
+            if canReturnAsBail && i == 0 {
+                bailStatement = .return
+            }
+
+            let next = try _generateTokenParserItem(
+                item,
+                bailStatement: bailStatement
+            )
+            result.append(contentsOf: next)
+        }
+
+        // Generate trailing token exclusions
+        if !alt.trailExclusions.isEmpty {
+            let exclusions = try alt.trailExclusions.map(_tok_conditional).map { ConditionalClauseElement(expression: $0) }
+
+            let guardStmt = GuardStatement.guard(clauses: .init(clauses: exclusions), else: .init(statements: bailStatement._emit()))
+
+            result.append(guardStmt)
+        }
+
+        result.append(.return(.constant(true)))
+
+        return result
     }
 
     /// Generates token parser items as sequences of checks against the input
@@ -622,6 +1406,59 @@ extension SwiftCodeGen {
         }
     }
 
+    /// Generates token parser items as sequences of checks against the input
+    /// stream that either succeed and proceed forward within the same level,
+    /// or fail with a `break alt` statement.
+    func _generateTokenParserItem(
+        _ item: CommonAbstract.TokenItem,
+        bailStatement: BailStatementMonitor
+    ) throws -> [Statement] {
+
+        var result: [Statement] = []
+
+        switch item {
+        case .zeroOrMore(let alts):
+            // Generate loop
+            result.append(try _generateAtomLoop(alts))
+
+        case .oneOrMore(let alts):
+            // Generate a first check outside the loop
+            if let expr = try _generateAtomAlts(alts, bailStatement: bailStatement) {
+                result.append(.expression(expr))
+            }
+
+            // Generate loop
+            result.append(try _generateAtomLoop(alts))
+
+        case .optionalGroup(let alts):
+            if let expr = try _generateAtomAlts(alts, bailStatement: .none) {
+                result.append(.expression(expr))
+            }
+
+        case .group(let alts):
+            // Like a one-or-more, but without a loop
+            if let expr = try _generateAtomAlts(alts, bailStatement: bailStatement) {
+                result.append(.expression(expr))
+            }
+
+        case .optionalAtom(let atom):
+            let expr = try _generateIfAtom(atom, bailStatement: .custom(tok_advanceExpr(for: atom)))
+
+            result.append(.expression(expr))
+
+        case .atom(let atom):
+            result.append(try _generateGuardAtom(atom, bailStatement: bailStatement))
+
+            if let expr = try _tok_advanceExpr(for: atom) {
+                result.append(
+                    .expression(expr)
+                )
+            }
+        }
+
+        return result
+    }
+
     /// Generates a guard statement that checks that a given atom matches
     /// on the string stream before proceeding.
     ///
@@ -635,6 +1472,21 @@ extension SwiftCodeGen {
         buffer.emitBlock {
             bailStatement.emit(into: buffer)
         }
+    }
+
+    /// Generates a guard statement that checks that a given atom matches
+    /// on the string stream before proceeding.
+    ///
+    /// Within the body of the guard, the provided a bail statement is issued.
+    func _generateGuardAtom(
+        _ atom: CommonAbstract.TokenAtom,
+        bailStatement: BailStatementMonitor
+    ) throws -> GuardStatement {
+
+        let clauses = try _tok_conditional(for: atom)
+        let body = bailStatement._emit()
+
+        return .guard(clauses: .init(clauses: clauses), else: .init(statements: body))
     }
 
     /// Generates an if- statement that checks that a given atom matches
@@ -652,6 +1504,21 @@ extension SwiftCodeGen {
         }
     }
 
+    /// Generates an if- statement that checks that a given atom matches
+    /// on the string stream before bailing.
+    ///
+    /// Within the body of the if, the provided a bail statement is issued.
+    func _generateIfAtom(
+        _ atom: CommonAbstract.TokenAtom,
+        bailStatement: BailStatementMonitor
+    ) throws -> IfExpression {
+
+        let clauses = try _tok_conditional(for: atom)
+        let body = bailStatement._emit()
+
+        return .if(clauses: .init(clauses: clauses), body: .init(statements: body))
+    }
+
     /// Generates a `while` loop that continually consumes the first matched
     /// atom in the provided list, returning
     func generateAtomLoop(_ alts: [CommonAbstract.TokenAtom]) throws {
@@ -661,6 +1528,26 @@ extension SwiftCodeGen {
         try buffer.emitBlock {
             try generateAtomAlts(alts, bailStatement: .break(label: "loop"))
         }
+    }
+
+    /// Generates a `while` loop that continually consumes the first matched
+    /// atom in the provided list, returning
+    func _generateAtomLoop(_ alts: [CommonAbstract.TokenAtom]) throws -> WhileStatement {
+        buffer.ensureDoubleNewline()
+        buffer.emitLine("loop:")
+        buffer.emit("while !stream.isEof ")
+        try buffer.emitBlock {
+            try generateAtomAlts(alts, bailStatement: .break(label: "loop"))
+        }
+
+        let expr: Expression = .unary(op: .negate, .identifier("stream").dot("isEof"))
+        let body = try _generateAtomAlts(alts, bailStatement: .break(label: "loop")).map { Statement.expression($0) }
+
+        if let body {
+            return .while(expr, body: .init(statements: [body]))
+        }
+
+        return .while(expr, body: .init(statements: []))
     }
 
     /// Generates a series of if-else conditions that attempt to match one of
@@ -694,6 +1581,47 @@ extension SwiftCodeGen {
         buffer.emitBlock {
             bailStatement.emit(into: buffer)
         }
+    }
+
+    /// Generates a series of if-else conditions that attempt to match one of
+    /// the provided terminals, falling back to a break statement if all terminals
+    /// failed.
+    ///
+    /// Used to generate zero-or-more and one-or-more constructions.
+    func _generateAtomAlts(
+        _ alts: [CommonAbstract.TokenAtom],
+        bailStatement: BailStatementMonitor
+    ) throws -> Expression? {
+        // TODO: Perform switch statement emission
+
+        guard !alts.isEmpty else { return nil }
+
+        if let switchExpr = try _tryGenerateAsSwitch(alts, bailStatement: bailStatement) {
+            return switchExpr
+        }
+
+        let ifExpressions: [IfExpression] = try alts.map { atom in
+            var body: [Statement] = []
+            if let expr = try _tok_advanceExpr(for: atom) {
+                body.append(.expression(expr))
+            }
+
+            return .if(clauses: .init(clauses: try _tok_conditional(for: atom)), body: .init(statements: body))
+        }
+
+        // [if1, if2, if3]
+        // if1.else(if2.else(if3.else(bail)))
+        guard var ifExpr = ifExpressions.last else {
+            return nil
+        }
+        ifExpr.elseBody = .else(.init(statements: bailStatement._emit()))
+
+        for next in ifExpressions.dropLast().reversed() {
+            next.elseBody = .elseIf(ifExpr)
+            ifExpr = next
+        }
+
+        return ifExpr
     }
 
     /// Generates the given set of alternating terminals as a switch statement,
@@ -847,6 +1775,168 @@ extension SwiftCodeGen {
         return true
     }
 
+    /// Generates the given set of alternating terminals as a switch statement,
+    /// modifying the buffer and returning `true` if successful.
+    ///
+    /// If the alts cannot be simplified to a single switch statement, the buffer
+    /// is untouched and `false` is returned.
+    private func _tryGenerateAsSwitch(
+        _ alts: [CommonAbstract.TokenAtom],
+        bailStatement: BailStatementMonitor
+    ) throws -> SwitchExpression? {
+
+        guard canSimplifyAsSwitch(alts) else {
+            return nil
+        }
+
+        // Whether the given terminal can be combine with others in the same
+        // switch-case
+        func canCombine(_ term: CommonAbstract.TokenTerminal) -> Bool {
+            switch term {
+            case .identifier:
+                return false
+            case .rangeLiteral, .literal:
+                return true
+            case .characterPredicate, .any:
+                return false
+            }
+        }
+
+        // Whether the given atom can be combine with others in the same
+        // switch-case
+        func canCombine(_ atom: CommonAbstract.TokenAtom) -> Bool {
+            atom.excluded.isEmpty && canCombine(atom.terminal)
+        }
+
+        /// Returns the combination of two atoms, as a list of atoms that cover
+        /// the same range of inputs as the two input atoms.
+        func combination(of lhs: CommonAbstract.TokenAtom, _ rhs: CommonAbstract.TokenAtom) -> [CommonAbstract.TokenAtom] {
+            guard lhs.excluded.isEmpty && rhs.excluded.isEmpty else {
+                return [lhs, rhs]
+            }
+            if lhs == rhs {
+                return [lhs]
+            }
+
+            switch (lhs.terminal, rhs.terminal) {
+            // Merge range literals
+            case (.rangeLiteral(let lhsLow, let lhsHigh), .rangeLiteral(let rhsLow, let rhsHigh))
+                where lhsHigh.contents == rhsLow.contents:
+
+                return [.init(terminal: .rangeLiteral(lhsLow, rhsHigh))]
+
+            // Merge literal into ranged literals that it is contained within
+            case (.literal(let lhsLiteral), .rangeLiteral(let rhsLow, let rhsHigh))
+                where (rhsLow.contents...rhsHigh.contents).contains(lhsLiteral.contents):
+
+                return [rhs]
+            case (.rangeLiteral(let lhsLow, let lhsHigh), .literal(let rhsLiteral))
+                where (lhsLow.contents...lhsHigh.contents).contains(rhsLiteral.contents):
+
+                return [lhs]
+
+            default:
+                return [lhs, rhs]
+            }
+        }
+
+        // Produces the pattern for a switch-case for a given terminal
+        func casePattern(_ term: CommonAbstract.TokenTerminal) -> SwitchCase.CasePattern? {
+            switch term {
+            case .characterPredicate(let ident, let predicate):
+                return .init(pattern: .valueBindingPattern(constant: true, .identifier(ident)), whereClause: .unknown(.init(context: predicate)))
+
+            case .rangeLiteral(let start, let end):
+                return .init(pattern: .expression(.binary(lhs: _tok_escapeLiteral(start), op: .closedRange, rhs: _tok_escapeLiteral(end))))
+
+            case .literal(let literal):
+                return .init(pattern: .expression(_tok_escapeLiteral(literal)))
+
+            case .any:
+                return .init(pattern: .wildcard())
+
+            default:
+                return nil
+            }
+        }
+
+        // Produces the pattern for a switch-case for a given atom
+        func casePattern(_ atom: CommonAbstract.TokenAtom) -> SwitchCase.CasePattern? {
+            casePattern(atom.terminal)
+        }
+
+        // Indicates that an 'any' atom was found; this invalidates any further
+        // cases, and to avoid warnings about unreachable cases we skip past any
+        // alt after the 'any' atom.
+        var stopEarly = false
+
+        let switchExpr: Expression = .identifier("stream").dot("peek").call()
+        var switchCases: [SwitchCase] = []
+        var defaultCase: SwitchDefaultCase?
+
+        var index = 0
+        while index < alts.count && !stopEarly {
+            defer { index += 1 }
+            let alt = alts[index]
+
+            guard let advanceExpr = try _tok_advanceExpr(for: alt) else {
+                continue
+            }
+
+            switch alt.terminal {
+            case .any:
+                defaultCase = .init(body: [
+                    .expression(advanceExpr)
+                ])
+
+                stopEarly = true
+
+            default:
+                var casePatterns: [SwitchCase.CasePattern] = []
+                let statements: [Statement] = [
+                    .expression(advanceExpr)
+                ]
+
+                if canCombine(alt) {
+                    var combined: [CommonAbstract.TokenAtom] = [alt]
+
+                    var nextIndex = index + 1
+                    while nextIndex < alts.count && !stopEarly {
+                        let nextAlt = alts[nextIndex]
+                        guard canCombine(nextAlt) && tok_length(for: alt) == tok_length(for: nextAlt) else {
+                            break
+                        }
+                        let lastCombined = combination(of: combined[combined.count - 1], nextAlt)
+                        combined[(combined.count - 1)...] = lastCombined[...]
+                        nextIndex += 1
+                    }
+
+                    switch alt {
+                    default:
+                        let patterns = combined.compactMap(casePattern)
+
+                        casePatterns.append(contentsOf: patterns)
+                    }
+
+                    index = nextIndex - 1
+                } else {
+                    if let casePattern = casePattern(alt) {
+                        casePatterns = [casePattern]
+                    }
+                }
+
+                let switchCase = SwitchCase(casePatterns: casePatterns, body: .init(statements: statements))
+                switchCases.append(switchCase)
+            }
+        }
+        // Emit default block
+        if !stopEarly {
+            defaultCase = .init(statements: bailStatement._emit())
+        }
+
+        return .switch(switchExpr, cases: switchCases, default: defaultCase)
+    }
+
     /// Whether the given set of alts can be simplified to a single switch statement
     /// that inspects a single token from the stream.
     func canSimplifyAsSwitch(_ alts: [CommonAbstract.TokenAtom]) -> Bool {
@@ -887,10 +1977,26 @@ extension SwiftCodeGen {
         }
     }
 
+    private func _generateInlinableAttribute(settings: TokenTypeGenSettings) -> [DeclarationAttribute] {
+        if settings.emitInlinable {
+            return [.init(name: "inlinable")]
+        }
+
+        return []
+    }
+
     private func generateAccessLevel(settings: TokenTypeGenSettings) {
         if let accessLevel = settings.accessLevel {
             buffer.emit("\(accessLevel) ")
         }
+    }
+
+    private func _generateAccessLevel(settings: TokenTypeGenSettings) -> AccessLevel {
+        if let accessLevel = settings.accessLevel {
+            return AccessLevel(rawValue: accessLevel) ?? .internal
+        }
+
+        return .internal
     }
 
     // MARK: - Static token transformations
@@ -901,6 +2007,14 @@ extension SwiftCodeGen {
         let conditionals = try atom.excluded.map(tok_conditional) + [tok_conditional(for: atom.terminal)]
 
         return conditionals.joined(separator: ", ")
+    }
+
+    /// Returns the conditional statement that matches the current stream index
+    /// of a StringStreamer called `stream` to a given atom.
+    private func _tok_conditional(for atom: CommonAbstract.TokenAtom) throws -> [ConditionalClauseElement] {
+        let conditionals = try atom.excluded.map(_tok_conditional).map { ConditionalClauseElement(expression: $0) } + _tok_conditional(for: atom.terminal)
+
+        return conditionals
     }
 
     /// Returns the conditional statement that matches the current stream index
@@ -924,6 +2038,43 @@ extension SwiftCodeGen {
         }
     }
 
+    /// Returns the conditional statement that matches the current stream index
+    /// of a StringStreamer called `stream` to a given terminal.
+    private func _tok_conditional(for term: CommonAbstract.TokenTerminal) throws -> [ConditionalClauseElement] {
+        switch term {
+        case .characterPredicate(let ident, let action):
+            return [
+                .init(pattern: .valueBindingPattern(constant: true, .identifier(ident)), expression: .identifier("stream").dot("safePeek").call()),
+                .init(expression: .unknown(.init(context: action.trimmingWhitespace())))
+            ]
+
+        case .rangeLiteral(let start, let end):
+            return [
+                .init(expression: .unary(op: .negate, .identifier("stream").dot("isEof"))),
+                .init(expression: .identifier("stream").dot("isNextInRange").call([
+                    _tok_escapeLiteral(start).binary(op: .closedRange, rhs: _tok_escapeLiteral(end))
+                ]))
+            ]
+
+        case .literal(let literal):
+            return [
+                .init(expression: .identifier("stream").dot("isNext").call([_tok_escapeLiteral(literal)]))
+            ]
+
+        case .identifier(let ident):
+            return [
+                .init(expression: .identifier(parseMethodName(for: ident)).call([
+                    .init(label: "from", expression: .unary(op: .bitwiseAnd, .identifier("stream")))
+                ]))
+            ]
+
+        case .any:
+            return [
+                .init(expression: .unary(op: .negate, .identifier("stream").dot("isEof")))
+            ]
+        }
+    }
+
     private func tok_conditional(for exclude: CommonAbstract.TokenExclusion) throws -> String {
         switch exclude {
         case .literal(let literal):
@@ -934,6 +2085,23 @@ extension SwiftCodeGen {
 
         case .rangeLiteral(let start, let end):
             return "!stream.isNextInRange(\(tok_escapeLiteral(start))...\(tok_escapeLiteral(end)))"
+        }
+    }
+
+    private func _tok_conditional(for exclude: CommonAbstract.TokenExclusion) throws -> Expression {
+        switch exclude {
+        case .literal(let literal):
+            return .unary(op: .negate, .identifier("stream").dot("isNext").call([_tok_escapeLiteral(literal)]))
+
+        case .identifier(let ident):
+            return .identifier("stream").dot("negativeLookahead").call([
+                .identifier(parseMethodName(for: ident), argumentNames: ["from"])
+            ])
+
+        case .rangeLiteral(let start, let end):
+            return .unary(op: .negate, .identifier("stream").dot("isNextInRange").call([
+                _tok_escapeLiteral(start).binary(op: .closedRange, rhs: _tok_escapeLiteral(end))
+            ]))
         }
     }
 
@@ -948,6 +2116,19 @@ extension SwiftCodeGen {
             return "stream.advance()"
         }
         return "stream.advance(\(length))"
+    }
+
+    /// Returns the appropriate `StringStream.advance` call that advances the
+    /// stream forward by the given atom's required length.
+    private func _tok_advanceExpr(for term: CommonAbstract.TokenAtom) throws -> Expression? {
+        let length = tok_length(for: term)
+        if length == 0 {
+            return nil
+        }
+        if length == 1 {
+            return .identifier("stream").dot("advance").call()
+        }
+        return .identifier("stream").dot("advance").call([.constant(.int(length))])
     }
 
     /// Returns how many extended grapheme clusters should be skipped for a given
@@ -997,6 +2178,11 @@ extension SwiftCodeGen {
         case .fromCode(let contents):
             return tok_escapeLiteral(contents)
         }
+    }
+
+    /// Escapes a given `DualString` into a Swift string literal expression.
+    private func _tok_escapeLiteral(_ string: CommonAbstract.DualString) -> Expression {
+        .constant(.string(string.asStringLiteral))
     }
 
     /// Escapes a given string into a Swift string literal expression.
@@ -1098,6 +2284,32 @@ extension SwiftCodeGen {
         }
     }
 
+    /// Derives an identifier to use as an enumeration case label for a given
+    /// token.
+    ///
+    /// If the token has a static token string that matches `<someIdentifier>`
+    /// or `.<someIdentifier>`, returns `<someIdentifier>`, otherwise returns
+    /// the token's name.
+    func _caseName(for token: InternalGrammar.TokenDefinition) -> Expression {
+        guard let tokenCodeReference = token.tokenCodeReference else {
+            return .identifier(token.name)
+        }
+        if tokenCodeReference.hasPrefix(".") {
+            let suffix = tokenCodeReference.dropFirst()
+            guard SwiftSyntaxExt.isIdentifier(suffix) else {
+                return .identifier(token.name)
+            }
+
+            return .identifier(String(suffix))
+        } else {
+            guard SwiftSyntaxExt.isIdentifier(tokenCodeReference) else {
+                return .identifier(token.name)
+            }
+
+            return .identifier(String(tokenCodeReference))
+        }
+    }
+
     private func parseMethodName(for token: InternalGrammar.TokenDefinition) -> String {
         return parseMethodName(for: token.name)
     }
@@ -1180,6 +2392,11 @@ extension SwiftCodeGen {
         func emit(into buffer: CodeStringBuffer) {
             self.emitted = true
             kind.emit(into: buffer)
+        }
+
+        func _emit() -> [Statement] {
+            self.emitted = true
+            return kind._emit()
         }
 
         /// Indicates that the bail statement should expand to a no-op, non
@@ -1276,6 +2493,43 @@ extension SwiftCodeGen {
             case .restoreAndReturn(let stateIdentifier):
                 buffer.emitLine("stream.restore(\(stateIdentifier))")
                 buffer.emitLine("return false")
+            }
+        }
+
+        func _emit() -> [Statement] {
+            switch self {
+            case .none:
+                return [
+                    .expression(.identifier("_").assignment(op: .assign, rhs: .voidTuple()))
+                ]
+
+            case .custom(let line):
+                return [
+                    .unknown(.init(context: line))
+                ]
+
+            case .break(nil):
+                return [
+                    .break()
+                ]
+
+            case .break(let label?):
+                return [
+                    .break(targetLabel: label)
+                ]
+
+            case .return:
+                return [
+                    .return(.constant(false))
+                ]
+
+            case .restoreAndReturn(let stateIdentifier):
+                return [
+                    .expression(
+                        .identifier("stream").dot("restore").call([.identifier(stateIdentifier)])
+                    ),
+                    .return(.constant(false)),
+                ]
             }
         }
     }

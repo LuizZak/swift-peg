@@ -1,3 +1,5 @@
+import SwiftAST
+
 // MARK: - Protocol generation
 
 extension SwiftCodeGen {
@@ -14,6 +16,23 @@ extension SwiftCodeGen {
         }
 
         buffer.ensureDoubleNewline()
+    }
+
+    func _generateProducerProtocol(
+        _ protocolInfo: ProducerProtocolInfo
+    ) throws -> ProtocolDecl {
+        let associatedTypes = try _generateProducerAssociatedTypes(protocolInfo)
+        let functions = try _generateProducerMethods(protocolInfo)
+
+        let members: [MemberDecl] = functions.map { .function($0) }
+
+        return .init(
+            leadingComments: [],
+            accessLevel: .public,
+            name: protocolInfo.name,
+            associatedTypes: associatedTypes,
+            members: members
+        )
     }
 
     fileprivate func generateProducerAssociatedTypes(
@@ -35,10 +54,39 @@ extension SwiftCodeGen {
         }
     }
 
+    fileprivate func _generateProducerAssociatedTypes(
+        _ protocolInfo: ProducerProtocolInfo
+    ) throws -> [AssociatedTypeDecl] {
+        var result: [AssociatedTypeDecl] = []
+
+        // Required associated types
+        result.append(.init(name: "Mark"))
+        result.append(.init(name: "Token"))
+
+        // Productions
+        for rule in grammar.rules {
+            guard let associatedType = protocolInfo.ruleReturnType[rule.name] else {
+                continue
+            }
+
+            let associatedTypeDecl = try _generateProducerAssociatedType(associatedType)
+
+            result.append(associatedTypeDecl)
+        }
+
+        return result
+    }
+
     fileprivate func generateProducerAssociatedType(
         _ associatedType: CommonAbstract.IdentifierSwiftType
     ) throws {
         buffer.emitLine("associatedtype \(associatedType)")
+    }
+
+    fileprivate func _generateProducerAssociatedType(
+        _ associatedType: CommonAbstract.IdentifierSwiftType
+    ) throws -> AssociatedTypeDecl {
+        return .init(name: associatedType.description)
     }
 
     fileprivate func generateProducerMethods(
@@ -65,6 +113,34 @@ extension SwiftCodeGen {
         }
     }
 
+    fileprivate func _generateProducerMethods(
+        _ protocolInfo: ProducerProtocolInfo
+    ) throws -> [FunctionMemberDecl] {
+
+        var result: [FunctionMemberDecl] = []
+
+        // Organize methods by rule name
+        let byRule: [String: [ProducerMethodInfo]] =
+            Dictionary(grouping: protocolInfo.ruleProducers) {
+                $0.ruleName
+            }
+
+        for rule in grammar.rules {
+            guard let methods = byRule[rule.name] else {
+                continue
+            }
+
+            let ruleMethods = try _generateProducerMethods(
+                protocolInfo,
+                methods
+            )
+
+            result.append(contentsOf: ruleMethods)
+        }
+
+        return result
+    }
+
     fileprivate func generateProducerMethods(
         _ protocolInfo: ProducerProtocolInfo,
         _ producerMethods: [ProducerMethodInfo]
@@ -75,6 +151,31 @@ extension SwiftCodeGen {
                 producerMethod
             )
         }
+    }
+
+    fileprivate func _generateProducerMethods(
+        _ protocolInfo: ProducerProtocolInfo,
+        _ producerMethods: [ProducerMethodInfo]
+    ) throws -> [FunctionMemberDecl] {
+        var result: [FunctionMemberDecl] = []
+
+        for producerMethod in producerMethods {
+            let signature = try _generateProducerMethodSignature(
+                protocolInfo,
+                producerMethod
+            )
+
+            result.append(
+                .init(
+                    leadingComments: [],
+                    accessLevel: .internal,
+                    signature: signature,
+                    body: []
+                )
+            )
+        }
+
+        return result
     }
 
     fileprivate func generateProducerMethodSignature(
@@ -96,6 +197,30 @@ extension SwiftCodeGen {
         }
 
         buffer.emitLine(" -> \(producerMethod.returnType)")
+    }
+
+    fileprivate func _generateProducerMethodSignature(
+        _ protocolInfo: ProducerProtocolInfo,
+        _ producerMethod: ProducerMethodInfo
+    ) throws -> FunctionSignature {
+        var parameters: [ParameterSignature] = []
+
+        parameters.append(.init(label: "_mark", name: "_mark", type: "Mark"))
+        for param in producerMethod.bindingParameters {
+            let label = escapeIdentifier(param.name)
+
+            parameters.append(
+                .init(label: label, name: label, type: param.type.asSwiftASTType)
+            )
+        }
+
+        return FunctionSignature(
+            attributes: [],
+            name: producerMethod.methodName,
+            parameters: parameters,
+            returnType: .nominal(producerMethod.returnType.asSwiftASTType),
+            traits: [.throwing]
+        )
     }
 }
 
@@ -144,6 +269,46 @@ extension SwiftCodeGen {
         buffer.ensureDoubleNewline()
     }
 
+    func _generateDefaultProducerProtocol(
+        _ protocolInfo: ProducerProtocolInfo,
+        _ implementationInfo: ProducerProtocolImplementationInfo
+    ) throws -> ClassDecl {
+
+        let prefix: String
+        switch implementationInfo.kind {
+        case .default:
+            prefix = "Default"
+
+        case .void:
+            prefix = "Void"
+        }
+
+        var members: [MemberDecl] = []
+        members.append(
+            contentsOf: try _generateDefaultProducerTypealiases(
+                protocolInfo,
+                implementationInfo
+            ).map { .typealias($0) }
+        )
+        members.append(
+            contentsOf: try _generateDefaultProducerMethods(
+                protocolInfo,
+                implementationInfo
+            ).map { .function($0) }
+        )
+
+        return .init(
+            name: "\(prefix)\(protocolInfo.name)",
+            genericArguments: [
+                .init(name: "RawTokenizer", type: "RawTokenizerType")
+            ],
+            inheritances: [
+                .typeName(protocolInfo.name)
+            ],
+            members: members
+        )
+    }
+
     func generateDefaultProducerTypealiases(
         _ protocolInfo: ProducerProtocolInfo,
         _ implementationInfo: ProducerProtocolImplementationInfo
@@ -174,6 +339,66 @@ extension SwiftCodeGen {
         buffer.ensureDoubleNewline()
     }
 
+    func _generateDefaultProducerTypealiases(
+        _ protocolInfo: ProducerProtocolInfo,
+        _ implementationInfo: ProducerProtocolImplementationInfo
+    ) throws -> [TypealiasMemberDecl] {
+
+        var result: [TypealiasMemberDecl] = []
+
+        // public typealias Mark = Tokenizer<RawTokenizer>.Mark
+        result.append(
+            .init(
+                accessLevel: .public,
+                alias: "Mark",
+                type: .nested(
+                    .init(
+                        base: .generic("Tokenizer", parameters: ["RawTokenizer"]),
+                        nested: .typeName("Mark")
+                    )
+                )
+            )
+        )
+        // public typealias Token = Tokenizer<RawTokenizer>.Token
+        result.append(
+            .init(
+                accessLevel: .public,
+                alias: "Token",
+                type: .nested(
+                    .init(
+                        base: .generic("Tokenizer", parameters: ["RawTokenizer"]),
+                        nested: .typeName("Token")
+                    )
+                )
+            )
+        )
+
+        for rule in grammar.rules {
+            guard let identifier = protocolInfo.ruleReturnType[rule.name] else {
+                continue
+            }
+
+            let returnType: CommonAbstract.SwiftType
+            switch implementationInfo.kind {
+            case .default:
+                returnType = bindingEngine.returnTypeForRule(rule).unwrapped
+
+            case .void:
+                returnType = "Void"
+            }
+
+            result.append(
+                .init(
+                    accessLevel: .public,
+                    alias: identifier.description,
+                    type: returnType.asSwiftASTType
+                )
+            )
+        }
+
+        return result
+    }
+
     func generateDefaultProducerMethods(
         _ protocolInfo: ProducerProtocolInfo,
         _ implementationInfo: ProducerProtocolImplementationInfo
@@ -192,6 +417,30 @@ extension SwiftCodeGen {
 
             buffer.ensureDoubleNewline()
         }
+    }
+
+    func _generateDefaultProducerMethods(
+        _ protocolInfo: ProducerProtocolInfo,
+        _ implementationInfo: ProducerProtocolImplementationInfo
+    ) throws -> [FunctionMemberDecl] {
+        var result: [FunctionMemberDecl] = []
+
+        for rule in grammar.rules {
+            let methods = protocolInfo.allRuleProducer(for: rule)
+
+            for method in methods {
+                let decl = try _generateDefaultProducerMethod(
+                    protocolInfo,
+                    implementationInfo,
+                    rule: rule,
+                    method: method
+                )
+
+                result.append(decl)
+            }
+        }
+
+        return result
     }
 
     func generateDefaultProducerMethod(
@@ -221,6 +470,45 @@ extension SwiftCodeGen {
                 break
             }
         }
+    }
+
+    func _generateDefaultProducerMethod(
+        _ protocolInfo: ProducerProtocolInfo,
+        _ implementationInfo: ProducerProtocolImplementationInfo,
+        rule: InternalGrammar.Rule,
+        method: ProducerMethodInfo
+    ) throws -> FunctionMemberDecl {
+        var signature = try _generateProducerMethodSignature(protocolInfo, method)
+        signature.attributes.append(.init(name: "inlinable"))
+
+        let body: CompoundStatement = []
+
+        switch implementationInfo.kind {
+        case .default:
+            let alt = rule.alts[method.altIndex]
+
+            let exp = _generateOnAltMatchBlockInterior(alt, rule.type)
+
+            if implicitReturns {
+                body.appendStatement(
+                    .return(exp)
+                )
+            } else {
+                body.appendStatement(
+                    .expression(exp)
+                )
+            }
+
+        case .void:
+            break
+        }
+
+        return .init(
+            leadingComments: [],
+            accessLevel: .public,
+            signature: signature,
+            body: body
+        )
     }
 }
 
@@ -421,6 +709,21 @@ extension SwiftCodeGen {
 
             result += ")"
             return result
+        }
+
+        /// Makes a standard call expression that invokes this producer method,
+        /// assuming all parameters are available as equal identifiers in the
+        /// call site.
+        func _makeCallExpression(
+            _ lead: Expression,
+            _ escapeIdentifier: (String, _ isLabel: Bool) -> String
+        ) -> Expression {
+            let params = ["_mark"] + bindingParameters.map(\.name)
+
+            return lead.dot(methodName)
+                .call(params.map { param in
+                    FunctionArgument(label: escapeIdentifier(param, true), expression: .identifier(escapeIdentifier(param, false)))
+                })
         }
     }
 }

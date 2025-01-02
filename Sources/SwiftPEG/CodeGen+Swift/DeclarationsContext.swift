@@ -1,3 +1,5 @@
+import SwiftAST
+
 /// A stack-based context for defining non-overlapping variable names.
 public final class DeclarationsContext {
     var _nonce: Int = 0
@@ -205,6 +207,19 @@ public final class DeclarationsContext {
 
             /// A cut flag type.
             case cutFlag
+
+            var asSwiftASTType: SwiftType {
+                switch self {
+                case .none:
+                    return .any
+
+                case .marker:
+                    return "Mark"
+
+                case .cutFlag:
+                    return "CutFlag"
+                }
+            }
         }
     }
 }
