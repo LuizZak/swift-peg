@@ -1589,8 +1589,7 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
                 break alt
             }
 
-            if consume_exponent_part(from: &stream) {
-            }
+            _ = consume_exponent_part(from: &stream)
 
             return true
         }
@@ -1668,8 +1667,7 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            if consume_digit_sequence(from: &stream) {
-            }
+            _ = consume_digit_sequence(from: &stream)
 
             guard stream.isNext(".") else {
                 break alt
@@ -1810,8 +1808,7 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            if consume_hexadecimal_digit_sequence(from: &stream) {
-            }
+            _ = consume_hexadecimal_digit_sequence(from: &stream)
 
             guard stream.isNext(".") else {
                 break alt
@@ -1940,8 +1937,7 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
 
             stream.advance()
 
-            if consume_sign(from: &stream) {
-            }
+            _ = consume_sign(from: &stream)
 
             guard consume_digit_sequence(from: &stream) else {
                 break alt
@@ -1960,8 +1956,7 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
 
             stream.advance()
 
-            if consume_sign(from: &stream) {
-            }
+            _ = consume_sign(from: &stream)
 
             guard consume_digit_sequence(from: &stream) else {
                 break alt
@@ -1996,8 +1991,7 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
 
             stream.advance()
 
-            if consume_sign(from: &stream) {
-            }
+            _ = consume_sign(from: &stream)
 
             guard consume_digit_sequence(from: &stream) else {
                 break alt
@@ -2016,8 +2010,7 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
 
             stream.advance()
 
-            if consume_sign(from: &stream) {
-            }
+            _ = consume_sign(from: &stream)
 
             guard consume_digit_sequence(from: &stream) else {
                 break alt

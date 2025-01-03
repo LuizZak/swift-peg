@@ -5275,8 +5275,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
             stream.advance()
 
-            if consume_sign(from: &stream) {
-            }
+            _ = consume_sign(from: &stream)
 
             guard consume_digit_sequence(from: &stream) else {
                 break alt
@@ -5295,8 +5294,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
             stream.advance()
 
-            if consume_sign(from: &stream) {
-            }
+            _ = consume_sign(from: &stream)
 
             guard consume_digit_sequence(from: &stream) else {
                 break alt
@@ -5403,8 +5401,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            if consume_encoding_prefix(from: &stream) {
-            }
+            _ = consume_encoding_prefix(from: &stream)
 
             guard stream.isNext("\\'") else {
                 break alt
@@ -5412,8 +5409,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
             stream.advance()
 
-            if consume_c_char_sequence(from: &stream) {
-            }
+            _ = consume_c_char_sequence(from: &stream)
 
             guard stream.isNext("\\'") else {
                 break alt
@@ -5625,8 +5621,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
             stream.advance()
 
-            if consume_sign(from: &stream) {
-            }
+            _ = consume_sign(from: &stream)
 
             guard consume_digit_sequence(from: &stream) else {
                 break alt
@@ -5645,8 +5640,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
             stream.advance()
 
-            if consume_sign(from: &stream) {
-            }
+            _ = consume_sign(from: &stream)
 
             guard consume_digit_sequence(from: &stream) else {
                 break alt
@@ -5682,11 +5676,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                 break alt
             }
 
-            if consume_exponent_part(from: &stream) {
-            }
+            _ = consume_exponent_part(from: &stream)
 
-            if consume_floating_suffix(from: &stream) {
-            }
+            _ = consume_floating_suffix(from: &stream)
 
             return true
         }
@@ -5703,8 +5695,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                 break alt
             }
 
-            if consume_floating_suffix(from: &stream) {
-            }
+            _ = consume_floating_suffix(from: &stream)
 
             return true
         }
@@ -5725,8 +5716,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                 break alt
             }
 
-            if consume_floating_suffix(from: &stream) {
-            }
+            _ = consume_floating_suffix(from: &stream)
 
             return true
         }
@@ -5747,8 +5737,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                 break alt
             }
 
-            if consume_floating_suffix(from: &stream) {
-            }
+            _ = consume_floating_suffix(from: &stream)
 
             return true
         }
@@ -5925,8 +5914,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            if consume_digit_sequence(from: &stream) {
-            }
+            _ = consume_digit_sequence(from: &stream)
 
             guard stream.isNext(".") else {
                 break alt
@@ -6101,8 +6089,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            if consume_hexadecimal_digit_sequence(from: &stream) {
-            }
+            _ = consume_hexadecimal_digit_sequence(from: &stream)
 
             guard stream.isNext(".") else {
                 break alt
@@ -6200,8 +6187,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                 break alt
             }
 
-            if consume_integer_suffix(from: &stream) {
-            }
+            _ = consume_integer_suffix(from: &stream)
 
             return true
         }
@@ -6214,8 +6200,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                 break alt
             }
 
-            if consume_integer_suffix(from: &stream) {
-            }
+            _ = consume_integer_suffix(from: &stream)
 
             return true
         }
@@ -6228,8 +6213,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                 break alt
             }
 
-            if consume_integer_suffix(from: &stream) {
-            }
+            _ = consume_integer_suffix(from: &stream)
 
             return true
         }
@@ -6242,8 +6226,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                 return false
             }
 
-            if consume_integer_suffix(from: &stream) {
-            }
+            _ = consume_integer_suffix(from: &stream)
 
             return true
         }
@@ -6273,8 +6256,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                 break alt
             }
 
-            if consume_long_suffix(from: &stream) {
-            }
+            _ = consume_long_suffix(from: &stream)
 
             return true
         }
@@ -6317,8 +6299,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                 break alt
             }
 
-            if consume_unsigned_suffix(from: &stream) {
-            }
+            _ = consume_unsigned_suffix(from: &stream)
 
             return true
         }
@@ -6331,8 +6312,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                 break alt
             }
 
-            if consume_unsigned_suffix(from: &stream) {
-            }
+            _ = consume_unsigned_suffix(from: &stream)
 
             return true
         }
@@ -6345,8 +6325,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                 return false
             }
 
-            if consume_unsigned_suffix(from: &stream) {
-            }
+            _ = consume_unsigned_suffix(from: &stream)
 
             return true
         }
@@ -6515,8 +6494,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            if consume_encoding_prefix(from: &stream) {
-            }
+            _ = consume_encoding_prefix(from: &stream)
 
             guard stream.isNext("\\"") else {
                 break alt
@@ -6524,8 +6502,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
             stream.advance()
 
-            if consume_s_char_sequence(from: &stream) {
-            }
+            _ = consume_s_char_sequence(from: &stream)
 
             guard stream.isNext("\\"") else {
                 break alt

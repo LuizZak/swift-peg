@@ -5,7 +5,9 @@ extension SwiftCodeGen {
     public func generateTokenType(
         settings: TokenTypeGenSettings = .default
     ) throws -> String {
-        let decls = try _generateTokenType(settings: settings)
+        var decls = try _generateTokenType(settings: settings)
+
+        decls = _applySyntaxPasses(decls)
 
         let emitter = SwiftASTEmitter()
         let conditional = emitter.buffer.startConditionalEmitter()
@@ -15,6 +17,14 @@ extension SwiftCodeGen {
         }
 
         return emitter.finishBuffer()
+    }
+
+    private func _applySyntaxPasses(_ decls: [TopLevelDecl]) -> [TopLevelDecl] {
+        let applier = SyntaxNodeRewriterApplier(topLevelDecls: decls)
+
+        applier.apply(OptionalIfStatementSimplifier())
+
+        return applier.topLevelDecls
     }
 
     /// Generates Swift code defining the Token type of the grammar.
@@ -1625,5 +1635,26 @@ extension SwiftCodeGen {
 private extension InternalGrammar.TokenDefinition {
     var isWhitespace: Bool {
         self.tokenCodeReference == ".whitespace" || self.tokenCodeReference == "whitespace" || self.name == "whitespace"
+    }
+}
+
+/// Simplifies non-top-level if expressions into their singular conditional clause,
+/// in case their bodies are empty.
+private class OptionalIfStatementSimplifier: SyntaxNodeRewriter {
+    override func visitIf(_ stmt: IfExpression) -> Expression {
+        guard stmt.conditionalClauses.clauses.count == 1 else {
+            return stmt
+        }
+        guard stmt.conditionalClauses.clauses[0].pattern == nil else {
+            return stmt
+        }
+        guard stmt.body.isEmpty else {
+            return stmt
+        }
+        guard stmt.elseBody == nil else {
+            return stmt
+        }
+
+        return .assignment(lhs: .identifier("_"), op: .assign, rhs: stmt.conditionalClauses.clauses[0].expression.copy())
     }
 }
