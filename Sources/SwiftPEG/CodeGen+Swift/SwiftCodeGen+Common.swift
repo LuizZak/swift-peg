@@ -10,7 +10,7 @@ extension SwiftCodeGen {
     /// ```
     /// let markVarName = self.mark()
     /// ```
-    func _generateMarkDeclaration(markVarName: String = "_mark") -> (Statement, String) {
+    func generateMarkDeclaration(markVarName: String = "_mark") -> (Statement, String) {
         let markVar = declContext.defineLocal(
             suggestedName: markVarName,
             type: .marker
@@ -31,7 +31,7 @@ extension SwiftCodeGen {
     /// ```
     /// self.restore(markVarName)
     /// ```
-    func _generateMarkRestore(markVarName: String) -> Statement {
+    func generateMarkRestore(markVarName: String) -> Statement {
         return .expression(
             .identifier("self").dot("restore").call([.identifier(markVarName)])
         )
@@ -47,7 +47,7 @@ extension SwiftCodeGen {
     /// ```
     /// var cutVarName = CutFlag()
     /// ```
-    func _generateCutFlagDeclaration(cutVarName: String = "_cut") -> (Statement, String) {
+    func generateCutFlagDeclaration(cutVarName: String = "_cut") -> (Statement, String) {
         let cutVar = declContext.defineLocal(
             suggestedName: cutVarName,
             type: .cutFlag
@@ -88,11 +88,11 @@ extension SwiftCodeGen {
     ///     failBlock()
     /// }
     /// ```
-    func _generateCutFlagBailStatement(
+    func generateCutFlagBailStatement(
         cutVarName: String,
         _ failBlock: () throws -> [Statement]
     ) rethrows -> Statement {
-        let bailExpr = _generateCutFlagBailExpression(cutVarName: cutVarName)
+        let bailExpr = generateCutFlagBailExpression(cutVarName: cutVarName)
 
         return .if(bailExpr, body: .init(statements: try failBlock()))
     }
@@ -100,7 +100,7 @@ extension SwiftCodeGen {
     /// Generates a cut flag check expression in the buffer.
     ///
     /// `cutVarName.isOn()`
-    func _generateCutFlagBailExpression(cutVarName: String) -> Expression {
+    func generateCutFlagBailExpression(cutVarName: String) -> Expression {
         return .identifier(cutVarName).dot("isOn")
     }
 }

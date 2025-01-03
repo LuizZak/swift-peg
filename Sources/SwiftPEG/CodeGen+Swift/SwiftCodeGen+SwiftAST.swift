@@ -69,7 +69,7 @@ extension SwiftCodeGen {
 
         if settings.emitProducerProtocol {
             let protocolInfo = producerProtocolInfo()
-            result.append(.protocol(try _generateProducerProtocol(protocolInfo)))
+            result.append(.protocol(try generateProducerProtocol(protocolInfo)))
 
             let ruleReturnAliases: [String: CommonAbstract.SwiftType] =
                 protocolInfo
@@ -78,11 +78,11 @@ extension SwiftCodeGen {
                 }
 
             let info = generateDefaultProducerImplementationInfo()
-            result.append(.class(try _generateDefaultProducerProtocol(protocolInfo, info)))
+            result.append(.class(try generateDefaultProducerProtocol(protocolInfo, info)))
 
             if settings.emitVoidProducer {
                 let info = generateVoidProducerImplementationInfo()
-                result.append(.class(try _generateDefaultProducerProtocol(protocolInfo, info)))
+                result.append(.class(try generateDefaultProducerProtocol(protocolInfo, info)))
             }
 
             self.producerProtocol = protocolInfo
@@ -91,7 +91,7 @@ extension SwiftCodeGen {
 
         self.remaining = grammar.rules.map(RemainingProduction.rule)
 
-        let members = try _generateRemainingProductions()
+        let members = try generateRemainingProductions()
 
         result.append(
             .extension(
@@ -104,13 +104,13 @@ extension SwiftCodeGen {
 
     // MARK: - Main productions
 
-    func _generateRemainingProductions() throws -> [MemberDecl] {
+    func generateRemainingProductions() throws -> [MemberDecl] {
         var result: [MemberDecl] = []
 
         while !remaining.isEmpty {
             let next = remaining.removeFirst()
 
-            result.append(contentsOf: try _generateRemainingProduction(next))
+            result.append(contentsOf: try generateRemainingProduction(next))
 
             generated.append(next)
         }
@@ -118,20 +118,20 @@ extension SwiftCodeGen {
         return result
     }
 
-    func _generateRemainingProduction(_ production: RemainingProduction) throws -> [MemberDecl] {
+    func generateRemainingProduction(_ production: RemainingProduction) throws -> [MemberDecl] {
         switch production {
         case .rule(let rule):
-            if let rule = try _generateRule(rule, for: production) {
+            if let rule = try generateRule(rule, for: production) {
                 return [.function(rule)]
             }
 
         case .auxiliary(let rule, _):
-            if let rule = try _generateRule(rule, for: production) {
+            if let rule = try generateRule(rule, for: production) {
                 return [.function(rule)]
             }
 
         case .nonStandardRepetition(let auxInfo, let repetition):
-            let rule = try _generateNonStandardRepetition(
+            let rule = try generateNonStandardRepetition(
                 auxInfo,
                 repetition,
                 for: production
@@ -145,7 +145,7 @@ extension SwiftCodeGen {
 
     // MARK: Production: Rule/Auxiliary rule
 
-    fileprivate func _generateRule(
+    fileprivate func generateRule(
         _ rule: InternalGrammar.Rule,
         for production: RemainingProduction
     ) throws -> FunctionMemberDecl? {
@@ -153,14 +153,14 @@ extension SwiftCodeGen {
             return nil
         }
 
-        let comments = _generateRuleDocComment(rule)
+        let comments = generateRuleDocComment(rule)
 
         // @memoized/@memoizedLeftRecursive
         // @inlinable
         let name = bindingEngine.alias(for: rule)
         let memoizationMode = memoizationMode(for: production)
 
-        let attributes = _generateRuleMethodAttributes(
+        let attributes = generateRuleMethodAttributes(
             memoization: memoizationMode,
             memoizedName: name
         )
@@ -183,7 +183,7 @@ extension SwiftCodeGen {
         // ...if-let alt patterns...
         //
         // return nil
-        let failReturnExpression = _failReturnExpression(for: rule.type)
+        let failReturnExpression = failReturnExpression(for: rule.type)
 
         declContext.push()
         defer { declContext.pop() }
@@ -191,7 +191,7 @@ extension SwiftCodeGen {
         let bailBlock: () -> [Statement] = {
             var result: [Statement] = []
             if let action = rule.failAction {
-                let action = self._generateAction(action)
+                let action = self.generateAction(action)
                 result.append(.expression(action))
             }
             result.append(.return(failReturnExpression.copy()))
@@ -205,27 +205,27 @@ extension SwiftCodeGen {
         var cutBlock: () -> Statement = { .do([]) }
 
         if requiresMarkers {
-            let (stmt, backtrackMarkerName) = _generateMarkDeclaration()
+            let (stmt, backtrackMarkerName) = generateMarkDeclaration()
             body.appendStatement(stmt)
             markerBlock = {
-                self._generateMarkRestore(markVarName: backtrackMarkerName)
+                self.generateMarkRestore(markVarName: backtrackMarkerName)
             }
         }
         if requiresCutFlag {
-            let (stmt, cutFlagName) = _generateCutFlagDeclaration()
+            let (stmt, cutFlagName) = generateCutFlagDeclaration()
             body.appendStatement(stmt)
             cutBlock = {
-                self._generateCutFlagBailStatement(cutVarName: cutFlagName, bailBlock)
+                self.generateCutFlagBailStatement(cutVarName: cutFlagName, bailBlock)
             }
         }
 
         if let action = rule.action {
-            let expr = _generateAction(action)
+            let expr = generateAction(action)
             body.appendStatement(.expression(expr))
         }
 
         for (altIndex, alt) in rule.alts.enumerated() {
-            let stmts = try _generateAlt(
+            let stmts = try generateAlt(
                 alt,
                 altIndex,
                 in: production,
@@ -248,7 +248,7 @@ extension SwiftCodeGen {
 
     // MARK: Production: Non-standard repetition with trailing cases
 
-    func _generateNonStandardRepetition(
+    func generateNonStandardRepetition(
         _ info: AuxiliaryRuleInformation,
         _ repetitionInfo: RepetitionInfo,
         for production: RemainingProduction
@@ -261,13 +261,13 @@ extension SwiftCodeGen {
         let returnType = ruleType.asSwiftASTType.scg_removingTupleLabels()
 
         // Synthesize method
-        let comments = _generateRuleDocComment(ruleName, info.bindings.be_asTupleType(), nil, nil, [
+        let comments = generateRuleDocComment(ruleName, info.bindings.be_asTupleType(), nil, nil, [
             .init(namedItems: [repetitionInfo.repetition] + repetitionInfo.trail)
         ])
 
         // @memoized/@memoizedLeftRecursive
         // @inlinable
-        let attributes = _generateRuleMethodAttributes(
+        let attributes = generateRuleMethodAttributes(
             memoization: info.memoizationMode,
             memoizedName: ruleName
         )
@@ -293,7 +293,7 @@ extension SwiftCodeGen {
             return bindingEngine.typeForAtom(repetitionAtom())
         }
 
-        let failReturnExpression = _failReturnExpression(for: ruleType)
+        let failReturnExpression = failReturnExpression(for: ruleType)
         let info = RepetitionBodyGenInfo(
             production: production,
             ruleInfo: info,
@@ -309,34 +309,34 @@ extension SwiftCodeGen {
         switch repetitionInfo.repetition {
         case .item(_, .zeroOrMore(_, repetitionMode: .minimal), _):
             body.appendStatements(
-                try _generateZeroOrMoreMinimalBody(info)
+                try generateZeroOrMoreMinimalBody(info)
             )
 
         case .item(_, .zeroOrMore(_, repetitionMode: .maximal), _):
             body.appendStatements(
-                try _generateZeroOrMoreMaximalBody(info)
+                try generateZeroOrMoreMaximalBody(info)
             )
 
         case .item(_, .oneOrMore(_, repetitionMode: .minimal), _):
             body.appendStatements(
-                try _generateOneOrMoreMinimalBody(info)
+                try generateOneOrMoreMinimalBody(info)
             )
 
         case .item(_, .oneOrMore(_, repetitionMode: .maximal), _):
             body.appendStatements(
-                try _generateOneOrMoreMaximalBody(info)
+                try generateOneOrMoreMaximalBody(info)
             )
 
         case .item(_, .gather(let sep, let node, repetitionMode: .minimal), _):
             body.appendStatements(
-                try _generateGatherMinimalBody(
+                try generateGatherMinimalBody(
                     separator: sep, node: node, info
                 )
             )
 
         case .item(_, .gather(let sep, let node, repetitionMode: .maximal), _):
             body.appendStatements(
-                try _generateGatherMaximalBody(
+                try generateGatherMaximalBody(
                     separator: sep, node: node, info
                 )
             )
@@ -365,14 +365,14 @@ extension SwiftCodeGen {
     /// ///     ;
     /// /// ```
     /// ```
-    fileprivate func _generateRuleDocComment(_ rule: InternalGrammar.Rule) -> [SwiftComment] {
+    fileprivate func generateRuleDocComment(_ rule: InternalGrammar.Rule) -> [SwiftComment] {
         let ruleName = rule.name
         let ruleType = rule.type
         let action = rule.action
         let failAction = rule.failAction
         let alts = rule.alts
 
-        return _generateRuleDocComment(ruleName, ruleType, action, failAction, alts)
+        return generateRuleDocComment(ruleName, ruleType, action, failAction, alts)
     }
 
     /// ```
@@ -385,7 +385,7 @@ extension SwiftCodeGen {
     /// ///     ;
     /// /// ```
     /// ```
-    fileprivate func _generateRuleDocComment(
+    fileprivate func generateRuleDocComment(
         _ ruleName: String,
         _ ruleType: CommonAbstract.SwiftType?,
         _ action: InternalGrammar.Action?,
@@ -436,7 +436,7 @@ extension SwiftCodeGen {
     /// <none> / @memoized("<name>") / @memoizedLeftRecursive("<name>")
     /// @inlinable
     /// ```
-    fileprivate func _generateRuleMethodAttributes(
+    fileprivate func generateRuleMethodAttributes(
         memoization: MemoizationMode,
         memoizedName: String
     ) -> [DeclarationAttribute] {
@@ -464,7 +464,7 @@ extension SwiftCodeGen {
         return result
     }
 
-    fileprivate func _generateAlt(
+    fileprivate func generateAlt(
         _ alt: InternalGrammar.Alt,
         _ altIndex: Int,
         in production: RemainingProduction,
@@ -479,12 +479,12 @@ extension SwiftCodeGen {
         defer { declContext.pop() }
 
         // if bindings/conditions
-        let clauses = try _generateNamedItems(alt.namedItems, in: production)
+        let clauses = try generateNamedItems(alt.namedItems, in: production)
 
         // if block
         let ifExpr: Expression = .if(clauses: clauses.0, body: [
             // Successful alt match
-            _generateOnAltMatchBlock(alt, altIndex, in: production)
+            generateOnAltMatchBlock(alt, altIndex, in: production)
         ])
 
         results.append(.expression(ifExpr))
@@ -496,7 +496,7 @@ extension SwiftCodeGen {
 
         // Generate fail action, if present
         if let failAction = alt.failAction {
-            results.append(.expression(_generateAction(failAction)))
+            results.append(.expression(generateAction(failAction)))
         }
 
         if requiresCutFlag(alt) {
@@ -511,7 +511,7 @@ extension SwiftCodeGen {
     ///
     /// If `self.implicitReturns` is `true`, always appends `return` to the start
     /// of the action's resolved string.
-    fileprivate func _generateOnAltMatchBlock(
+    fileprivate func generateOnAltMatchBlock(
         _ alt: InternalGrammar.Alt,
         _ altIndex: Int,
         in production: RemainingProduction
@@ -529,7 +529,7 @@ extension SwiftCodeGen {
             )
         }
 
-        let exp = _generateOnAltMatchBlockInterior(
+        let exp = generateOnAltMatchBlockInterior(
             alt,
             production.productionType
         )
@@ -539,15 +539,15 @@ extension SwiftCodeGen {
         return .expression(exp)
     }
 
-    func _generateOnAltMatchBlockInterior(
+    func generateOnAltMatchBlockInterior(
         _ alt: InternalGrammar.Alt,
         _ productionType: CommonAbstract.SwiftType?
     ) -> Expression {
         if let action = alt.action {
-            return _generateAction(action)
+            return generateAction(action)
         }
 
-        let expression = _defaultReturnExpression(
+        let expression = defaultReturnExpression(
             for: alt,
             productionType: productionType
         )
@@ -559,7 +559,7 @@ extension SwiftCodeGen {
     ///
     /// Whitespace surrounding the action's string is stripped before emitting
     /// the string.
-    fileprivate func _generateAction(_ action: InternalGrammar.Action) -> Expression {
+    fileprivate func generateAction(_ action: InternalGrammar.Action) -> Expression {
         return .unknown(.init(context: action.string.trimmingWhitespace()))
     }
 
@@ -569,7 +569,7 @@ extension SwiftCodeGen {
     /// Returns an array of arrays containing the deduplicated names of all named
     /// bindings created. Return is empty if no named bindings where created.
     @discardableResult
-    func _generateNamedItems(
+    func generateNamedItems(
         _ namedItems: [InternalGrammar.NamedItem],
         in production: RemainingProduction
     ) throws -> (ConditionalClauses, [[String]]) {
@@ -589,7 +589,7 @@ extension SwiftCodeGen {
                 // Emit a dummy item that binds the repetition's results
                 let item: InternalGrammar.Item = .atom(.ruleName(auxInfo.name))
 
-                let (clauses, bindings) = try _generateBindingsToItem(
+                let (clauses, bindings) = try generateBindingsToItem(
                     item, auxInfo.bindings,
                     in: production
                 )
@@ -599,7 +599,7 @@ extension SwiftCodeGen {
                 // Stop emitting items after the repetition binding is emitted
                 break
             } else {
-                let (clauses, bindings) = try _generateNamedItem(namedItem, in: production)
+                let (clauses, bindings) = try generateNamedItem(namedItem, in: production)
                 resultClauses.append(clauses)
                 resultBindings.append(bindings)
             }
@@ -616,7 +616,7 @@ extension SwiftCodeGen {
     /// Returns an array containing the deduplicated names of all named bindings
     /// created. Return is empty if no named bindings where created.
     @discardableResult
-    fileprivate func _generateNamedItem(
+    fileprivate func generateNamedItem(
         _ namedItem: InternalGrammar.NamedItem,
         in production: RemainingProduction
     ) throws -> (ConditionalClauseElement, [String]) {
@@ -630,10 +630,10 @@ extension SwiftCodeGen {
                 ]
             }
 
-            return try _generateBindingsToItem(item, bindings, in: production)
+            return try generateBindingsToItem(item, bindings, in: production)
 
         case .lookahead(let lookahead):
-            let exp = try _generateLookahead(lookahead, in: production)
+            let exp = try generateLookahead(lookahead, in: production)
             return (.init(expression: exp), [])
         }
     }
@@ -644,7 +644,7 @@ extension SwiftCodeGen {
     /// Returns an array containing the deduplicated names of all named bindings
     /// created. Return is empty if no named bindings where created.
     @discardableResult
-    func _generateBindingsToItem(
+    func generateBindingsToItem(
         _ item: InternalGrammar.Item,
         _ bindings: [BindingEngine.Binding],
         in production: RemainingProduction
@@ -652,14 +652,14 @@ extension SwiftCodeGen {
 
         // Emit bindings
         let isOptionalItem = item.isOptional || item.isOptionalItems
-        let (clause, bindingNames) = try _generatePatternBinds(
+        let (clause, bindingNames) = try generatePatternBinds(
             bindings,
             forceCase: isOptionalItem,
             performUnwrap: !isOptionalItem,
             in: production
         )
 
-        let exp = try _generateItem(item, in: production)
+        let exp = try generateItem(item, in: production)
 
         // Detect shuffleTuple requirement
         let requiresShuffle = bindingEngine.requiresTupleShuffling(item)
@@ -672,13 +672,13 @@ extension SwiftCodeGen {
         return (clause, bindingNames)
     }
 
-    fileprivate func _generateItem(
+    fileprivate func generateItem(
         _ item: InternalGrammar.Item,
         in production: RemainingProduction
     ) throws -> Expression {
         switch item {
         case .optional(let atom):
-            return try _generateAtom(atom, unwrapped: false, in: production)
+            return try generateAtom(atom, unwrapped: false, in: production)
 
         case .optionalItems(let alts):
             let aux = enqueueAuxiliaryRule(
@@ -693,33 +693,33 @@ extension SwiftCodeGen {
         case .gather(let sep, let item, _):
             return .try(.identifier("self").dot("gather").call([
                 .init(label: "separator", expression: .block(signature: nil, body: [
-                    .expression(try _generateAtom(sep, unwrapped: false, in: production))
+                    .expression(try generateAtom(sep, unwrapped: false, in: production))
                 ])),
                 .init(label: "item", expression: .block(signature: nil, body: [
-                    .expression(try _generateAtom(item, unwrapped: false, in: production))
+                    .expression(try generateAtom(item, unwrapped: false, in: production))
                 ])),
             ]))
 
         case .zeroOrMore(let atom, _):
             return .try(.identifier("self").dot("repeatZeroOrMore").call([
                 .block(signature: nil, body: [
-                    .expression(try _generateAtom(atom, unwrapped: false, in: production))
+                    .expression(try generateAtom(atom, unwrapped: false, in: production))
                 ])
             ]))
 
         case .oneOrMore(let atom, _):
             return .try(.identifier("self").dot("repeatOneOrMore").call([
                 .block(signature: nil, body: [
-                    .expression(try _generateAtom(atom, unwrapped: false, in: production))
+                    .expression(try generateAtom(atom, unwrapped: false, in: production))
                 ])
             ]))
 
         case .atom(let atom):
-            return try _generateAtom(atom, unwrapped: false, in: production)
+            return try generateAtom(atom, unwrapped: false, in: production)
         }
     }
 
-    private func _generateLookahead(
+    private func generateLookahead(
         _ lookahead: InternalGrammar.Lookahead,
         in production: RemainingProduction
     ) throws -> Expression {
@@ -727,7 +727,7 @@ extension SwiftCodeGen {
         case .forced(let atom):
             return .try(.identifier("self").dot("expectForced").call([
                 .block(signature: nil, body: [
-                    .expression(try _generateAtom(atom, unwrapped: true, in: production))
+                    .expression(try generateAtom(atom, unwrapped: true, in: production))
                 ]),
                 .constant(.string(String(atom.description)))
             ]))
@@ -735,14 +735,14 @@ extension SwiftCodeGen {
         case .positive(let atom):
             return .try(.identifier("self").dot("positiveLookahead").call([
                 .block(signature: nil, body: [
-                    .expression(try _generateAtom(atom, unwrapped: true, in: production))
+                    .expression(try generateAtom(atom, unwrapped: true, in: production))
                 ])
             ]))
 
         case .negative(let atom):
             return .try(.identifier("self").dot("negativeLookahead").call([
                 .block(signature: nil, body: [
-                    .expression(try _generateAtom(atom, unwrapped: true, in: production))
+                    .expression(try generateAtom(atom, unwrapped: true, in: production))
                 ])
             ]))
 
@@ -751,7 +751,7 @@ extension SwiftCodeGen {
         }
     }
 
-    func _generateAtom(
+    func generateAtom(
         _ atom: InternalGrammar.Atom,
         unwrapped: Bool,
         in production: RemainingProduction
@@ -771,7 +771,7 @@ extension SwiftCodeGen {
             return .try(.identifier("self").dot(escapeIdentifier(ident)).call())
 
         case .token(let ident):
-            return .try(_expandTokenName(ident))
+            return .try(expandTokenName(ident))
 
         case .anyToken:
             return .try(.identifier("self").dot("nextToken").call())
@@ -790,7 +790,7 @@ extension SwiftCodeGen {
             // Escape backslashes contents
             literal = literal.replacing("\\", with: #"\\"#)
 
-            let callArgs = self._expectArguments(forLiteral: literal, raw: raw)
+            let callArgs = self.expectArguments(forLiteral: literal, raw: raw)
 
             return .try(.identifier("self").dot("expect").call(callArgs))
         }
@@ -808,7 +808,7 @@ extension SwiftCodeGen {
     /// Returns an array containing the deduplicated names of all named bindings
     /// created. Return is empty if no named bindings where created.
     @discardableResult
-    fileprivate func _generatePatternBinds(
+    fileprivate func generatePatternBinds(
         _ bindings: [BindingEngine.Binding],
         forceCase: Bool = false,
         performUnwrap: Bool = true,
@@ -915,7 +915,7 @@ extension SwiftCodeGen {
         return (clause, deduplicatedBindings)
     }
 
-    private func _failReturnExpression(for type: CommonAbstract.SwiftType?) -> Expression {
+    private func failReturnExpression(for type: CommonAbstract.SwiftType?) -> Expression {
         return .constant(.nil)
     }
 
@@ -947,7 +947,7 @@ extension SwiftCodeGen {
 extension SwiftCodeGen {
     /// Generates a default expression representing the return of an alternative,
     /// ignoring its associated action.
-    func _defaultReturnExpression(
+    func defaultReturnExpression(
         for alt: InternalGrammar.Alt,
         productionType: CommonAbstract.SwiftType?
     ) -> Expression {
@@ -976,7 +976,7 @@ extension SwiftCodeGen {
 
     /// Attempts to compute a default return action for a given set of return
     /// elements of a rule or auxiliary rule.
-    func _defaultReturnAction(
+    func defaultReturnAction(
         for elements: [AuxiliaryRuleInformation.ReturnElement]
     ) -> InternalGrammar.Action {
 
@@ -987,7 +987,7 @@ extension SwiftCodeGen {
 
     /// Attempts to compute a default return action for a given set of
     /// `<label>: <identifier>` pair expressions.
-    func _defaultReturnAction(
+    func defaultReturnAction(
         for labeledExpressions: [(label: String, identifier: String)]
     ) -> InternalGrammar.Action {
 
@@ -998,7 +998,7 @@ extension SwiftCodeGen {
 
     /// Attempts to compute a default return expression for a given set of
     /// `<label>: <identifier>` pair expressions.
-    func _defaultReturnExpression(
+    func defaultReturnExpression(
         for labeledExpressions: [(label: String?, identifier: String)]
     ) -> Expression {
 
@@ -1022,7 +1022,7 @@ extension SwiftCodeGen {
 // MARK: - Rule return type management
 
 fileprivate extension SwiftCodeGen {
-    func _returnType(for rule: InternalGrammar.Rule) -> SwiftType {
+    func returnType(for rule: InternalGrammar.Rule) -> SwiftType {
         bindingEngine.returnTypeForRule(rule).asSwiftASTType
     }
 }
@@ -1036,15 +1036,15 @@ fileprivate extension SwiftCodeGen {
     /// If the identifier matches a known token definition with explicit
     /// 'tokenCodeReference', returns `self.expect(<tokenCodeReference>)`, otherwise returns
     /// `self.<ident>()`, as a fallback.
-    func _expandTokenName(_ ident: String) -> Expression {
+    func expandTokenName(_ ident: String) -> Expression {
         if
             let token = bindingEngine.tokenDefinition(named: ident),
-            let tokenCodeReference = _tokenCodeReference(for: token)
+            let tokenCodeReference = tokenCodeReference(for: token)
         {
             return
                 .identifier("self")
                 .dot("expect")
-                .call(_expectArguments(forResolvedToken: tokenCodeReference))
+                .call(expectArguments(forResolvedToken: tokenCodeReference))
         }
 
         return
@@ -1060,16 +1060,16 @@ fileprivate extension SwiftCodeGen {
     /// If no associated token identifier has been defined in a .tokens file,
     /// the result is a default `kind: <identifier>` or `<identifier>`,
     /// depending on the value of '@tokenCall' meta-property, if present.
-    func _expectArguments(forIdentifier identifier: String) -> [FunctionArgument] {
+    func expectArguments(forIdentifier identifier: String) -> [FunctionArgument] {
         // Check for explicit token aliases
         if
             let token = bindingEngine.tokenDefinition(named: identifier),
-            let tokenCodeReference = _tokenCodeReference(for: token)
+            let tokenCodeReference = tokenCodeReference(for: token)
         {
-            return _expectArguments(forResolvedToken: tokenCodeReference)
+            return expectArguments(forResolvedToken: tokenCodeReference)
         }
 
-        return _expectArguments(forResolvedToken: .identifier(identifier))
+        return expectArguments(forResolvedToken: .identifier(identifier))
     }
 
     /// Returns the arguments to invoke a `PEGParser.expect()` call, as a
@@ -1079,16 +1079,16 @@ fileprivate extension SwiftCodeGen {
     /// If no associated token literal has been defined in a .tokens file, the
     /// result is a default `kind: "<literal>"` or `"<literal>"`, depending on
     /// the value of '@tokenCall' meta-property, if present.
-    func _expectArguments(forLiteral literal: String, raw: String) -> [FunctionArgument] {
+    func expectArguments(forLiteral literal: String, raw: String) -> [FunctionArgument] {
         // Check for explicit token aliases
         if
             let token = bindingEngine.tokenDefinition(ofRawLiteral: raw),
-            let tokenCodeReference = _tokenCodeReference(for: token)
+            let tokenCodeReference = tokenCodeReference(for: token)
         {
-            return _expectArguments(forResolvedToken: tokenCodeReference)
+            return expectArguments(forResolvedToken: tokenCodeReference)
         }
 
-        return _expectArguments(forResolvedToken: .constant(.string(raw)))
+        return expectArguments(forResolvedToken: .constant(.string(raw)))
     }
 
     /// Computes the static token name for a given token definition.
@@ -1099,7 +1099,7 @@ fileprivate extension SwiftCodeGen {
     ///
     /// If the token is missing both the static token and token syntax, it is
     /// assumed to be implemented off-lexer and the return is `nil`.
-    func _tokenCodeReference(for token: InternalGrammar.TokenDefinition) -> Expression? {
+    func tokenCodeReference(for token: InternalGrammar.TokenDefinition) -> Expression? {
         if let tokenCodeReference = token.tokenCodeReference {
             return .unknown(.init(context: tokenCodeReference))
         }
@@ -1112,7 +1112,7 @@ fileprivate extension SwiftCodeGen {
 
     /// Does final expansion of token `self.expect` call arguments based on the
     /// current configuration of `tokenCallKind`.
-    func _expectArguments(forResolvedToken resolvedToken: Expression) -> [FunctionArgument] {
+    func expectArguments(forResolvedToken resolvedToken: Expression) -> [FunctionArgument] {
         if tokenCallKind == .expectKind {
             return [.labeled("kind", resolvedToken)]
         } else {

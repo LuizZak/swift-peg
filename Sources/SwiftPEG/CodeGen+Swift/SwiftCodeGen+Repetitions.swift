@@ -2,8 +2,8 @@ import SwiftAST
 
 extension SwiftCodeGen {
     /// Produces a zero-or-more minimal (`*<`) repetition parsing method.
-    func _generateZeroOrMoreMinimalBody(_ info: RepetitionBodyGenInfo) throws -> [Statement] {
-        try __generateMinimalBody(info) { _ in
+    func generateZeroOrMoreMinimalBody(_ info: RepetitionBodyGenInfo) throws -> [Statement] {
+        try _generateMinimalBody(info) { _ in
             return [.init(expression: .constant(true))]
         } whileTail: { ctx in
             /*
@@ -17,8 +17,8 @@ extension SwiftCodeGen {
             }
             */
             let bindings = bindingEngine.bindings(for: info.repetitionAtom).be_unwrapped()
-            let ifExpr = try __generateIfLet(item: .atom(info.repetitionAtom), bindings: bindings, in: info.production) { bindingNames in
-                let expr = _defaultReturnExpression(for: bindingNames.scgr_asTupleExpr())
+            let ifExpr = try _generateIfLet(item: .atom(info.repetitionAtom), bindings: bindings, in: info.production) { bindingNames in
+                let expr = defaultReturnExpression(for: bindingNames.scgr_asTupleExpr())
 
                 buffer.emitLine("\(ctx.currentArrayName).append(\(expr))")
                 return .expression(
@@ -36,8 +36,8 @@ extension SwiftCodeGen {
     }
 
     /// Produces a zero-or-more maximal (`*>`) repetition parsing method.
-    func _generateZeroOrMoreMaximalBody(_ info: RepetitionBodyGenInfo) throws -> [Statement] {
-        try __generateMaximalBody(info) { _ in
+    func generateZeroOrMoreMaximalBody(_ info: RepetitionBodyGenInfo) throws -> [Statement] {
+        try _generateMaximalBody(info) { _ in
             /*
             var _current: [(Mark, <Item>)] = try self.repeatZeroOrMore({
                 if let <item> = try self.<item>() { return (self.mark(), <item>) }
@@ -47,11 +47,11 @@ extension SwiftCodeGen {
             declContext.push()
             let item = InternalGrammar.Item.atom(info.repetitionAtom)
             let bindings = bindingEngine.bindings(for: info.repetitionAtom).be_unwrapped()
-            let (clause, bound) = try _generateBindingsToItem(item, bindings, in: info.production)
+            let (clause, bound) = try generateBindingsToItem(item, bindings, in: info.production)
             let mapTupleExpr = (["self.mark()", bound.scgr_asTupleExprString()]).scgr_asTupleExpr()
             let itemStmts: [Statement] = [
                 .if(clauses: [clause], body: [
-                    .return(_defaultReturnExpression(for: mapTupleExpr))
+                    .return(defaultReturnExpression(for: mapTupleExpr))
                 ]),
                 .return(.constant(.nil)),
             ]
@@ -89,17 +89,17 @@ extension SwiftCodeGen {
     }
 
     /// Produces a one-or-more minimal (`+<`) repetition parsing method.
-    func _generateOneOrMoreMinimalBody(_ info: RepetitionBodyGenInfo) throws -> [Statement] {
+    func generateOneOrMoreMinimalBody(_ info: RepetitionBodyGenInfo) throws -> [Statement] {
         var nextBindings: [String] = []
-        return try __generateMinimalBody(info, whileCondition: { _ -> [ConditionalClauseElement] in
+        return try _generateMinimalBody(info, whileCondition: { _ -> [ConditionalClauseElement] in
             let item = InternalGrammar.Item.atom(info.repetitionAtom)
             let bindings = bindingEngine.bindings(for: info.repetitionAtom).be_unwrapped()
             let clause: ConditionalClauseElement
-            (clause, nextBindings) = try _generateBindingsToItem(item, bindings, in: info.production)
+            (clause, nextBindings) = try generateBindingsToItem(item, bindings, in: info.production)
 
             return [clause]
         }, whileHead: { ctx in
-            let expr = _defaultReturnExpression(for: nextBindings.scgr_asTupleExpr())
+            let expr = defaultReturnExpression(for: nextBindings.scgr_asTupleExpr())
 
             return .expression(
                 .identifier(ctx.currentArrayName).dot("append").call([expr])
@@ -108,8 +108,8 @@ extension SwiftCodeGen {
     }
 
     /// Produces a one-or-more maximal (`+>`) repetition parsing method.
-    func _generateOneOrMoreMaximalBody(_ info: RepetitionBodyGenInfo) throws -> [Statement] {
-        return try __generateMaximalBody(info) { _ in
+    func generateOneOrMoreMaximalBody(_ info: RepetitionBodyGenInfo) throws -> [Statement] {
+        return try _generateMaximalBody(info) { _ in
             /*
             var _current: [(Mark, <Item>)] = try self.repeatOneOrMore({
                 if let <item> = try self.<item>() { return (self.mark(), <item>) }
@@ -119,11 +119,11 @@ extension SwiftCodeGen {
             declContext.push()
             let item = InternalGrammar.Item.atom(info.repetitionAtom)
             let bindings = bindingEngine.bindings(for: info.repetitionAtom).be_unwrapped()
-            let (clause, bound) = try _generateBindingsToItem(item, bindings, in: info.production)
+            let (clause, bound) = try generateBindingsToItem(item, bindings, in: info.production)
             let mapTupleExpr = (["self.mark()", bound.scgr_asTupleExprString()]).scgr_asTupleExpr()
             let itemStmts: [Statement] = [
                 .if(clauses: [clause], body: [
-                    .return(_defaultReturnExpression(for: mapTupleExpr))
+                    .return(defaultReturnExpression(for: mapTupleExpr))
                 ]),
                 .return(.constant(.nil)),
             ]
@@ -152,28 +152,28 @@ extension SwiftCodeGen {
     }
 
     /// Produces a gather minimal (`<sep>.<node>+<`) repetition parsing method.
-    func _generateGatherMinimalBody(
+    func generateGatherMinimalBody(
         separator: InternalGrammar.Atom,
         node: InternalGrammar.Atom,
         _ info: RepetitionBodyGenInfo
     ) throws -> [Statement] {
         var nextBindings: [String] = []
-        return try __generateMinimalBody(info, whileCondition: { _ -> [ConditionalClauseElement] in
+        return try _generateMinimalBody(info, whileCondition: { _ -> [ConditionalClauseElement] in
             let item = InternalGrammar.Item.atom(info.repetitionAtom)
             let bindings = bindingEngine.bindings(for: info.repetitionAtom).be_unwrapped()
             let clause: ConditionalClauseElement
-            (clause, nextBindings) = try _generateBindingsToItem(item, bindings, in: info.production)
+            (clause, nextBindings) = try generateBindingsToItem(item, bindings, in: info.production)
 
             return [clause]
         }, whileHead: { ctx in
-            let expr = _defaultReturnExpression(for: nextBindings.scgr_asTupleExpr())
+            let expr = defaultReturnExpression(for: nextBindings.scgr_asTupleExpr())
 
             return .expression(
                 .identifier(ctx.currentArrayName).dot("append").call([expr])
             )
         }, whileTail: { ctx in
             let bindings = bindingEngine.bindings(for: separator).be_unlabeled()
-            let (stmt, _) = try __generateGuardBinding(item: .atom(separator), bindings: bindings, in: info.production) {
+            let (stmt, _) = try _generateGuardBinding(item: .atom(separator), bindings: bindings, in: info.production) {
                 return .break()
             }
 
@@ -182,12 +182,12 @@ extension SwiftCodeGen {
     }
 
     /// Produces a gather maximal (`<sep>.<node>+>`) repetition parsing method.
-    func _generateGatherMaximalBody(
+    func generateGatherMaximalBody(
         separator: InternalGrammar.Atom,
         node: InternalGrammar.Atom,
         _ info: RepetitionBodyGenInfo
     ) throws -> [Statement] {
-        try __generateMaximalBody(info) { _ in
+        try _generateMaximalBody(info) { _ in
             /*
             var _current: [(Mark, <Item>)] = try self.gather(separator: {
                 try self.<separator>()
@@ -197,17 +197,17 @@ extension SwiftCodeGen {
             })
             */
             declContext.push()
-            let separatorExpr = try _generateAtom(separator, unwrapped: true, in: info.production)
+            let separatorExpr = try generateAtom(separator, unwrapped: true, in: info.production)
             declContext.pop()
 
             declContext.push()
             let item = InternalGrammar.Item.atom(info.repetitionAtom)
             let bindings = bindingEngine.bindings(for: info.repetitionAtom).be_unwrapped()
-            let (clause, bound) = try _generateBindingsToItem(item, bindings, in: info.production)
+            let (clause, bound) = try generateBindingsToItem(item, bindings, in: info.production)
             let mapTupleExpr = (["self.mark()", bound.scgr_asTupleExprString()]).scgr_asTupleExpr()
             let itemStmts: [Statement] = [
                 .if(clauses: [clause], body: [
-                    .return(_defaultReturnExpression(for: mapTupleExpr))
+                    .return(defaultReturnExpression(for: mapTupleExpr))
                 ]),
                 .return(.constant(.nil)),
             ]
@@ -250,7 +250,7 @@ extension SwiftCodeGen {
     /// declaration.
     ///   - whileTail: An optional production that gets emitted at the end of the
     /// while loop's body, after the ending `self.restore(_mark)` statement.
-    fileprivate func __generateMinimalBody(
+    fileprivate func _generateMinimalBody(
         _ info: RepetitionBodyGenInfo,
         whileCondition: (BodyGenContext) throws -> [ConditionalClauseElement],
         whileHead: (BodyGenContext) throws -> Statement? = { _ in nil },
@@ -262,7 +262,7 @@ extension SwiftCodeGen {
         let repetitionItemType = info.repetitionAtomType.be_unwrapped().asSwiftASTType
 
         // Start of method body
-        let (markerStmt, markerName) = _generateMarkDeclaration()
+        let (markerStmt, markerName) = generateMarkDeclaration()
 
         result.append(markerStmt)
 
@@ -271,7 +271,7 @@ extension SwiftCodeGen {
         if requiresCut {
             let cutFlagStmt: Statement
 
-            (cutFlagStmt, cutFlagName) = _generateCutFlagDeclaration()
+            (cutFlagStmt, cutFlagName) = generateCutFlagDeclaration()
 
             result.append(cutFlagStmt)
         }
@@ -298,7 +298,7 @@ extension SwiftCodeGen {
 
         if requiresCut {
             whileClauses.append(
-                .init(expression: .unary(op: .negate, _generateCutFlagBailExpression(cutVarName: ctx.cutFlagName)))
+                .init(expression: .unary(op: .negate, generateCutFlagBailExpression(cutVarName: ctx.cutFlagName)))
             )
         }
 
@@ -307,15 +307,15 @@ extension SwiftCodeGen {
         if let whileHead = try whileHead(ctx) {
             whileBody.append(whileHead)
         }
-        let (whileMarkerStmt, whileMarker) = _generateMarkDeclaration()
+        let (whileMarkerStmt, whileMarker) = generateMarkDeclaration()
         whileBody.append(whileMarkerStmt)
 
         whileBody.append(
-            .expression(try __generateSuccessBlock(info, leadItemExpr: currentArray))
+            .expression(try _generateSuccessBlock(info, leadItemExpr: currentArray))
         )
 
         whileBody.append(
-            _generateMarkRestore(markVarName: whileMarker)
+            generateMarkRestore(markVarName: whileMarker)
         )
 
         if let whileTail = try whileTail(ctx) {
@@ -328,7 +328,7 @@ extension SwiftCodeGen {
 
         declContext.pop()
 
-        result.append(_generateMarkRestore(markVarName: markerName))
+        result.append(generateMarkRestore(markVarName: markerName))
         result.append(.return(info._failReturnExpression))
 
         return result
@@ -359,7 +359,7 @@ extension SwiftCodeGen {
     /// the main if-let binding of the while loop. Must emit a boolean expression
     /// or pattern binding that can be used by an `if` statement. Any named
     /// optional bindings will go unused within the `if` statement's body.
-    fileprivate func __generateMaximalBody(
+    fileprivate func _generateMaximalBody(
         _ info: RepetitionBodyGenInfo,
         initialProduction: (BodyGenContext) throws -> Expression,
         whileCondition: (BodyGenContext) throws -> [ConditionalClauseElement],
@@ -375,7 +375,7 @@ extension SwiftCodeGen {
             .unlabeled(repetitionItemType),
         ]).asSwiftASTType
 
-        let (markerStmt, markerName) = _generateMarkDeclaration()
+        let (markerStmt, markerName) = generateMarkDeclaration()
 
         result.append(markerStmt)
 
@@ -383,7 +383,7 @@ extension SwiftCodeGen {
         let requiresCut = requiresCutFlag(info.trailItems)
         if requiresCut {
             let cutStmt: Statement
-            (cutStmt, cutFlagName) = _generateCutFlagDeclaration()
+            (cutStmt, cutFlagName) = generateCutFlagDeclaration()
 
             result.append(cutStmt)
         }
@@ -416,7 +416,7 @@ extension SwiftCodeGen {
 
         if requiresCut {
             whileClauses.append(
-                .init(expression: .unary(op: .negate, _generateCutFlagBailExpression(cutVarName: ctx.cutFlagName)))
+                .init(expression: .unary(op: .negate, generateCutFlagBailExpression(cutVarName: ctx.cutFlagName)))
             )
         }
 
@@ -432,7 +432,7 @@ extension SwiftCodeGen {
 
         // if let <trail> = <trail>()
         //   ...
-        let ifExpr = try __generateSuccessBlock(info, leadItemExpr: "\(currentArray).map(\\.1)")
+        let ifExpr = try _generateSuccessBlock(info, leadItemExpr: "\(currentArray).map(\\.1)")
         ifExpr.elseBody = .elseIf(
             .if(clauses: try stopCondition(ctx), body: [
                 .break()
@@ -452,7 +452,7 @@ extension SwiftCodeGen {
             .while(clauses: .init(clauses: whileClauses), body: .init(statements: whileBody))
         )
 
-        result.append(_generateMarkRestore(markVarName: markerName))
+        result.append(generateMarkRestore(markVarName: markerName))
         result.append(.return(info._failReturnExpression))
 
         return result
@@ -463,14 +463,14 @@ extension SwiftCodeGen {
     ///
     /// `leadItemExpr` must be an expression that resolves as the first item of
     /// the repetition production's result tuple.
-    fileprivate func __generateSuccessBlock(
+    fileprivate func _generateSuccessBlock(
         _ info: RepetitionBodyGenInfo,
         leadItemExpr: String
     ) throws -> IfExpression {
-        try __generateIfLet(namedItems: info.trailItems, in: info.production) { (bindingNames) in
+        try _generateIfLet(namedItems: info.trailItems, in: info.production) { (bindingNames) in
             let bindings = [leadItemExpr] + bindingNames.flatMap({ $0 })
 
-            let expr = _defaultReturnExpression(for: bindings.scgr_asTupleExpr())
+            let expr = defaultReturnExpression(for: bindings.scgr_asTupleExpr())
 
             return .return(expr)
         }
@@ -489,13 +489,13 @@ extension SwiftCodeGen {
     ///
     /// The provided block receives as argument an array-of-arrays containing
     /// the deduplicated bindings `<bindings>` of the if statement.
-    fileprivate func __generateIfLet(
+    fileprivate func _generateIfLet(
         item: InternalGrammar.Item,
         bindings: [BindingEngine.Binding],
         in production: RemainingProduction,
         block: ([String]) throws -> Statement
     ) throws -> IfExpression {
-        let bindingNames = try _generateBindingsToItem(
+        let bindingNames = try generateBindingsToItem(
             item,
             bindings,
             in: production
@@ -518,13 +518,13 @@ extension SwiftCodeGen {
     ///
     /// - Returns: An array containing the deduplicated bindings `<bindings>`
     /// of the guard statement.
-    fileprivate func __generateGuardBinding(
+    fileprivate func _generateGuardBinding(
         item: InternalGrammar.Item,
         bindings: [BindingEngine.Binding],
         in production: RemainingProduction,
         elseBlock: () throws -> Statement
     ) throws -> (GuardStatement, [String]) {
-        let bindingNames = try _generateBindingsToItem(
+        let bindingNames = try generateBindingsToItem(
             item,
             bindings,
             in: production
@@ -553,7 +553,7 @@ extension SwiftCodeGen {
     /// The provided block receives as argument an array-of-arrays containing
     /// the deduplicated bindings `[<bindings1>, <bindings2>, ...]` of the if
     /// statement.
-    fileprivate func __generateIfLet(
+    fileprivate func _generateIfLet(
         namedItems: [InternalGrammar.NamedItem],
         in production: RemainingProduction,
         block: ([[String]]) throws -> Statement
@@ -561,7 +561,7 @@ extension SwiftCodeGen {
         declContext.push()
         defer { declContext.pop() }
 
-        let bindingNames = try _generateNamedItems(namedItems, in: production)
+        let bindingNames = try generateNamedItems(namedItems, in: production)
 
         let body: CompoundStatement = [
             try block(bindingNames.1)
@@ -585,12 +585,12 @@ extension SwiftCodeGen {
     ///
     /// - Returns: An array-of-arrays containing the deduplicated bindings
     /// `[<bindings1>, <bindings2>, ...]` of the guard statement.
-    fileprivate func __generateGuardBinding(
+    fileprivate func _generateGuardBinding(
         namedItems: [InternalGrammar.NamedItem],
         in production: RemainingProduction,
         elseBlock: () throws -> Statement
     ) throws -> (GuardStatement, [[String]]) {
-        let bindingNames = try _generateNamedItems(namedItems, in: production)
+        let bindingNames = try generateNamedItems(namedItems, in: production)
         let stmt = try GuardStatement.guard(clauses: bindingNames.0, else: [elseBlock()])
 
         return (stmt, bindingNames.1)
@@ -645,7 +645,7 @@ extension SwiftCodeGen {
             }
             elements[0].identifier = repetitionVariable
 
-            return .unknown(.init(context: codeGen._defaultReturnAction(for: elements)))
+            return .unknown(.init(context: codeGen.defaultReturnAction(for: elements).string))
         }
     }
 }

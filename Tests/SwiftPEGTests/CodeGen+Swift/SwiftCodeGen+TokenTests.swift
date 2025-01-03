@@ -12,7 +12,7 @@ struct SwiftCodeGen_TokenTests {
         let sut = makeSut(tokens)
         var emittedTokenNames: Set<String> = []
 
-        let result = try sut._generateTokenParseCheck(
+        let result = try sut.generateTokenParseCheck(
             settings: .default,
             tokens[0],
             emittedTokenNames: &emittedTokenNames
@@ -39,7 +39,7 @@ struct SwiftCodeGen_TokenTests {
         let sut = makeSut(tokens, tokenOcclusionGraph: tokenOcclusionGraph)
         var emittedTokenNames: Set<String> = []
 
-        let result = try sut._generateTokenParseCheck(
+        let result = try sut.generateTokenParseCheck(
             settings: .default,
             tokens[0],
             emittedTokenNames: &emittedTokenNames
@@ -71,7 +71,7 @@ struct SwiftCodeGen_TokenTests {
         let sut = makeSut(tokens, tokenOcclusionGraph: tokenOcclusionGraph)
         var emittedTokenNames: Set<String> = []
 
-        let result = try sut._generateTokenParseCheck(
+        let result = try sut.generateTokenParseCheck(
             settings: .default,
             tokens[0],
             emittedTokenNames: &emittedTokenNames
@@ -103,7 +103,7 @@ struct SwiftCodeGen_TokenTests {
         let sut = makeSut(tokens, tokenOcclusionGraph: tokenOcclusionGraph)
         var emittedTokenNames: Set<String> = []
 
-        let result = try sut._generateTokenParseCheck(
+        let result = try sut.generateTokenParseCheck(
             settings: .default,
             tokens[0],
             emittedTokenNames: &emittedTokenNames
@@ -145,7 +145,7 @@ struct SwiftCodeGen_TokenTests {
         let sut = makeSut(tokens, tokenOcclusionGraph: tokenOcclusionGraph)
         var emittedTokenNames: Set<String> = []
 
-        let result = try sut._generateTokenParseCheck(
+        let result = try sut.generateTokenParseCheck(
             settings: .default.with(\.emitLengthSwitchPhaseInTokenOcclusionSwitch, value: true),
             tokens[0],
             emittedTokenNames: &emittedTokenNames
@@ -202,7 +202,7 @@ struct SwiftCodeGen_TokenTests {
         let sut = makeSut(tokens, tokenOcclusionGraph: tokenOcclusionGraph)
         var emittedTokenNames: Set<String> = ["keyword"]
 
-        let result = try sut._generateTokenParseCheck(
+        let result = try sut.generateTokenParseCheck(
             settings: .default,
             tokens[0],
             emittedTokenNames: &emittedTokenNames
@@ -223,7 +223,7 @@ struct SwiftCodeGen_TokenTests {
         """#)
         let sut = makeSut(tokens)
 
-        let result = try sut._generateTokenParser(tokens[0], settings: .default.with(\.accessLevel, value: "private"), modifiers: [.static])?.emit() ?? ""
+        let result = try sut.generateTokenParser(tokens[0], settings: .default.with(\.accessLevel, value: "private"), modifiers: [.static])?.emit() ?? ""
 
         diffTest(expected: #"""
         /// ```
@@ -244,7 +244,7 @@ struct SwiftCodeGen_TokenTests {
         """#)
         let sut = makeSut(tokens)
 
-        let result = try sut._generateTokenParser(tokens[0], settings: .default)?.emit() ?? ""
+        let result = try sut.generateTokenParser(tokens[0], settings: .default)?.emit() ?? ""
 
         diffTest(expected: #"""
         /// ```
@@ -265,7 +265,7 @@ struct SwiftCodeGen_TokenTests {
         """#)
         let sut = makeSut(tokens)
 
-        let result = try sut._generateTokenParser(tokens[0], settings: .default)?.emit() ?? ""
+        let result = try sut.generateTokenParser(tokens[0], settings: .default)?.emit() ?? ""
 
         diffTest(expected: #"""
         /// ```
@@ -318,7 +318,7 @@ struct SwiftCodeGen_TokenTests {
         """#)
         let sut = makeSut(tokens)
 
-        let result = try sut._generateTokenParser(tokens[0], settings: .default)?.emit() ?? ""
+        let result = try sut.generateTokenParser(tokens[0], settings: .default)?.emit() ?? ""
 
         diffTest(expected: #"""
         /// ```
@@ -375,7 +375,7 @@ struct SwiftCodeGen_TokenTests {
         """#)
         let sut = makeSut(tokens)
 
-        let result = try sut._generateTokenParser(tokens[0], settings: .default)?.emit() ?? ""
+        let result = try sut.generateTokenParser(tokens[0], settings: .default)?.emit() ?? ""
 
         diffTest(expected: #"""
         /// ```
@@ -418,7 +418,7 @@ struct SwiftCodeGen_TokenTests {
         """#)
         let sut = makeSut(tokens)
 
-        let result = try sut._generateTokenParser(tokens[0], settings: .default)?.emit() ?? ""
+        let result = try sut.generateTokenParser(tokens[0], settings: .default)?.emit() ?? ""
 
         diffTest(expected: #"""
         /// ```
@@ -477,7 +477,7 @@ struct SwiftCodeGen_TokenTests {
         """#)
         let sut = makeSut(tokens)
 
-        let result = try sut._generateTokenParser(tokens[0], settings: .default)?.emit() ?? ""
+        let result = try sut.generateTokenParser(tokens[0], settings: .default)?.emit() ?? ""
 
         diffTest(expected: #"""
         /// ```
@@ -544,7 +544,7 @@ struct SwiftCodeGen_TokenTests {
         """#)
         let sut = makeSut(tokens)
 
-        let result = try sut._generateTokenParser(tokens[0], settings: .default)?.emit() ?? ""
+        let result = try sut.generateTokenParser(tokens[0], settings: .default)?.emit() ?? ""
 
         diffTest(expected: #"""
         /// ```
@@ -607,7 +607,7 @@ struct SwiftCodeGen_TokenTests {
         """#)
         let sut = makeSut(tokens)
 
-        let result = try sut._generateTokenParser(tokens[0], settings: .default)?.emit() ?? ""
+        let result = try sut.generateTokenParser(tokens[0], settings: .default)?.emit() ?? ""
 
         diffTest(expected: #"""
         /// ```
@@ -644,7 +644,7 @@ struct SwiftCodeGen_TokenTests {
         """#)
         let sut = makeSut(tokens)
 
-        let result = try sut._generateTokenParser(tokens[0], settings: .default)?.emit() ?? ""
+        let result = try sut.generateTokenParser(tokens[0], settings: .default)?.emit() ?? ""
 
         diffTest(expected: #"""
         /// ```
@@ -691,7 +691,7 @@ struct SwiftCodeGen_TokenTests {
         """#)
         let sut = makeSut(tokens)
 
-        let result = try sut._generateTokenParser(tokens[0], settings: .default)?.emit() ?? ""
+        let result = try sut.generateTokenParser(tokens[0], settings: .default)?.emit() ?? ""
 
         diffTest(expected: #"""
         /// ```
@@ -740,7 +740,7 @@ struct SwiftCodeGen_TokenTests {
         """#)
         let sut = makeSut(tokens)
 
-        let result = try sut._generateTokenParser(tokens[0], settings: .default)?.emit() ?? ""
+        let result = try sut.generateTokenParser(tokens[0], settings: .default)?.emit() ?? ""
 
         diffTest(expected: #"""
         /// ```
@@ -793,7 +793,7 @@ struct SwiftCodeGen_TokenTests {
         """#)
         let sut = makeSut(tokens)
 
-        let result = try sut._generateTokenParser(tokens[0], settings: .default)?.emit() ?? ""
+        let result = try sut.generateTokenParser(tokens[0], settings: .default)?.emit() ?? ""
 
         diffTest(expected: #"""
         /// ```
@@ -847,7 +847,7 @@ struct SwiftCodeGen_TokenTests {
         """#)
         let sut = makeSut(tokens)
 
-        let result = try sut._generateTokenParser(tokens[0], settings: .default)?.emit() ?? ""
+        let result = try sut.generateTokenParser(tokens[0], settings: .default)?.emit() ?? ""
 
         diffTest(expected: #"""
         /// ```

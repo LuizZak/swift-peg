@@ -5,20 +5,9 @@ import SwiftAST
 extension SwiftCodeGen {
     func generateProducerProtocol(
         _ protocolInfo: ProducerProtocolInfo
-    ) throws -> String {
-        let protocolDecl = try _generateProducerProtocol(protocolInfo)
-        let emitter = SwiftASTEmitter()
-
-        emitter.emit(protocolDecl)
-
-        return emitter.finishBuffer()
-    }
-
-    func _generateProducerProtocol(
-        _ protocolInfo: ProducerProtocolInfo
     ) throws -> ProtocolDecl {
-        let associatedTypes = try _generateProducerAssociatedTypes(protocolInfo)
-        let functions = try _generateProducerMethods(protocolInfo)
+        let associatedTypes = try generateProducerAssociatedTypes(protocolInfo)
+        let functions = try generateProducerMethods(protocolInfo)
 
         let members: [ProtocolMemberDecl] = functions.map { .function($0) }
 
@@ -31,7 +20,7 @@ extension SwiftCodeGen {
         )
     }
 
-    fileprivate func _generateProducerAssociatedTypes(
+    fileprivate func generateProducerAssociatedTypes(
         _ protocolInfo: ProducerProtocolInfo
     ) throws -> [AssociatedTypeDecl] {
         var result: [AssociatedTypeDecl] = []
@@ -46,7 +35,7 @@ extension SwiftCodeGen {
                 continue
             }
 
-            let associatedTypeDecl = try _generateProducerAssociatedType(associatedType)
+            let associatedTypeDecl = try generateProducerAssociatedType(associatedType)
 
             result.append(associatedTypeDecl)
         }
@@ -54,13 +43,13 @@ extension SwiftCodeGen {
         return result
     }
 
-    fileprivate func _generateProducerAssociatedType(
+    fileprivate func generateProducerAssociatedType(
         _ associatedType: CommonAbstract.IdentifierSwiftType
     ) throws -> AssociatedTypeDecl {
         return .init(name: associatedType.description)
     }
 
-    fileprivate func _generateProducerMethods(
+    fileprivate func generateProducerMethods(
         _ protocolInfo: ProducerProtocolInfo
     ) throws -> [ProtocolFunctionMemberDecl] {
 
@@ -77,7 +66,7 @@ extension SwiftCodeGen {
                 continue
             }
 
-            let ruleMethods = try _generateProducerMethods(
+            let ruleMethods = try generateProducerMethods(
                 protocolInfo,
                 methods
             )
@@ -88,14 +77,14 @@ extension SwiftCodeGen {
         return result
     }
 
-    fileprivate func _generateProducerMethods(
+    fileprivate func generateProducerMethods(
         _ protocolInfo: ProducerProtocolInfo,
         _ producerMethods: [ProducerMethodInfo]
     ) throws -> [ProtocolFunctionMemberDecl] {
         var result: [ProtocolFunctionMemberDecl] = []
 
         for producerMethod in producerMethods {
-            let signature = try _generateProducerMethodSignature(
+            let signature = try generateProducerMethodSignature(
                 protocolInfo,
                 producerMethod
             )
@@ -111,7 +100,7 @@ extension SwiftCodeGen {
         return result
     }
 
-    fileprivate func _generateProducerMethodSignature(
+    fileprivate func generateProducerMethodSignature(
         _ protocolInfo: ProducerProtocolInfo,
         _ producerMethod: ProducerMethodInfo
     ) throws -> FunctionSignature {
@@ -152,7 +141,7 @@ extension SwiftCodeGen {
         )
     }
 
-    func _generateDefaultProducerProtocol(
+    func generateDefaultProducerProtocol(
         _ protocolInfo: ProducerProtocolInfo,
         _ implementationInfo: ProducerProtocolImplementationInfo
     ) throws -> ClassDecl {
@@ -168,13 +157,13 @@ extension SwiftCodeGen {
 
         var members: [MemberDecl] = []
         members.append(
-            contentsOf: try _generateDefaultProducerTypealiases(
+            contentsOf: try generateDefaultProducerTypealiases(
                 protocolInfo,
                 implementationInfo
             ).map { .typealias($0) }
         )
         members.append(
-            contentsOf: try _generateDefaultProducerMethods(
+            contentsOf: try generateDefaultProducerMethods(
                 protocolInfo,
                 implementationInfo
             ).map { .function($0) }
@@ -194,7 +183,7 @@ extension SwiftCodeGen {
         )
     }
 
-    func _generateDefaultProducerTypealiases(
+    func generateDefaultProducerTypealiases(
         _ protocolInfo: ProducerProtocolInfo,
         _ implementationInfo: ProducerProtocolImplementationInfo
     ) throws -> [TypealiasDecl] {
@@ -254,7 +243,7 @@ extension SwiftCodeGen {
         return result
     }
 
-    func _generateDefaultProducerMethods(
+    func generateDefaultProducerMethods(
         _ protocolInfo: ProducerProtocolInfo,
         _ implementationInfo: ProducerProtocolImplementationInfo
     ) throws -> [FunctionMemberDecl] {
@@ -264,7 +253,7 @@ extension SwiftCodeGen {
             let methods = protocolInfo.allRuleProducer(for: rule)
 
             for method in methods {
-                let decl = try _generateDefaultProducerMethod(
+                let decl = try generateDefaultProducerMethod(
                     protocolInfo,
                     implementationInfo,
                     rule: rule,
@@ -278,13 +267,13 @@ extension SwiftCodeGen {
         return result
     }
 
-    func _generateDefaultProducerMethod(
+    func generateDefaultProducerMethod(
         _ protocolInfo: ProducerProtocolInfo,
         _ implementationInfo: ProducerProtocolImplementationInfo,
         rule: InternalGrammar.Rule,
         method: ProducerMethodInfo
     ) throws -> FunctionMemberDecl {
-        var signature = try _generateProducerMethodSignature(protocolInfo, method)
+        var signature = try generateProducerMethodSignature(protocolInfo, method)
         signature.attributes.append(.init(name: "inlinable"))
 
         let body: CompoundStatement = []
@@ -293,7 +282,7 @@ extension SwiftCodeGen {
         case .default:
             let alt = rule.alts[method.altIndex]
 
-            let exp = _generateOnAltMatchBlockInterior(alt, rule.type)
+            let exp = generateOnAltMatchBlockInterior(alt, rule.type)
 
             if implicitReturns {
                 body.appendStatement(
