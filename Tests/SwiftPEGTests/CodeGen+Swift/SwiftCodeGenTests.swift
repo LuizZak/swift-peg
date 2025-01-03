@@ -41,15 +41,14 @@ struct SwiftCodeGenTests {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Node? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
-                    if
-                        let any = try self.nextToken()
-                    {
+                    if let any = try self.nextToken() {
                         return any
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
             }
@@ -80,15 +79,14 @@ struct SwiftCodeGenTests {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Any? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
-                    if
-                        let _ = try self.expect("+")
-                    {
+                    if let _ = try self.expect("+") {
                         return Node()
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
             }
@@ -143,15 +141,14 @@ struct SwiftCodeGenTests {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Node? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
-                    if
-                        let b = try self.b()
-                    {
+                    if let b = try self.b() {
                         return b
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
             }
@@ -183,15 +180,14 @@ struct SwiftCodeGenTests {
                 @memoized("start")
                 @inlinable
                 public func __start() throws -> Node? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
-                    if
-                        let a: Node = try self.a()
-                    {
+                    if let a: Node = try self.a() {
                         return a
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
 
@@ -204,11 +200,9 @@ struct SwiftCodeGenTests {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Node? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
-                    if
-                        let _: Token = try self.expect("a")
-                    {
+                    if let _: Token = try self.expect("a") {
                         return Node()
                     }
 
@@ -224,6 +218,7 @@ struct SwiftCodeGenTests {
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
 
@@ -235,15 +230,14 @@ struct SwiftCodeGenTests {
                 @memoized("b")
                 @inlinable
                 public func __b() throws -> B? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
-                    if
-                        let _: Token = try self.expect("aa")
-                    {
+                    if let _: Token = try self.expect("aa") {
                         return B()
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
 
@@ -255,7 +249,7 @@ struct SwiftCodeGenTests {
                 @memoized("c")
                 @inlinable
                 public func __c() throws -> Node? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
                     if
                         let d: [D] = try self.gather(separator: {
@@ -268,6 +262,7 @@ struct SwiftCodeGenTests {
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
 
@@ -279,7 +274,7 @@ struct SwiftCodeGenTests {
                 @memoized("d")
                 @inlinable
                 public func __d() throws -> D? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
                     if
                         case _: Token? = try self.expect("a"),
@@ -289,6 +284,7 @@ struct SwiftCodeGenTests {
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
             }
@@ -322,15 +318,14 @@ struct SwiftCodeGenTests {
                 @memoized("start")
                 @inlinable
                 public func __start() throws -> Node? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
-                    if
-                        let _: Node = try self.a()
-                    {
+                    if let _: Node = try self.a() {
                         return Node()
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
 
@@ -343,11 +338,9 @@ struct SwiftCodeGenTests {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Node? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
-                    if
-                        let a: Token = try self.expect("a")
-                    {
+                    if let a: Token = try self.expect("a") {
                         return a
                     }
 
@@ -363,6 +356,7 @@ struct SwiftCodeGenTests {
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
 
@@ -374,15 +368,14 @@ struct SwiftCodeGenTests {
                 @memoized("b")
                 @inlinable
                 public func __b() throws -> B? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
-                    if
-                        let _: Token = try self.expect("aa")
-                    {
+                    if let _: Token = try self.expect("aa") {
                         return B()
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
 
@@ -394,7 +387,7 @@ struct SwiftCodeGenTests {
                 @memoized("c")
                 @inlinable
                 public func __c() throws -> Node? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
                     if
                         let d: [D] = try self.gather(separator: {
@@ -407,6 +400,7 @@ struct SwiftCodeGenTests {
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
 
@@ -418,7 +412,7 @@ struct SwiftCodeGenTests {
                 @memoized("d")
                 @inlinable
                 public func __d() throws -> D? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
                     if
                         case _: Token? = try self.expect("a"),
@@ -428,6 +422,7 @@ struct SwiftCodeGenTests {
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
             }
@@ -464,15 +459,14 @@ struct SwiftCodeGenTests {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Node? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
-                    if
-                        let ADD = try self.expect(.ADD)
-                    {
+                    if let ADD = try self.expect(.ADD) {
                         return ADD
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
             }
@@ -509,15 +503,14 @@ struct SwiftCodeGenTests {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Node? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
-                    if
-                        let _ = try self.expect(.ADD)
-                    {
+                    if let _ = try self.expect(.ADD) {
                         return Node()
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
             }
@@ -564,9 +557,7 @@ struct SwiftCodeGenTests {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Node? {
-                    if
-                        let _ = try self.expect(.ADD)
-                    {
+                    if let _ = try self.expect(.ADD) {
                         return Node()
                     }
 
@@ -582,7 +573,7 @@ struct SwiftCodeGenTests {
                 @memoized("b")
                 @inlinable
                 public func __b() throws -> Node? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
                     if
                         let _ = try self.expect(.MUL),
@@ -593,9 +584,7 @@ struct SwiftCodeGenTests {
 
                     self.restore(_mark)
 
-                    if
-                        let _ = try self.expect(.SUB)
-                    {
+                    if let _ = try self.expect(.SUB) {
                         return Node()
                     }
 
@@ -653,16 +642,13 @@ struct SwiftCodeGenTests {
             public protocol TestParserProducer {
                 associatedtype Mark
                 associatedtype Token
-
                 associatedtype AProduction
                 associatedtype BProduction
                 associatedtype AAndBProduction
 
                 func produce_a_alt1(_mark: Mark) throws -> AProduction
-
                 func produce_b_alt1(_mark: Mark, mul: Token, a: AProduction) throws -> BProduction
                 func produce_b_alt2(_mark: Mark) throws -> BProduction
-
                 func produce_aAndB_alt1(_mark: Mark, a: AProduction, b: BProduction) throws -> AAndBProduction
                 func produce_aAndB_alt2(_mark: Mark, a: AProduction, b: BProduction, a1: AProduction) throws -> AAndBProduction
             }
@@ -670,7 +656,6 @@ struct SwiftCodeGenTests {
             public class DefaultTestParserProducer<RawTokenizer: RawTokenizerType>: TestParserProducer {
                 public typealias Mark = Tokenizer<RawTokenizer>.Mark
                 public typealias Token = Tokenizer<RawTokenizer>.Token
-
                 public typealias AProduction = Node
                 public typealias BProduction = Node
                 public typealias AAndBProduction = Node
@@ -684,6 +669,7 @@ struct SwiftCodeGenTests {
                 public func produce_b_alt1(_mark: Mark, mul: Token, a: AProduction) throws -> BProduction {
                     return action1()
                 }
+
                 @inlinable
                 public func produce_b_alt2(_mark: Mark) throws -> BProduction {
                     return Node()
@@ -693,6 +679,7 @@ struct SwiftCodeGenTests {
                 public func produce_aAndB_alt1(_mark: Mark, a: AProduction, b: BProduction) throws -> AAndBProduction {
                     return Node()
                 }
+
                 @inlinable
                 public func produce_aAndB_alt2(_mark: Mark, a: AProduction, b: BProduction, a1: AProduction) throws -> AAndBProduction {
                     return Node()
@@ -708,15 +695,14 @@ struct SwiftCodeGenTests {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Producer.AProduction? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
-                    if
-                        let _ = try self.expect(.ADD)
-                    {
+                    if let _ = try self.expect(.ADD) {
                         return try _producer.produce_a_alt1(_mark: _mark)
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
 
@@ -729,7 +715,7 @@ struct SwiftCodeGenTests {
                 @memoized("b")
                 @inlinable
                 public func __b() throws -> Producer.BProduction? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
                     if
                         let mul = try self.expect(.MUL),
@@ -740,13 +726,12 @@ struct SwiftCodeGenTests {
 
                     self.restore(_mark)
 
-                    if
-                        let _ = try self.expect(.SUB)
-                    {
+                    if let _ = try self.expect(.SUB) {
                         return try _producer.produce_b_alt2(_mark: _mark)
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
 
@@ -759,7 +744,7 @@ struct SwiftCodeGenTests {
                 @memoized("aAndB")
                 @inlinable
                 public func __aAndB() throws -> Producer.AAndBProduction? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
                     if
                         let a = try self.a(),
@@ -779,6 +764,7 @@ struct SwiftCodeGenTests {
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
             }
@@ -811,7 +797,6 @@ struct SwiftCodeGenTests {
             public protocol TestParserProducer {
                 associatedtype Mark
                 associatedtype Token
-
                 associatedtype AProduction
 
                 func produce_a_alt1(_mark: Mark, `inout`: Node) throws -> AProduction
@@ -821,13 +806,13 @@ struct SwiftCodeGenTests {
             public class DefaultTestParserProducer<RawTokenizer: RawTokenizerType>: TestParserProducer {
                 public typealias Mark = Tokenizer<RawTokenizer>.Mark
                 public typealias Token = Tokenizer<RawTokenizer>.Token
-
                 public typealias AProduction = Node
 
                 @inlinable
                 public func produce_a_alt1(_mark: Mark, `inout`: Node) throws -> AProduction {
                     return `inout`
                 }
+
                 @inlinable
                 public func produce_a_alt2(_mark: Mark, `in`: Node) throws -> AProduction {
                     return `in`
@@ -844,23 +829,20 @@ struct SwiftCodeGenTests {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Producer.AProduction? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
-                    if
-                        let `inout` = try self.`inout`()
-                    {
+                    if let `inout` = try self.`inout`() {
                         return try _producer.produce_a_alt1(_mark: _mark, `inout`: `inout`)
                     }
 
                     self.restore(_mark)
 
-                    if
-                        let `in` = try self.`in`()
-                    {
+                    if let `in` = try self.`in`() {
                         return try _producer.produce_a_alt2(_mark: _mark, in: `in`)
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
             }
@@ -887,7 +869,6 @@ struct SwiftCodeGenTests {
             public protocol TestParserProducer {
                 associatedtype Mark
                 associatedtype Token
-
                 associatedtype AProduction
 
                 func produce_a_alt1(_mark: Mark, add: [Token]?) throws -> AProduction
@@ -896,7 +877,6 @@ struct SwiftCodeGenTests {
             public class DefaultTestParserProducer<RawTokenizer: RawTokenizerType>: TestParserProducer {
                 public typealias Mark = Tokenizer<RawTokenizer>.Mark
                 public typealias Token = Tokenizer<RawTokenizer>.Token
-
                 public typealias AProduction = Node
 
                 @inlinable
@@ -914,15 +894,14 @@ struct SwiftCodeGenTests {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Producer.AProduction? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
-                    if
-                        case let add = try self._a__group_()
-                    {
+                    if case let add = try self._a__group_() {
                         return try _producer.produce_a_alt1(_mark: _mark, add: add)
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
 
@@ -934,7 +913,7 @@ struct SwiftCodeGenTests {
                 @memoized("_a__group_")
                 @inlinable
                 public func ___a__group_() throws -> [Token]? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
                     if
                         let add = try self.repeatOneOrMore({
@@ -945,6 +924,7 @@ struct SwiftCodeGenTests {
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
             }
@@ -973,7 +953,6 @@ struct SwiftCodeGenTests {
             public protocol TestParserProducer {
                 associatedtype Mark
                 associatedtype Token
-
                 associatedtype AProduction
 
                 func produce_a_alt1(_mark: Mark, add: [Token]?) throws -> AProduction
@@ -982,7 +961,6 @@ struct SwiftCodeGenTests {
             public class DefaultTestParserProducer<RawTokenizer: RawTokenizerType>: TestParserProducer {
                 public typealias Mark = Tokenizer<RawTokenizer>.Mark
                 public typealias Token = Tokenizer<RawTokenizer>.Token
-
                 public typealias AProduction = Node
 
                 @inlinable
@@ -994,7 +972,6 @@ struct SwiftCodeGenTests {
             public class VoidTestParserProducer<RawTokenizer: RawTokenizerType>: TestParserProducer {
                 public typealias Mark = Tokenizer<RawTokenizer>.Mark
                 public typealias Token = Tokenizer<RawTokenizer>.Token
-
                 public typealias AProduction = Void
 
                 @inlinable
@@ -1011,15 +988,14 @@ struct SwiftCodeGenTests {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Producer.AProduction? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
-                    if
-                        case let add = try self._a__group_()
-                    {
+                    if case let add = try self._a__group_() {
                         return try _producer.produce_a_alt1(_mark: _mark, add: add)
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
 
@@ -1031,7 +1007,7 @@ struct SwiftCodeGenTests {
                 @memoized("_a__group_")
                 @inlinable
                 public func ___a__group_() throws -> [Token]? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
                     if
                         let add = try self.repeatOneOrMore({
@@ -1042,6 +1018,7 @@ struct SwiftCodeGenTests {
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
             }
@@ -1076,7 +1053,7 @@ struct SwiftCodeGenTests {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Node? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
                     if
                         let b = try self.b(),
@@ -1087,6 +1064,7 @@ struct SwiftCodeGenTests {
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
             }
@@ -1119,7 +1097,7 @@ struct SwiftCodeGenTests {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Node? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
                     if
                         let b = try self.b(),
@@ -1130,6 +1108,7 @@ struct SwiftCodeGenTests {
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
             }
@@ -1171,7 +1150,7 @@ struct SwiftCodeGenTests {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Node? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
                     if
                         let `default` = try self.`default`(),
@@ -1183,21 +1162,18 @@ struct SwiftCodeGenTests {
 
                     self.restore(_mark)
 
-                    if
-                        let `default` = try self.`default`()
-                    {
+                    if let `default` = try self.`default`() {
                         return `default`
                     }
 
                     self.restore(_mark)
 
-                    if
-                        let `default` = try self._a_nsr()
-                    {
+                    if let `default` = try self._a_nsr() {
                         return Node()
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
 
@@ -1209,19 +1185,16 @@ struct SwiftCodeGenTests {
                 @memoized("_a_nsr")
                 @inlinable
                 public func ___a_nsr() throws -> [Node]? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
                     var _current: [Node] = []
 
-                    while
-                        let `default` = try self.`default`()
-                    {
+                    while let `default` = try self.`default`() {
                         _current.append(`default`)
-                        let _mark1 = self.mark()
 
-                        if
-                            let _ = try self.expect("\\")
-                        {
+                        let _mark1: Mark = self.mark()
+
+                        if let _ = try self.expect("\\") {
                             return _current
                         }
 
@@ -1229,6 +1202,7 @@ struct SwiftCodeGenTests {
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
             }
@@ -1274,7 +1248,7 @@ struct SwiftCodeGenTests {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Node? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
                     if
                         let b = try self.b(),
@@ -1286,6 +1260,7 @@ struct SwiftCodeGenTests {
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
 
@@ -1297,7 +1272,7 @@ struct SwiftCodeGenTests {
                 @memoized("b")
                 @inlinable
                 public func __b() throws -> Node? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
                     if
                         let b = try self.b(),
@@ -1309,6 +1284,7 @@ struct SwiftCodeGenTests {
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
             }
@@ -1356,7 +1332,7 @@ struct SwiftCodeGenTests {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Node? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
                     if
                         let b = try self.b(),
@@ -1368,6 +1344,7 @@ struct SwiftCodeGenTests {
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
 
@@ -1379,7 +1356,7 @@ struct SwiftCodeGenTests {
                 @memoized("b")
                 @inlinable
                 public func __b() throws -> Node? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
                     if
                         let b = try self.b(),
@@ -1391,6 +1368,7 @@ struct SwiftCodeGenTests {
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
             }
@@ -1423,15 +1401,14 @@ struct SwiftCodeGenTests {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Any? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
-                    if
-                        let _ = try self.expect("+")
-                    {
+                    if let _ = try self.expect("+") {
                         anAction
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
             }
@@ -1464,15 +1441,14 @@ struct SwiftCodeGenTests {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Any? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
-                    if
-                        let _ = try self.expect("+")
-                    {
+                    if let _ = try self.expect("+") {
                         return anAction
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
             }
@@ -1505,7 +1481,7 @@ struct SwiftCodeGenTests {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Node? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
                     if
                         let b = try self.b(),
@@ -1516,6 +1492,7 @@ struct SwiftCodeGenTests {
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
             }
@@ -1554,7 +1531,7 @@ struct SwiftCodeGenTests {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Node? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
                     if
                         let b = try self.b(),
@@ -1575,6 +1552,7 @@ struct SwiftCodeGenTests {
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
             }
@@ -1607,7 +1585,7 @@ struct SwiftCodeGenTests {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Node? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
                     if
                         let b = try self.b(),
@@ -1618,6 +1596,7 @@ struct SwiftCodeGenTests {
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
             }
@@ -1653,15 +1632,14 @@ struct SwiftCodeGenTests {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Node? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
-                    if
-                        let add = try self.expect(kind: .add)
-                    {
+                    if let add = try self.expect(kind: .add) {
                         return add
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
             }
@@ -1695,15 +1673,14 @@ struct SwiftCodeGenTests {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Node? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
-                    if
-                        let _ = try self.expect(.ADD)
-                    {
+                    if let _ = try self.expect(.ADD) {
                         return Node()
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
             }
@@ -1732,15 +1709,14 @@ struct SwiftCodeGenTests {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> SomeType? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
-                    if
-                        let b = try self.b()
-                    {
+                    if let b = try self.b() {
                         return b
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
             }
@@ -1769,7 +1745,7 @@ struct SwiftCodeGenTests {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Node? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
                     if
                         let c = try self.gather(separator: {
@@ -1782,6 +1758,7 @@ struct SwiftCodeGenTests {
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
             }
@@ -1810,15 +1787,14 @@ struct SwiftCodeGenTests {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Node? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
-                    if
-                        let b = try self.b()
-                    {
+                    if let b = try self.b() {
                         return CustomAction()
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
             }
@@ -1849,25 +1825,24 @@ struct SwiftCodeGenTests {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Node? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
-                    if
-                        let b = try self.b()
-                    {
+                    if let b = try self.b() {
                         return b
                     }
 
                     self.restore(_mark)
+
                     CustomAction()
 
-                    if
-                        let c = try self.c()
-                    {
+                    if let c = try self.c() {
                         return CAction()
                     }
 
                     self.restore(_mark)
+
                     OtherCustomAction()
+
                     return nil
                 }
             }
@@ -1895,7 +1870,7 @@ struct SwiftCodeGenTests {
                 @memoized("start")
                 @inlinable
                 public func __start() throws -> Node? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
                     if
                         try self.expectForced({
@@ -1906,6 +1881,7 @@ struct SwiftCodeGenTests {
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
 
@@ -1918,23 +1894,20 @@ struct SwiftCodeGenTests {
                 @memoized("_start__group_")
                 @inlinable
                 public func ___start__group_() throws -> Void? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
-                    if
-                        let _ = try self.expect("a")
-                    {
+                    if let _ = try self.expect("a") {
                         return ()
                     }
 
                     self.restore(_mark)
 
-                    if
-                        let _ = try self.expect("b")
-                    {
+                    if let _ = try self.expect("b") {
                         return ()
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
             }
@@ -1962,7 +1935,7 @@ struct SwiftCodeGenTests {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> ANode? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
                     if
                         let b = try self.b(),
@@ -1973,6 +1946,7 @@ struct SwiftCodeGenTests {
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
             }
@@ -2001,7 +1975,7 @@ struct SwiftCodeGenTests {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> ANode? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
                     if
                         let b = try self.b(),
@@ -2012,6 +1986,7 @@ struct SwiftCodeGenTests {
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
 
@@ -2023,7 +1998,7 @@ struct SwiftCodeGenTests {
                 @memoized("_a__group_")
                 @inlinable
                 public func ___a__group_() throws -> (Node, Node)? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
                     if
                         let d = try self.d(),
@@ -2033,6 +2008,7 @@ struct SwiftCodeGenTests {
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
             }
@@ -2064,7 +2040,7 @@ struct SwiftCodeGenTests {
                 @memoized("start")
                 @inlinable
                 public func __start() throws -> Node? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
                     if
                         let a: A = try self.a(),
@@ -2074,6 +2050,7 @@ struct SwiftCodeGenTests {
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
 
@@ -2085,15 +2062,14 @@ struct SwiftCodeGenTests {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> A? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
-                    if
-                        let _: Token = try self.expect("a")
-                    {
+                    if let _: Token = try self.expect("a") {
                         return A()
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
 
@@ -2105,15 +2081,14 @@ struct SwiftCodeGenTests {
                 @memoized("b")
                 @inlinable
                 public func __b() throws -> B? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
-                    if
-                        let _: Token = try self.expect("b")
-                    {
+                    if let _: Token = try self.expect("b") {
                         return B()
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
 
@@ -2125,7 +2100,7 @@ struct SwiftCodeGenTests {
                 @memoized("c")
                 @inlinable
                 public func __c() throws -> C? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
                     if
                         case _: Token? = try self.expect("c"),
@@ -2135,6 +2110,7 @@ struct SwiftCodeGenTests {
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
 
@@ -2146,7 +2122,7 @@ struct SwiftCodeGenTests {
                 @memoized("_start__group_")
                 @inlinable
                 public func ___start__group_() throws -> ([B], C)? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
                     if
                         let b: [B] = try self.repeatOneOrMore({
@@ -2159,6 +2135,7 @@ struct SwiftCodeGenTests {
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
             }
@@ -2190,7 +2167,7 @@ struct SwiftCodeGenTests {
                 @memoized("start")
                 @inlinable
                 public func __start() throws -> Node? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
                     if
                         let a: A = try self.a(),
@@ -2200,6 +2177,7 @@ struct SwiftCodeGenTests {
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
 
@@ -2211,15 +2189,14 @@ struct SwiftCodeGenTests {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> A? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
-                    if
-                        let _: Token = try self.expect("a")
-                    {
+                    if let _: Token = try self.expect("a") {
                         return A()
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
 
@@ -2231,15 +2208,14 @@ struct SwiftCodeGenTests {
                 @memoized("b")
                 @inlinable
                 public func __b() throws -> B? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
-                    if
-                        let _: Token = try self.expect("b")
-                    {
+                    if let _: Token = try self.expect("b") {
                         return B()
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
 
@@ -2251,7 +2227,7 @@ struct SwiftCodeGenTests {
                 @memoized("c")
                 @inlinable
                 public func __c() throws -> C? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
                     if
                         case _: Token? = try self.expect("c"),
@@ -2261,6 +2237,7 @@ struct SwiftCodeGenTests {
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
 
@@ -2272,7 +2249,7 @@ struct SwiftCodeGenTests {
                 @memoized("_start__group_")
                 @inlinable
                 public func ___start__group_() throws -> ([B], C)? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
                     if
                         let b: [B] = try self.repeatOneOrMore({
@@ -2285,6 +2262,7 @@ struct SwiftCodeGenTests {
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
             }
@@ -2316,7 +2294,7 @@ struct SwiftCodeGenTests {
                 @memoized("start")
                 @inlinable
                 public func __start() throws -> Node? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
                     if
                         let a: A = try self.a(),
@@ -2326,6 +2304,7 @@ struct SwiftCodeGenTests {
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
 
@@ -2337,15 +2316,14 @@ struct SwiftCodeGenTests {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> A? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
-                    if
-                        let _: Token = try self.expect("a")
-                    {
+                    if let _: Token = try self.expect("a") {
                         return A()
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
 
@@ -2357,15 +2335,14 @@ struct SwiftCodeGenTests {
                 @memoized("b")
                 @inlinable
                 public func __b() throws -> B? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
-                    if
-                        let _: Token = try self.expect("b")
-                    {
+                    if let _: Token = try self.expect("b") {
                         return B()
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
 
@@ -2377,7 +2354,7 @@ struct SwiftCodeGenTests {
                 @memoized("c")
                 @inlinable
                 public func __c() throws -> C? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
                     if
                         case _: Token? = try self.expect("c"),
@@ -2387,6 +2364,7 @@ struct SwiftCodeGenTests {
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
 
@@ -2399,7 +2377,7 @@ struct SwiftCodeGenTests {
                 @memoized("_start__group_")
                 @inlinable
                 public func ___start__group_() throws -> C? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
                     if
                         let b: [B] = try self.repeatOneOrMore({
@@ -2421,6 +2399,7 @@ struct SwiftCodeGenTests {
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
             }
@@ -2452,7 +2431,7 @@ struct SwiftCodeGenTests {
                 @memoized("start")
                 @inlinable
                 public func __start() throws -> Node? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
                     if
                         let a: A = try self.a(),
@@ -2464,6 +2443,7 @@ struct SwiftCodeGenTests {
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
 
@@ -2475,15 +2455,14 @@ struct SwiftCodeGenTests {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> A? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
-                    if
-                        let _: Token = try self.expect("a")
-                    {
+                    if let _: Token = try self.expect("a") {
                         return A()
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
 
@@ -2495,15 +2474,14 @@ struct SwiftCodeGenTests {
                 @memoized("b")
                 @inlinable
                 public func __b() throws -> B? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
-                    if
-                        let _: Token = try self.expect("b")
-                    {
+                    if let _: Token = try self.expect("b") {
                         return B()
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
 
@@ -2515,7 +2493,7 @@ struct SwiftCodeGenTests {
                 @memoized("c")
                 @inlinable
                 public func __c() throws -> C? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
                     if
                         case _: Token? = try self.expect("c"),
@@ -2525,6 +2503,7 @@ struct SwiftCodeGenTests {
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
 
@@ -2536,7 +2515,7 @@ struct SwiftCodeGenTests {
                 @memoized("_start__group_")
                 @inlinable
                 public func ___start__group_() throws -> (B, C)? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
                     if
                         let b: B = try self.b(),
@@ -2546,6 +2525,7 @@ struct SwiftCodeGenTests {
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
             }
@@ -2577,7 +2557,7 @@ struct SwiftCodeGenTests {
                 @memoized("start")
                 @inlinable
                 public func __start() throws -> Node? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
                     if
                         let a: A = try self.a(),
@@ -2587,6 +2567,7 @@ struct SwiftCodeGenTests {
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
 
@@ -2598,15 +2579,14 @@ struct SwiftCodeGenTests {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> A? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
-                    if
-                        let _: Token = try self.expect("a")
-                    {
+                    if let _: Token = try self.expect("a") {
                         return A()
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
 
@@ -2618,15 +2598,14 @@ struct SwiftCodeGenTests {
                 @memoized("b")
                 @inlinable
                 public func __b() throws -> B? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
-                    if
-                        let _: Token = try self.expect("b")
-                    {
+                    if let _: Token = try self.expect("b") {
                         return B()
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
 
@@ -2638,7 +2617,7 @@ struct SwiftCodeGenTests {
                 @memoized("c")
                 @inlinable
                 public func __c() throws -> C? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
                     if
                         case _: Token? = try self.expect("c"),
@@ -2648,6 +2627,7 @@ struct SwiftCodeGenTests {
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
 
@@ -2659,15 +2639,14 @@ struct SwiftCodeGenTests {
                 @memoized("_start__group_")
                 @inlinable
                 public func ___start__group_() throws -> ([B]??, C??)? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
-                    if
-                        case let (b, cBind) = self.shuffleTuple(try self.__start__group___group_())
-                    {
+                    if case let (b, cBind) = self.shuffleTuple(try self.__start__group___group_()) {
                         return (b: b, cBind: cBind)
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
 
@@ -2679,15 +2658,14 @@ struct SwiftCodeGenTests {
                 @memoized("__start__group___group_")
                 @inlinable
                 public func ____start__group___group_() throws -> ([B]?, C?)? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
-                    if
-                        case let (b, cBind) = self.shuffleTuple(try self.___start__group___group___group_())
-                    {
+                    if case let (b, cBind) = self.shuffleTuple(try self.___start__group___group___group_()) {
                         return (b: b, cBind: cBind)
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
 
@@ -2699,7 +2677,7 @@ struct SwiftCodeGenTests {
                 @memoized("___start__group___group___group_")
                 @inlinable
                 public func _____start__group___group___group_() throws -> ([B], C)? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
                     if
                         let b: [B] = try self.repeatOneOrMore({
@@ -2712,6 +2690,7 @@ struct SwiftCodeGenTests {
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
             }
@@ -2742,8 +2721,9 @@ struct SwiftCodeGenTests {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Node? {
-                    let _mark = self.mark()
-                    var _cut = CutFlag()
+                    let _mark: Mark = self.mark()
+
+                    var _cut: CutFlag = CutFlag()
 
                     if
                         let b = try self.b(),
@@ -2767,6 +2747,7 @@ struct SwiftCodeGenTests {
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
             }
@@ -2795,15 +2776,14 @@ struct SwiftCodeGenTests {
                 @memoizedLeftRecursive("a")
                 @inlinable
                 public func __a() throws -> Node? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
-                    if
-                        let b = try self.b()
-                    {
+                    if let b = try self.b() {
                         return b
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
             }
@@ -2835,15 +2815,14 @@ struct SwiftCodeGenTests {
                 @memoizedLeftRecursive("a")
                 @inlinable
                 public func __a() throws -> Node? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
-                    if
-                        let b = try self.b()
-                    {
+                    if let b = try self.b() {
                         return b
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
 
@@ -2854,15 +2833,14 @@ struct SwiftCodeGenTests {
                 /// ```
                 @inlinable
                 public func b() throws -> Node? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
-                    if
-                        let a = try self.a()
-                    {
+                    if let a = try self.a() {
                         return a
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
             }
@@ -2899,15 +2877,14 @@ struct SwiftCodeGenTests {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Node? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
-                    if
-                        case let (b, c) = self.shuffleTuple(try self._a__opt())
-                    {
+                    if case let (b, c) = self.shuffleTuple(try self._a__opt()) {
                         return Node()
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
 
@@ -2919,7 +2896,7 @@ struct SwiftCodeGenTests {
                 @memoized("_a__opt")
                 @inlinable
                 public func ___a__opt() throws -> (Node, Node)? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
                     if
                         let b = try self.b(),
@@ -2930,6 +2907,7 @@ struct SwiftCodeGenTests {
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
             }
@@ -2966,15 +2944,14 @@ struct SwiftCodeGenTests {
                 @memoized("a")
                 @inlinable
                 public func __a() throws -> Node? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
-                    if
-                        case let name = try self._a__opt()
-                    {
+                    if case let name = try self._a__opt() {
                         return name
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
 
@@ -2986,7 +2963,7 @@ struct SwiftCodeGenTests {
                 @memoized("_a__opt")
                 @inlinable
                 public func ___a__opt() throws -> Token? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
                     if
                         let _ = try self.expect("+"),
@@ -2997,6 +2974,7 @@ struct SwiftCodeGenTests {
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
             }
@@ -3474,7 +3452,7 @@ struct SwiftCodeGenTests {
                 @memoized("start")
                 @inlinable
                 public func __start() throws -> TestGrammarAST.Expression? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
                     if
                         let expr = try self.expr(),
@@ -3484,6 +3462,7 @@ struct SwiftCodeGenTests {
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
 
@@ -3497,7 +3476,7 @@ struct SwiftCodeGenTests {
                 @memoizedLeftRecursive("expr")
                 @inlinable
                 public func __expr() throws -> TestGrammarAST.Expr? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
                     if
                         let expr = try self.expr(),
@@ -3519,13 +3498,12 @@ struct SwiftCodeGenTests {
 
                     self.restore(_mark)
 
-                    if
-                        let term = try self.term()
-                    {
+                    if let term = try self.term() {
                         return .term(term)
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
 
@@ -3539,7 +3517,7 @@ struct SwiftCodeGenTests {
                 @memoizedLeftRecursive("term")
                 @inlinable
                 public func __term() throws -> TestGrammarAST.Term? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
                     if
                         let term = try self.term(),
@@ -3561,13 +3539,12 @@ struct SwiftCodeGenTests {
 
                     self.restore(_mark)
 
-                    if
-                        let factor = try self.factor()
-                    {
+                    if let factor = try self.factor() {
                         return .factor(factor)
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
 
@@ -3580,7 +3557,7 @@ struct SwiftCodeGenTests {
                 @memoized("factor")
                 @inlinable
                 public func __factor() throws -> TestGrammarAST.Factor? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
                     if
                         let _ = try self.expect("("),
@@ -3592,13 +3569,12 @@ struct SwiftCodeGenTests {
 
                     self.restore(_mark)
 
-                    if
-                        let atom = try self.atom()
-                    {
+                    if let atom = try self.atom() {
                         return .atom(atom)
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
 
@@ -3611,23 +3587,20 @@ struct SwiftCodeGenTests {
                 @memoized("atom")
                 @inlinable
                 public func __atom() throws -> TestGrammarAST.Atom? {
-                    let _mark = self.mark()
+                    let _mark: Mark = self.mark()
 
-                    if
-                        let name = try self.NAME()
-                    {
+                    if let name = try self.NAME() {
                         return .name(name)
                     }
 
                     self.restore(_mark)
 
-                    if
-                        let number = try self.NUMBER()
-                    {
+                    if let number = try self.NUMBER() {
                         return .number(number)
                     }
 
                     self.restore(_mark)
+
                     return nil
                 }
             }

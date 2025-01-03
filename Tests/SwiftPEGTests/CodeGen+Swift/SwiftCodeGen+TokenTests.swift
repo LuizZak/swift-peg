@@ -1,4 +1,5 @@
 import Testing
+import SwiftAST
 
 @testable import SwiftPEG
 
@@ -11,18 +12,18 @@ struct SwiftCodeGen_TokenTests {
         let sut = makeSut(tokens)
         var emittedTokenNames: Set<String> = []
 
-        try sut.generateTokenParseCheck(
+        let result = try sut._generateTokenParseCheck(
             settings: .default,
             tokens[0],
             emittedTokenNames: &emittedTokenNames
-        )
+        ).emit()
 
         assertEqual(emittedTokenNames, ["leftSquare"])
         diffTest(expected: #"""
         if consume_leftSquare(from: &stream) {
             return .init(kind: .leftSquare, string: stream.substring)
         }
-        """#).diff(sut.buffer.finishBuffer())
+        """#).diff(result)
     }
 
     @Test
@@ -38,11 +39,11 @@ struct SwiftCodeGen_TokenTests {
         let sut = makeSut(tokens, tokenOcclusionGraph: tokenOcclusionGraph)
         var emittedTokenNames: Set<String> = []
 
-        try sut.generateTokenParseCheck(
+        let result = try sut._generateTokenParseCheck(
             settings: .default,
             tokens[0],
             emittedTokenNames: &emittedTokenNames
-        )
+        ).emit()
 
         assertEqual(emittedTokenNames, ["identifier", "keyword"])
         diffTest(expected: #"""
@@ -54,7 +55,7 @@ struct SwiftCodeGen_TokenTests {
                 return .init(kind: .identifier, string: stream.substring)
             }
         }
-        """#).diff(sut.buffer.finishBuffer())
+        """#).diff(result)
     }
 
     @Test
@@ -70,11 +71,11 @@ struct SwiftCodeGen_TokenTests {
         let sut = makeSut(tokens, tokenOcclusionGraph: tokenOcclusionGraph)
         var emittedTokenNames: Set<String> = []
 
-        try sut.generateTokenParseCheck(
+        let result = try sut._generateTokenParseCheck(
             settings: .default,
             tokens[0],
             emittedTokenNames: &emittedTokenNames
-        )
+        ).emit()
 
         assertEqual(emittedTokenNames, ["identifier", "keyword"])
         diffTest(expected: #"""
@@ -86,7 +87,7 @@ struct SwiftCodeGen_TokenTests {
                 return .init(kind: .identifier, string: stream.substring)
             }
         }
-        """#).diff(sut.buffer.finishBuffer())
+        """#).diff(result)
     }
 
     @Test
@@ -102,11 +103,11 @@ struct SwiftCodeGen_TokenTests {
         let sut = makeSut(tokens, tokenOcclusionGraph: tokenOcclusionGraph)
         var emittedTokenNames: Set<String> = []
 
-        try sut.generateTokenParseCheck(
+        let result = try sut._generateTokenParseCheck(
             settings: .default,
             tokens[0],
             emittedTokenNames: &emittedTokenNames
-        )
+        ).emit()
 
         assertEqual(emittedTokenNames, ["identifier", "keyword"])
         diffTest(expected: #"""
@@ -118,7 +119,7 @@ struct SwiftCodeGen_TokenTests {
                 return .init(kind: .identifier, string: stream.substring)
             }
         }
-        """#).diff(sut.buffer.finishBuffer())
+        """#).diff(result)
     }
 
     @Test
@@ -144,11 +145,11 @@ struct SwiftCodeGen_TokenTests {
         let sut = makeSut(tokens, tokenOcclusionGraph: tokenOcclusionGraph)
         var emittedTokenNames: Set<String> = []
 
-        try sut.generateTokenParseCheck(
+        let result = try sut._generateTokenParseCheck(
             settings: .default.with(\.emitLengthSwitchPhaseInTokenOcclusionSwitch, value: true),
             tokens[0],
             emittedTokenNames: &emittedTokenNames
-        )
+        ).emit()
 
         assertEqual(emittedTokenNames, Set(dependants).union(["identifier"]))
         diffTest(expected: #"""
@@ -163,7 +164,6 @@ struct SwiftCodeGen_TokenTests {
                 default:
                     return .init(kind: .identifier, string: stream.substring)
                 }
-
             case 8:
                 switch stream.substring {
                 case "keyword1":
@@ -173,7 +173,6 @@ struct SwiftCodeGen_TokenTests {
                 default:
                     return .init(kind: .identifier, string: stream.substring)
                 }
-
             case 7:
                 switch stream.substring {
                 case "foobar1":
@@ -183,12 +182,11 @@ struct SwiftCodeGen_TokenTests {
                 default:
                     return .init(kind: .identifier, string: stream.substring)
                 }
-
             default:
                 return .init(kind: .identifier, string: stream.substring)
             }
         }
-        """#).diff(sut.buffer.finishBuffer())
+        """#).diff(result)
     }
 
     @Test
@@ -204,18 +202,18 @@ struct SwiftCodeGen_TokenTests {
         let sut = makeSut(tokens, tokenOcclusionGraph: tokenOcclusionGraph)
         var emittedTokenNames: Set<String> = ["keyword"]
 
-        try sut.generateTokenParseCheck(
+        let result = try sut._generateTokenParseCheck(
             settings: .default,
             tokens[0],
             emittedTokenNames: &emittedTokenNames
-        )
+        ).emit()
 
         assertEqual(emittedTokenNames, ["identifier", "keyword"])
         diffTest(expected: #"""
         if consume_identifier(from: &stream) {
             return .init(kind: .identifier, string: stream.substring)
         }
-        """#).diff(sut.buffer.finishBuffer())
+        """#).diff(result)
     }
 
     @Test
@@ -225,7 +223,7 @@ struct SwiftCodeGen_TokenTests {
         """#)
         let sut = makeSut(tokens)
 
-        try sut.generateTokenParser(tokens[0], settings: .default, modifiers: ["private", "static"])
+        let result = try sut._generateTokenParser(tokens[0], settings: .default.with(\.accessLevel, value: "private"), modifiers: [.static])?.emit() ?? ""
 
         diffTest(expected: #"""
         /// ```
@@ -236,7 +234,7 @@ struct SwiftCodeGen_TokenTests {
         private static func consume_leftSquare<StringType>(from stream: inout StringStream<StringType>) -> Bool {
             stream.advanceIfNext("[")
         }
-        """#).diff(sut.buffer.finishBuffer())
+        """#).diff(result)
     }
 
     @Test
@@ -246,7 +244,7 @@ struct SwiftCodeGen_TokenTests {
         """#)
         let sut = makeSut(tokens)
 
-        try sut.generateTokenParser(tokens[0], settings: .default)
+        let result = try sut._generateTokenParser(tokens[0], settings: .default)?.emit() ?? ""
 
         diffTest(expected: #"""
         /// ```
@@ -257,7 +255,7 @@ struct SwiftCodeGen_TokenTests {
         func consume_leftSquare<StringType>(from stream: inout StringStream<StringType>) -> Bool {
             stream.advanceIfNext("[")
         }
-        """#).diff(sut.buffer.finishBuffer())
+        """#).diff(result)
     }
 
     @Test
@@ -267,7 +265,7 @@ struct SwiftCodeGen_TokenTests {
         """#)
         let sut = makeSut(tokens)
 
-        try sut.generateTokenParser(tokens[0], settings: .default)
+        let result = try sut._generateTokenParser(tokens[0], settings: .default)?.emit() ?? ""
 
         diffTest(expected: #"""
         /// ```
@@ -276,26 +274,31 @@ struct SwiftCodeGen_TokenTests {
         ///     ;
         /// ```
         func consume_syntax<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-            guard !stream.isEof else { return false }
-            let state = stream.save()
+            guard !stream.isEof else {
+                return false
+            }
+
+            let state: StringStream<StringType>.State = stream.save()
 
             alt:
             do {
                 guard stream.isNext("[") else {
                     return false
                 }
+
                 stream.advance()
 
                 switch stream.peek() {
                 case "0"..."9", "_":
                     stream.advance()
                 default:
-                    _=()
+                    _ = ()
                 }
 
                 guard stream.isNext("]") else {
                     break alt
                 }
+
                 stream.advance()
 
                 return true
@@ -305,7 +308,7 @@ struct SwiftCodeGen_TokenTests {
 
             return false
         }
-        """#).diff(sut.buffer.finishBuffer())
+        """#).diff(result)
     }
 
     @Test
@@ -315,7 +318,7 @@ struct SwiftCodeGen_TokenTests {
         """#)
         let sut = makeSut(tokens)
 
-        try sut.generateTokenParser(tokens[0], settings: .default)
+        let result = try sut._generateTokenParser(tokens[0], settings: .default)?.emit() ?? ""
 
         diffTest(expected: #"""
         /// ```
@@ -324,23 +327,32 @@ struct SwiftCodeGen_TokenTests {
         ///     ;
         /// ```
         func consume_syntax<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-            guard !stream.isEof else { return false }
-            let state = stream.save()
+            guard !stream.isEof else {
+                return false
+            }
+
+            let state: StringStream<StringType>.State = stream.save()
 
             alt:
             do {
                 guard stream.isNext("[") else {
                     return false
                 }
+
                 stream.advance()
 
-                if !stream.isNext("5"), !stream.isEof, stream.isNextInRange("0"..."9") {
+                if
+                    !stream.isNext("5"),
+                    !stream.isEof,
+                    stream.isNextInRange("0"..."9")
+                {
                     stream.advance()
                 }
 
                 guard stream.isNext("]") else {
                     break alt
                 }
+
                 stream.advance()
 
                 return true
@@ -350,7 +362,7 @@ struct SwiftCodeGen_TokenTests {
 
             return false
         }
-        """#).diff(sut.buffer.finishBuffer())
+        """#).diff(result)
     }
 
 
@@ -363,7 +375,7 @@ struct SwiftCodeGen_TokenTests {
         """#)
         let sut = makeSut(tokens)
 
-        try sut.generateTokenParser(tokens[0], settings: .default)
+        let result = try sut._generateTokenParser(tokens[0], settings: .default)?.emit() ?? ""
 
         diffTest(expected: #"""
         /// ```
@@ -372,13 +384,16 @@ struct SwiftCodeGen_TokenTests {
         ///     ;
         /// ```
         func consume_syntax<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-            guard !stream.isEof else { return false }
+            guard !stream.isEof else {
+                return false
+            }
 
             alt:
             do {
                 guard stream.isNext("[") else {
                     return false
                 }
+
                 stream.advance()
 
                 switch stream.peek() {
@@ -391,7 +406,7 @@ struct SwiftCodeGen_TokenTests {
                 return true
             }
         }
-        """#).diff(sut.buffer.finishBuffer())
+        """#).diff(result)
     }
 
     @Test
@@ -403,7 +418,7 @@ struct SwiftCodeGen_TokenTests {
         """#)
         let sut = makeSut(tokens)
 
-        try sut.generateTokenParser(tokens[0], settings: .default)
+        let result = try sut._generateTokenParser(tokens[0], settings: .default)?.emit() ?? ""
 
         diffTest(expected: #"""
         /// ```
@@ -412,14 +427,18 @@ struct SwiftCodeGen_TokenTests {
         ///     ;
         /// ```
         func consume_syntax<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-            guard !stream.isEof else { return false }
-            let state = stream.save()
+            guard !stream.isEof else {
+                return false
+            }
+
+            let state: StringStream<StringType>.State = stream.save()
 
             alt:
             do {
                 guard stream.isNext("a") else {
                     return false
                 }
+
                 stream.advance()
 
                 if consume_b(from: &stream) {
@@ -446,7 +465,7 @@ struct SwiftCodeGen_TokenTests {
 
             return false
         }
-        """#).diff(sut.buffer.finishBuffer())
+        """#).diff(result)
     }
 
     @Test
@@ -458,7 +477,7 @@ struct SwiftCodeGen_TokenTests {
         """#)
         let sut = makeSut(tokens)
 
-        try sut.generateTokenParser(tokens[0], settings: .default)
+        let result = try sut._generateTokenParser(tokens[0], settings: .default)?.emit() ?? ""
 
         diffTest(expected: #"""
         /// ```
@@ -467,17 +486,24 @@ struct SwiftCodeGen_TokenTests {
         ///     ;
         /// ```
         func consume_syntax<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-            guard !stream.isEof else { return false }
-            let state = stream.save()
+            guard !stream.isEof else {
+                return false
+            }
+
+            let state: StringStream<StringType>.State = stream.save()
 
             alt:
             do {
                 guard stream.isNext("a") else {
                     return false
                 }
+
                 stream.advance()
 
-                if stream.negativeLookahead(consume_b(from:)), stream.isNext("c") {
+                if
+                    stream.negativeLookahead(consume_b(from:)),
+                    stream.isNext("c")
+                {
                     stream.advance()
                 } else if stream.isNext("d") {
                     stream.advance()
@@ -487,7 +513,10 @@ struct SwiftCodeGen_TokenTests {
 
                 loop:
                 while !stream.isEof {
-                    if stream.negativeLookahead(consume_b(from:)), stream.isNext("c") {
+                    if
+                        stream.negativeLookahead(consume_b(from:)),
+                        stream.isNext("c")
+                    {
                         stream.advance()
                     } else if stream.isNext("d") {
                         stream.advance()
@@ -503,7 +532,7 @@ struct SwiftCodeGen_TokenTests {
 
             return false
         }
-        """#).diff(sut.buffer.finishBuffer())
+        """#).diff(result)
     }
 
     @Test
@@ -515,7 +544,7 @@ struct SwiftCodeGen_TokenTests {
         """#)
         let sut = makeSut(tokens)
 
-        try sut.generateTokenParser(tokens[0], settings: .default)
+        let result = try sut._generateTokenParser(tokens[0], settings: .default)?.emit() ?? ""
 
         diffTest(expected: #"""
         /// ```
@@ -524,17 +553,24 @@ struct SwiftCodeGen_TokenTests {
         ///     ;
         /// ```
         func consume_syntax<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-            guard !stream.isEof else { return false }
-            let state = stream.save()
+            guard !stream.isEof else {
+                return false
+            }
+
+            let state: StringStream<StringType>.State = stream.save()
 
             alt:
             do {
                 guard stream.isNext("a") else {
                     return false
                 }
+
                 stream.advance()
 
-                if !stream.isNextInRange("b"..."d"), consume_e(from: &stream) {
+                if
+                    !stream.isNextInRange("b"..."d"),
+                    consume_e(from: &stream)
+                {
                 } else if consume_f(from: &stream) {
                 } else {
                     break alt
@@ -542,7 +578,10 @@ struct SwiftCodeGen_TokenTests {
 
                 loop:
                 while !stream.isEof {
-                    if !stream.isNextInRange("b"..."d"), consume_e(from: &stream) {
+                    if
+                        !stream.isNextInRange("b"..."d"),
+                        consume_e(from: &stream)
+                    {
                     } else if consume_f(from: &stream) {
                     } else {
                         break loop
@@ -556,7 +595,7 @@ struct SwiftCodeGen_TokenTests {
 
             return false
         }
-        """#).diff(sut.buffer.finishBuffer())
+        """#).diff(result)
     }
 
     @Test
@@ -568,7 +607,7 @@ struct SwiftCodeGen_TokenTests {
         """#)
         let sut = makeSut(tokens)
 
-        try sut.generateTokenParser(tokens[0], settings: .default)
+        let result = try sut._generateTokenParser(tokens[0], settings: .default)?.emit() ?? ""
 
         diffTest(expected: #"""
         /// ```
@@ -577,7 +616,9 @@ struct SwiftCodeGen_TokenTests {
         ///     ;
         /// ```
         func consume_identifier<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-            guard !stream.isEof else { return false }
+            guard !stream.isEof else {
+                return false
+            }
 
             alt:
             do {
@@ -591,7 +632,7 @@ struct SwiftCodeGen_TokenTests {
                 return true
             }
         }
-        """#).diff(sut.buffer.finishBuffer())
+        """#).diff(result)
     }
 
     @Test
@@ -603,7 +644,7 @@ struct SwiftCodeGen_TokenTests {
         """#)
         let sut = makeSut(tokens)
 
-        try sut.generateTokenParser(tokens[0], settings: .default)
+        let result = try sut._generateTokenParser(tokens[0], settings: .default)?.emit() ?? ""
 
         diffTest(expected: #"""
         /// ```
@@ -612,7 +653,9 @@ struct SwiftCodeGen_TokenTests {
         ///     ;
         /// ```
         func consume_identifier<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-            guard !stream.isEof else { return false }
+            guard !stream.isEof else {
+                return false
+            }
 
             alt:
             do {
@@ -636,7 +679,7 @@ struct SwiftCodeGen_TokenTests {
                 return true
             }
         }
-        """#).diff(sut.buffer.finishBuffer())
+        """#).diff(result)
     }
 
     @Test
@@ -648,7 +691,7 @@ struct SwiftCodeGen_TokenTests {
         """#)
         let sut = makeSut(tokens)
 
-        try sut.generateTokenParser(tokens[0], settings: .default)
+        let result = try sut._generateTokenParser(tokens[0], settings: .default)?.emit() ?? ""
 
         diffTest(expected: #"""
         /// ```
@@ -657,13 +700,19 @@ struct SwiftCodeGen_TokenTests {
         ///     ;
         /// ```
         func consume_identifier<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-            guard !stream.isEof else { return false }
+            guard !stream.isEof else {
+                return false
+            }
 
             alt:
             do {
-                guard let c = stream.safePeek(), c.isLetter || c == "_" else {
+                guard
+                    let c = stream.safePeek(),
+                    c.isLetter || c == "_"
+                else {
                     return false
                 }
+
                 stream.advance()
 
                 loop:
@@ -679,7 +728,7 @@ struct SwiftCodeGen_TokenTests {
                 return true
             }
         }
-        """#).diff(sut.buffer.finishBuffer())
+        """#).diff(result)
     }
 
     @Test
@@ -691,7 +740,7 @@ struct SwiftCodeGen_TokenTests {
         """#)
         let sut = makeSut(tokens)
 
-        try sut.generateTokenParser(tokens[0], settings: .default)
+        let result = try sut._generateTokenParser(tokens[0], settings: .default)?.emit() ?? ""
 
         diffTest(expected: #"""
         /// ```
@@ -700,13 +749,19 @@ struct SwiftCodeGen_TokenTests {
         ///     ;
         /// ```
         func consume_identifier<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-            guard !stream.isEof else { return false }
+            guard !stream.isEof else {
+                return false
+            }
 
             alt:
             do {
-                guard let c = stream.safePeek(), c.isLetter || c == "_" else {
+                guard
+                    let c = stream.safePeek(),
+                    c.isLetter || c == "_"
+                else {
                     return false
                 }
+
                 stream.advance()
 
                 loop:
@@ -726,7 +781,7 @@ struct SwiftCodeGen_TokenTests {
                 return true
             }
         }
-        """#).diff(sut.buffer.finishBuffer())
+        """#).diff(result)
     }
 
     @Test
@@ -738,7 +793,7 @@ struct SwiftCodeGen_TokenTests {
         """#)
         let sut = makeSut(tokens)
 
-        try sut.generateTokenParser(tokens[0], settings: .default)
+        let result = try sut._generateTokenParser(tokens[0], settings: .default)?.emit() ?? ""
 
         diffTest(expected: #"""
         /// ```
@@ -747,19 +802,27 @@ struct SwiftCodeGen_TokenTests {
         ///     ;
         /// ```
         func consume_for<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-            guard !stream.isEof else { return false }
-            let state = stream.save()
+            guard !stream.isEof else {
+                return false
+            }
+
+            let state: StringStream<StringType>.State = stream.save()
 
             alt:
             do {
                 guard stream.isNext("for") else {
                     return false
                 }
+
                 stream.advance(3)
 
-                guard stream.negativeLookahead(consume_letter(from:)), stream.negativeLookahead(consume_digit(from:)) else {
+                guard
+                    stream.negativeLookahead(consume_letter(from:)),
+                    stream.negativeLookahead(consume_digit(from:))
+                else {
                     break alt
                 }
+
                 return true
             }
 
@@ -767,7 +830,7 @@ struct SwiftCodeGen_TokenTests {
 
             return false
         }
-        """#).diff(sut.buffer.finishBuffer())
+        """#).diff(result)
     }
 
     @Test
@@ -784,7 +847,7 @@ struct SwiftCodeGen_TokenTests {
         """#)
         let sut = makeSut(tokens)
 
-        try sut.generateTokenParser(tokens[0], settings: .default)
+        let result = try sut._generateTokenParser(tokens[0], settings: .default)?.emit() ?? ""
 
         diffTest(expected: #"""
         /// ```
@@ -795,19 +858,26 @@ struct SwiftCodeGen_TokenTests {
         ///     ;
         /// ```
         func consume_stringLiteral<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-            guard !stream.isEof else { return false }
-            let state = stream.save()
+            guard !stream.isEof else {
+                return false
+            }
+
+            let state: StringStream<StringType>.State = stream.save()
 
             alt:
             do {
                 guard stream.isNext("\"\"\"") else {
                     break alt
                 }
+
                 stream.advance(3)
 
                 loop:
                 while !stream.isEof {
-                    if !stream.isNext("\"\"\""), !stream.isEof {
+                    if
+                        !stream.isNext("\"\"\""),
+                        !stream.isEof
+                    {
                         stream.advance()
                     } else if stream.isNext("\\\"\"\"") {
                         stream.advance(4)
@@ -819,6 +889,7 @@ struct SwiftCodeGen_TokenTests {
                 guard stream.isNext("\"\"\"") else {
                     break alt
                 }
+
                 stream.advance(3)
 
                 return true
@@ -828,25 +899,31 @@ struct SwiftCodeGen_TokenTests {
 
             alt:
             do {
-                guard stream.isNext("'") else {
+                guard stream.isNext("\'") else {
                     break alt
                 }
+
                 stream.advance()
 
                 loop:
                 while !stream.isEof {
-                    if !stream.isNext("'"), !stream.isNext("\n"), !stream.isEof {
+                    if
+                        !stream.isNext("\'"),
+                        !stream.isNext("\n"),
+                        !stream.isEof
+                    {
                         stream.advance()
-                    } else if stream.isNext("\\'") {
+                    } else if stream.isNext("\\\'") {
                         stream.advance(2)
                     } else {
                         break loop
                     }
                 }
 
-                guard stream.isNext("'") else {
+                guard stream.isNext("\'") else {
                     break alt
                 }
+
                 stream.advance()
 
                 return true
@@ -859,11 +936,16 @@ struct SwiftCodeGen_TokenTests {
                 guard stream.isNext("\"") else {
                     return false
                 }
+
                 stream.advance()
 
                 loop:
                 while !stream.isEof {
-                    if !stream.isNext("\""), !stream.isNext("\n"), !stream.isEof {
+                    if
+                        !stream.isNext("\""),
+                        !stream.isNext("\n"),
+                        !stream.isEof
+                    {
                         stream.advance()
                     } else if stream.isNext("\\\"") {
                         stream.advance(2)
@@ -875,6 +957,7 @@ struct SwiftCodeGen_TokenTests {
                 guard stream.isNext("\"") else {
                     break alt
                 }
+
                 stream.advance()
 
                 return true
@@ -884,7 +967,7 @@ struct SwiftCodeGen_TokenTests {
 
             return false
         }
-        """#).diff(sut.buffer.finishBuffer())
+        """#).diff(result)
     }
 
     @Test
@@ -910,6 +993,7 @@ struct SwiftCodeGen_TokenTests {
 
         struct ParserToken: RawTokenType, CustomStringConvertible {
             var kind: TokenKind
+
             var string: Substring
 
             var length: Int {
@@ -925,7 +1009,10 @@ struct SwiftCodeGen_TokenTests {
             }
 
             static func from<StringType>(stream: inout StringStream<StringType>) -> Self? where StringType.SubSequence == Substring {
-                guard !stream.isEof else { return nil }
+                guard !stream.isEof else {
+                    return nil
+                }
+
                 stream.markSubstringStart()
 
                 if consume_tok(from: &stream) {
@@ -941,7 +1028,8 @@ struct SwiftCodeGen_TokenTests {
 
                 var description: String {
                     switch self {
-                    case .tok: "abc"
+                    case .tok:
+                        "abc"
                     }
                 }
             }
@@ -978,6 +1066,7 @@ struct SwiftCodeGen_TokenTests {
         diffTest(expected: #"""
         struct CustomTypeName: RawTokenType, CustomStringConvertible {
             var kind: TokenKind
+
             var string: Substring
 
             var length: Int {
@@ -993,7 +1082,10 @@ struct SwiftCodeGen_TokenTests {
             }
 
             static func from<StringType>(stream: inout StringStream<StringType>) -> Self? where StringType.SubSequence == Substring {
-                guard !stream.isEof else { return nil }
+                guard !stream.isEof else {
+                    return nil
+                }
+
                 stream.markSubstringStart()
 
                 if consume_tok(from: &stream) {
@@ -1009,7 +1101,8 @@ struct SwiftCodeGen_TokenTests {
 
                 var description: String {
                     switch self {
-                    case .tok: "abc"
+                    case .tok:
+                        "abc"
                     }
                 }
             }
@@ -1039,6 +1132,7 @@ struct SwiftCodeGen_TokenTests {
         diffTest(expected: #"""
         struct ParserToken: RawTokenType, CustomStringConvertible {
             var kind: TokenKind
+
             var string: Substring
 
             var length: Int {
@@ -1054,7 +1148,10 @@ struct SwiftCodeGen_TokenTests {
             }
 
             static func from<StringType>(stream: inout StringStream<StringType>) -> Self? where StringType.SubSequence == Substring {
-                guard !stream.isEof else { return nil }
+                guard !stream.isEof else {
+                    return nil
+                }
+
                 stream.markSubstringStart()
 
                 if consume_tok(from: &stream) {
@@ -1070,7 +1167,8 @@ struct SwiftCodeGen_TokenTests {
 
                 var description: String {
                     switch self {
-                    case .tok: "tok"
+                    case .tok:
+                        "tok"
                     }
                 }
             }
@@ -1090,20 +1188,23 @@ struct SwiftCodeGen_TokenTests {
             ///     ;
             /// ```
             static func consume_tok<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-                guard !stream.isEof else { return false }
-                let state = stream.save()
+                guard !stream.isEof else {
+                    return false
+                }
+
+                let state: StringStream<StringType>.State = stream.save()
 
                 alt:
                 do {
                     guard stream.isNext("a") else {
                         return false
                     }
+
                     stream.advance()
 
                     guard consume_frag(from: &stream) else {
                         break alt
                     }
-
 
                     return true
                 }
@@ -1130,6 +1231,7 @@ struct SwiftCodeGen_TokenTests {
         diffTest(expected: #"""
         struct ParserToken: RawTokenType, CustomStringConvertible {
             var kind: TokenKind
+
             var string: Substring
 
             var length: Int {
@@ -1145,15 +1247,20 @@ struct SwiftCodeGen_TokenTests {
             }
 
             static func from<StringType>(stream: inout StringStream<StringType>) -> Self? where StringType.SubSequence == Substring {
-                guard !stream.isEof else { return nil }
+                guard !stream.isEof else {
+                    return nil
+                }
+
                 stream.markSubstringStart()
 
                 if consume_TOKEN(from: &stream) {
                     return .init(kind: .tokenName, string: stream.substring)
                 }
+
                 if consume_TOKEN2(from: &stream) {
                     return .init(kind: .TOKEN2, string: stream.substring)
                 }
+
                 if consume_TOKEN3(from: &stream) {
                     return .init(kind: .tokenName3, string: stream.substring)
                 }
@@ -1173,9 +1280,12 @@ struct SwiftCodeGen_TokenTests {
 
                 var description: String {
                     switch self {
-                    case .tokenName: "a"
-                    case .TOKEN2: "b"
-                    case .tokenName3: "c"
+                    case .tokenName:
+                        "a"
+                    case .TOKEN2:
+                        "b"
+                    case .tokenName3:
+                        "c"
                     }
                 }
             }
@@ -1224,6 +1334,7 @@ struct SwiftCodeGen_TokenTests {
         diffTest(expected: #"""
         struct ParserToken: RawTokenType, CustomStringConvertible {
             var kind: TokenKind
+
             var string: Substring
 
             @inlinable
@@ -1243,7 +1354,10 @@ struct SwiftCodeGen_TokenTests {
 
             @inlinable
             static func from<StringType>(stream: inout StringStream<StringType>) -> Self? where StringType.SubSequence == Substring {
-                guard !stream.isEof else { return nil }
+                guard !stream.isEof else {
+                    return nil
+                }
+
                 stream.markSubstringStart()
 
                 if consume_tok(from: &stream) {
@@ -1260,7 +1374,8 @@ struct SwiftCodeGen_TokenTests {
                 @inlinable
                 var description: String {
                     switch self {
-                    case .tok: "abc"
+                    case .tok:
+                        "abc"
                     }
                 }
             }
@@ -1292,6 +1407,7 @@ struct SwiftCodeGen_TokenTests {
         diffTest(expected: #"""
         public struct ParserToken: RawTokenType, CustomStringConvertible {
             public var kind: TokenKind
+
             public var string: Substring
 
             public var length: Int {
@@ -1304,6 +1420,7 @@ struct SwiftCodeGen_TokenTests {
 
             public init(kind: TokenKind, string: Substring) {
                 self.kind = kind
+
                 self.string = string
             }
 
@@ -1312,7 +1429,10 @@ struct SwiftCodeGen_TokenTests {
             }
 
             public static func from<StringType>(stream: inout StringStream<StringType>) -> Self? where StringType.SubSequence == Substring {
-                guard !stream.isEof else { return nil }
+                guard !stream.isEof else {
+                    return nil
+                }
+
                 stream.markSubstringStart()
 
                 if consume_tok(from: &stream) {
@@ -1328,7 +1448,8 @@ struct SwiftCodeGen_TokenTests {
 
                 public var description: String {
                     switch self {
-                    case .tok: "abc"
+                    case .tok:
+                        "abc"
                     }
                 }
             }
@@ -1360,6 +1481,7 @@ struct SwiftCodeGen_TokenTests {
         diffTest(expected: #"""
         public struct ParserToken: RawTokenType, CustomStringConvertible {
             public var kind: TokenKind
+
             public var string: Substring
 
             @inlinable
@@ -1375,6 +1497,7 @@ struct SwiftCodeGen_TokenTests {
             @inlinable
             public init(kind: TokenKind, string: Substring) {
                 self.kind = kind
+
                 self.string = string
             }
 
@@ -1385,7 +1508,10 @@ struct SwiftCodeGen_TokenTests {
 
             @inlinable
             public static func from<StringType>(stream: inout StringStream<StringType>) -> Self? where StringType.SubSequence == Substring {
-                guard !stream.isEof else { return nil }
+                guard !stream.isEof else {
+                    return nil
+                }
+
                 stream.markSubstringStart()
 
                 if consume_tok(from: &stream) {
@@ -1402,7 +1528,8 @@ struct SwiftCodeGen_TokenTests {
                 @inlinable
                 public var description: String {
                     switch self {
-                    case .tok: "abc"
+                    case .tok:
+                        "abc"
                     }
                 }
             }
@@ -1450,4 +1577,28 @@ private func parseTokenDefinitions(
     }
 
     return tokens.map(InternalGrammar.TokenDefinition.from)
+}
+
+private extension Expression {
+    func emit() -> String {
+        let emitter = SwiftASTEmitter()
+        emitter.emit(self)
+        return emitter.finishBuffer()
+    }
+}
+
+private extension Statement {
+    func emit() -> String {
+        let emitter = SwiftASTEmitter()
+        emitter.emit(self)
+        return emitter.finishBuffer()
+    }
+}
+
+private extension SwiftCodeGen.FunctionMemberDecl {
+    func emit() -> String {
+        let emitter = SwiftASTEmitter()
+        emitter.emit(self)
+        return emitter.finishBuffer()
+    }
 }
