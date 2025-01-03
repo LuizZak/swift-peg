@@ -24,7 +24,7 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-argument-parser.git", exact: "1.4.0"),
         .package(url: "https://github.com/LuizZak/Console.git", exact: "0.14.1"),
         .package(url: "https://github.com/LuizZak/MiniDigraph.git", exact: "0.8.0"),
-        .package(url: "https://github.com/LuizZak/SwiftAST.git", exact: "0.12.0"),
+        .package(url: "https://github.com/LuizZak/SwiftAST.git", exact: "0.13.0"),
     ],
     targets: [
         .macro(
