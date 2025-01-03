@@ -138,6 +138,7 @@ public struct StringStream<StringType: StringProtocol> {
     /// If the first index is within bounds but `match` is larger than the rest
     /// of the string, the method doesn't raise a runtime error and simply returns
     /// `false`.
+    @discardableResult
     @inlinable
     public mutating func advanceIfNext<S: StringProtocol>(_ match: S) -> Bool {
         guard isNext(match) else {

@@ -1677,6 +1677,149 @@ struct SwiftCodeGen_TokenTests {
         }
         """#).diff(result)
     }
+
+    @Test
+    func generateTokenType_simplifiesWhileChecks() throws {
+        let tokens = try parseTokenDefinitions(#"""
+        $tok: 'a' b+ ;
+        %b: '0'...'9'+ ;
+        """#)
+        let sut = makeSut(tokens)
+        let settings: SwiftCodeGen.TokenTypeGenSettings =
+            .default.with(\.accessLevel, value: "public")
+                .with(\.emitInlinable, value: true)
+
+        let result = try sut.generateTokenType(settings: settings)
+
+        diffTest(expected: #"""
+        public struct ParserToken: RawTokenType, CustomStringConvertible {
+            public var kind: TokenKind
+
+            public var string: Substring
+
+            @inlinable
+            public var length: Int {
+                string.count
+            }
+
+            @inlinable
+            public var description: String {
+                String(string)
+            }
+
+            @inlinable
+            public init(kind: TokenKind, string: Substring) {
+                self.kind = kind
+
+                self.string = string
+            }
+
+            @inlinable
+            public static func produceDummy(_ kind: TokenKind) -> Self {
+                .init(kind: kind, string: "<dummy>")
+            }
+
+            @inlinable
+            public static func from<StringType>(stream: inout StringStream<StringType>) -> Self? where StringType.SubSequence == Substring {
+                guard !stream.isEof else {
+                    return nil
+                }
+
+                stream.markSubstringStart()
+
+                if consume_tok(from: &stream) {
+                    return .init(kind: .tok, string: stream.substring)
+                }
+
+                return nil
+            }
+
+            public enum TokenKind: TokenKindType {
+                /// `"a" (b)+`
+                case tok
+
+                @inlinable
+                public var description: String {
+                    switch self {
+                    case .tok:
+                        "tok"
+                    }
+                }
+            }
+
+            /// ```
+            /// b:
+            ///     | ("0"..."9")+
+            ///     ;
+            /// ```
+            @inlinable
+            public static func consume_b<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+                guard !stream.isEof else {
+                    return false
+                }
+
+                alt:
+                do {
+                    switch stream.peek() {
+                    case "0"..."9":
+                        stream.advance()
+                    default:
+                        return false
+                    }
+
+                    loop:
+                    while !stream.isEof {
+                        switch stream.peek() {
+                        case "0"..."9":
+                            stream.advance()
+                        default:
+                            break loop
+                        }
+                    }
+
+                    return true
+                }
+            }
+
+            /// ```
+            /// tok:
+            ///     | "a" (b)+
+            ///     ;
+            /// ```
+            @inlinable
+            public static func consume_tok<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+                guard !stream.isEof else {
+                    return false
+                }
+
+                let state: StringStream<StringType>.State = stream.save()
+
+                alt:
+                do {
+                    guard stream.isNext("a") else {
+                        return false
+                    }
+
+                    stream.advance()
+
+                    if consume_b(from: &stream) {
+                    } else {
+                        break alt
+                    }
+
+                    while consume_b(from: &stream) {
+                    }
+
+                    return true
+                }
+
+                stream.restore(state)
+
+                return false
+            }
+        }
+        """#).diff(result)
+    }
 }
 
 // MARK: - Test internals

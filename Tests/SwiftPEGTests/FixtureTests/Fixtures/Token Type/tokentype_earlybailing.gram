@@ -334,12 +334,7 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
 
             stream.advance()
 
-            loop:
-            while !stream.isEof {
-                if consume_g(from: &stream) {
-                } else {
-                    break loop
-                }
+            while consume_g(from: &stream) {
             }
 
             return true

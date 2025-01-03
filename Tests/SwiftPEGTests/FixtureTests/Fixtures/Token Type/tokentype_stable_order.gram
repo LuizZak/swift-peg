@@ -1556,12 +1556,7 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
 
             stream.advance()
 
-            loop:
-            while !stream.isEof {
-                if consume__decimal_digit(from: &stream) {
-                } else {
-                    break loop
-                }
+            while consume__decimal_digit(from: &stream) {
             }
 
             return true
@@ -1781,12 +1776,7 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
                 return false
             }
 
-            loop:
-            while !stream.isEof {
-                if consume__hexadecimal_digit(from: &stream) {
-                } else {
-                    break loop
-                }
+            while consume__hexadecimal_digit(from: &stream) {
             }
 
             return true
@@ -2063,12 +2053,7 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
 
             stream.advance()
 
-            loop:
-            while !stream.isEof {
-                if consume__decimal_digit(from: &stream) {
-                } else {
-                    break loop
-                }
+            while consume__decimal_digit(from: &stream) {
             }
 
             return true

@@ -910,6 +910,28 @@ extension SwiftCodeGen {
     /// Generates a `while` loop that continually consumes the first matched
     /// atom in the provided list, returning
     func generateAtomLoop(_ alts: [CommonAbstract.TokenAtom]) throws -> WhileStatement {
+        // Attempt to flatten
+        //
+        // loop:
+        // while !isEof {
+        //   if consume_x(from: &stream) {
+        //   } else {
+        //     break loop
+        //   }
+        // }
+        //
+        // into:
+        //
+        // while consume_x(from: &stream) {
+        // }
+        if alts.count == 1 {
+            if alts[0].excluded.isEmpty, case .identifier = alts[0].terminal {
+                let conditional = try tok_conditional(for: alts[0])
+
+                return .while(clauses: .init(clauses: conditional), body: [])
+            }
+        }
+
         let expr: Expression = .unary(op: .negate, .identifier("stream").dot("isEof"))
         let body = try generateAtomAlts(alts, bailStatement: .break(label: "loop")).map { Statement.expression($0) }
 
@@ -964,10 +986,10 @@ extension SwiftCodeGen {
     }
 
     /// Generates the given set of alternating terminals as a switch statement,
-    /// modifying the buffer and returning `true` if successful.
+    /// modifying the buffer and returning a non-nil switch statement if successful.
     ///
     /// If the alts cannot be simplified to a single switch statement, the buffer
-    /// is untouched and `false` is returned.
+    /// is untouched and `nil` is returned.
     private func tryGenerateAsSwitch(
         _ alts: [CommonAbstract.TokenAtom],
         bailStatement: BailStatementMonitor
@@ -1138,7 +1160,7 @@ extension SwiftCodeGen {
     /// that inspects a single token from the stream.
     func canSimplifyAsSwitch(_ alts: [CommonAbstract.TokenAtom]) -> Bool {
         for alt in alts {
-            if !alt.excluded.isEmpty {
+            guard alt.excluded.isEmpty else {
                 return false
             }
 
