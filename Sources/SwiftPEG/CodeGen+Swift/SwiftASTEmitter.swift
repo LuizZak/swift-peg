@@ -1,7 +1,7 @@
 import SwiftAST
 
 class SwiftASTEmitter {
-    private let buffer: CodeStringBuffer = CodeStringBuffer()
+    let buffer: CodeStringBuffer = CodeStringBuffer()
 
     func finishBuffer(addTrailingNewline: Bool = false) -> String {
         buffer.finishBuffer(addTrailingNewline: addTrailingNewline)
@@ -62,13 +62,17 @@ extension SwiftASTEmitter {
         buffer.ensureSpaceSeparator()
         buffer.emit(decl.name)
         emit(decl.genericArguments)
-        buffer.ensureSpaceSeparator()
         emit(inheritances: decl.inheritances)
         buffer.ensureSpaceSeparator()
         buffer.emitMembersBlock {
+            let separator = TypeMemberSeparator()
+
             for member in decl.members {
+                if separator.willEmit(member) {
+                    buffer.ensureDoubleNewline()
+                }
+
                 emit(member)
-                buffer.ensureDoubleNewline()
             }
         }
     }
@@ -87,13 +91,17 @@ extension SwiftASTEmitter {
         buffer.ensureSpaceSeparator()
         buffer.emit(decl.name)
         emit(decl.genericArguments)
-        buffer.ensureSpaceSeparator()
         emit(inheritances: decl.inheritances)
         buffer.ensureSpaceSeparator()
         buffer.emitMembersBlock {
+            let separator = TypeMemberSeparator()
+
             for member in decl.members {
+                if separator.willEmit(member) {
+                    buffer.ensureDoubleNewline()
+                }
+
                 emit(member)
-                buffer.ensureDoubleNewline()
             }
         }
     }
@@ -449,7 +457,6 @@ extension SwiftASTEmitter {
         emit(memberDecl.signature.attributes)
         buffer.ensureSpaceSeparator()
         emit(memberDecl.signature)
-        buffer.ensureSpaceSeparator()
         buffer.ensureNewline()
     }
 
@@ -591,6 +598,7 @@ extension SwiftASTEmitter {
             }
 
             emit(argument.expression)
+            buffer.backtrackWhitespace() // Backtrack newlines produced by block literals
         }
     }
 
@@ -626,8 +634,10 @@ extension SwiftASTEmitter {
 
     /// `[ ]<accessLevel>`
     func emit(_ accessLevel: AccessLevel) {
-        buffer.ensureSpaceSeparator()
-        buffer.emit(accessLevel.rawValue)
+        if accessLevel != .internal {
+            buffer.ensureSpaceSeparator()
+            buffer.emit(accessLevel.rawValue)
+        }
     }
 
     /// `<statement>`
@@ -681,19 +691,23 @@ extension SwiftASTEmitter: StatementVisitor {
     }
 
     func visitConditionalClauses(_ clauses: ConditionalClauses) -> Void {
-        if clauses.clauses.count == 1 {
-            visitConditionalClauseElement(clauses.clauses[0])
-            return
-        }
+        let isMultilineClauseVisitor = RequiresMultilineConditionalClauseVisitor()
 
-        buffer.ensureNewline()
-        buffer.indented {
-            for (i, clause) in clauses.clauses.enumerated() {
-                visitConditionalClauseElement(clause)
-                if i < clauses.clauses.count - 1 {
-                    buffer.emit(",")
+        if isMultilineClauseVisitor.visitConditionalClauses(clauses) {
+            buffer.ensureNewline()
+            buffer.indented {
+                for (i, clause) in clauses.clauses.enumerated() {
+                    visitConditionalClauseElement(clause)
+                    if i < clauses.clauses.count - 1 {
+                        buffer.emit(",")
+                    }
+                    buffer.ensureNewline()
                 }
-                buffer.ensureNewline()
+            }
+        } else {
+            buffer.ensureSpaceSeparator()
+            buffer.emitWithSeparators(clauses.clauses, separator: ", ") { clause in
+                visitConditionalClauseElement(clause)
             }
         }
     }
@@ -710,7 +724,7 @@ extension SwiftASTEmitter: StatementVisitor {
     }
 
     func visitGuard(_ stmt: GuardStatement) -> Void {
-        buffer.emit("guard ")
+        buffer.emit("guard")
         visitConditionalClauses(stmt.conditionalClauses)
         buffer.ensureSpaceSeparator()
         buffer.emit("else")
@@ -742,7 +756,9 @@ extension SwiftASTEmitter: StatementVisitor {
         buffer.emit(" in ")
         visitExpression(stmt.exp)
         if let whereClause = stmt.whereClause {
-            buffer.emit(" where ")
+            buffer.ensureSpaceSeparator()
+            buffer.emit("where")
+            buffer.ensureSpaceSeparator()
             visitExpression(whereClause)
         }
         buffer.ensureSpaceSeparator()
@@ -1019,14 +1035,18 @@ extension SwiftASTEmitter: ExpressionVisitor {
     func visitBlock(_ exp: BlockLiteralExpression) -> Void {
         buffer.emitBlock {
             buffer.backtrackWhitespace()
-            buffer.ensureSpaceSeparator()
-            buffer.emit("(")
-            buffer.emitWithSeparators(exp.parameters, separator: ", ") { param in
-                buffer.emit("\(param.name): \(param.type)")
+            if let signature = exp.signature {
+                buffer.ensureSpaceSeparator()
+                buffer.emit("(")
+                buffer.emitWithSeparators(signature.parameters, separator: ", ") { param in
+                    buffer.emit("\(param.name): \(param.type)")
+                }
+                buffer.emit(") -> ")
+                emit(signature.returnType)
+                buffer.emit(" in")
             }
-            buffer.emit(") -> ")
-            emit(exp.returnType)
-            buffer.emitLine(" in")
+
+            buffer.ensureNewline()
 
             for stmt in exp.body {
                 visitStatement(stmt)
@@ -1064,7 +1084,7 @@ extension SwiftASTEmitter: ExpressionVisitor {
     }
 
     func visitIf(_ exp: IfExpression) -> Void {
-        buffer.emit("if ")
+        buffer.emit("if")
         visitConditionalClauses(exp.conditionalClauses)
         buffer.ensureSpaceSeparator()
         visitStatement(exp.body)
@@ -1091,14 +1111,15 @@ extension SwiftASTEmitter: ExpressionVisitor {
         buffer.emit("switch ")
         visitExpression(exp.exp)
         buffer.ensureSpaceSeparator()
-        buffer.emitBlock {
-            for switchCase in exp.cases {
-                visitSwitchCase(switchCase)
-            }
-            if let defaultCase = exp.defaultCase {
-                visitSwitchDefaultCase(defaultCase)
-            }
+        buffer.emitLine("{")
+        for switchCase in exp.cases {
+            visitSwitchCase(switchCase)
         }
+        if let defaultCase = exp.defaultCase {
+            visitSwitchDefaultCase(defaultCase)
+        }
+        buffer.ensureNewline()
+        buffer.emitLine("}")
     }
 
     func visitSwitchCase(_ switchCase: SwitchCase) -> ExprResult {
@@ -1117,7 +1138,9 @@ extension SwiftASTEmitter: ExpressionVisitor {
     func visitSwitchCasePattern(_ casePattern: SwitchCase.CasePattern) -> ExprResult {
         visitPattern(casePattern.pattern)
         if let whereClause = casePattern.whereClause {
-            buffer.emit(" where ")
+            buffer.ensureSpaceSeparator()
+            buffer.emit("where")
+            buffer.ensureSpaceSeparator()
             visitExpression(whereClause)
         }
     }
@@ -1145,5 +1168,240 @@ extension SwiftASTEmitter: ExpressionVisitor {
 extension SwiftASTEmitter {
     func emit(_ type: SwiftType) {
         buffer.emit(type.description)
+    }
+}
+
+// MARK: Internal helper types
+
+/// Manages separations between type member declarations.
+private class TypeMemberSeparator {
+    var lastMember: SwiftCodeGen.MemberDecl?
+
+    /// Records the current member to be emitted, and compares it to any previously
+    /// recorded member, returning `true` if an empty line should be emitted to
+    /// separate the two members.
+    func willEmit(_ member: SwiftCodeGen.MemberDecl) -> Bool {
+        defer { lastMember = member }
+        guard let last = lastMember else {
+            return false
+        }
+
+        switch (last, member) {
+        case (.typealias, .typealias):
+            return false
+
+        default:
+            return true
+        }
+    }
+}
+
+/// Returns `true` if the given expression requires multiline conditional clauses
+/// in `if`, `guard`, and `while` statements.
+private class RequiresMultilineConditionalClauseVisitor: ExpressionVisitor {
+    typealias ExprResult = Bool
+
+    func visitConditionalClauses(_ clauses: ConditionalClauses) -> Bool {
+        if clauses.clauses.count > 1 {
+            return true
+        }
+
+        for clause in clauses.clauses {
+            if visitExpression(clause.expression) {
+                return true
+            }
+        }
+
+        return false
+    }
+
+    func visitExpression(_ expression: Expression) -> Bool {
+        expression.accept(self)
+    }
+
+    func visitAssignment(_ exp: AssignmentExpression) -> Bool {
+        visitExpression(exp.lhs) || visitExpression(exp.rhs)
+    }
+
+    func visitBinary(_ exp: BinaryExpression) -> Bool {
+        visitExpression(exp.lhs) || visitExpression(exp.rhs)
+    }
+
+    func visitUnary(_ exp: UnaryExpression) -> Bool {
+        visitExpression(exp.exp)
+    }
+
+    func visitSizeOf(_ exp: SizeOfExpression) -> Bool {
+        switch exp.value {
+        case .expression(let exp):
+            return visitExpression(exp)
+
+        case .type:
+            return false
+        }
+    }
+
+    func visitPrefix(_ exp: PrefixExpression) -> Bool {
+        visitExpression(exp.exp)
+    }
+
+    func visitPostfix(_ exp: PostfixExpression) -> Bool {
+        if visitExpression(exp.exp) {
+            return true
+        }
+
+        switch exp.op {
+        case is MemberPostfix:
+            return false
+
+        case let op as FunctionCallPostfix:
+            for arg in op.arguments {
+                if visitExpression(arg.expression) {
+                    return true
+                }
+            }
+
+            return false
+
+        case let op as SubscriptPostfix:
+            for arg in op.arguments {
+                if visitExpression(arg.expression) {
+                    return true
+                }
+            }
+
+            return false
+
+        default:
+            return false
+        }
+    }
+
+    func visitConstant(_ exp: ConstantExpression) -> Bool {
+        false
+    }
+
+    func visitParens(_ exp: ParensExpression) -> Bool {
+        visitExpression(exp.exp)
+    }
+
+    func visitIdentifier(_ exp: IdentifierExpression) -> Bool {
+        false
+    }
+
+    func visitImplicitMember(_ exp: ImplicitMemberExpression) -> Bool {
+        false
+    }
+
+    func visitCast(_ exp: CastExpression) -> Bool {
+        visitExpression(exp.exp)
+    }
+
+    func visitTypeCheck(_ exp: TypeCheckExpression) -> Bool {
+        visitExpression(exp.exp)
+    }
+
+    func visitArray(_ exp: ArrayLiteralExpression) -> Bool {
+        for element in exp.items {
+            if visitExpression(element) {
+                return true
+            }
+        }
+
+        return false
+    }
+
+    func visitDictionary(_ exp: DictionaryLiteralExpression) -> Bool {
+        for pair in exp.pairs {
+            if visitExpression(pair.key) || visitExpression(pair.value) {
+                return true
+            }
+        }
+
+        return false
+    }
+
+    func visitBlock(_ exp: BlockLiteralExpression) -> Bool {
+        true
+    }
+
+    func visitTernary(_ exp: TernaryExpression) -> Bool {
+        visitExpression(exp.exp) || visitExpression(exp.ifTrue) || visitExpression(exp.ifFalse)
+    }
+
+    func visitTuple(_ exp: TupleExpression) -> Bool {
+        for element in exp.elements {
+            if visitExpression(element.exp) {
+                return true
+            }
+        }
+
+        return false
+    }
+
+    func visitSelector(_ exp: SelectorExpression) -> Bool {
+        false
+    }
+
+    func visitTry(_ exp: TryExpression) -> Bool {
+        visitExpression(exp.exp)
+    }
+
+    func visitIf(_ exp: IfExpression) -> Bool {
+        true
+    }
+
+    func visitElseBody(_ exp: IfExpression.ElseBody) -> Bool {
+        true
+    }
+
+    func visitSwitch(_ exp: SwitchExpression) -> Bool {
+        true
+    }
+
+    func visitSwitchCase(_ switchCase: SwitchCase) -> Bool {
+        true
+    }
+
+    func visitSwitchCasePattern(_ casePattern: SwitchCase.CasePattern) -> Bool {
+        true
+    }
+
+    func visitSwitchDefaultCase(_ defaultCase: SwitchDefaultCase) -> Bool {
+        true
+    }
+
+    func visitUnknown(_ exp: UnknownExpression) -> Bool {
+        exp.context.context.trimmingWhitespace().contains("\n")
+    }
+
+    func visitPattern(_ pattern: Pattern) -> Bool {
+        switch pattern {
+        case .asType(let inner, _):
+            return visitPattern(inner)
+
+        case .expression(let exp):
+            return visitExpression(exp)
+
+        case .identifier(_, _):
+            return false
+
+        case .optional(let inner):
+            return visitPattern(inner)
+
+        case .tuple(let elements, _):
+            for element in elements {
+                if visitPattern(element) {
+                    return true
+                }
+            }
+            return false
+
+        case .valueBindingPattern(_, let inner):
+            return visitPattern(inner)
+
+        case .wildcard:
+            return false
+        }
     }
 }

@@ -194,7 +194,7 @@ extension SwiftCodeGen {
                 let action = self._generateAction(action)
                 result.append(.expression(action))
             }
-            result.append(.return(failReturnExpression))
+            result.append(.return(failReturnExpression.copy()))
 
             return result
         }
@@ -691,25 +691,25 @@ extension SwiftCodeGen {
             return .try(.identifier("self").dot(aux).call())
 
         case .gather(let sep, let item, _):
-            return .try(.identifier("self").dot("repeatZeroOrMore").call([
-                .init(label: nil, expression: .block(body: [
+            return .try(.identifier("self").dot("gather").call([
+                .init(label: "separator", expression: .block(signature: nil, body: [
                     .expression(try _generateAtom(sep, unwrapped: false, in: production))
                 ])),
-                .init(label: "item", expression: .block(body: [
+                .init(label: "item", expression: .block(signature: nil, body: [
                     .expression(try _generateAtom(item, unwrapped: false, in: production))
                 ])),
             ]))
 
         case .zeroOrMore(let atom, _):
             return .try(.identifier("self").dot("repeatZeroOrMore").call([
-                .block(body: [
+                .block(signature: nil, body: [
                     .expression(try _generateAtom(atom, unwrapped: false, in: production))
                 ])
             ]))
 
         case .oneOrMore(let atom, _):
             return .try(.identifier("self").dot("repeatOneOrMore").call([
-                .block(body: [
+                .block(signature: nil, body: [
                     .expression(try _generateAtom(atom, unwrapped: false, in: production))
                 ])
             ]))
@@ -726,22 +726,22 @@ extension SwiftCodeGen {
         switch lookahead {
         case .forced(let atom):
             return .try(.identifier("self").dot("expectForced").call([
-                .block(body: [
+                .block(signature: nil, body: [
                     .expression(try _generateAtom(atom, unwrapped: true, in: production))
                 ]),
-                .constant(.string(String(atom.description.debugDescription.dropFirst().dropLast())))
+                .constant(.string(String(atom.description)))
             ]))
 
         case .positive(let atom):
             return .try(.identifier("self").dot("positiveLookahead").call([
-                .block(body: [
+                .block(signature: nil, body: [
                     .expression(try _generateAtom(atom, unwrapped: true, in: production))
                 ])
             ]))
 
         case .negative(let atom):
             return .try(.identifier("self").dot("negativeLookahead").call([
-                .block(body: [
+                .block(signature: nil, body: [
                     .expression(try _generateAtom(atom, unwrapped: true, in: production))
                 ])
             ]))
@@ -884,7 +884,7 @@ extension SwiftCodeGen {
         if bindingTuple.count == 0 {
             clause.pattern = .tuple(bindingTuple)
         } else if bindingTuple.count == 1 {
-            clause.pattern = .tuple(bindingTuple)
+            clause.pattern = bindingTuple[0]
         } else {
             clause.pattern = .tuple(bindingTuple)
         }
@@ -893,7 +893,16 @@ extension SwiftCodeGen {
             if bindingTuple.count == 0 {
                 clause.pattern = .tuple(bindingTuple)
             } else if bindingTuple.count == 1 {
-                clause.pattern = .tuple(bindingTuple, .init(type: bindingTupleType[0]))
+                switch bindingTuple[0] {
+                case .identifier(let ident, _):
+                    clause.pattern = .identifier(ident, .init(type: bindingTupleType[0]))
+
+                case .wildcard(_):
+                    clause.pattern = .wildcard(.init(type: bindingTupleType[0]))
+
+                default:
+                    clause.pattern = .tuple(bindingTuple, .init(type: bindingTupleType[0]))
+                }
             } else {
                 clause.pattern = .tuple(bindingTuple, .init(type: .tuple(.types(.fromCollection(bindingTupleType.map { .unlabeled($0) })))))
             }
