@@ -843,7 +843,14 @@ extension SwiftCodeGen {
             }
 
         case .optionalAtom(let atom):
-            let expr = try _generateIfAtom(atom, bailStatement: .custom(_tok_advanceExpr(for: atom)?.description ?? "")) // TODO: Replace `.custom(String)` for `.custom(Statement)`
+            let bailStmt: BailStatementKind
+            if let advanceExpr = try _tok_advanceExpr(for: atom) {
+                bailStmt = .custom(.expression(advanceExpr))
+            } else {
+                bailStmt = .none
+            }
+
+            let expr = try _generateIfAtom(atom, bailStatement: .init(kind: bailStmt))
 
             result.append(.expression(expr))
 
@@ -929,7 +936,9 @@ extension SwiftCodeGen {
             return .if(clauses: .init(clauses: try _tok_conditional(for: atom)), body: .init(statements: body))
         }
 
+        // Convert:
         // [if1, if2, if3]
+        // Into:
         // if1.else(if2.else(if3.else(bail)))
         guard var ifExpr = ifExpressions.last else {
             return nil
@@ -1100,7 +1109,16 @@ extension SwiftCodeGen {
         }
         // Emit default block
         if !stopEarly {
-            defaultCase = .init(statements: bailStatement._emit())
+            var bail = bailStatement._emit()
+            if bail.isEmpty {
+                bail.append(
+                    .expression(.identifier("Void").call())
+                )
+            }
+
+            defaultCase = .init(
+                statements: bail
+            )
         }
 
         return .switch(switchExpr, cases: switchCases, default: defaultCase)
@@ -1506,9 +1524,9 @@ extension SwiftCodeGen {
 
         /// Provides a custom expansion for the bail statement.
         ///
-        /// Convenience for `BailStatementMonitor(kind: .custom(raw))`
-        static func custom(_ raw: String) -> BailStatementMonitor {
-            BailStatementMonitor(kind: .custom(raw))
+        /// Convenience for `BailStatementMonitor(kind: .custom(statement))`
+        static func custom(_ stmt: Statement) -> BailStatementMonitor {
+            BailStatementMonitor(kind: .custom(stmt))
         }
 
         /// Indicates that the bail statement should expand to:
@@ -1544,12 +1562,11 @@ extension SwiftCodeGen {
     }
 
     enum BailStatementKind {
-        /// Indicates that the bail statement should expand to a no-op, non
-        /// control-flow-altering statement.
+        /// Indicates that the bail statement should expand to no statements.
         case none
 
         /// Provides a custom expansion for the bail statement.
-        case custom(String)
+        case custom(Statement)
 
         /// Indicates that the bail statement should expand to:
         /// ```
@@ -1573,14 +1590,10 @@ extension SwiftCodeGen {
         func _emit() -> [Statement] {
             switch self {
             case .none:
-                return [
-                    .expression(.identifier("_").assignment(op: .assign, rhs: .voidTuple()))
-                ]
+                return []
 
-            case .custom(let line):
-                return [
-                    .unknown(.init(context: line))
-                ]
+            case .custom(let stmt):
+                return [stmt]
 
             case .break(nil):
                 return [

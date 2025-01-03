@@ -292,7 +292,7 @@ struct SwiftCodeGen_TokenTests {
                 case "0"..."9", "_":
                     stream.advance()
                 default:
-                    _ = ()
+                    Void()
                 }
 
                 guard stream.isNext("]") else {
