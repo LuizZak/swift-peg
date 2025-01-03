@@ -18,7 +18,7 @@ extension SwiftCodeGen {
     }
 
     /// Generates Swift code defining the Token type of the grammar.
-    public func _generateTokenType(
+    func _generateTokenType(
         settings: TokenTypeGenSettings = .default
     ) throws -> [TopLevelDecl] {
         var result: [TopLevelDecl] = []

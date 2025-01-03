@@ -175,6 +175,7 @@ extension Parser {
                 if case let (b?, d?) = self.shuffleTuple(try self.__a_nsr__group_()) {
                     return (self.mark(), (b, d))
                 }
+
                 return nil
             })
         else {

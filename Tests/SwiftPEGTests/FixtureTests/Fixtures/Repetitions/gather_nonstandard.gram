@@ -162,6 +162,7 @@ extension Parser {
                 if let b = try self.b() {
                     return (self.mark(), b)
                 }
+
                 return nil
             })
         else {

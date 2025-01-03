@@ -250,6 +250,7 @@ extension Parser {
                 if case let (c?, cc?) = self.shuffleTuple(try self.__c_nsr__group_()) {
                     return (self.mark(), (c, cc))
                 }
+
                 return nil
             })
         else {
@@ -319,6 +320,7 @@ extension Parser {
                 if case let (e?, ee?) = self.shuffleTuple(try self.__e_nsr__group_()) {
                     return (self.mark(), (e, ee))
                 }
+
                 return nil
             })
         else {

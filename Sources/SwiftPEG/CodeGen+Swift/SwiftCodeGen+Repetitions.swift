@@ -8,9 +8,7 @@ extension SwiftCodeGen {
         } whileTail: { ctx in
             /*
             // Collect an extra item and try again
-            if
-                let <item>: <Item> = try self.<item>()
-            {
+            if let <item>: <Item> = try self.<item>() {
                 _current.append(<item>)
             } else {
                 break
@@ -40,7 +38,10 @@ extension SwiftCodeGen {
         try _generateMaximalBody(info) { _ in
             /*
             var _current: [(Mark, <Item>)] = try self.repeatZeroOrMore({
-                if let <item> = try self.<item>() { return (self.mark(), <item>) }
+                if let <item> = try self.<item>() {
+                    return (self.mark(), <item>)
+                }
+
                 return nil
             })
             */

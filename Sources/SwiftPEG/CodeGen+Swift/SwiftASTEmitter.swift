@@ -1048,7 +1048,9 @@ extension SwiftASTEmitter: ExpressionVisitor {
 
             buffer.ensureNewline()
 
+            let conditional = buffer.startConditionalEmitter()
             for stmt in exp.body {
+                conditional.ensureEmptyLine()
                 visitStatement(stmt)
             }
         }
