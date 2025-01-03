@@ -733,7 +733,7 @@ extension SwiftASTEmitter: StatementVisitor {
     }
 
     func visitWhile(_ stmt: WhileStatement) -> Void {
-        buffer.emit("while ")
+        buffer.emit("while")
         visitConditionalClauses(stmt.conditionalClauses)
         buffer.ensureSpaceSeparator()
         visitStatement(stmt.body)

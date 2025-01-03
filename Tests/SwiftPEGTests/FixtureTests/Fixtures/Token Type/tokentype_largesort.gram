@@ -7,6 +7,7 @@
 @expectedTokenType """
 public struct ParserToken: RawTokenType, CustomStringConvertible {
     public var kind: TokenKind
+
     public var string: Substring
 
     @inlinable
@@ -22,6 +23,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     @inlinable
     public init(kind: TokenKind, string: Substring) {
         self.kind = kind
+
         self.string = string
     }
 
@@ -32,198 +34,264 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
     @inlinable
     public static func from<StringType>(stream: inout StringStream<StringType>) -> Self? where StringType.SubSequence == Substring {
-        guard !stream.isEof else { return nil }
+        guard !stream.isEof else {
+            return nil
+        }
+
         stream.markSubstringStart()
 
         if consume_WHITESPACE(from: &stream) {
             return .init(kind: .whitespace, string: stream.substring)
         }
+
         if consume_ANDASSIGN(from: &stream) {
             return .init(kind: .andAssign, string: stream.substring)
         }
+
         if consume_ARROW(from: &stream) {
             return .init(kind: .arrow, string: stream.substring)
         }
+
         if consume_CLOSEBRACE(from: &stream) {
             return .init(kind: .closeBrace, string: stream.substring)
         }
+
         if consume_CLOSEMACRO(from: &stream) {
             return .init(kind: .closeMacro, string: stream.substring)
         }
+
         if consume_CLOSEPARENS(from: &stream) {
             return .init(kind: .closeParens, string: stream.substring)
         }
+
         if consume_CLOSEPERCENT(from: &stream) {
             return .init(kind: .closePercent, string: stream.substring)
         }
+
         if consume_CLOSESQUARE(from: &stream) {
             return .init(kind: .closeSquare, string: stream.substring)
         }
+
         if consume_COMMA(from: &stream) {
             return .init(kind: .comma, string: stream.substring)
         }
+
         if consume_DECREMENT(from: &stream) {
             return .init(kind: .decrement, string: stream.substring)
         }
+
         if consume_DIVIDEASSIGN(from: &stream) {
             return .init(kind: .divideAssign, string: stream.substring)
         }
+
         if consume_DOUBLECOLON(from: &stream) {
             return .init(kind: .doubleColon, string: stream.substring)
         }
+
         if consume_COLON(from: &stream) {
             return .init(kind: .colon, string: stream.substring)
         }
+
         if consume_DOUBLEHASH(from: &stream) {
             return .init(kind: .doubleHash, string: stream.substring)
         }
+
         if consume_ELLIPSIS(from: &stream) {
             return .init(kind: .ellipsis, string: stream.substring)
         }
+
         if consume_DOT(from: &stream) {
             return .init(kind: .dot, string: stream.substring)
         }
+
         if consume_EQUALS(from: &stream) {
             return .init(kind: .equals, string: stream.substring)
         }
+
         if consume_ASSIGNMENT(from: &stream) {
             return .init(kind: .assignment, string: stream.substring)
         }
+
         if consume_FORWARDSLASH(from: &stream) {
             return .init(kind: .forwardSlash, string: stream.substring)
         }
+
         if consume_GREATERTHANOREQUAL(from: &stream) {
             return .init(kind: .greaterThanOrEqual, string: stream.substring)
         }
+
         if consume_HASH(from: &stream) {
             return .init(kind: .hash, string: stream.substring)
         }
+
         if consume_INCREMENT(from: &stream) {
             return .init(kind: .increment, string: stream.substring)
         }
+
         if consume_LEFTSHIFTASSIGN(from: &stream) {
             return .init(kind: .leftShiftAssign, string: stream.substring)
         }
+
         if consume_LEFTSHIFT(from: &stream) {
             return .init(kind: .leftShift, string: stream.substring)
         }
+
         if consume_LESSTHANOREQUAL(from: &stream) {
             return .init(kind: .lessThanOrEqual, string: stream.substring)
         }
+
         if consume_LOGICALAND(from: &stream) {
             return .init(kind: .logicalAnd, string: stream.substring)
         }
+
         if consume_BITWISEAND(from: &stream) {
             return .init(kind: .bitwiseAnd, string: stream.substring)
         }
+
         if consume_LOGICALOR(from: &stream) {
             return .init(kind: .logicalOr, string: stream.substring)
         }
+
         if consume_MINUSASSIGN(from: &stream) {
             return .init(kind: .minusAssign, string: stream.substring)
         }
+
         if consume_MINUS(from: &stream) {
             return .init(kind: .minus, string: stream.substring)
         }
+
         if consume_MODULOASSIGN(from: &stream) {
             return .init(kind: .moduloAssign, string: stream.substring)
         }
+
         if consume_MULTIPLYASSIGN(from: &stream) {
             return .init(kind: .multiplyAssign, string: stream.substring)
         }
+
         if consume_ASTERISK(from: &stream) {
             return .init(kind: .asterisk, string: stream.substring)
         }
+
         if consume_NOTEQUALS(from: &stream) {
             return .init(kind: .notEquals, string: stream.substring)
         }
+
         if consume_EXCLAMATION(from: &stream) {
             return .init(kind: .exclamation, string: stream.substring)
         }
+
         if consume_OPENBRACE(from: &stream) {
             return .init(kind: .openBrace, string: stream.substring)
         }
+
         if consume_OPENMACRO(from: &stream) {
             return .init(kind: .openMacro, string: stream.substring)
         }
+
         if consume_OPENPARENS(from: &stream) {
             return .init(kind: .openParens, string: stream.substring)
         }
+
         if consume_OPENPERCENT(from: &stream) {
             return .init(kind: .openPercent, string: stream.substring)
         }
+
         if consume_LESSTHAN(from: &stream) {
             return .init(kind: .lessThan, string: stream.substring)
         }
+
         if consume_OPENSQUARE(from: &stream) {
             return .init(kind: .openSquare, string: stream.substring)
         }
+
         if consume_ORASSIGN(from: &stream) {
             return .init(kind: .orAssign, string: stream.substring)
         }
+
         if consume_BITWISEOR(from: &stream) {
             return .init(kind: .bitwiseOr, string: stream.substring)
         }
+
         if consume_PERCENTDOUBLECOLON(from: &stream) {
             return .init(kind: .percentDoubleColon, string: stream.substring)
         }
+
         if consume_PERCENTCOLON(from: &stream) {
             return .init(kind: .percentColon, string: stream.substring)
         }
+
         if consume_PERCENT(from: &stream) {
             return .init(kind: .percent, string: stream.substring)
         }
+
         if consume_PLUSASSIGN(from: &stream) {
             return .init(kind: .plusAssign, string: stream.substring)
         }
+
         if consume_PLUS(from: &stream) {
             return .init(kind: .plus, string: stream.substring)
         }
+
         if consume_QUESTIONMARK(from: &stream) {
             return .init(kind: .questionMark, string: stream.substring)
         }
+
         if consume_RIGHTSHIFTASSIGN(from: &stream) {
             return .init(kind: .rightShiftAssign, string: stream.substring)
         }
+
         if consume_RIGHTSHIFT(from: &stream) {
             return .init(kind: .rightShift, string: stream.substring)
         }
+
         if consume_GREATERTHAN(from: &stream) {
             return .init(kind: .greaterThan, string: stream.substring)
         }
+
         if consume_SEMICOLON(from: &stream) {
             return .init(kind: .semicolon, string: stream.substring)
         }
+
         if consume_TILDE(from: &stream) {
             return .init(kind: .tilde, string: stream.substring)
         }
+
         if consume_XORASSIGN(from: &stream) {
             return .init(kind: .xorAssign, string: stream.substring)
         }
+
         if consume_BITWISEXOR(from: &stream) {
             return .init(kind: .bitwiseXor, string: stream.substring)
         }
+
         if consume_AUTORELEASEPOOL(from: &stream) {
             return .init(kind: .AUTORELEASEPOOL, string: stream.substring)
         }
+
         if consume_CATCH(from: &stream) {
             return .init(kind: .CATCH, string: stream.substring)
         }
+
         if consume_CLASS(from: &stream) {
             return .init(kind: .CLASS, string: stream.substring)
         }
+
         if consume_DYNAMIC(from: &stream) {
             return .init(kind: .DYNAMIC, string: stream.substring)
         }
+
         if consume_ENCODE(from: &stream) {
             return .init(kind: .ENCODE, string: stream.substring)
         }
+
         if consume_END(from: &stream) {
             return .init(kind: .END, string: stream.substring)
         }
+
         if consume_FINALLY(from: &stream) {
             return .init(kind: .FINALLY, string: stream.substring)
         }
+
         if consume_IDENTIFIER(from: &stream) {
             switch stream.substringLength {
             case 23:
@@ -233,7 +301,6 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                 default:
                     return .init(kind: .identifier, string: stream.substring)
                 }
-
             case 21:
                 switch stream.substring {
                 case "NS_ASSUME_NONNULL_END":
@@ -241,7 +308,6 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                 default:
                     return .init(kind: .identifier, string: stream.substring)
                 }
-
             case 19:
                 switch stream.substring {
                 case "__unsafe_unretained":
@@ -249,7 +315,6 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                 default:
                     return .init(kind: .identifier, string: stream.substring)
                 }
-
             case 18:
                 switch stream.substring {
                 case "IBOutletCollection":
@@ -257,7 +322,6 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                 default:
                     return .init(kind: .identifier, string: stream.substring)
                 }
-
             case 17:
                 switch stream.substring {
                 case "__bridge_retained":
@@ -269,7 +333,6 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                 default:
                     return .init(kind: .identifier, string: stream.substring)
                 }
-
             case 15:
                 switch stream.substring {
                 case "__autoreleasing":
@@ -279,7 +342,6 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                 default:
                     return .init(kind: .identifier, string: stream.substring)
                 }
-
             case 13:
                 switch stream.substring {
                 case "__attribute__":
@@ -297,7 +359,6 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                 default:
                     return .init(kind: .identifier, string: stream.substring)
                 }
-
             case 12:
                 switch stream.substring {
                 case "__deprecated":
@@ -309,7 +370,6 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                 default:
                     return .init(kind: .identifier, string: stream.substring)
                 }
-
             case 11:
                 switch stream.substring {
                 case "__covariant":
@@ -319,7 +379,6 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                 default:
                     return .init(kind: .identifier, string: stream.substring)
                 }
-
             case 10:
                 switch stream.substring {
                 case "__declspec":
@@ -343,7 +402,6 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                 default:
                     return .init(kind: .identifier, string: stream.substring)
                 }
-
             case 9:
                 switch stream.substring {
                 case "__clrcall":
@@ -363,7 +421,6 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                 default:
                     return .init(kind: .identifier, string: stream.substring)
                 }
-
             case 8:
                 switch stream.substring {
                 case "__bridge":
@@ -397,7 +454,6 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                 default:
                     return .init(kind: .identifier, string: stream.substring)
                 }
-
             case 7:
                 switch stream.substring {
                 case "__block":
@@ -427,7 +483,6 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                 default:
                     return .init(kind: .identifier, string: stream.substring)
                 }
-
             case 6:
                 switch stream.substring {
                 case "assign":
@@ -473,7 +528,6 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                 default:
                     return .init(kind: .identifier, string: stream.substring)
                 }
-
             case 5:
                 switch stream.substring {
                 case "__asm":
@@ -503,7 +557,6 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                 default:
                     return .init(kind: .identifier, string: stream.substring)
                 }
-
             case 4:
                 switch stream.substring {
                 case "BOOL":
@@ -539,7 +592,6 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                 default:
                     return .init(kind: .identifier, string: stream.substring)
                 }
-
             case 3:
                 switch stream.substring {
                 case "IMP":
@@ -559,7 +611,6 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                 default:
                     return .init(kind: .identifier, string: stream.substring)
                 }
-
             case 2:
                 switch stream.substring {
                 case "id":
@@ -575,83 +626,107 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                 default:
                     return .init(kind: .identifier, string: stream.substring)
                 }
-
             default:
                 return .init(kind: .identifier, string: stream.substring)
             }
         }
+
         if consume_IMPLEMENTATION(from: &stream) {
             return .init(kind: .IMPLEMENTATION, string: stream.substring)
         }
+
         if consume_IMPORT(from: &stream) {
             return .init(kind: .IMPORT, string: stream.substring)
         }
+
         if consume_INTERFACE(from: &stream) {
             return .init(kind: .INTERFACE, string: stream.substring)
         }
+
         if consume_NONNULL(from: &stream) {
             return .init(kind: .NONNULL, string: stream.substring)
         }
+
         if consume_NULLABLE(from: &stream) {
             return .init(kind: .NULLABLE, string: stream.substring)
         }
+
         if consume_NULL_RESETTABLE(from: &stream) {
             return .init(kind: .NULL_RESETTABLE, string: stream.substring)
         }
+
         if consume_NULL_UNSPECIFIED(from: &stream) {
             return .init(kind: .NULL_UNSPECIFIED, string: stream.substring)
         }
+
         if consume_OPTIONAL(from: &stream) {
             return .init(kind: .OPTIONAL, string: stream.substring)
         }
+
         if consume_PACKAGE(from: &stream) {
             return .init(kind: .PACKAGE, string: stream.substring)
         }
+
         if consume_PRIVATE(from: &stream) {
             return .init(kind: .PRIVATE, string: stream.substring)
         }
+
         if consume_PROPERTY(from: &stream) {
             return .init(kind: .PROPERTY, string: stream.substring)
         }
+
         if consume_PROTECTED(from: &stream) {
             return .init(kind: .PROTECTED, string: stream.substring)
         }
+
         if consume_PROTOCOL(from: &stream) {
             return .init(kind: .PROTOCOL, string: stream.substring)
         }
+
         if consume_PUBLIC(from: &stream) {
             return .init(kind: .PUBLIC, string: stream.substring)
         }
+
         if consume_REQUIRED(from: &stream) {
             return .init(kind: .REQUIRED, string: stream.substring)
         }
+
         if consume_SELECTOR(from: &stream) {
             return .init(kind: .SELECTOR, string: stream.substring)
         }
+
         if consume_SYNCHRONIZED(from: &stream) {
             return .init(kind: .SYNCHRONIZED, string: stream.substring)
         }
+
         if consume_SYNTHESIZE(from: &stream) {
             return .init(kind: .SYNTHESIZE, string: stream.substring)
         }
+
         if consume_THROW(from: &stream) {
             return .init(kind: .THROW, string: stream.substring)
         }
+
         if consume_TRY(from: &stream) {
             return .init(kind: .TRY, string: stream.substring)
         }
+
         if consume_TYPEOF(from: &stream) {
             return .init(kind: .TYPEOF, string: stream.substring)
         }
+
         if consume_characterConstant(from: &stream) {
             return .init(kind: .characterConstant, string: stream.substring)
         }
+
         if consume_floatingConstant(from: &stream) {
             return .init(kind: .floatingConstant, string: stream.substring)
         }
+
         if consume_integerConstant(from: &stream) {
             return .init(kind: .integerConstant, string: stream.substring)
         }
+
         if consume_stringLiteral(from: &stream) {
             return .init(kind: .stringLiteral, string: stream.substring)
         }
@@ -1337,216 +1412,426 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
         @inlinable
         public var description: String {
             switch self {
-            case .whitespace: "WHITESPACE"
-            case .andAssign: "&="
-            case .arrow: "->"
-            case .ASM: "__asm"
-            case .ASSIGN: "assign"
-            case .ATOMIC: "atomic"
-            case .ATTRIBUTE: "__attribute__"
-            case .AUTORELEASING_QUALIFIER: "__autoreleasing"
-            case .BLOCK: "__block"
-            case .BOOL: "BOOL"
-            case .BRIDGE_RETAINED: "__bridge_retained"
-            case .BRIDGE_TRANSFER: "__bridge_transfer"
-            case .BRIDGE: "__bridge"
-            case .BYCOPY: "bycopy"
-            case .BYREF: "byref"
-            case .CDECL: "__cdecl"
-            case .closeBrace: "}"
-            case .closeMacro: ":>"
-            case .closeParens: ")"
-            case .closePercent: "%>"
-            case .closeSquare: "]"
-            case .CLRCALL: "__clrcall"
-            case .comma: ","
-            case .CONTRAVARIANT: "__contravariant"
-            case .COPY: "copy"
-            case .COVARIANT: "__covariant"
-            case .Class: "Class"
-            case .DECLSPEC: "__declspec"
-            case .decrement: "--"
-            case .DEPRECATED: "__deprecated"
-            case .divideAssign: "/="
-            case .doubleColon: "::"
-            case .colon: ":"
-            case .doubleHash: "##"
-            case .ellipsis: "..."
-            case .dot: "."
-            case .equals: "=="
-            case .assignment: "="
-            case .EXTENSION: "__extension__"
-            case .FASTCALL: "__fastcall"
-            case .forwardSlash: "/"
-            case .GETTER: "getter"
-            case .greaterThanOrEqual: ">="
-            case .hash: "#"
-            case .IB_DESIGNABLE: "IB_DESIGNABLE"
-            case .IB_INSPECTABLE: "IBInspectable"
-            case .IB_OUTLET_COLLECTION: "IBOutletCollection"
-            case .IB_OUTLET: "IBOutlet"
-            case .ID: "id"
-            case .IMP: "IMP"
-            case .increment: "++"
-            case .INLINE__: "__inline__"
-            case .INOUT: "inout"
-            case .KINDOF: "__kindof"
-            case .leftShiftAssign: "<<="
-            case .leftShift: "<<"
-            case .lessThanOrEqual: "<="
-            case .logicalAnd: "&&"
-            case .bitwiseAnd: "&"
-            case .logicalOr: "||"
-            case .M128D: "__m128d"
-            case .M128I: "__m128i"
-            case .M128: "__m128"
-            case .minusAssign: "-="
-            case .minus: "-"
-            case .moduloAssign: "%="
-            case .multiplyAssign: "*="
-            case .asterisk: "*"
-            case .NIL: "nil"
-            case .NO: "NO"
-            case .NONATOMIC: "nonatomic"
-            case .notEquals: "!="
-            case .exclamation: "!"
-            case .NS_ASSUME_NONNULL_BEGIN: "NS_ASSUME_NONNULL_BEGIN"
-            case .NS_ASSUME_NONNULL_END: "NS_ASSUME_NONNULL_END"
-            case .NS_ENUM: "NS_ENUM"
-            case .NS_INLINE: "NS_INLINE"
-            case .NS_OPTIONS: "NS_OPTIONS"
-            case .NULL: "NULL"
-            case .ONEWAY: "oneway"
-            case .openBrace: "{"
-            case .openMacro: "<:"
-            case .openParens: "("
-            case .openPercent: "<%"
-            case .lessThan: "<"
-            case .openSquare: "["
-            case .orAssign: "|="
-            case .bitwiseOr: "|"
-            case .OUT: "out"
-            case .percentDoubleColon: "%:%:"
-            case .percentColon: "%:"
-            case .percent: "%"
-            case .plusAssign: "+="
-            case .plus: "+"
-            case .PROTOCOL_: "Protocol"
-            case .questionMark: "?"
-            case .READONLY: "readonly"
-            case .READWRITE: "readwrite"
-            case .RETAIN: "retain"
-            case .rightShiftAssign: ">>="
-            case .rightShift: ">>"
-            case .greaterThan: ">"
-            case .SEL: "SEL"
-            case .SELF: "self"
-            case .semicolon: ";"
-            case .SETTER: "setter"
-            case .STDCALL: "__stdcall"
-            case .STRONG: "strong"
-            case .STRONG_QUALIFIER: "__strong"
-            case .SUPER: "super"
-            case .THISCALL: "__thiscall"
-            case .tilde: "~"
-            case .TYPEOF__: "__typeof__"
-            case .UNSAFE_UNRETAINED: "unsafe_unretained"
-            case .UNSAFE_UNRETAINED_QUALIFIER: "__unsafe_unretained"
-            case .UNUSED: "__unused"
-            case .VECTORCALL: "__vectorcall"
-            case .WEAK: "weak"
-            case .WEAK_QUALIFIER: "__weak"
-            case .xorAssign: "^="
-            case .bitwiseXor: "^"
-            case .YES: "YES"
-            case ._Atomic: "_Atomic"
-            case ._BitInt: "_BitInt"
-            case ._Complex: "_Complex"
-            case ._Decimal128: "_Decimal128"
-            case ._Decimal32: "_Decimal32"
-            case ._Decimal64: "_Decimal64"
-            case ._Generic: "_Generic"
-            case ._Imaginary: "_Imaginary"
-            case ._Noreturn: "_Noreturn"
-            case .alignas: "alignas"
-            case .alignof: "alignof"
-            case .auto: "auto"
-            case .bool: "bool"
-            case .break: "break"
-            case .case: "case"
-            case .char: "char"
-            case .constexpr: "constexpr"
-            case .const: "const"
-            case .continue: "continue"
-            case .default: "default"
-            case .double: "double"
-            case .do: "do"
-            case .else: "else"
-            case .enum: "enum"
-            case .extern: "extern"
-            case .false: "false"
-            case .float: "float"
-            case .for: "for"
-            case .goto: "goto"
-            case .if: "if"
-            case .inline: "inline"
-            case .int: "int"
-            case .IN: "in"
-            case .long: "long"
-            case .nullptr: "nullptr"
-            case .register: "register"
-            case .restrict: "restrict"
-            case .return: "return"
-            case .short: "short"
-            case .signed: "signed"
-            case .sizeof: "sizeof"
-            case .static_assert: "static_assert"
-            case .static: "static"
-            case .struct: "struct"
-            case .switch: "switch"
-            case .thread_local: "thread_local"
-            case .true: "true"
-            case .typedef: "typedef"
-            case .typeof_unqual: "typeof_unqual"
-            case .typeof: "typeof"
-            case .union: "union"
-            case .unsigned: "unsigned"
-            case .void: "void"
-            case .volatile: "volatile"
-            case .while: "while"
-            case .AUTORELEASEPOOL: "AUTORELEASEPOOL"
-            case .CATCH: "CATCH"
-            case .CLASS: "CLASS"
-            case .DYNAMIC: "DYNAMIC"
-            case .ENCODE: "ENCODE"
-            case .END: "END"
-            case .FINALLY: "FINALLY"
-            case .identifier: "IDENTIFIER"
-            case .IMPLEMENTATION: "IMPLEMENTATION"
-            case .IMPORT: "IMPORT"
-            case .INTERFACE: "INTERFACE"
-            case .NONNULL: "NONNULL"
-            case .NULLABLE: "NULLABLE"
-            case .NULL_RESETTABLE: "NULL_RESETTABLE"
-            case .NULL_UNSPECIFIED: "NULL_UNSPECIFIED"
-            case .OPTIONAL: "OPTIONAL"
-            case .PACKAGE: "PACKAGE"
-            case .PRIVATE: "PRIVATE"
-            case .PROPERTY: "PROPERTY"
-            case .PROTECTED: "PROTECTED"
-            case .PROTOCOL: "PROTOCOL"
-            case .PUBLIC: "PUBLIC"
-            case .REQUIRED: "REQUIRED"
-            case .SELECTOR: "SELECTOR"
-            case .SYNCHRONIZED: "SYNCHRONIZED"
-            case .SYNTHESIZE: "SYNTHESIZE"
-            case .THROW: "THROW"
-            case .TRY: "TRY"
-            case .TYPEOF: "TYPEOF"
-            case .characterConstant: "characterConstant"
-            case .floatingConstant: "floatingConstant"
-            case .integerConstant: "integerConstant"
-            case .stringLiteral: "stringLiteral"
+            case .whitespace:
+                "WHITESPACE"
+            case .andAssign:
+                "&="
+            case .arrow:
+                "->"
+            case .ASM:
+                "__asm"
+            case .ASSIGN:
+                "assign"
+            case .ATOMIC:
+                "atomic"
+            case .ATTRIBUTE:
+                "__attribute__"
+            case .AUTORELEASING_QUALIFIER:
+                "__autoreleasing"
+            case .BLOCK:
+                "__block"
+            case .BOOL:
+                "BOOL"
+            case .BRIDGE_RETAINED:
+                "__bridge_retained"
+            case .BRIDGE_TRANSFER:
+                "__bridge_transfer"
+            case .BRIDGE:
+                "__bridge"
+            case .BYCOPY:
+                "bycopy"
+            case .BYREF:
+                "byref"
+            case .CDECL:
+                "__cdecl"
+            case .closeBrace:
+                "}"
+            case .closeMacro:
+                ":>"
+            case .closeParens:
+                ")"
+            case .closePercent:
+                "%>"
+            case .closeSquare:
+                "]"
+            case .CLRCALL:
+                "__clrcall"
+            case .comma:
+                ","
+            case .CONTRAVARIANT:
+                "__contravariant"
+            case .COPY:
+                "copy"
+            case .COVARIANT:
+                "__covariant"
+            case .Class:
+                "Class"
+            case .DECLSPEC:
+                "__declspec"
+            case .decrement:
+                "--"
+            case .DEPRECATED:
+                "__deprecated"
+            case .divideAssign:
+                "/="
+            case .doubleColon:
+                "::"
+            case .colon:
+                ":"
+            case .doubleHash:
+                "##"
+            case .ellipsis:
+                "..."
+            case .dot:
+                "."
+            case .equals:
+                "=="
+            case .assignment:
+                "="
+            case .EXTENSION:
+                "__extension__"
+            case .FASTCALL:
+                "__fastcall"
+            case .forwardSlash:
+                "/"
+            case .GETTER:
+                "getter"
+            case .greaterThanOrEqual:
+                ">="
+            case .hash:
+                "#"
+            case .IB_DESIGNABLE:
+                "IB_DESIGNABLE"
+            case .IB_INSPECTABLE:
+                "IBInspectable"
+            case .IB_OUTLET_COLLECTION:
+                "IBOutletCollection"
+            case .IB_OUTLET:
+                "IBOutlet"
+            case .ID:
+                "id"
+            case .IMP:
+                "IMP"
+            case .increment:
+                "++"
+            case .INLINE__:
+                "__inline__"
+            case .INOUT:
+                "inout"
+            case .KINDOF:
+                "__kindof"
+            case .leftShiftAssign:
+                "<<="
+            case .leftShift:
+                "<<"
+            case .lessThanOrEqual:
+                "<="
+            case .logicalAnd:
+                "&&"
+            case .bitwiseAnd:
+                "&"
+            case .logicalOr:
+                "||"
+            case .M128D:
+                "__m128d"
+            case .M128I:
+                "__m128i"
+            case .M128:
+                "__m128"
+            case .minusAssign:
+                "-="
+            case .minus:
+                "-"
+            case .moduloAssign:
+                "%="
+            case .multiplyAssign:
+                "*="
+            case .asterisk:
+                "*"
+            case .NIL:
+                "nil"
+            case .NO:
+                "NO"
+            case .NONATOMIC:
+                "nonatomic"
+            case .notEquals:
+                "!="
+            case .exclamation:
+                "!"
+            case .NS_ASSUME_NONNULL_BEGIN:
+                "NS_ASSUME_NONNULL_BEGIN"
+            case .NS_ASSUME_NONNULL_END:
+                "NS_ASSUME_NONNULL_END"
+            case .NS_ENUM:
+                "NS_ENUM"
+            case .NS_INLINE:
+                "NS_INLINE"
+            case .NS_OPTIONS:
+                "NS_OPTIONS"
+            case .NULL:
+                "NULL"
+            case .ONEWAY:
+                "oneway"
+            case .openBrace:
+                "{"
+            case .openMacro:
+                "<:"
+            case .openParens:
+                "("
+            case .openPercent:
+                "<%"
+            case .lessThan:
+                "<"
+            case .openSquare:
+                "["
+            case .orAssign:
+                "|="
+            case .bitwiseOr:
+                "|"
+            case .OUT:
+                "out"
+            case .percentDoubleColon:
+                "%:%:"
+            case .percentColon:
+                "%:"
+            case .percent:
+                "%"
+            case .plusAssign:
+                "+="
+            case .plus:
+                "+"
+            case .PROTOCOL_:
+                "Protocol"
+            case .questionMark:
+                "?"
+            case .READONLY:
+                "readonly"
+            case .READWRITE:
+                "readwrite"
+            case .RETAIN:
+                "retain"
+            case .rightShiftAssign:
+                ">>="
+            case .rightShift:
+                ">>"
+            case .greaterThan:
+                ">"
+            case .SEL:
+                "SEL"
+            case .SELF:
+                "self"
+            case .semicolon:
+                ";"
+            case .SETTER:
+                "setter"
+            case .STDCALL:
+                "__stdcall"
+            case .STRONG:
+                "strong"
+            case .STRONG_QUALIFIER:
+                "__strong"
+            case .SUPER:
+                "super"
+            case .THISCALL:
+                "__thiscall"
+            case .tilde:
+                "~"
+            case .TYPEOF__:
+                "__typeof__"
+            case .UNSAFE_UNRETAINED:
+                "unsafe_unretained"
+            case .UNSAFE_UNRETAINED_QUALIFIER:
+                "__unsafe_unretained"
+            case .UNUSED:
+                "__unused"
+            case .VECTORCALL:
+                "__vectorcall"
+            case .WEAK:
+                "weak"
+            case .WEAK_QUALIFIER:
+                "__weak"
+            case .xorAssign:
+                "^="
+            case .bitwiseXor:
+                "^"
+            case .YES:
+                "YES"
+            case ._Atomic:
+                "_Atomic"
+            case ._BitInt:
+                "_BitInt"
+            case ._Complex:
+                "_Complex"
+            case ._Decimal128:
+                "_Decimal128"
+            case ._Decimal32:
+                "_Decimal32"
+            case ._Decimal64:
+                "_Decimal64"
+            case ._Generic:
+                "_Generic"
+            case ._Imaginary:
+                "_Imaginary"
+            case ._Noreturn:
+                "_Noreturn"
+            case .alignas:
+                "alignas"
+            case .alignof:
+                "alignof"
+            case .auto:
+                "auto"
+            case .bool:
+                "bool"
+            case .break:
+                "break"
+            case .case:
+                "case"
+            case .char:
+                "char"
+            case .constexpr:
+                "constexpr"
+            case .const:
+                "const"
+            case .continue:
+                "continue"
+            case .default:
+                "default"
+            case .double:
+                "double"
+            case .do:
+                "do"
+            case .else:
+                "else"
+            case .enum:
+                "enum"
+            case .extern:
+                "extern"
+            case .false:
+                "false"
+            case .float:
+                "float"
+            case .for:
+                "for"
+            case .goto:
+                "goto"
+            case .if:
+                "if"
+            case .inline:
+                "inline"
+            case .int:
+                "int"
+            case .IN:
+                "in"
+            case .long:
+                "long"
+            case .nullptr:
+                "nullptr"
+            case .register:
+                "register"
+            case .restrict:
+                "restrict"
+            case .return:
+                "return"
+            case .short:
+                "short"
+            case .signed:
+                "signed"
+            case .sizeof:
+                "sizeof"
+            case .static_assert:
+                "static_assert"
+            case .static:
+                "static"
+            case .struct:
+                "struct"
+            case .switch:
+                "switch"
+            case .thread_local:
+                "thread_local"
+            case .true:
+                "true"
+            case .typedef:
+                "typedef"
+            case .typeof_unqual:
+                "typeof_unqual"
+            case .typeof:
+                "typeof"
+            case .union:
+                "union"
+            case .unsigned:
+                "unsigned"
+            case .void:
+                "void"
+            case .volatile:
+                "volatile"
+            case .while:
+                "while"
+            case .AUTORELEASEPOOL:
+                "AUTORELEASEPOOL"
+            case .CATCH:
+                "CATCH"
+            case .CLASS:
+                "CLASS"
+            case .DYNAMIC:
+                "DYNAMIC"
+            case .ENCODE:
+                "ENCODE"
+            case .END:
+                "END"
+            case .FINALLY:
+                "FINALLY"
+            case .identifier:
+                "IDENTIFIER"
+            case .IMPLEMENTATION:
+                "IMPLEMENTATION"
+            case .IMPORT:
+                "IMPORT"
+            case .INTERFACE:
+                "INTERFACE"
+            case .NONNULL:
+                "NONNULL"
+            case .NULLABLE:
+                "NULLABLE"
+            case .NULL_RESETTABLE:
+                "NULL_RESETTABLE"
+            case .NULL_UNSPECIFIED:
+                "NULL_UNSPECIFIED"
+            case .OPTIONAL:
+                "OPTIONAL"
+            case .PACKAGE:
+                "PACKAGE"
+            case .PRIVATE:
+                "PRIVATE"
+            case .PROPERTY:
+                "PROPERTY"
+            case .PROTECTED:
+                "PROTECTED"
+            case .PROTOCOL:
+                "PROTOCOL"
+            case .PUBLIC:
+                "PUBLIC"
+            case .REQUIRED:
+                "REQUIRED"
+            case .SELECTOR:
+                "SELECTOR"
+            case .SYNCHRONIZED:
+                "SYNCHRONIZED"
+            case .SYNTHESIZE:
+                "SYNTHESIZE"
+            case .THROW:
+                "THROW"
+            case .TRY:
+                "TRY"
+            case .TYPEOF:
+                "TYPEOF"
+            case .characterConstant:
+                "characterConstant"
+            case .floatingConstant:
+                "floatingConstant"
+            case .integerConstant:
+                "integerConstant"
+            case .stringLiteral:
+                "stringLiteral"
             }
         }
     }
@@ -1558,7 +1843,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_WHITESPACE<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
+        guard !stream.isEof else {
+            return false
+        }
 
         alt:
         do {
@@ -1590,13 +1877,15 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_c_char_sequence<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
+        guard !stream.isEof else {
+            return false
+        }
 
         alt:
         do {
             if stream.isNext("\\\\\\\\") {
                 stream.advance(2)
-            } else if stream.isNext("\\\\'") {
+            } else if stream.isNext("\\\\\\'") {
                 stream.advance(2)
             } else if stream.isNext("\\\\n") {
                 stream.advance(2)
@@ -1604,7 +1893,12 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                 stream.advance(2)
             } else if stream.isNext("\\\\t") {
                 stream.advance(2)
-            } else if !stream.isNext("'"), !stream.isNext("\\\\"), !stream.isNext("\\n"), !stream.isEof {
+            } else if
+                !stream.isNext("\\'"),
+                !stream.isNext("\\\\"),
+                !stream.isNext("\\n"),
+                !stream.isEof
+            {
                 stream.advance()
             } else {
                 return false
@@ -1614,7 +1908,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             while !stream.isEof {
                 if stream.isNext("\\\\\\\\") {
                     stream.advance(2)
-                } else if stream.isNext("\\\\'") {
+                } else if stream.isNext("\\\\\\'") {
                     stream.advance(2)
                 } else if stream.isNext("\\\\n") {
                     stream.advance(2)
@@ -1622,7 +1916,12 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                     stream.advance(2)
                 } else if stream.isNext("\\\\t") {
                     stream.advance(2)
-                } else if !stream.isNext("'"), !stream.isNext("\\\\"), !stream.isNext("\\n"), !stream.isEof {
+                } else if
+                    !stream.isNext("\\'"),
+                    !stream.isNext("\\\\"),
+                    !stream.isNext("\\n"),
+                    !stream.isEof
+                {
                     stream.advance()
                 } else {
                     break loop
@@ -1640,7 +1939,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_s_char_sequence<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
+        guard !stream.isEof else {
+            return false
+        }
 
         alt:
         do {
@@ -1654,7 +1955,12 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                 stream.advance(2)
             } else if stream.isNext("\\\\t") {
                 stream.advance(2)
-            } else if !stream.isNext("\\""), !stream.isNext("\\\\"), !stream.isNext("\\n"), !stream.isEof {
+            } else if
+                !stream.isNext("\\""),
+                !stream.isNext("\\\\"),
+                !stream.isNext("\\n"),
+                !stream.isEof
+            {
                 stream.advance()
             } else {
                 return false
@@ -1672,7 +1978,12 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                     stream.advance(2)
                 } else if stream.isNext("\\\\t") {
                     stream.advance(2)
-                } else if !stream.isNext("\\""), !stream.isNext("\\\\"), !stream.isNext("\\n"), !stream.isEof {
+                } else if
+                    !stream.isNext("\\""),
+                    !stream.isNext("\\\\"),
+                    !stream.isNext("\\n"),
+                    !stream.isEof
+                {
                     stream.advance()
                 } else {
                     break loop
@@ -3450,19 +3761,29 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_AUTORELEASEPOOL<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
             guard stream.isNext("@autoreleasepool") else {
                 return false
             }
+
             stream.advance(16)
 
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+            guard
+                !stream.isNextInRange("0"..."9"),
+                !stream.isNextInRange("a"..."z"),
+                !stream.isNextInRange("A"..."Z"),
+                !stream.isNext("_")
+            else {
                 break alt
             }
+
             return true
         }
 
@@ -3478,19 +3799,29 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_CATCH<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
             guard stream.isNext("@catch") else {
                 return false
             }
+
             stream.advance(6)
 
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+            guard
+                !stream.isNextInRange("0"..."9"),
+                !stream.isNextInRange("a"..."z"),
+                !stream.isNextInRange("A"..."Z"),
+                !stream.isNext("_")
+            else {
                 break alt
             }
+
             return true
         }
 
@@ -3506,19 +3837,29 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_CLASS<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
             guard stream.isNext("@class") else {
                 return false
             }
+
             stream.advance(6)
 
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+            guard
+                !stream.isNextInRange("0"..."9"),
+                !stream.isNextInRange("a"..."z"),
+                !stream.isNextInRange("A"..."Z"),
+                !stream.isNext("_")
+            else {
                 break alt
             }
+
             return true
         }
 
@@ -3534,19 +3875,29 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_DYNAMIC<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
             guard stream.isNext("@dynamic") else {
                 return false
             }
+
             stream.advance(8)
 
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+            guard
+                !stream.isNextInRange("0"..."9"),
+                !stream.isNextInRange("a"..."z"),
+                !stream.isNextInRange("A"..."Z"),
+                !stream.isNext("_")
+            else {
                 break alt
             }
+
             return true
         }
 
@@ -3562,19 +3913,29 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_ENCODE<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
             guard stream.isNext("@encode") else {
                 return false
             }
+
             stream.advance(7)
 
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+            guard
+                !stream.isNextInRange("0"..."9"),
+                !stream.isNextInRange("a"..."z"),
+                !stream.isNextInRange("A"..."Z"),
+                !stream.isNext("_")
+            else {
                 break alt
             }
+
             return true
         }
 
@@ -3590,19 +3951,29 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_END<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
             guard stream.isNext("@end") else {
                 return false
             }
+
             stream.advance(4)
 
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+            guard
+                !stream.isNextInRange("0"..."9"),
+                !stream.isNextInRange("a"..."z"),
+                !stream.isNextInRange("A"..."Z"),
+                !stream.isNext("_")
+            else {
                 break alt
             }
+
             return true
         }
 
@@ -3618,19 +3989,29 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_FINALLY<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
             guard stream.isNext("@finally") else {
                 return false
             }
+
             stream.advance(8)
 
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+            guard
+                !stream.isNextInRange("0"..."9"),
+                !stream.isNextInRange("a"..."z"),
+                !stream.isNextInRange("A"..."Z"),
+                !stream.isNext("_")
+            else {
                 break alt
             }
+
             return true
         }
 
@@ -3646,7 +4027,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_IDENTIFIER<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
+        guard !stream.isEof else {
+            return false
+        }
 
         alt:
         do {
@@ -3678,19 +4061,29 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_IMPLEMENTATION<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
             guard stream.isNext("@implementation") else {
                 return false
             }
+
             stream.advance(15)
 
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+            guard
+                !stream.isNextInRange("0"..."9"),
+                !stream.isNextInRange("a"..."z"),
+                !stream.isNextInRange("A"..."Z"),
+                !stream.isNext("_")
+            else {
                 break alt
             }
+
             return true
         }
 
@@ -3706,19 +4099,29 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_IMPORT<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
             guard stream.isNext("@import") else {
                 return false
             }
+
             stream.advance(7)
 
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+            guard
+                !stream.isNextInRange("0"..."9"),
+                !stream.isNextInRange("a"..."z"),
+                !stream.isNextInRange("A"..."Z"),
+                !stream.isNext("_")
+            else {
                 break alt
             }
+
             return true
         }
 
@@ -3734,19 +4137,29 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_INTERFACE<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
             guard stream.isNext("@interface") else {
                 return false
             }
+
             stream.advance(10)
 
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+            guard
+                !stream.isNextInRange("0"..."9"),
+                !stream.isNextInRange("a"..."z"),
+                !stream.isNextInRange("A"..."Z"),
+                !stream.isNext("_")
+            else {
                 break alt
             }
+
             return true
         }
 
@@ -3764,19 +4177,29 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_NONNULL<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
             guard stream.isNext("nonnull") else {
                 break alt
             }
+
             stream.advance(7)
 
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+            guard
+                !stream.isNextInRange("0"..."9"),
+                !stream.isNextInRange("a"..."z"),
+                !stream.isNextInRange("A"..."Z"),
+                !stream.isNext("_")
+            else {
                 break alt
             }
+
             return true
         }
 
@@ -3787,11 +4210,18 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             guard stream.isNext("__nonnull") else {
                 break alt
             }
+
             stream.advance(9)
 
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+            guard
+                !stream.isNextInRange("0"..."9"),
+                !stream.isNextInRange("a"..."z"),
+                !stream.isNextInRange("A"..."Z"),
+                !stream.isNext("_")
+            else {
                 break alt
             }
+
             return true
         }
 
@@ -3802,11 +4232,18 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             guard stream.isNext("_Nonnull") else {
                 return false
             }
+
             stream.advance(8)
 
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+            guard
+                !stream.isNextInRange("0"..."9"),
+                !stream.isNextInRange("a"..."z"),
+                !stream.isNextInRange("A"..."Z"),
+                !stream.isNext("_")
+            else {
                 break alt
             }
+
             return true
         }
 
@@ -3824,19 +4261,29 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_NULLABLE<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
             guard stream.isNext("nullable") else {
                 break alt
             }
+
             stream.advance(8)
 
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+            guard
+                !stream.isNextInRange("0"..."9"),
+                !stream.isNextInRange("a"..."z"),
+                !stream.isNextInRange("A"..."Z"),
+                !stream.isNext("_")
+            else {
                 break alt
             }
+
             return true
         }
 
@@ -3847,11 +4294,18 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             guard stream.isNext("__nullable") else {
                 break alt
             }
+
             stream.advance(10)
 
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+            guard
+                !stream.isNextInRange("0"..."9"),
+                !stream.isNextInRange("a"..."z"),
+                !stream.isNextInRange("A"..."Z"),
+                !stream.isNext("_")
+            else {
                 break alt
             }
+
             return true
         }
 
@@ -3862,11 +4316,18 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             guard stream.isNext("_Nullable") else {
                 return false
             }
+
             stream.advance(9)
 
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+            guard
+                !stream.isNextInRange("0"..."9"),
+                !stream.isNextInRange("a"..."z"),
+                !stream.isNextInRange("A"..."Z"),
+                !stream.isNext("_")
+            else {
                 break alt
             }
+
             return true
         }
 
@@ -3884,19 +4345,29 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_NULL_RESETTABLE<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
             guard stream.isNext("null_resettable") else {
                 break alt
             }
+
             stream.advance(15)
 
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+            guard
+                !stream.isNextInRange("0"..."9"),
+                !stream.isNextInRange("a"..."z"),
+                !stream.isNextInRange("A"..."Z"),
+                !stream.isNext("_")
+            else {
                 break alt
             }
+
             return true
         }
 
@@ -3907,11 +4378,18 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             guard stream.isNext("__null_resettable") else {
                 break alt
             }
+
             stream.advance(17)
 
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+            guard
+                !stream.isNextInRange("0"..."9"),
+                !stream.isNextInRange("a"..."z"),
+                !stream.isNextInRange("A"..."Z"),
+                !stream.isNext("_")
+            else {
                 break alt
             }
+
             return true
         }
 
@@ -3922,11 +4400,18 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             guard stream.isNext("_Null_resettable") else {
                 return false
             }
+
             stream.advance(16)
 
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+            guard
+                !stream.isNextInRange("0"..."9"),
+                !stream.isNextInRange("a"..."z"),
+                !stream.isNextInRange("A"..."Z"),
+                !stream.isNext("_")
+            else {
                 break alt
             }
+
             return true
         }
 
@@ -3944,19 +4429,29 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_NULL_UNSPECIFIED<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
             guard stream.isNext("null_unspecified") else {
                 break alt
             }
+
             stream.advance(16)
 
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+            guard
+                !stream.isNextInRange("0"..."9"),
+                !stream.isNextInRange("a"..."z"),
+                !stream.isNextInRange("A"..."Z"),
+                !stream.isNext("_")
+            else {
                 break alt
             }
+
             return true
         }
 
@@ -3967,11 +4462,18 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             guard stream.isNext("__null_unspecified") else {
                 break alt
             }
+
             stream.advance(18)
 
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+            guard
+                !stream.isNextInRange("0"..."9"),
+                !stream.isNextInRange("a"..."z"),
+                !stream.isNextInRange("A"..."Z"),
+                !stream.isNext("_")
+            else {
                 break alt
             }
+
             return true
         }
 
@@ -3982,11 +4484,18 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             guard stream.isNext("_Null_unspecified") else {
                 return false
             }
+
             stream.advance(17)
 
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+            guard
+                !stream.isNextInRange("0"..."9"),
+                !stream.isNextInRange("a"..."z"),
+                !stream.isNextInRange("A"..."Z"),
+                !stream.isNext("_")
+            else {
                 break alt
             }
+
             return true
         }
 
@@ -4002,19 +4511,29 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_OPTIONAL<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
             guard stream.isNext("@optional") else {
                 return false
             }
+
             stream.advance(9)
 
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+            guard
+                !stream.isNextInRange("0"..."9"),
+                !stream.isNextInRange("a"..."z"),
+                !stream.isNextInRange("A"..."Z"),
+                !stream.isNext("_")
+            else {
                 break alt
             }
+
             return true
         }
 
@@ -4030,19 +4549,29 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_PACKAGE<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
             guard stream.isNext("@package") else {
                 return false
             }
+
             stream.advance(8)
 
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+            guard
+                !stream.isNextInRange("0"..."9"),
+                !stream.isNextInRange("a"..."z"),
+                !stream.isNextInRange("A"..."Z"),
+                !stream.isNext("_")
+            else {
                 break alt
             }
+
             return true
         }
 
@@ -4058,19 +4587,29 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_PRIVATE<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
             guard stream.isNext("@private") else {
                 return false
             }
+
             stream.advance(8)
 
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+            guard
+                !stream.isNextInRange("0"..."9"),
+                !stream.isNextInRange("a"..."z"),
+                !stream.isNextInRange("A"..."Z"),
+                !stream.isNext("_")
+            else {
                 break alt
             }
+
             return true
         }
 
@@ -4086,19 +4625,29 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_PROPERTY<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
             guard stream.isNext("@property") else {
                 return false
             }
+
             stream.advance(9)
 
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+            guard
+                !stream.isNextInRange("0"..."9"),
+                !stream.isNextInRange("a"..."z"),
+                !stream.isNextInRange("A"..."Z"),
+                !stream.isNext("_")
+            else {
                 break alt
             }
+
             return true
         }
 
@@ -4114,19 +4663,29 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_PROTECTED<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
             guard stream.isNext("@protected") else {
                 return false
             }
+
             stream.advance(10)
 
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+            guard
+                !stream.isNextInRange("0"..."9"),
+                !stream.isNextInRange("a"..."z"),
+                !stream.isNextInRange("A"..."Z"),
+                !stream.isNext("_")
+            else {
                 break alt
             }
+
             return true
         }
 
@@ -4142,19 +4701,29 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_PROTOCOL<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
             guard stream.isNext("@protocol") else {
                 return false
             }
+
             stream.advance(9)
 
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+            guard
+                !stream.isNextInRange("0"..."9"),
+                !stream.isNextInRange("a"..."z"),
+                !stream.isNextInRange("A"..."Z"),
+                !stream.isNext("_")
+            else {
                 break alt
             }
+
             return true
         }
 
@@ -4170,19 +4739,29 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_PUBLIC<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
             guard stream.isNext("@public") else {
                 return false
             }
+
             stream.advance(7)
 
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+            guard
+                !stream.isNextInRange("0"..."9"),
+                !stream.isNextInRange("a"..."z"),
+                !stream.isNextInRange("A"..."Z"),
+                !stream.isNext("_")
+            else {
                 break alt
             }
+
             return true
         }
 
@@ -4198,19 +4777,29 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_REQUIRED<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
             guard stream.isNext("@required") else {
                 return false
             }
+
             stream.advance(9)
 
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+            guard
+                !stream.isNextInRange("0"..."9"),
+                !stream.isNextInRange("a"..."z"),
+                !stream.isNextInRange("A"..."Z"),
+                !stream.isNext("_")
+            else {
                 break alt
             }
+
             return true
         }
 
@@ -4226,19 +4815,29 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_SELECTOR<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
             guard stream.isNext("@selector") else {
                 return false
             }
+
             stream.advance(9)
 
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+            guard
+                !stream.isNextInRange("0"..."9"),
+                !stream.isNextInRange("a"..."z"),
+                !stream.isNextInRange("A"..."Z"),
+                !stream.isNext("_")
+            else {
                 break alt
             }
+
             return true
         }
 
@@ -4254,19 +4853,29 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_SYNCHRONIZED<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
             guard stream.isNext("@synchronized") else {
                 return false
             }
+
             stream.advance(13)
 
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+            guard
+                !stream.isNextInRange("0"..."9"),
+                !stream.isNextInRange("a"..."z"),
+                !stream.isNextInRange("A"..."Z"),
+                !stream.isNext("_")
+            else {
                 break alt
             }
+
             return true
         }
 
@@ -4282,19 +4891,29 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_SYNTHESIZE<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
             guard stream.isNext("@synthesize") else {
                 return false
             }
+
             stream.advance(11)
 
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+            guard
+                !stream.isNextInRange("0"..."9"),
+                !stream.isNextInRange("a"..."z"),
+                !stream.isNextInRange("A"..."Z"),
+                !stream.isNext("_")
+            else {
                 break alt
             }
+
             return true
         }
 
@@ -4310,19 +4929,29 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_THROW<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
             guard stream.isNext("@throw") else {
                 return false
             }
+
             stream.advance(6)
 
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+            guard
+                !stream.isNextInRange("0"..."9"),
+                !stream.isNextInRange("a"..."z"),
+                !stream.isNextInRange("A"..."Z"),
+                !stream.isNext("_")
+            else {
                 break alt
             }
+
             return true
         }
 
@@ -4338,19 +4967,29 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_TRY<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
             guard stream.isNext("@try") else {
                 return false
             }
+
             stream.advance(4)
 
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+            guard
+                !stream.isNextInRange("0"..."9"),
+                !stream.isNextInRange("a"..."z"),
+                !stream.isNextInRange("A"..."Z"),
+                !stream.isNext("_")
+            else {
                 break alt
             }
+
             return true
         }
 
@@ -4368,19 +5007,29 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_TYPEOF<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
             guard stream.isNext("typeof") else {
                 break alt
             }
+
             stream.advance(6)
 
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+            guard
+                !stream.isNextInRange("0"..."9"),
+                !stream.isNextInRange("a"..."z"),
+                !stream.isNextInRange("A"..."Z"),
+                !stream.isNext("_")
+            else {
                 break alt
             }
+
             return true
         }
 
@@ -4391,11 +5040,18 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             guard stream.isNext("__typeof") else {
                 break alt
             }
+
             stream.advance(8)
 
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+            guard
+                !stream.isNextInRange("0"..."9"),
+                !stream.isNextInRange("a"..."z"),
+                !stream.isNextInRange("A"..."Z"),
+                !stream.isNext("_")
+            else {
                 break alt
             }
+
             return true
         }
 
@@ -4407,10 +5063,15 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                 return false
             }
 
-
-            guard !stream.isNextInRange("0"..."9"), !stream.isNextInRange("a"..."z"), !stream.isNextInRange("A"..."Z"), !stream.isNext("_") else {
+            guard
+                !stream.isNextInRange("0"..."9"),
+                !stream.isNextInRange("a"..."z"),
+                !stream.isNextInRange("A"..."Z"),
+                !stream.isNext("_")
+            else {
                 break alt
             }
+
             return true
         }
 
@@ -4426,19 +5087,21 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume__binary_digit<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
-            if stream.isNext("'") {
+            if stream.isNext("\\'") {
                 stream.advance()
             }
 
             guard consume_binary_digit(from: &stream) else {
                 break alt
             }
-
 
             return true
         }
@@ -4455,18 +5118,25 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume__decimal_digit<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
-            if stream.isNext("'") {
+            if stream.isNext("\\'") {
                 stream.advance()
             }
 
-            guard !stream.isEof, stream.isNextInRange("0"..."9") else {
+            guard
+                !stream.isEof,
+                stream.isNextInRange("0"..."9")
+            else {
                 break alt
             }
+
             stream.advance()
 
             return true
@@ -4484,19 +5154,21 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume__hexadecimal_digit<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
-            if stream.isNext("'") {
+            if stream.isNext("\\'") {
                 stream.advance()
             }
 
             guard consume_hexadecimal_digit(from: &stream) else {
                 break alt
             }
-
 
             return true
         }
@@ -4513,18 +5185,25 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume__octal_digit<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
-            if stream.isNext("'") {
+            if stream.isNext("\\'") {
                 stream.advance()
             }
 
-            guard !stream.isEof, stream.isNextInRange("0"..."7") else {
+            guard
+                !stream.isEof,
+                stream.isNextInRange("0"..."7")
+            else {
                 break alt
             }
+
             stream.advance()
 
             return true
@@ -4542,8 +5221,11 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_binary_constant<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
@@ -4551,11 +5233,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                 return false
             }
 
-
             guard consume_binary_digit(from: &stream) else {
                 break alt
             }
-
 
             loop:
             while !stream.isEof {
@@ -4581,14 +5261,18 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_binary_exponent_part<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
             guard stream.isNext("p") else {
                 break alt
             }
+
             stream.advance()
 
             if consume_sign(from: &stream) {
@@ -4598,7 +5282,6 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             guard consume_digit_sequence(from: &stream) else {
                 break alt
             }
-
 
             return true
         }
@@ -4610,6 +5293,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             guard stream.isNext("P") else {
                 return false
             }
+
             stream.advance()
 
             if consume_sign(from: &stream) {
@@ -4619,7 +5303,6 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             guard consume_digit_sequence(from: &stream) else {
                 break alt
             }
-
 
             return true
         }
@@ -4637,14 +5320,18 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_binary_prefix<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
             guard stream.isNext("0b") else {
                 break alt
             }
+
             stream.advance(2)
 
             return true
@@ -4657,6 +5344,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             guard stream.isNext("0B") else {
                 return false
             }
+
             stream.advance(2)
 
             return true
@@ -4671,14 +5359,18 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_bit_precise_int_suffix<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
             guard stream.isNext("wb") else {
                 break alt
             }
+
             stream.advance(2)
 
             return true
@@ -4691,6 +5383,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             guard stream.isNext("WB") else {
                 return false
             }
+
             stream.advance(2)
 
             return true
@@ -4704,8 +5397,11 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_characterConstant<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
@@ -4713,18 +5409,20 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
             }
 
-            guard stream.isNext("'") else {
+            guard stream.isNext("\\'") else {
                 break alt
             }
+
             stream.advance()
 
             if consume_c_char_sequence(from: &stream) {
 
             }
 
-            guard stream.isNext("'") else {
+            guard stream.isNext("\\'") else {
                 break alt
             }
+
             stream.advance()
 
             return true
@@ -4742,13 +5440,19 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_decimal_constant<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
+        guard !stream.isEof else {
+            return false
+        }
 
         alt:
         do {
-            guard !stream.isEof, stream.isNextInRange("1"..."9") else {
+            guard
+                !stream.isEof,
+                stream.isNextInRange("1"..."9")
+            else {
                 return false
             }
+
             stream.advance()
 
             loop:
@@ -4770,13 +5474,19 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_digit_sequence<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
+        guard !stream.isEof else {
+            return false
+        }
 
         alt:
         do {
-            guard !stream.isEof, stream.isNextInRange("0"..."9") else {
+            guard
+                !stream.isEof,
+                stream.isNextInRange("0"..."9")
+            else {
                 return false
             }
+
             stream.advance()
 
             loop:
@@ -4799,14 +5509,18 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_binary_digit<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
             guard stream.isNext("0") else {
                 break alt
             }
+
             stream.advance()
 
             return true
@@ -4819,6 +5533,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             guard stream.isNext("1") else {
                 return false
             }
+
             stream.advance()
 
             return true
@@ -4835,14 +5550,18 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_encoding_prefix<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
             guard stream.isNext("u8") else {
                 break alt
             }
+
             stream.advance(2)
 
             return true
@@ -4855,6 +5574,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             guard stream.isNext("u") else {
                 break alt
             }
+
             stream.advance()
 
             return true
@@ -4867,6 +5587,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             guard stream.isNext("U") else {
                 break alt
             }
+
             stream.advance()
 
             return true
@@ -4879,6 +5600,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             guard stream.isNext("L") else {
                 return false
             }
+
             stream.advance()
 
             return true
@@ -4893,14 +5615,18 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_exponent_part<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
             guard stream.isNext("e") else {
                 break alt
             }
+
             stream.advance()
 
             if consume_sign(from: &stream) {
@@ -4910,7 +5636,6 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             guard consume_digit_sequence(from: &stream) else {
                 break alt
             }
-
 
             return true
         }
@@ -4922,6 +5647,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             guard stream.isNext("E") else {
                 return false
             }
+
             stream.advance()
 
             if consume_sign(from: &stream) {
@@ -4931,7 +5657,6 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             guard consume_digit_sequence(from: &stream) else {
                 break alt
             }
-
 
             return true
         }
@@ -4951,15 +5676,17 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_floatingConstant<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
             guard consume_fractional_constant(from: &stream) else {
                 break alt
             }
-
 
             if consume_exponent_part(from: &stream) {
 
@@ -4980,11 +5707,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                 break alt
             }
 
-
             guard consume_exponent_part(from: &stream) else {
                 break alt
             }
-
 
             if consume_floating_suffix(from: &stream) {
 
@@ -5001,16 +5726,13 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                 break alt
             }
 
-
             guard consume_hexadecimal_fractional_constant(from: &stream) else {
                 break alt
             }
 
-
             guard consume_binary_exponent_part(from: &stream) else {
                 break alt
             }
-
 
             if consume_floating_suffix(from: &stream) {
 
@@ -5027,16 +5749,13 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                 return false
             }
 
-
             guard consume_hexadecimal_digit_sequence(from: &stream) else {
                 break alt
             }
 
-
             guard consume_binary_exponent_part(from: &stream) else {
                 break alt
             }
-
 
             if consume_floating_suffix(from: &stream) {
 
@@ -5066,14 +5785,18 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_floating_suffix<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
             guard stream.isNext("f") else {
                 break alt
             }
+
             stream.advance()
 
             return true
@@ -5086,6 +5809,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             guard stream.isNext("l") else {
                 break alt
             }
+
             stream.advance()
 
             return true
@@ -5098,6 +5822,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             guard stream.isNext("F") else {
                 break alt
             }
+
             stream.advance()
 
             return true
@@ -5110,6 +5835,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             guard stream.isNext("L") else {
                 break alt
             }
+
             stream.advance()
 
             return true
@@ -5122,6 +5848,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             guard stream.isNext("df") else {
                 break alt
             }
+
             stream.advance(2)
 
             return true
@@ -5134,6 +5861,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             guard stream.isNext("dd") else {
                 break alt
             }
+
             stream.advance(2)
 
             return true
@@ -5146,6 +5874,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             guard stream.isNext("dl") else {
                 break alt
             }
+
             stream.advance(2)
 
             return true
@@ -5158,6 +5887,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             guard stream.isNext("DF") else {
                 break alt
             }
+
             stream.advance(2)
 
             return true
@@ -5170,6 +5900,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             guard stream.isNext("DD") else {
                 break alt
             }
+
             stream.advance(2)
 
             return true
@@ -5182,6 +5913,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             guard stream.isNext("DL") else {
                 return false
             }
+
             stream.advance(2)
 
             return true
@@ -5196,8 +5928,11 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_fractional_constant<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
@@ -5208,12 +5943,12 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             guard stream.isNext(".") else {
                 break alt
             }
+
             stream.advance()
 
             guard consume_digit_sequence(from: &stream) else {
                 break alt
             }
-
 
             return true
         }
@@ -5226,10 +5961,10 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                 return false
             }
 
-
             guard stream.isNext(".") else {
                 break alt
             }
+
             stream.advance()
 
             return true
@@ -5247,8 +5982,11 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_hexadecimal_constant<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
@@ -5256,11 +5994,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                 return false
             }
 
-
             guard consume_hexadecimal_digit_sequence(from: &stream) else {
                 break alt
             }
-
 
             return true
         }
@@ -5279,14 +6015,21 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_hexadecimal_digit<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
-            guard !stream.isEof, stream.isNextInRange("0"..."9") else {
+            guard
+                !stream.isEof,
+                stream.isNextInRange("0"..."9")
+            else {
                 break alt
             }
+
             stream.advance()
 
             return true
@@ -5296,9 +6039,13 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard !stream.isEof, stream.isNextInRange("a"..."f") else {
+            guard
+                !stream.isEof,
+                stream.isNextInRange("a"..."f")
+            else {
                 break alt
             }
+
             stream.advance()
 
             return true
@@ -5308,9 +6055,13 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard !stream.isEof, stream.isNextInRange("A"..."F") else {
+            guard
+                !stream.isEof,
+                stream.isNextInRange("A"..."F")
+            else {
                 return false
             }
+
             stream.advance()
 
             return true
@@ -5324,14 +6075,15 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_hexadecimal_digit_sequence<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
+        guard !stream.isEof else {
+            return false
+        }
 
         alt:
         do {
             guard consume_hexadecimal_digit(from: &stream) else {
                 return false
             }
-
 
             loop:
             while !stream.isEof {
@@ -5353,8 +6105,11 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_hexadecimal_fractional_constant<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
@@ -5365,12 +6120,12 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             guard stream.isNext(".") else {
                 break alt
             }
+
             stream.advance()
 
             guard consume_hexadecimal_digit_sequence(from: &stream) else {
                 break alt
             }
-
 
             return true
         }
@@ -5383,10 +6138,10 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                 return false
             }
 
-
             guard stream.isNext(".") else {
                 break alt
             }
+
             stream.advance()
 
             return true
@@ -5405,14 +6160,18 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_hexadecimal_prefix<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
             guard stream.isNext("0x") else {
                 break alt
             }
+
             stream.advance(2)
 
             return true
@@ -5425,6 +6184,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             guard stream.isNext("0X") else {
                 return false
             }
+
             stream.advance(2)
 
             return true
@@ -5441,15 +6201,17 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_integerConstant<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
             guard consume_hexadecimal_constant(from: &stream) else {
                 break alt
             }
-
 
             if consume_integer_suffix(from: &stream) {
 
@@ -5466,7 +6228,6 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                 break alt
             }
 
-
             if consume_integer_suffix(from: &stream) {
 
             }
@@ -5482,7 +6243,6 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                 break alt
             }
 
-
             if consume_integer_suffix(from: &stream) {
 
             }
@@ -5497,7 +6257,6 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             guard consume_octal_constant(from: &stream) else {
                 return false
             }
-
 
             if consume_integer_suffix(from: &stream) {
 
@@ -5519,15 +6278,17 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_integer_suffix<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
             guard consume_unsigned_suffix(from: &stream) else {
                 break alt
             }
-
 
             if consume_long_suffix(from: &stream) {
 
@@ -5544,11 +6305,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                 break alt
             }
 
-
             guard consume_long_long_suffix(from: &stream) else {
                 break alt
             }
-
 
             return true
         }
@@ -5561,11 +6320,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                 break alt
             }
 
-
             guard consume_bit_precise_int_suffix(from: &stream) else {
                 break alt
             }
-
 
             return true
         }
@@ -5577,7 +6334,6 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             guard consume_long_suffix(from: &stream) else {
                 break alt
             }
-
 
             if consume_unsigned_suffix(from: &stream) {
 
@@ -5593,7 +6349,6 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             guard consume_long_long_suffix(from: &stream) else {
                 break alt
             }
-
 
             if consume_unsigned_suffix(from: &stream) {
 
@@ -5609,7 +6364,6 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             guard consume_bit_precise_int_suffix(from: &stream) else {
                 return false
             }
-
 
             if consume_unsigned_suffix(from: &stream) {
 
@@ -5627,14 +6381,18 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_long_long_suffix<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
             guard stream.isNext("ll") else {
                 break alt
             }
+
             stream.advance(2)
 
             return true
@@ -5647,6 +6405,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             guard stream.isNext("LL") else {
                 return false
             }
+
             stream.advance(2)
 
             return true
@@ -5661,14 +6420,18 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_long_suffix<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
             guard stream.isNext("l") else {
                 break alt
             }
+
             stream.advance()
 
             return true
@@ -5681,6 +6444,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             guard stream.isNext("L") else {
                 return false
             }
+
             stream.advance()
 
             return true
@@ -5694,13 +6458,16 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_octal_constant<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
+        guard !stream.isEof else {
+            return false
+        }
 
         alt:
         do {
             guard stream.isNext("0") else {
                 return false
             }
+
             stream.advance()
 
             loop:
@@ -5723,14 +6490,18 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_sign<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
             guard stream.isNext("+") else {
                 break alt
             }
+
             stream.advance()
 
             return true
@@ -5743,6 +6514,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             guard stream.isNext("-") else {
                 return false
             }
+
             stream.advance()
 
             return true
@@ -5756,8 +6528,11 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_stringLiteral<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
@@ -5768,6 +6543,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             guard stream.isNext("\\"") else {
                 break alt
             }
+
             stream.advance()
 
             if consume_s_char_sequence(from: &stream) {
@@ -5777,6 +6553,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             guard stream.isNext("\\"") else {
                 break alt
             }
+
             stream.advance()
 
             return true
@@ -5795,14 +6572,18 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_unsigned_suffix<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
             guard stream.isNext("u") else {
                 break alt
             }
+
             stream.advance()
 
             return true
@@ -5815,6 +6596,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             guard stream.isNext("U") else {
                 return false
             }
+
             stream.advance()
 
             return true

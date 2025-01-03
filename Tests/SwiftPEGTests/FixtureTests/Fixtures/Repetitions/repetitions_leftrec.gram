@@ -13,15 +13,14 @@ extension Parser {
     @memoized("start")
     @inlinable
     public func __start() throws -> Node? {
-        let _mark = self.mark()
+        let _mark: Mark = self.mark()
 
-        if
-            let a = try self.a()
-        {
+        if let a = try self.a() {
             return a
         }
 
         self.restore(_mark)
+
         return nil
     }
 
@@ -34,7 +33,7 @@ extension Parser {
     @memoizedLeftRecursive("a")
     @inlinable
     public func __a() throws -> Node? {
-        let _mark = self.mark()
+        let _mark: Mark = self.mark()
 
         if
             let a = try self.a(),
@@ -45,13 +44,12 @@ extension Parser {
 
         self.restore(_mark)
 
-        if
-            let _ = try self.expect("a")
-        {
+        if let _ = try self.expect("a") {
             return Node()
         }
 
         self.restore(_mark)
+
         return nil
     }
 
@@ -62,19 +60,16 @@ extension Parser {
     /// ```
     @inlinable
     public func _a_nsr() throws -> [Token]? {
-        let _mark = self.mark()
+        let _mark: Mark = self.mark()
 
         var _current: [Token] = []
 
-        while
-            let _ = try self.expect("b")
-        {
+        while let _ = try self.expect("b") {
             _current.append(())
-            let _mark1 = self.mark()
 
-            if
-                let _ = try self.expect("c")
-            {
+            let _mark1: Mark = self.mark()
+
+            if let _ = try self.expect("c") {
                 return _current
             }
 
@@ -82,6 +77,7 @@ extension Parser {
         }
 
         self.restore(_mark)
+
         return nil
     }
 }

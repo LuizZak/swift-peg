@@ -6,6 +6,7 @@
 @expectedTokenType """
 struct ParserToken: RawTokenType, CustomStringConvertible {
     var kind: TokenKind
+
     var string: Substring
 
     var length: Int {
@@ -21,33 +22,44 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
     }
 
     static func from<StringType>(stream: inout StringStream<StringType>) -> Self? where StringType.SubSequence == Substring {
-        guard !stream.isEof else { return nil }
+        guard !stream.isEof else {
+            return nil
+        }
+
         stream.markSubstringStart()
 
         if consume_identical(from: &stream) {
             return .init(kind: .identical, string: stream.substring)
         }
+
         if consume_equals(from: &stream) {
             return .init(kind: .equals, string: stream.substring)
         }
+
         if consume_assign(from: &stream) {
             return .init(kind: .assign, string: stream.substring)
         }
+
         if consume_leftSquare(from: &stream) {
             return .init(kind: .leftSquare, string: stream.substring)
         }
+
         if consume_notIdentical(from: &stream) {
             return .init(kind: .notIdentical, string: stream.substring)
         }
+
         if consume_notEquals(from: &stream) {
             return .init(kind: .notEquals, string: stream.substring)
         }
+
         if consume_logicalNot(from: &stream) {
             return .init(kind: .logicalNot, string: stream.substring)
         }
+
         if consume_rightSquare(from: &stream) {
             return .init(kind: .rightSquare, string: stream.substring)
         }
+
         if consume_string(from: &stream) {
             return .init(kind: .string, string: stream.substring)
         }
@@ -85,15 +97,24 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
 
         var description: String {
             switch self {
-            case .identical: "==="
-            case .equals: "=="
-            case .assign: "="
-            case .leftSquare: "["
-            case .notIdentical: "!=="
-            case .notEquals: "!="
-            case .logicalNot: "!"
-            case .rightSquare: "]"
-            case .string: "string"
+            case .identical:
+                "==="
+            case .equals:
+                "=="
+            case .assign:
+                "="
+            case .leftSquare:
+                "["
+            case .notIdentical:
+                "!=="
+            case .notEquals:
+                "!="
+            case .logicalNot:
+                "!"
+            case .rightSquare:
+                "]"
+            case .string:
+                "string"
             }
         }
     }
@@ -176,17 +197,24 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
     ///     ;
     /// ```
     static func consume_string<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
             guard stream.isNext("\\"") else {
                 return false
             }
+
             stream.advance()
 
-            if !stream.isNext("\\""), !stream.isEof {
+            if
+                !stream.isNext("\\""),
+                !stream.isEof
+            {
                 stream.advance()
             } else {
                 break alt
@@ -194,7 +222,10 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
 
             loop:
             while !stream.isEof {
-                if !stream.isNext("\\""), !stream.isEof {
+                if
+                    !stream.isNext("\\""),
+                    !stream.isEof
+                {
                     stream.advance()
                 } else {
                     break loop
@@ -204,6 +235,7 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
             guard stream.isNext("\\"") else {
                 break alt
             }
+
             stream.advance()
 
             return true

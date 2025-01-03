@@ -17,7 +17,7 @@ extension Parser {
     @memoized("start")
     @inlinable
     public func __start() throws -> Node? {
-        let _mark = self.mark()
+        let _mark: Mark = self.mark()
 
         if
             let a: A = try self.a(),
@@ -27,6 +27,7 @@ extension Parser {
         }
 
         self.restore(_mark)
+
         return nil
     }
 
@@ -38,15 +39,14 @@ extension Parser {
     @memoized("a")
     @inlinable
     public func __a() throws -> A? {
-        let _mark = self.mark()
+        let _mark: Mark = self.mark()
 
-        if
-            let _: Token = try self.expect("a")
-        {
+        if let _: Token = try self.expect("a") {
             return A()
         }
 
         self.restore(_mark)
+
         return nil
     }
 
@@ -58,15 +58,14 @@ extension Parser {
     @memoized("b")
     @inlinable
     public func __b() throws -> B? {
-        let _mark = self.mark()
+        let _mark: Mark = self.mark()
 
-        if
-            let _: Token = try self.expect("b")
-        {
+        if let _: Token = try self.expect("b") {
             return B()
         }
 
         self.restore(_mark)
+
         return nil
     }
 
@@ -78,7 +77,7 @@ extension Parser {
     @memoized("c")
     @inlinable
     public func __c() throws -> C? {
-        let _mark = self.mark()
+        let _mark: Mark = self.mark()
 
         if
             case _: Token? = try self.expect("c"),
@@ -88,6 +87,7 @@ extension Parser {
         }
 
         self.restore(_mark)
+
         return nil
     }
 
@@ -99,12 +99,14 @@ extension Parser {
     @memoized("_start_nsr")
     @inlinable
     public func ___start_nsr() throws -> ([B], C)? {
-        let _mark = self.mark()
+        let _mark: Mark = self.mark()
 
         // Start by fetching as many productions as possible
         guard
             var _current: [(Mark, B)] = try self.repeatOneOrMore({
-                if let b: B = try self.b() { return (self.mark(), b) }
+                if let b: B = try self.b() {
+                    return (self.mark(), b)
+                }
                 return nil
             })
         else {
@@ -114,9 +116,7 @@ extension Parser {
         while let _endMark = _current.last?.0 {
             self.restore(_endMark)
 
-            if
-                let c: C = try self.c()
-            {
+            if let c: C = try self.c() {
                 return (_current.map(\\.1), c)
             } else if _current.count <= 1 {
                 break
@@ -127,6 +127,7 @@ extension Parser {
         }
 
         self.restore(_mark)
+
         return nil
     }
 }

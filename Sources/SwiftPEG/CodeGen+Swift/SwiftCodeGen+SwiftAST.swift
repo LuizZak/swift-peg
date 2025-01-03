@@ -258,7 +258,7 @@ extension SwiftCodeGen {
 
         let ruleName = info.name
         let ruleType = info.bindings.be_asTupleType().be_optionalWrapped()
-        let returnType = ruleType.asSwiftASTType
+        let returnType = ruleType.asSwiftASTType.scg_removingTupleLabels()
 
         // Synthesize method
         let comments = _generateRuleDocComment(ruleName, info.bindings.be_asTupleType(), nil, nil, [
@@ -1283,5 +1283,109 @@ public extension SwiftCodeGen {
         public var attributes: [DeclarationAttribute]
         public var signature: SubscriptSignature
         public var hasSetter: Bool
+    }
+}
+
+internal extension SwiftType {
+    /// Returns a copy of this type, deeply removing all tuple labels.
+    func scg_removingTupleLabels() -> Self {
+        switch self {
+        case .array(let element):
+            return .array(element.scg_removingTupleLabels())
+
+        case .block(let block):
+            return .block(
+                .init(
+                    returnType: block.returnType.scg_removingTupleLabels(),
+                    parameters: block.parameters.map { param in
+                        var param = param
+                        param.type = param.type.scg_removingTupleLabels()
+                        return param
+                    },
+                    attributes: block.attributes
+                )
+            )
+
+        case .dictionary(let key, let value):
+            return .dictionary(key: key.scg_removingTupleLabels(), value: value.scg_removingTupleLabels())
+
+        case .implicitUnwrappedOptional(let base):
+            return .implicitUnwrappedOptional(base.scg_removingTupleLabels())
+
+        case .metatype(let base):
+            return .metatype(for: base.scg_removingTupleLabels())
+
+        case .nested(let nested):
+            return .nested(
+                .init(base: nested.base.scg_removingTupleLabels(), nested: nested.nested)
+            )
+
+        case .nominal(.typeName(let name)):
+            return .nominal(.typeName(name))
+
+        case .nominal(.generic(let name, parameters: let params)):
+            return .nominal(.generic(name, parameters: .fromCollection(params.map { $0.scg_removingTupleLabels() })))
+
+        case .nullabilityUnspecified(let base):
+            return .nullabilityUnspecified(base.scg_removingTupleLabels())
+
+        case .optional(let base):
+            return .optional(base.scg_removingTupleLabels())
+
+        case .protocolComposition(let types):
+            return .protocolComposition(types)
+
+        case .tuple(.empty):
+            return .tuple(.empty)
+
+        case .tuple(.types(let elements)):
+            let elements: [TupleTypeEntry] = elements.map { element in
+                .unlabeled(element.swiftType.scg_removingTupleLabels())
+            }
+
+            return .tuple(.types(.fromCollection(elements)))
+        }
+    }
+}
+
+internal extension CommonAbstract.SwiftType {
+    /// Returns a string representation of this Swift type that can be used as a
+    /// valid Swift type in code.
+    func scg_asValidSwiftType() -> String {
+        self.description
+    }
+
+    /// Returns a string representation of this Swift type that can be used as a
+    /// valid return type for production rules.
+    func scg_asReturnType() -> String {
+        scg_removingTupleLabels().description
+    }
+
+    /// Returns a copy of this type, deeply removing all tuple labels.
+    func scg_removingTupleLabels() -> Self {
+        switch self {
+        case .tuple(let elements):
+            return .tuple(
+                elements.map({ .init(label: nil, $0.swiftType.scg_removingTupleLabels()) })
+            )
+
+        case .optional(let inner):
+            return .optional(inner.scg_removingTupleLabels())
+
+        case .array(let inner):
+            return .array(inner.scg_removingTupleLabels())
+
+        case .dictionary(let key, let value):
+            return .dictionary(
+                key: key.scg_removingTupleLabels(),
+                value: value.scg_removingTupleLabels()
+            )
+
+        case .nominal(let identifier):
+            return .nominal(identifier)
+
+        case .nested(let base, let identifier):
+            return .nested(base.scg_removingTupleLabels(), identifier)
+        }
     }
 }

@@ -4,6 +4,7 @@
 @expectedTokenType """
 struct ParserToken: RawTokenType, CustomStringConvertible {
     var kind: TokenKind
+
     var string: Substring
 
     var length: Int {
@@ -19,168 +20,224 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
     }
 
     static func from<StringType>(stream: inout StringStream<StringType>) -> Self? where StringType.SubSequence == Substring {
-        guard !stream.isEof else { return nil }
+        guard !stream.isEof else {
+            return nil
+        }
+
         stream.markSubstringStart()
 
         if consume_WHITESPACE(from: &stream) {
             return .init(kind: .whitespace, string: stream.substring)
         }
+
         if consume_ANDASSIGN(from: &stream) {
             return .init(kind: .andAssign, string: stream.substring)
         }
+
         if consume_ARROW(from: &stream) {
             return .init(kind: .arrow, string: stream.substring)
         }
+
         if consume_CLOSEBRACE(from: &stream) {
             return .init(kind: .closeBrace, string: stream.substring)
         }
+
         if consume_CLOSEPARENS(from: &stream) {
             return .init(kind: .closeParens, string: stream.substring)
         }
+
         if consume_CLOSESQUARE(from: &stream) {
             return .init(kind: .closeSquare, string: stream.substring)
         }
+
         if consume_COMMA(from: &stream) {
             return .init(kind: .comma, string: stream.substring)
         }
+
         if consume_DECREMENT(from: &stream) {
             return .init(kind: .decrement, string: stream.substring)
         }
+
         if consume_DIVIDEASSIGN(from: &stream) {
             return .init(kind: .divideAssign, string: stream.substring)
         }
+
         if consume_DOUBLECOLON(from: &stream) {
             return .init(kind: .doubleColon, string: stream.substring)
         }
+
         if consume_COLON(from: &stream) {
             return .init(kind: .colon, string: stream.substring)
         }
+
         if consume_DOUBLEHASH(from: &stream) {
             return .init(kind: .doubleHash, string: stream.substring)
         }
+
         if consume_ELLIPSIS(from: &stream) {
             return .init(kind: .ellipsis, string: stream.substring)
         }
+
         if consume_DOT(from: &stream) {
             return .init(kind: .dot, string: stream.substring)
         }
+
         if consume_EQUALS(from: &stream) {
             return .init(kind: .equals, string: stream.substring)
         }
+
         if consume_ASSIGNMENT(from: &stream) {
             return .init(kind: .assignment, string: stream.substring)
         }
+
         if consume_FORWARDSLASH(from: &stream) {
             return .init(kind: .forwardSlash, string: stream.substring)
         }
+
         if consume_GREATERTHANOREQUAL(from: &stream) {
             return .init(kind: .greaterThanOrEqual, string: stream.substring)
         }
+
         if consume_HASH(from: &stream) {
             return .init(kind: .hash, string: stream.substring)
         }
+
         if consume_INCREMENT(from: &stream) {
             return .init(kind: .increment, string: stream.substring)
         }
+
         if consume_LEFTSHIFTASSIGN(from: &stream) {
             return .init(kind: .leftShiftAssign, string: stream.substring)
         }
+
         if consume_LEFTSHIFT(from: &stream) {
             return .init(kind: .leftShift, string: stream.substring)
         }
+
         if consume_LESSTHANOREQUAL(from: &stream) {
             return .init(kind: .lessThanOrEqual, string: stream.substring)
         }
+
         if consume_LESSTHAN(from: &stream) {
             return .init(kind: .lessThan, string: stream.substring)
         }
+
         if consume_LOGICALAND(from: &stream) {
             return .init(kind: .logicalAnd, string: stream.substring)
         }
+
         if consume_BITWISEAND(from: &stream) {
             return .init(kind: .bitwiseAnd, string: stream.substring)
         }
+
         if consume_LOGICALOR(from: &stream) {
             return .init(kind: .logicalOr, string: stream.substring)
         }
+
         if consume_MINUSASSIGN(from: &stream) {
             return .init(kind: .minusAssign, string: stream.substring)
         }
+
         if consume_MINUS(from: &stream) {
             return .init(kind: .minus, string: stream.substring)
         }
+
         if consume_MODULOASSIGN(from: &stream) {
             return .init(kind: .moduloAssign, string: stream.substring)
         }
+
         if consume_MULTIPLYASSIGN(from: &stream) {
             return .init(kind: .multiplyAssign, string: stream.substring)
         }
+
         if consume_ASTERISK(from: &stream) {
             return .init(kind: .asterisk, string: stream.substring)
         }
+
         if consume_NOTEQUALS(from: &stream) {
             return .init(kind: .notEquals, string: stream.substring)
         }
+
         if consume_EXCLAMATION(from: &stream) {
             return .init(kind: .exclamation, string: stream.substring)
         }
+
         if consume_OPENBRACE(from: &stream) {
             return .init(kind: .openBrace, string: stream.substring)
         }
+
         if consume_OPENPARENS(from: &stream) {
             return .init(kind: .openParens, string: stream.substring)
         }
+
         if consume_OPENSQUARE(from: &stream) {
             return .init(kind: .openSquare, string: stream.substring)
         }
+
         if consume_ORASSIGN(from: &stream) {
             return .init(kind: .orAssign, string: stream.substring)
         }
+
         if consume_BITWISEOR(from: &stream) {
             return .init(kind: .bitwiseOr, string: stream.substring)
         }
+
         if consume_PERCENTDOUBLECOLON(from: &stream) {
             return .init(kind: .percentDoubleColon, string: stream.substring)
         }
+
         if consume_PERCENTCOLON(from: &stream) {
             return .init(kind: .percentColon, string: stream.substring)
         }
+
         if consume_PERCENT(from: &stream) {
             return .init(kind: .percent, string: stream.substring)
         }
+
         if consume_PLUSASSIGN(from: &stream) {
             return .init(kind: .plusAssign, string: stream.substring)
         }
+
         if consume_PLUS(from: &stream) {
             return .init(kind: .plus, string: stream.substring)
         }
+
         if consume_QUESTIONMARK(from: &stream) {
             return .init(kind: .questionMark, string: stream.substring)
         }
+
         if consume_RIGHTSHIFTASSIGN(from: &stream) {
             return .init(kind: .rightShiftAssign, string: stream.substring)
         }
+
         if consume_RIGHTSHIFT(from: &stream) {
             return .init(kind: .rightShift, string: stream.substring)
         }
+
         if consume_GREATERTHAN(from: &stream) {
             return .init(kind: .greaterThan, string: stream.substring)
         }
+
         if consume_SEMICOLON(from: &stream) {
             return .init(kind: .semicolon, string: stream.substring)
         }
+
         if consume_TILDE(from: &stream) {
             return .init(kind: .tilde, string: stream.substring)
         }
+
         if consume_XORASSIGN(from: &stream) {
             return .init(kind: .xorAssign, string: stream.substring)
         }
+
         if consume_BITWISEXOR(from: &stream) {
             return .init(kind: .bitwiseXor, string: stream.substring)
         }
+
         if consume_floatingConstant(from: &stream) {
             return .init(kind: .floatingConstant, string: stream.substring)
         }
+
         if consume_identifier(from: &stream) {
             switch stream.substring {
             case "_Atomic":
@@ -241,6 +298,7 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
                 return .init(kind: .identifier, string: stream.substring)
             }
         }
+
         if consume_integerConstant(from: &stream) {
             return .init(kind: .integerConstant, string: stream.substring)
         }
@@ -509,88 +567,170 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
 
         var description: String {
             switch self {
-            case .whitespace: "WHITESPACE"
-            case .andAssign: "&="
-            case .arrow: "->"
-            case .closeBrace: "}"
-            case .closeParens: ")"
-            case .closeSquare: "]"
-            case .comma: ","
-            case .decrement: "--"
-            case .divideAssign: "/="
-            case .doubleColon: "::"
-            case .colon: ":"
-            case .doubleHash: "##"
-            case .ellipsis: "..."
-            case .dot: "."
-            case .equals: "=="
-            case .assignment: "="
-            case .forwardSlash: "/"
-            case .greaterThanOrEqual: ">="
-            case .hash: "#"
-            case .increment: "++"
-            case .leftShiftAssign: "<<="
-            case .leftShift: "<<"
-            case .lessThanOrEqual: "<="
-            case .lessThan: "<"
-            case .logicalAnd: "&&"
-            case .bitwiseAnd: "&"
-            case .logicalOr: "||"
-            case .minusAssign: "-="
-            case .minus: "-"
-            case .moduloAssign: "%="
-            case .multiplyAssign: "*="
-            case .asterisk: "*"
-            case .notEquals: "!="
-            case .exclamation: "!"
-            case .openBrace: "{"
-            case .openParens: "("
-            case .openSquare: "["
-            case .orAssign: "|="
-            case .bitwiseOr: "|"
-            case .percentDoubleColon: "%:%:"
-            case .percentColon: "%:"
-            case .percent: "%"
-            case .plusAssign: "+="
-            case .plus: "+"
-            case .questionMark: "?"
-            case .rightShiftAssign: ">>="
-            case .rightShift: ">>"
-            case .greaterThan: ">"
-            case .semicolon: ";"
-            case .tilde: "~"
-            case .xorAssign: "^="
-            case .bitwiseXor: "^"
-            case ._Atomic: "_Atomic"
-            case ._BitInt: "_BitInt"
-            case ._Complex: "_Complex"
-            case ._Decimal128: "_Decimal128"
-            case ._Decimal32: "_Decimal32"
-            case ._Decimal64: "_Decimal64"
-            case ._Generic: "_Generic"
-            case ._Imaginary: "_Imaginary"
-            case ._Noreturn: "_Noreturn"
-            case .alignas: "alignas"
-            case .alignof: "alignof"
-            case .auto: "auto"
-            case .bool: "bool"
-            case .break: "break"
-            case .case: "case"
-            case .char: "char"
-            case .constexpr: "constexpr"
-            case .const: "const"
-            case .continue: "continue"
-            case .default: "default"
-            case .do: "do"
-            case .typeof: "typeof"
-            case .union: "union"
-            case .unsigned: "unsigned"
-            case .void: "void"
-            case .volatile: "volatile"
-            case .while: "while"
-            case .floatingConstant: "floatingConstant"
-            case .identifier: "identifier"
-            case .integerConstant: "integerConstant"
+            case .whitespace:
+                "WHITESPACE"
+            case .andAssign:
+                "&="
+            case .arrow:
+                "->"
+            case .closeBrace:
+                "}"
+            case .closeParens:
+                ")"
+            case .closeSquare:
+                "]"
+            case .comma:
+                ","
+            case .decrement:
+                "--"
+            case .divideAssign:
+                "/="
+            case .doubleColon:
+                "::"
+            case .colon:
+                ":"
+            case .doubleHash:
+                "##"
+            case .ellipsis:
+                "..."
+            case .dot:
+                "."
+            case .equals:
+                "=="
+            case .assignment:
+                "="
+            case .forwardSlash:
+                "/"
+            case .greaterThanOrEqual:
+                ">="
+            case .hash:
+                "#"
+            case .increment:
+                "++"
+            case .leftShiftAssign:
+                "<<="
+            case .leftShift:
+                "<<"
+            case .lessThanOrEqual:
+                "<="
+            case .lessThan:
+                "<"
+            case .logicalAnd:
+                "&&"
+            case .bitwiseAnd:
+                "&"
+            case .logicalOr:
+                "||"
+            case .minusAssign:
+                "-="
+            case .minus:
+                "-"
+            case .moduloAssign:
+                "%="
+            case .multiplyAssign:
+                "*="
+            case .asterisk:
+                "*"
+            case .notEquals:
+                "!="
+            case .exclamation:
+                "!"
+            case .openBrace:
+                "{"
+            case .openParens:
+                "("
+            case .openSquare:
+                "["
+            case .orAssign:
+                "|="
+            case .bitwiseOr:
+                "|"
+            case .percentDoubleColon:
+                "%:%:"
+            case .percentColon:
+                "%:"
+            case .percent:
+                "%"
+            case .plusAssign:
+                "+="
+            case .plus:
+                "+"
+            case .questionMark:
+                "?"
+            case .rightShiftAssign:
+                ">>="
+            case .rightShift:
+                ">>"
+            case .greaterThan:
+                ">"
+            case .semicolon:
+                ";"
+            case .tilde:
+                "~"
+            case .xorAssign:
+                "^="
+            case .bitwiseXor:
+                "^"
+            case ._Atomic:
+                "_Atomic"
+            case ._BitInt:
+                "_BitInt"
+            case ._Complex:
+                "_Complex"
+            case ._Decimal128:
+                "_Decimal128"
+            case ._Decimal32:
+                "_Decimal32"
+            case ._Decimal64:
+                "_Decimal64"
+            case ._Generic:
+                "_Generic"
+            case ._Imaginary:
+                "_Imaginary"
+            case ._Noreturn:
+                "_Noreturn"
+            case .alignas:
+                "alignas"
+            case .alignof:
+                "alignof"
+            case .auto:
+                "auto"
+            case .bool:
+                "bool"
+            case .break:
+                "break"
+            case .case:
+                "case"
+            case .char:
+                "char"
+            case .constexpr:
+                "constexpr"
+            case .const:
+                "const"
+            case .continue:
+                "continue"
+            case .default:
+                "default"
+            case .do:
+                "do"
+            case .typeof:
+                "typeof"
+            case .union:
+                "union"
+            case .unsigned:
+                "unsigned"
+            case .void:
+                "void"
+            case .volatile:
+                "volatile"
+            case .while:
+                "while"
+            case .floatingConstant:
+                "floatingConstant"
+            case .identifier:
+                "identifier"
+            case .integerConstant:
+                "integerConstant"
             }
         }
     }
@@ -601,7 +741,9 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
     ///     ;
     /// ```
     static func consume_WHITESPACE<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
+        guard !stream.isEof else {
+            return false
+        }
 
         alt:
         do {
@@ -1334,18 +1476,25 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
     ///     ;
     /// ```
     static func consume__decimal_digit<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
-            if stream.isNext("'") {
+            if stream.isNext("\\'") {
                 stream.advance()
             }
 
-            guard !stream.isEof, stream.isNextInRange("0"..."9") else {
+            guard
+                !stream.isEof,
+                stream.isNextInRange("0"..."9")
+            else {
                 break alt
             }
+
             stream.advance()
 
             return true
@@ -1362,19 +1511,21 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
     ///     ;
     /// ```
     static func consume__hexadecimal_digit<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
-            if stream.isNext("'") {
+            if stream.isNext("\\'") {
                 stream.advance()
             }
 
             guard consume_hexadecimal_digit(from: &stream) else {
                 break alt
             }
-
 
             return true
         }
@@ -1390,13 +1541,19 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
     ///     ;
     /// ```
     static func consume_digit_sequence<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
+        guard !stream.isEof else {
+            return false
+        }
 
         alt:
         do {
-            guard !stream.isEof, stream.isNextInRange("0"..."9") else {
+            guard
+                !stream.isEof,
+                stream.isNextInRange("0"..."9")
+            else {
                 return false
             }
+
             stream.advance()
 
             loop:
@@ -1420,15 +1577,17 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
     ///     ;
     /// ```
     static func consume_floatingConstant<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
             guard consume_fractional_constant(from: &stream) else {
                 break alt
             }
-
 
             if consume_exponent_part(from: &stream) {
 
@@ -1445,11 +1604,9 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
                 break alt
             }
 
-
             guard consume_exponent_part(from: &stream) else {
                 break alt
             }
-
 
             return true
         }
@@ -1462,16 +1619,13 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
                 break alt
             }
 
-
             guard consume_hexadecimal_fractional_constant(from: &stream) else {
                 break alt
             }
 
-
             guard consume_binary_exponent_part(from: &stream) else {
                 break alt
             }
-
 
             return true
         }
@@ -1484,16 +1638,13 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
                 return false
             }
 
-
             guard consume_hexadecimal_digit_sequence(from: &stream) else {
                 break alt
             }
 
-
             guard consume_binary_exponent_part(from: &stream) else {
                 break alt
             }
-
 
             return true
         }
@@ -1510,8 +1661,11 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
     ///     ;
     /// ```
     static func consume_fractional_constant<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
@@ -1522,12 +1676,12 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
             guard stream.isNext(".") else {
                 break alt
             }
+
             stream.advance()
 
             guard consume_digit_sequence(from: &stream) else {
                 break alt
             }
-
 
             return true
         }
@@ -1540,10 +1694,10 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
                 return false
             }
 
-
             guard stream.isNext(".") else {
                 break alt
             }
+
             stream.advance()
 
             return true
@@ -1562,14 +1716,21 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
     ///     ;
     /// ```
     static func consume_hexadecimal_digit<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
-            guard !stream.isEof, stream.isNextInRange("0"..."9") else {
+            guard
+                !stream.isEof,
+                stream.isNextInRange("0"..."9")
+            else {
                 break alt
             }
+
             stream.advance()
 
             return true
@@ -1579,9 +1740,13 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard !stream.isEof, stream.isNextInRange("a"..."f") else {
+            guard
+                !stream.isEof,
+                stream.isNextInRange("a"..."f")
+            else {
                 break alt
             }
+
             stream.advance()
 
             return true
@@ -1591,9 +1756,13 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard !stream.isEof, stream.isNextInRange("A"..."F") else {
+            guard
+                !stream.isEof,
+                stream.isNextInRange("A"..."F")
+            else {
                 return false
             }
+
             stream.advance()
 
             return true
@@ -1606,14 +1775,15 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
     ///     ;
     /// ```
     static func consume_hexadecimal_digit_sequence<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
+        guard !stream.isEof else {
+            return false
+        }
 
         alt:
         do {
             guard consume_hexadecimal_digit(from: &stream) else {
                 return false
             }
-
 
             loop:
             while !stream.isEof {
@@ -1634,8 +1804,11 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
     ///     ;
     /// ```
     static func consume_hexadecimal_fractional_constant<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
@@ -1646,12 +1819,12 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
             guard stream.isNext(".") else {
                 break alt
             }
+
             stream.advance()
 
             guard consume_hexadecimal_digit_sequence(from: &stream) else {
                 break alt
             }
-
 
             return true
         }
@@ -1664,10 +1837,10 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
                 return false
             }
 
-
             guard stream.isNext(".") else {
                 break alt
             }
+
             stream.advance()
 
             return true
@@ -1685,14 +1858,18 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
     ///     ;
     /// ```
     static func consume_hexadecimal_prefix<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
             guard stream.isNext("0x") else {
                 break alt
             }
+
             stream.advance(2)
 
             return true
@@ -1705,6 +1882,7 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
             guard stream.isNext("0X") else {
                 return false
             }
+
             stream.advance(2)
 
             return true
@@ -1717,7 +1895,9 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
     ///     ;
     /// ```
     static func consume_identifier<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
+        guard !stream.isEof else {
+            return false
+        }
 
         alt:
         do {
@@ -1749,14 +1929,18 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
     ///     ;
     /// ```
     static func consume_binary_exponent_part<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
             guard stream.isNext("p") else {
                 break alt
             }
+
             stream.advance()
 
             if consume_sign(from: &stream) {
@@ -1766,7 +1950,6 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
             guard consume_digit_sequence(from: &stream) else {
                 break alt
             }
-
 
             return true
         }
@@ -1778,6 +1961,7 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
             guard stream.isNext("P") else {
                 return false
             }
+
             stream.advance()
 
             if consume_sign(from: &stream) {
@@ -1787,7 +1971,6 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
             guard consume_digit_sequence(from: &stream) else {
                 break alt
             }
-
 
             return true
         }
@@ -1804,14 +1987,18 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
     ///     ;
     /// ```
     static func consume_exponent_part<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
             guard stream.isNext("e") else {
                 break alt
             }
+
             stream.advance()
 
             if consume_sign(from: &stream) {
@@ -1821,7 +2008,6 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
             guard consume_digit_sequence(from: &stream) else {
                 break alt
             }
-
 
             return true
         }
@@ -1833,6 +2019,7 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
             guard stream.isNext("E") else {
                 return false
             }
+
             stream.advance()
 
             if consume_sign(from: &stream) {
@@ -1842,7 +2029,6 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
             guard consume_digit_sequence(from: &stream) else {
                 break alt
             }
-
 
             return true
         }
@@ -1859,8 +2045,11 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
     ///     ;
     /// ```
     static func consume_integerConstant<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
@@ -1868,11 +2057,9 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
                 break alt
             }
 
-
             guard consume_hexadecimal_digit_sequence(from: &stream) else {
                 break alt
             }
-
 
             return true
         }
@@ -1881,9 +2068,13 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard !stream.isEof, stream.isNextInRange("1"..."9") else {
+            guard
+                !stream.isEof,
+                stream.isNextInRange("1"..."9")
+            else {
                 return false
             }
+
             stream.advance()
 
             loop:
@@ -1905,14 +2096,18 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
     ///     ;
     /// ```
     static func consume_sign<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
             guard stream.isNext("+") else {
                 break alt
             }
+
             stream.advance()
 
             return true
@@ -1925,6 +2120,7 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
             guard stream.isNext("-") else {
                 return false
             }
+
             stream.advance()
 
             return true

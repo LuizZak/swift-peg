@@ -3,6 +3,7 @@
 @expectedTokenType """
 struct ParserToken: RawTokenType, CustomStringConvertible {
     var kind: TokenKind
+
     var string: Substring
 
     var length: Int {
@@ -18,27 +19,36 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
     }
 
     static func from<StringType>(stream: inout StringStream<StringType>) -> Self? where StringType.SubSequence == Substring {
-        guard !stream.isEof else { return nil }
+        guard !stream.isEof else {
+            return nil
+        }
+
         stream.markSubstringStart()
 
         if consume_a(from: &stream) {
             return .init(kind: .a, string: stream.substring)
         }
+
         if consume_c(from: &stream) {
             return .init(kind: .c, string: stream.substring)
         }
+
         if consume_d(from: &stream) {
             return .init(kind: .d, string: stream.substring)
         }
+
         if consume_e(from: &stream) {
             return .init(kind: .e, string: stream.substring)
         }
+
         if consume_b(from: &stream) {
             return .init(kind: .b, string: stream.substring)
         }
+
         if consume_f(from: &stream) {
             return .init(kind: .f, string: stream.substring)
         }
+
         if consume_g(from: &stream) {
             return .init(kind: .g, string: stream.substring)
         }
@@ -76,13 +86,20 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
 
         var description: String {
             switch self {
-            case .a: "a"
-            case .c: "c"
-            case .d: "d"
-            case .e: "e"
-            case .b: "b"
-            case .f: "f"
-            case .g: "g"
+            case .a:
+                "a"
+            case .c:
+                "c"
+            case .d:
+                "d"
+            case .e:
+                "e"
+            case .b:
+                "b"
+            case .f:
+                "f"
+            case .g:
+                "g"
             }
         }
     }
@@ -93,17 +110,24 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
     ///     ;
     /// ```
     static func consume_a<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
             guard stream.isNext("\\"") else {
                 return false
             }
+
             stream.advance()
 
-            if !stream.isNext("\\""), !stream.isEof {
+            if
+                !stream.isNext("\\""),
+                !stream.isEof
+            {
                 stream.advance()
             } else {
                 break alt
@@ -111,7 +135,10 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
 
             loop:
             while !stream.isEof {
-                if !stream.isNext("\\""), !stream.isEof {
+                if
+                    !stream.isNext("\\""),
+                    !stream.isEof
+                {
                     stream.advance()
                 } else {
                     break loop
@@ -121,6 +148,7 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
             guard stream.isNext("\\"") else {
                 break alt
             }
+
             stream.advance()
 
             return true
@@ -137,7 +165,9 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
     ///     ;
     /// ```
     static func consume_c<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
+        guard !stream.isEof else {
+            return false
+        }
 
         alt:
         do {
@@ -168,11 +198,12 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
     ///     ;
     /// ```
     static func consume_d<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
+        guard !stream.isEof else {
+            return false
+        }
 
         alt:
         do {
-
             loop:
             while !stream.isEof {
                 switch stream.peek() {
@@ -193,13 +224,20 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
     ///     ;
     /// ```
     static func consume_e<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
+        guard !stream.isEof else {
+            return false
+        }
 
         alt:
         do {
-            guard !stream.isNext("f"), !stream.isEof, stream.isNextInRange("a"..."g") else {
+            guard
+                !stream.isNext("f"),
+                !stream.isEof,
+                stream.isNextInRange("a"..."g")
+            else {
                 return false
             }
+
             stream.advance()
 
             return true
@@ -214,14 +252,18 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
     ///     ;
     /// ```
     static func consume_b<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
             guard stream.isNext("a") else {
                 break alt
             }
+
             stream.advance()
 
             return true
@@ -234,6 +276,7 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
             guard stream.isNext("b") else {
                 break alt
             }
+
             stream.advance()
 
             switch stream.peek() {
@@ -263,6 +306,7 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
             guard stream.isNext("d") else {
                 return false
             }
+
             stream.advance()
 
             return true
@@ -275,13 +319,19 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
     ///     ;
     /// ```
     static func consume_f<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
+        guard !stream.isEof else {
+            return false
+        }
 
         alt:
         do {
-            guard !stream.isEof, stream.isNextInRange("1"..."9") else {
+            guard
+                !stream.isEof,
+                stream.isNextInRange("1"..."9")
+            else {
                 return false
             }
+
             stream.advance()
 
             loop:
@@ -302,18 +352,22 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
     ///     ;
     /// ```
     static func consume_g<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
-            if stream.isNext("'") {
+            if stream.isNext("\\'") {
                 stream.advance()
             }
 
             guard stream.isNext("g") else {
                 break alt
             }
+
             stream.advance()
 
             return true

@@ -18,31 +18,26 @@ extension Parser {
     @memoized("start")
     @inlinable
     public func __start() throws -> Node? {
-        let _mark = self.mark()
+        let _mark: Mark = self.mark()
 
-        if
-            let a = try self.a()
-        {
+        if let a = try self.a() {
             return a
         }
 
         self.restore(_mark)
 
-        if
-            let b = try self.b()
-        {
+        if let b = try self.b() {
             return b
         }
 
         self.restore(_mark)
 
-        if
-            let c = try self.c()
-        {
+        if let c = try self.c() {
             return c
         }
 
         self.restore(_mark)
+
         return nil
     }
 
@@ -56,24 +51,22 @@ extension Parser {
     @memoized("a")
     @inlinable
     public func __a() throws -> Node? {
-        let _mark = self.mark()
+        let _mark: Mark = self.mark()
+
         anAction()
 
-        if
-            let _ = try self.expect("a")
-        {
+        if let _ = try self.expect("a") {
             return Node()
         }
 
         self.restore(_mark)
 
-        if
-            let _ = try self.expect("aa")
-        {
+        if let _ = try self.expect("aa") {
             return Node()
         }
 
         self.restore(_mark)
+
         return nil
     }
 
@@ -87,24 +80,22 @@ extension Parser {
     @memoized("b")
     @inlinable
     public func __b() throws -> Node? {
-        let _mark = self.mark()
+        let _mark: Mark = self.mark()
 
-        if
-            let _ = try self.expect("b")
-        {
+        if let _ = try self.expect("b") {
             return Node()
         }
 
         self.restore(_mark)
 
-        if
-            let _ = try self.expect("bb")
-        {
+        if let _ = try self.expect("bb") {
             return Node()
         }
 
         self.restore(_mark)
+
         aFailAction()
+
         return nil
     }
 
@@ -118,25 +109,24 @@ extension Parser {
     @memoized("c")
     @inlinable
     public func __c() throws -> Node? {
-        let _mark = self.mark()
+        let _mark: Mark = self.mark()
+
         anAction()
 
-        if
-            let _ = try self.expect("c")
-        {
+        if let _ = try self.expect("c") {
             return Node()
         }
 
         self.restore(_mark)
 
-        if
-            let _ = try self.expect("cc")
-        {
+        if let _ = try self.expect("cc") {
             return Node()
         }
 
         self.restore(_mark)
+
         aFailAction()
+
         return nil
     }
 
@@ -151,8 +141,10 @@ extension Parser {
     @memoized("d")
     @inlinable
     public func __d() throws -> Node? {
-        let _mark = self.mark()
-        var _cut = CutFlag()
+        let _mark: Mark = self.mark()
+
+        var _cut: CutFlag = CutFlag()
+
         anAction()
 
         if
@@ -176,6 +168,7 @@ extension Parser {
 
         if _cut.isOn {
             aFailAction()
+
             return nil
         }
 
@@ -187,7 +180,9 @@ extension Parser {
         }
 
         self.restore(_mark)
+
         aFailAction()
+
         return nil
     }
 }

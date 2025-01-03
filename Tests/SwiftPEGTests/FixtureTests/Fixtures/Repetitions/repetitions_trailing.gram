@@ -17,15 +17,14 @@ extension Parser {
     @memoized("start")
     @inlinable
     public func __start() throws -> Node? {
-        let _mark = self.mark()
+        let _mark: Mark = self.mark()
 
-        if
-            let a = try self.a()
-        {
+        if let a = try self.a() {
             return a
         }
 
         self.restore(_mark)
+
         return nil
     }
 
@@ -38,23 +37,20 @@ extension Parser {
     @memoized("a")
     @inlinable
     public func __a() throws -> Node? {
-        let _mark = self.mark()
+        let _mark: Mark = self.mark()
 
-        if
-            case let (b?, c?) = self.shuffleTuple(try self._a_nsr())
-        {
+        if case let (b?, c?) = self.shuffleTuple(try self._a_nsr()) {
             return Node()
         }
 
         self.restore(_mark)
 
-        if
-            case let (b?, d?) = self.shuffleTuple(try self._a_nsr1())
-        {
+        if case let (b?, d?) = self.shuffleTuple(try self._a_nsr1()) {
             return Node()
         }
 
         self.restore(_mark)
+
         return nil
     }
 
@@ -66,15 +62,14 @@ extension Parser {
     @memoized("_a_nsr")
     @inlinable
     public func ___a_nsr() throws -> ([Token], Token)? {
-        let _mark = self.mark()
+        let _mark: Mark = self.mark()
 
         var _current: [Token] = []
 
-        while
-            let b = try self.b()
-        {
+        while let b = try self.b() {
             _current.append(b)
-            let _mark1 = self.mark()
+
+            let _mark1: Mark = self.mark()
 
             if
                 let c = try self.c(),
@@ -87,6 +82,7 @@ extension Parser {
         }
 
         self.restore(_mark)
+
         return nil
     }
 
@@ -98,12 +94,14 @@ extension Parser {
     @memoized("_a_nsr1")
     @inlinable
     public func ___a_nsr1() throws -> ([Token], Token)? {
-        let _mark = self.mark()
+        let _mark: Mark = self.mark()
 
         // Start by fetching as many productions as possible
         guard
             var _current: [(Mark, Token)] = try self.repeatOneOrMore({
-                if let b = try self.b() { return (self.mark(), b) }
+                if let b = try self.b() {
+                    return (self.mark(), b)
+                }
                 return nil
             })
         else {
@@ -127,6 +125,7 @@ extension Parser {
         }
 
         self.restore(_mark)
+
         return nil
     }
 }

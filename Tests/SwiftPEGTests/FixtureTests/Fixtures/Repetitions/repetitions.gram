@@ -17,15 +17,14 @@ extension Parser {
     @memoized("start")
     @inlinable
     public func __start() throws -> Node? {
-        let _mark = self.mark()
+        let _mark: Mark = self.mark()
 
-        if
-            let a = try self.a()
-        {
+        if let a = try self.a() {
             return a
         }
 
         self.restore(_mark)
+
         return nil
     }
 
@@ -37,15 +36,14 @@ extension Parser {
     @memoized("a")
     @inlinable
     public func __a() throws -> Node? {
-        let _mark = self.mark()
+        let _mark: Mark = self.mark()
 
-        if
-            case let (b?, c?, d?) = self.shuffleTuple(try self._a_nsr())
-        {
+        if case let (b?, c?, d?) = self.shuffleTuple(try self._a_nsr()) {
             return Node()
         }
 
         self.restore(_mark)
+
         return nil
     }
 
@@ -57,15 +55,14 @@ extension Parser {
     @memoized("b")
     @inlinable
     public func __b() throws -> TokenType? {
-        let _mark = self.mark()
+        let _mark: Mark = self.mark()
 
-        if
-            let b = try self.B()
-        {
+        if let b = try self.B() {
             return b
         }
 
         self.restore(_mark)
+
         return nil
     }
 
@@ -77,15 +74,14 @@ extension Parser {
     @memoized("c")
     @inlinable
     public func __c() throws -> TokenType? {
-        let _mark = self.mark()
+        let _mark: Mark = self.mark()
 
-        if
-            let c = try self.C()
-        {
+        if let c = try self.C() {
             return c
         }
 
         self.restore(_mark)
+
         return nil
     }
 
@@ -97,15 +93,14 @@ extension Parser {
     @memoized("d")
     @inlinable
     public func __d() throws -> TokenType? {
-        let _mark = self.mark()
+        let _mark: Mark = self.mark()
 
-        if
-            let d = try self.D()
-        {
+        if let d = try self.D() {
             return d
         }
 
         self.restore(_mark)
+
         return nil
     }
 
@@ -117,19 +112,16 @@ extension Parser {
     @memoized("_a_nsr")
     @inlinable
     public func ___a_nsr() throws -> ([TokenType], [TokenType], TokenType)? {
-        let _mark = self.mark()
+        let _mark: Mark = self.mark()
 
         var _current: [TokenType] = []
 
-        while
-            let b = try self.b()
-        {
+        while let b = try self.b() {
             _current.append(b)
-            let _mark1 = self.mark()
 
-            if
-                case let (c?, d?) = self.shuffleTuple(try self.__a_nsr_nsr())
-            {
+            let _mark1: Mark = self.mark()
+
+            if case let (c?, d?) = self.shuffleTuple(try self.__a_nsr_nsr()) {
                 return (_current, c, d)
             }
 
@@ -137,6 +129,7 @@ extension Parser {
         }
 
         self.restore(_mark)
+
         return nil
     }
 
@@ -148,12 +141,14 @@ extension Parser {
     @memoized("__a_nsr_nsr")
     @inlinable
     public func ____a_nsr_nsr() throws -> ([TokenType], TokenType)? {
-        let _mark = self.mark()
+        let _mark: Mark = self.mark()
 
         // Start by fetching as many productions as possible
         guard
             var _current: [(Mark, TokenType)] = try self.repeatZeroOrMore({
-                if let c = try self.c() { return (self.mark(), c) }
+                if let c = try self.c() {
+                    return (self.mark(), c)
+                }
                 return nil
             })
         else {
@@ -161,12 +156,11 @@ extension Parser {
         }
 
         while true {
-            let _endMark = _current.last?.0 ?? _mark
+            let _endMark: Mark = _current.last?.0 ?? _mark
+
             self.restore(_endMark)
 
-            if
-                let d = try self.d()
-            {
+            if let d = try self.d() {
                 return (_current.map(\\.1), d)
             } else if _current.isEmpty {
                 break
@@ -177,6 +171,7 @@ extension Parser {
         }
 
         self.restore(_mark)
+
         return nil
     }
 }

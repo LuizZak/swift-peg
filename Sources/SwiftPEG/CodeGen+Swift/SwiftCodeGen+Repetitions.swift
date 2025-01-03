@@ -59,7 +59,7 @@ extension SwiftCodeGen {
 
             return .try(
                 .identifier("self").dot("repeatZeroOrMore").call([
-                    FunctionArgument(label: "item", expression: .block(signature: nil, body: .init(statements: itemStmts))),
+                    FunctionArgument(label: nil, expression: .block(signature: nil, body: .init(statements: itemStmts))),
                 ])
             )
         } whileCondition: { ctx in
@@ -70,6 +70,7 @@ extension SwiftCodeGen {
                 .variableDeclaration(
                     identifier: "_endMark",
                     type: "Mark",
+                    isConstant: true,
                     initialization:
                         .identifier(ctx.currentArrayName)
                         .dot("last").optional()
@@ -130,7 +131,7 @@ extension SwiftCodeGen {
 
             return .try(
                 .identifier("self").dot("repeatOneOrMore").call([
-                    FunctionArgument(label: "item", expression: .block(signature: nil, body: .init(statements: itemStmts))),
+                    FunctionArgument(label: nil, expression: .block(signature: nil, body: .init(statements: itemStmts))),
                 ])
             )
         } whileCondition: { ctx in

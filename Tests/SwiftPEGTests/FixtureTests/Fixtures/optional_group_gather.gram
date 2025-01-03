@@ -15,7 +15,7 @@ extension Parser {
     @memoized("start")
     @inlinable
     public func __start() throws -> Node? {
-        let _mark = self.mark()
+        let _mark: Mark = self.mark()
 
         if
             let _ = try self.gather(separator: {
@@ -28,6 +28,7 @@ extension Parser {
         }
 
         self.restore(_mark)
+
         return nil
     }
 
@@ -39,15 +40,14 @@ extension Parser {
     @memoized("a")
     @inlinable
     public func __a() throws -> Node? {
-        let _mark = self.mark()
+        let _mark: Mark = self.mark()
 
-        if
-            let _ = try self.expect("a")
-        {
+        if let _ = try self.expect("a") {
             return Node()
         }
 
         self.restore(_mark)
+
         return nil
     }
 
@@ -59,15 +59,14 @@ extension Parser {
     @memoized("b")
     @inlinable
     public func __b() throws -> Node? {
-        let _mark = self.mark()
+        let _mark: Mark = self.mark()
 
-        if
-            let _ = try self.expect("b")
-        {
+        if let _ = try self.expect("b") {
             return Node()
         }
 
         self.restore(_mark)
+
         return nil
     }
 
@@ -79,15 +78,14 @@ extension Parser {
     @memoized("c")
     @inlinable
     public func __c() throws -> Node? {
-        let _mark = self.mark()
+        let _mark: Mark = self.mark()
 
-        if
-            let _ = try self.expect("c")
-        {
+        if let _ = try self.expect("c") {
             return Node()
         }
 
         self.restore(_mark)
+
         return nil
     }
 
@@ -99,7 +97,7 @@ extension Parser {
     @memoized("_start__group_")
     @inlinable
     public func ___start__group_() throws -> (Node?, Node)? {
-        let _mark = self.mark()
+        let _mark: Mark = self.mark()
 
         if
             case let a = try self.a(),
@@ -109,6 +107,7 @@ extension Parser {
         }
 
         self.restore(_mark)
+
         return nil
     }
 
@@ -120,7 +119,7 @@ extension Parser {
     @memoized("_start__group_1")
     @inlinable
     public func ___start__group_1() throws -> (Node?, Node)? {
-        let _mark = self.mark()
+        let _mark: Mark = self.mark()
 
         if
             case let c = try self.c(),
@@ -130,6 +129,7 @@ extension Parser {
         }
 
         self.restore(_mark)
+
         return nil
     }
 }
