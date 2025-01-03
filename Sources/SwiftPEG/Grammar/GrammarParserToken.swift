@@ -2,6 +2,7 @@
 
 public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
     public var kind: TokenKind
+
     public var string: Substring
 
     @inlinable
@@ -17,6 +18,7 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
     @inlinable
     public init(kind: TokenKind, string: Substring) {
         self.kind = kind
+
         self.string = string
     }
 
@@ -27,105 +29,140 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
 
     @inlinable
     public static func from<StringType>(stream: inout StringStream<StringType>) -> Self? where StringType.SubSequence == Substring {
-        guard !stream.isEof else { return nil }
+        guard !stream.isEof else {
+            return nil
+        }
+
         stream.markSubstringStart()
 
         if consume_WHITESPACE(from: &stream) {
             return .init(kind: .whitespace, string: stream.substring)
         }
+
         if consume_AMPERSAND(from: &stream) {
             return .init(kind: .ampersand, string: stream.substring)
         }
+
         if consume_AT(from: &stream) {
             return .init(kind: .at, string: stream.substring)
         }
+
         if consume_BACKSLASH(from: &stream) {
             return .init(kind: .backslash, string: stream.substring)
         }
+
         if consume_BACKTICK(from: &stream) {
             return .init(kind: .backtick, string: stream.substring)
         }
+
         if consume_BAR(from: &stream) {
             return .init(kind: .bar, string: stream.substring)
         }
+
         if consume_COLON(from: &stream) {
             return .init(kind: .colon, string: stream.substring)
         }
+
         if consume_COMMA(from: &stream) {
             return .init(kind: .comma, string: stream.substring)
         }
+
         if consume_DOLLAR(from: &stream) {
             return .init(kind: .dollarSign, string: stream.substring)
         }
+
         if consume_DOUBLEEXCLAMATIONMARK(from: &stream) {
             return .init(kind: .doubleExclamationMark, string: stream.substring)
         }
+
         if consume_ELLIPSIS(from: &stream) {
             return .init(kind: .ellipsis, string: stream.substring)
         }
+
         if consume_EQUALS(from: &stream) {
             return .init(kind: .equals, string: stream.substring)
         }
+
         if consume_EXCLAMATIONMARK(from: &stream) {
             return .init(kind: .exclamationMark, string: stream.substring)
         }
+
         if consume_FORWARDSLASH(from: &stream) {
             return .init(kind: .forwardSlash, string: stream.substring)
         }
+
         if consume_LEFTANGLE(from: &stream) {
             return .init(kind: .leftAngle, string: stream.substring)
         }
+
         if consume_LEFTBRACE(from: &stream) {
             return .init(kind: .leftBrace, string: stream.substring)
         }
+
         if consume_LEFTPAREN(from: &stream) {
             return .init(kind: .leftParen, string: stream.substring)
         }
+
         if consume_LEFTSQUARE(from: &stream) {
             return .init(kind: .leftSquare, string: stream.substring)
         }
+
         if consume_MINUS(from: &stream) {
             return .init(kind: .minus, string: stream.substring)
         }
+
         if consume_PERCENT(from: &stream) {
             return .init(kind: .percent, string: stream.substring)
         }
+
         if consume_PERIOD(from: &stream) {
             return .init(kind: .period, string: stream.substring)
         }
+
         if consume_PLUS(from: &stream) {
             return .init(kind: .plus, string: stream.substring)
         }
+
         if consume_QUESTIONMARK(from: &stream) {
             return .init(kind: .questionMark, string: stream.substring)
         }
+
         if consume_RIGHTANGLE(from: &stream) {
             return .init(kind: .rightAngle, string: stream.substring)
         }
+
         if consume_RIGHTBRACE(from: &stream) {
             return .init(kind: .rightBrace, string: stream.substring)
         }
+
         if consume_RIGHTPAREN(from: &stream) {
             return .init(kind: .rightParen, string: stream.substring)
         }
+
         if consume_RIGHTSQUARE(from: &stream) {
             return .init(kind: .rightSquare, string: stream.substring)
         }
+
         if consume_SEMICOLON(from: &stream) {
             return .init(kind: .semicolon, string: stream.substring)
         }
+
         if consume_STAR(from: &stream) {
             return .init(kind: .star, string: stream.substring)
         }
+
         if consume_TILDE(from: &stream) {
             return .init(kind: .tilde, string: stream.substring)
         }
+
         if consume_DIGITS(from: &stream) {
             return .init(kind: .digits, string: stream.substring)
         }
+
         if consume_IDENTIFIER(from: &stream) {
             return .init(kind: .identifier, string: stream.substring)
         }
+
         if consume_STRING(from: &stream) {
             return .init(kind: .string, string: stream.substring)
         }
@@ -242,39 +279,72 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
         @inlinable
         public var description: String {
             switch self {
-            case .whitespace: "WHITESPACE"
-            case .ampersand: "&"
-            case .at: "@"
-            case .backslash: "\\"
-            case .backtick: "`"
-            case .bar: "|"
-            case .colon: ":"
-            case .comma: ","
-            case .dollarSign: "$"
-            case .doubleExclamationMark: "!!"
-            case .ellipsis: "..."
-            case .equals: "="
-            case .exclamationMark: "!"
-            case .forwardSlash: "/"
-            case .leftAngle: "<"
-            case .leftBrace: "{"
-            case .leftParen: "("
-            case .leftSquare: "["
-            case .minus: "-"
-            case .percent: "%"
-            case .period: "."
-            case .plus: "+"
-            case .questionMark: "?"
-            case .rightAngle: ">"
-            case .rightBrace: "}"
-            case .rightParen: ")"
-            case .rightSquare: "]"
-            case .semicolon: ";"
-            case .star: "*"
-            case .tilde: "~"
-            case .digits: "DIGITS"
-            case .identifier: "IDENTIFIER"
-            case .string: "STRING"
+            case .whitespace:
+                "WHITESPACE"
+            case .ampersand:
+                "&"
+            case .at:
+                "@"
+            case .backslash:
+                "\\"
+            case .backtick:
+                "`"
+            case .bar:
+                "|"
+            case .colon:
+                ":"
+            case .comma:
+                ","
+            case .dollarSign:
+                "$"
+            case .doubleExclamationMark:
+                "!!"
+            case .ellipsis:
+                "..."
+            case .equals:
+                "="
+            case .exclamationMark:
+                "!"
+            case .forwardSlash:
+                "/"
+            case .leftAngle:
+                "<"
+            case .leftBrace:
+                "{"
+            case .leftParen:
+                "("
+            case .leftSquare:
+                "["
+            case .minus:
+                "-"
+            case .percent:
+                "%"
+            case .period:
+                "."
+            case .plus:
+                "+"
+            case .questionMark:
+                "?"
+            case .rightAngle:
+                ">"
+            case .rightBrace:
+                "}"
+            case .rightParen:
+                ")"
+            case .rightSquare:
+                "]"
+            case .semicolon:
+                ";"
+            case .star:
+                "*"
+            case .tilde:
+                "~"
+            case .digits:
+                "DIGITS"
+            case .identifier:
+                "IDENTIFIER"
+            case .string:
+                "STRING"
             }
         }
     }
@@ -286,7 +356,9 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_WHITESPACE<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
+        guard !stream.isEof else {
+            return false
+        }
 
         alt:
         do {
@@ -608,7 +680,9 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_DIGITS<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
+        guard !stream.isEof else {
+            return false
+        }
 
         alt:
         do {
@@ -640,14 +714,15 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_IDENTIFIER<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
+        guard !stream.isEof else {
+            return false
+        }
 
         alt:
         do {
             guard consume_identifierHead(from: &stream) else {
                 return false
             }
-
 
             loop:
             while !stream.isEof {
@@ -672,14 +747,18 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_STRING<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
             guard stream.isNext("\"\"\"") else {
                 break alt
             }
+
             stream.advance(3)
 
             loop:
@@ -690,7 +769,10 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
                     stream.advance(2)
                 } else if stream.isNext("\\") {
                     stream.advance()
-                } else if !stream.isNext("\"\"\""), !stream.isEof {
+                } else if
+                    !stream.isNext("\"\"\""),
+                    !stream.isEof
+                {
                     stream.advance()
                 } else {
                     break loop
@@ -700,6 +782,7 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
             guard stream.isNext("\"\"\"") else {
                 break alt
             }
+
             stream.advance(3)
 
             return true
@@ -712,6 +795,7 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
             guard stream.isNext("\"") else {
                 break alt
             }
+
             stream.advance()
 
             loop:
@@ -722,7 +806,11 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
                     stream.advance(2)
                 } else if stream.isNext("\\") {
                     stream.advance()
-                } else if !stream.isNext("\""), !stream.isNext("\n"), !stream.isEof {
+                } else if
+                    !stream.isNext("\""),
+                    !stream.isNext("\n"),
+                    !stream.isEof
+                {
                     stream.advance()
                 } else {
                     break loop
@@ -732,6 +820,7 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
             guard stream.isNext("\"") else {
                 break alt
             }
+
             stream.advance()
 
             return true
@@ -741,29 +830,35 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard stream.isNext("'") else {
+            guard stream.isNext("\'") else {
                 return false
             }
+
             stream.advance()
 
             loop:
             while !stream.isEof {
-                if stream.isNext("\\'") {
+                if stream.isNext("\\\'") {
                     stream.advance(2)
                 } else if stream.isNext("\\\\") {
                     stream.advance(2)
                 } else if stream.isNext("\\") {
                     stream.advance()
-                } else if !stream.isNext("'"), !stream.isNext("\n"), !stream.isEof {
+                } else if
+                    !stream.isNext("\'"),
+                    !stream.isNext("\n"),
+                    !stream.isEof
+                {
                     stream.advance()
                 } else {
                     break loop
                 }
             }
 
-            guard stream.isNext("'") else {
+            guard stream.isNext("\'") else {
                 break alt
             }
+
             stream.advance()
 
             return true
@@ -783,14 +878,21 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_identifierHead<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else { return false }
-        let state = stream.save()
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
 
         alt:
         do {
-            guard !stream.isEof, stream.isNextInRange("a"..."z") else {
+            guard
+                !stream.isEof,
+                stream.isNextInRange("a"..."z")
+            else {
                 break alt
             }
+
             stream.advance()
 
             return true
@@ -800,9 +902,13 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard !stream.isEof, stream.isNextInRange("A"..."Z") else {
+            guard
+                !stream.isEof,
+                stream.isNextInRange("A"..."Z")
+            else {
                 break alt
             }
+
             stream.advance()
 
             return true
@@ -815,6 +921,7 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
             guard stream.isNext("_") else {
                 return false
             }
+
             stream.advance()
 
             return true
