@@ -25,6 +25,22 @@ public extension SwiftCodeGen {
         public var genericArguments: [GenericArgumentDecl]
         public var inheritances: [SwiftType]
         public var members: [MemberDecl]
+
+        public init(
+            leadingComments: [SwiftComment],
+            accessLevel: AccessLevel,
+            name: String,
+            genericArguments: [SwiftCodeGen.GenericArgumentDecl],
+            inheritances: [SwiftType],
+            members: [SwiftCodeGen.MemberDecl]
+        ) {
+            self.leadingComments = leadingComments
+            self.accessLevel = accessLevel
+            self.name = name
+            self.genericArguments = genericArguments
+            self.inheritances = inheritances
+            self.members = members
+        }
     }
 
     struct StructDecl {
@@ -34,11 +50,32 @@ public extension SwiftCodeGen {
         public var genericArguments: [GenericArgumentDecl]
         public var inheritances: [SwiftType]
         public var members: [MemberDecl]
+
+        public init(
+            leadingComments: [SwiftComment],
+            accessLevel: AccessLevel,
+            name: String,
+            genericArguments: [SwiftCodeGen.GenericArgumentDecl],
+            inheritances: [SwiftType],
+            members: [SwiftCodeGen.MemberDecl]
+        ) {
+            self.leadingComments = leadingComments
+            self.accessLevel = accessLevel
+            self.name = name
+            self.genericArguments = genericArguments
+            self.inheritances = inheritances
+            self.members = members
+        }
     }
 
     struct GenericArgumentDecl {
         public var name: String
         public var type: SwiftType?
+
+        public init(name: String, type: SwiftType? = nil) {
+            self.name = name
+            self.type = type
+        }
     }
 
     struct ExtensionDecl {
@@ -46,6 +83,18 @@ public extension SwiftCodeGen {
         public var baseType: SwiftType
         public var accessLevel: AccessLevel
         public var members: [MemberDecl]
+
+        public init(
+            leadingComments: [SwiftComment],
+            baseType: SwiftType,
+            accessLevel: AccessLevel,
+            members: [SwiftCodeGen.MemberDecl]
+        ) {
+            self.leadingComments = leadingComments
+            self.baseType = baseType
+            self.accessLevel = accessLevel
+            self.members = members
+        }
     }
 
     struct ProtocolDecl {
@@ -54,6 +103,20 @@ public extension SwiftCodeGen {
         public var name: String
         public var associatedTypes: [AssociatedTypeDecl]
         public var members: [ProtocolMemberDecl]
+
+        public init(
+            leadingComments: [SwiftComment],
+            accessLevel: AccessLevel,
+            name: String,
+            associatedTypes: [SwiftCodeGen.AssociatedTypeDecl],
+            members: [SwiftCodeGen.ProtocolMemberDecl]
+        ) {
+            self.leadingComments = leadingComments
+            self.accessLevel = accessLevel
+            self.name = name
+            self.associatedTypes = associatedTypes
+            self.members = members
+        }
     }
 
     struct EnumDecl {
@@ -63,6 +126,22 @@ public extension SwiftCodeGen {
         public var inheritances: [SwiftType]
         public var cases: [EnumCaseDecl]
         public var members: [MemberDecl]
+
+        public init(
+            leadingComments: [SwiftComment],
+            accessLevel: AccessLevel,
+            name: String,
+            inheritances: [SwiftType],
+            cases: [SwiftCodeGen.EnumCaseDecl],
+            members: [SwiftCodeGen.MemberDecl]
+        ) {
+            self.leadingComments = leadingComments
+            self.accessLevel = accessLevel
+            self.name = name
+            self.inheritances = inheritances
+            self.cases = cases
+            self.members = members
+        }
     }
 
     struct EnumCaseDecl {
@@ -70,16 +149,42 @@ public extension SwiftCodeGen {
         public var name: String
         public var associatedValues: [ParameterSignature]?
         public var rawValue: Expression?
+
+        public init(
+            leadingComments: [SwiftComment],
+            name: String,
+            associatedValues: [ParameterSignature]? = nil,
+            rawValue: Expression? = nil
+        ) {
+            self.leadingComments = leadingComments
+            self.name = name
+            self.associatedValues = associatedValues
+            self.rawValue = rawValue
+        }
     }
 
     struct TypealiasDecl {
         public var accessLevel: AccessLevel
         public var alias: String
         public var type: SwiftType
+
+        public init(
+            accessLevel: AccessLevel,
+            alias: String,
+            type: SwiftType
+        ) {
+            self.accessLevel = accessLevel
+            self.alias = alias
+            self.type = type
+        }
     }
 
     struct AssociatedTypeDecl {
         public var name: String
+
+        public init(name: String) {
+            self.name = name
+        }
     }
 
     enum MemberDecl {
@@ -113,6 +218,20 @@ public extension SwiftCodeGen {
         public var accessLevel: AccessLevel
         public var parameters: [ParameterSignature]
         public var body: CompoundStatement
+
+        public init(
+            leadingComments: [SwiftComment],
+            attributes: [DeclarationAttribute],
+            accessLevel: AccessLevel,
+            parameters: [ParameterSignature],
+            body: CompoundStatement
+        ) {
+            self.leadingComments = leadingComments
+            self.attributes = attributes
+            self.accessLevel = accessLevel
+            self.parameters = parameters
+            self.body = body
+        }
     }
 
     struct FunctionMemberDecl {
@@ -120,6 +239,18 @@ public extension SwiftCodeGen {
         public var accessLevel: AccessLevel
         public var signature: FunctionSignature
         public var body: CompoundStatement
+
+        public init(
+            leadingComments: [SwiftComment],
+            accessLevel: AccessLevel,
+            signature: FunctionSignature,
+            body: CompoundStatement
+        ) {
+            self.leadingComments = leadingComments
+            self.accessLevel = accessLevel
+            self.signature = signature
+            self.body = body
+        }
     }
 
     struct SubscriptMemberDecl {
@@ -129,6 +260,22 @@ public extension SwiftCodeGen {
         public var signature: SubscriptSignature
         public var getter: CompoundStatement
         public var setter: (String, CompoundStatement)?
+
+        public init(
+            leadingComments: [SwiftComment],
+            attributes: [DeclarationAttribute],
+            accessLevel: AccessLevel,
+            signature: SubscriptSignature,
+            getter: CompoundStatement,
+            setter: (String, CompoundStatement)? = nil
+        ) {
+            self.leadingComments = leadingComments
+            self.attributes = attributes
+            self.accessLevel = accessLevel
+            self.signature = signature
+            self.getter = getter
+            self.setter = setter
+        }
     }
 
     enum ProtocolMemberDecl {
@@ -145,17 +292,49 @@ public extension SwiftCodeGen {
         public var isConstant: Bool
         public var name: String
         public var type: SwiftType
+
+        public init(
+            leadingComments: [SwiftComment],
+            attributes: [DeclarationAttribute],
+            isConstant: Bool,
+            name: String,
+            type: SwiftType
+        ) {
+            self.leadingComments = leadingComments
+            self.attributes = attributes
+            self.isConstant = isConstant
+            self.name = name
+            self.type = type
+        }
     }
 
     struct ProtocolInitMemberDecl {
         public var leadingComments: [SwiftComment]
         public var attributes: [DeclarationAttribute]
         public var parameters: [ParameterSignature]
+
+        public init(
+            leadingComments: [SwiftComment],
+            attributes: [DeclarationAttribute],
+            parameters: [ParameterSignature]
+        ) {
+            self.leadingComments = leadingComments
+            self.attributes = attributes
+            self.parameters = parameters
+        }
     }
 
     struct ProtocolFunctionMemberDecl {
         public var leadingComments: [SwiftComment]
         public var signature: FunctionSignature
+
+        public init(
+            leadingComments: [SwiftComment],
+            signature: FunctionSignature
+        ) {
+            self.leadingComments = leadingComments
+            self.signature = signature
+        }
     }
 
     struct ProtocolSubscriptMemberDecl {
@@ -163,6 +342,18 @@ public extension SwiftCodeGen {
         public var attributes: [DeclarationAttribute]
         public var signature: SubscriptSignature
         public var hasSetter: Bool
+
+        public init(
+            leadingComments: [SwiftComment],
+            attributes: [DeclarationAttribute],
+            signature: SubscriptSignature,
+            hasSetter: Bool
+        ) {
+            self.leadingComments = leadingComments
+            self.attributes = attributes
+            self.signature = signature
+            self.hasSetter = hasSetter
+        }
     }
 }
 
