@@ -13,7 +13,7 @@ public struct ParserCache<RawTokenizer: RawTokenizerType> {
     ///
     /// Used during error recovery/syntax error generation.
     @usableFromInline
-    internal var _tokenHits: [Mark: [TokenKind]] = [:]
+    internal var _tokenHits: [Mark: Set<TokenKind>] = [:]
 
     /// Whether enable or disable the cache.
     /// When disabled, `has()`, `fetch()`, and `fetchAny()` behave as if the cache
@@ -24,7 +24,7 @@ public struct ParserCache<RawTokenizer: RawTokenizerType> {
     /// Fetches or stores a cached token hit list on a given marker within this
     /// cache. Returns `nil` if no token hits have occurred at that point.
     @inlinable
-    public subscript(tokenAt mark: Mark) -> [TokenKind]? {
+    public subscript(tokenAt mark: Mark) -> Set<TokenKind>? {
         get {
             fetchTokenKinds(at: mark)
         }
@@ -99,7 +99,7 @@ public struct ParserCache<RawTokenizer: RawTokenizerType> {
     /// cache.
     @inlinable
     public mutating func storeTokenKind(at mark: Mark, _ tokenKind: TokenKind) {
-        _tokenHits[mark, default: []].append(tokenKind)
+        _tokenHits[mark, default: []].insert(tokenKind)
     }
 
     /// Stores a request for a token of the given kind at a given point in this
@@ -118,40 +118,34 @@ public struct ParserCache<RawTokenizer: RawTokenizerType> {
     /// them to the set of existing tokens.
     @inlinable
     public mutating func storeTokenKinds(at mark: Mark, _ tokenKinds: some Sequence<TokenKind>) {
-        _tokenHits[mark, default: []].append(contentsOf: tokenKinds)
+        _tokenHits[mark, default: []].formUnion(tokenKinds)
     }
 
     /// Stores a set of token requests at a given point in this cache, adding
     /// them to the set of existing tokens, while ignoring duplicated entries.
     @inlinable
     public mutating func storeUniqueTokenKinds(at mark: Mark, _ tokenKinds: some Sequence<TokenKind>) {
-        if let existing = _tokenHits[mark] {
-            let newTokens = Set(tokenKinds).subtracting(existing)
-
-            _tokenHits[mark] = existing + newTokens
-        } else {
-            _tokenHits[mark] = Array(tokenKinds)
-        }
+        _tokenHits[mark, default: []].formUnion(tokenKinds)
     }
 
     /// Returns a list of all cached token fetches that occurred at a given index.
     /// If no token fetch has happened at that point, `nil` is returned, instead.
     @inlinable
-    public func fetchTokenKinds(at mark: Mark) -> [TokenKind]? {
+    public func fetchTokenKinds(at mark: Mark) -> Set<TokenKind>? {
         _tokenHits[mark]
     }
 
     /// Replaces the cached token kinds at a given point in this cache.
     @inlinable
-    public mutating func replaceTokenKinds(at mark: Mark, _ tokenKinds: [TokenKind]?) {
-        _tokenHits[mark] = tokenKinds
+    public mutating func replaceTokenKinds<S>(at mark: Mark, _ tokenKinds: S?) where S: Sequence, S.Element == TokenKind {
+        _tokenHits[mark] = tokenKinds.map(Set.init)
     }
 
     /// Removes all cached token kind hits that occurred at a given mark from
     /// this cache. Returns the cached value, if present.
     @inlinable
     @discardableResult
-    public mutating func removeTokenKinds(at mark: Mark) -> [TokenKind]? {
+    public mutating func removeTokenKinds(at mark: Mark) -> Set<TokenKind>? {
         _tokenHits.removeValue(forKey: mark)
     }
 

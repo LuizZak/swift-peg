@@ -39,7 +39,7 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
         let errorMark = tokenizer.mark(before: self.reach)
         let location = self.tokenizer.readableLocation(for: errorMark)
 
-        guard let tokens = cache.fetchTokenKinds(at: errorMark)?.removingDuplicates(), !tokens.isEmpty else {
+        guard let tokens = cache.fetchTokenKinds(at: errorMark), !tokens.isEmpty else {
             return SyntaxError.invalidSyntax(
                 "Syntax error",
                 errorMark,
@@ -47,7 +47,7 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
             )
         }
 
-        let expectedTokensMsg = tokens.asNaturalLanguageList({ "\"\($0)\"" })
+        let expectedTokensMsg = tokens.sorted(by: { $0.description < $1.description }).asNaturalLanguageList({ "\"\($0)\"" })
 
         // Check EOF
         tokenizer.restore(errorMark)
@@ -467,14 +467,14 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
         case invalidSyntax(String, _ mark: Mark, location: String)
 
         /// Found end-of-stream unexpectedly.
-        case unexpectedEof(String, _ mark: Mark, location: String, expected: [RawToken.TokenKind])
+        case unexpectedEof(String, _ mark: Mark, location: String, expected: Set<RawToken.TokenKind>)
 
         /// An `expectForced` check failed at a given point.
         case expectedForcedFailed(String, _ mark: Mark, location: String)
 
         /// Found given token kind, expected one of the following token kinds
         /// instead.
-        case expectedToken(String, _ mark: Mark, location: String, received: RawToken, expected: [RawToken.TokenKind])
+        case expectedToken(String, _ mark: Mark, location: String, received: RawToken, expected: Set<RawToken.TokenKind>)
 
         public var location: String {
             switch self {

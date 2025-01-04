@@ -39,7 +39,7 @@ open class Tokenizer<Raw: RawTokenizerType> {
     /// tokens where requested without backtracking, and is used mostly for
     /// diagnostics of parsing errors.
     public var reach: Mark {
-        Mark(owner: self, index: _reach)
+        Mark(index: _reach)
     }
 
     @inlinable
@@ -131,7 +131,7 @@ open class Tokenizer<Raw: RawTokenizerType> {
     /// Returns a marker that points just before a given marker.
     @inlinable
     open func mark(before marker: Mark) -> Mark {
-        return Mark(owner: self, index: marker.index - 1)
+        return Mark(index: marker.index - 1)
     }
 
     /// Returns a marker for the current tokenizer's position so that it can be
@@ -140,7 +140,7 @@ open class Tokenizer<Raw: RawTokenizerType> {
     /// - note: Markers from different tokenizer instances are not exchangeable.
     @inlinable
     open func mark() -> Mark {
-        return Mark(owner: self, index: self.tokenIndex)
+        return Mark(index: self.tokenIndex)
     }
 
     /// Restores the tokenizer to a point indicated by `mark`.
@@ -195,7 +195,7 @@ open class Tokenizer<Raw: RawTokenizerType> {
         var index: Int
 
         @usableFromInline
-        internal init(owner: Tokenizer<Raw>?, index: Int) {
+        internal init(index: Int) {
             self.index = index
         }
 
@@ -207,18 +207,12 @@ open class Tokenizer<Raw: RawTokenizerType> {
 
         /// Returns `true` if `lhs` is a marker that matches the same position
         /// as `rhs` on its tokenizer.
-        ///
-        /// - note: In debug builds, always returns `false` for markers created
-        /// by different tokenizer instances.
         @inlinable
         public static func == (lhs: Mark, rhs: Mark) -> Bool {
             lhs.index == rhs.index
         }
 
         /// Returns `true` if `lhs` is a marker that precedes `rhs` on its tokenizer.
-        ///
-        /// - note: In debug builds, always returns `false` for markers created
-        /// by different tokenizer instances.
         @inlinable
         public static func < (lhs: Mark, rhs: Mark) -> Bool {
             lhs.index < rhs.index

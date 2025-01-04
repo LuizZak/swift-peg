@@ -48,7 +48,7 @@ struct GrammarParserTests {
             error,
             Sut.SyntaxError.unexpectedEof(
                 #"Unexpected end-of-stream but expected: "@" or "IDENTIFIER""#,
-                .init(owner: sut.tokenizer, index: 3),
+                .init(index: 3),
                 location: "3",
                 expected: [.at, .identifier]
             )
@@ -230,7 +230,7 @@ struct GrammarParserTests {
     @Test
     func parseRepetitionMode() throws {
         let tokenizer = rawTokenizer("""
-        a* a*< a*> a+ a+< a+>
+        a* a*< a*> a+ a+< a+> a.b+ a.b+< a.b+>
         """)
         let sut = makeSut(tokenizer)
 
@@ -242,6 +242,9 @@ struct GrammarParserTests {
         assertEqual((result[3].item as? SwiftPEGGrammar.OneOrMoreItem)?.repetitionMode, .standard)
         assertEqual((result[4].item as? SwiftPEGGrammar.OneOrMoreItem)?.repetitionMode, .minimal)
         assertEqual((result[5].item as? SwiftPEGGrammar.OneOrMoreItem)?.repetitionMode, .maximal)
+        assertEqual((result[6].item as? SwiftPEGGrammar.GatherItem)?.repetitionMode, .standard)
+        assertEqual((result[7].item as? SwiftPEGGrammar.GatherItem)?.repetitionMode, .minimal)
+        assertEqual((result[8].item as? SwiftPEGGrammar.GatherItem)?.repetitionMode, .maximal)
     }
 }
 
