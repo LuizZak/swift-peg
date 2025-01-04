@@ -321,7 +321,7 @@ extension SwiftASTEmitter {
     /// ```
     func emit(_ memberDecl: SwiftCodeGen.SubscriptMemberDecl) {
         emit(memberDecl.leadingComments)
-        emit(memberDecl.attributes)
+        emit(memberDecl.signature.attributes)
         emit(memberDecl.accessLevel)
         buffer.ensureSpaceSeparator()
         emit(memberDecl.signature)
@@ -469,7 +469,7 @@ extension SwiftASTEmitter {
     /// ```
     func emit(_ memberDecl: SwiftCodeGen.ProtocolSubscriptMemberDecl) {
         emit(memberDecl.leadingComments)
-        emit(memberDecl.attributes)
+        emit(memberDecl.signature.attributes)
         buffer.ensureSpaceSeparator()
         emit(memberDecl.signature)
         buffer.ensureSpaceSeparator()

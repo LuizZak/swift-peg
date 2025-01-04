@@ -255,7 +255,6 @@ public extension SwiftCodeGen {
 
     struct SubscriptMemberDecl {
         public var leadingComments: [SwiftComment]
-        public var attributes: [DeclarationAttribute]
         public var accessLevel: AccessLevel
         public var signature: SubscriptSignature
         public var getter: CompoundStatement
@@ -263,14 +262,12 @@ public extension SwiftCodeGen {
 
         public init(
             leadingComments: [SwiftComment],
-            attributes: [DeclarationAttribute],
             accessLevel: AccessLevel,
             signature: SubscriptSignature,
             getter: CompoundStatement,
             setter: (String, CompoundStatement)? = nil
         ) {
             self.leadingComments = leadingComments
-            self.attributes = attributes
             self.accessLevel = accessLevel
             self.signature = signature
             self.getter = getter
@@ -339,18 +336,15 @@ public extension SwiftCodeGen {
 
     struct ProtocolSubscriptMemberDecl {
         public var leadingComments: [SwiftComment]
-        public var attributes: [DeclarationAttribute]
         public var signature: SubscriptSignature
         public var hasSetter: Bool
 
         public init(
             leadingComments: [SwiftComment],
-            attributes: [DeclarationAttribute],
             signature: SubscriptSignature,
             hasSetter: Bool
         ) {
             self.leadingComments = leadingComments
-            self.attributes = attributes
             self.signature = signature
             self.hasSetter = hasSetter
         }
