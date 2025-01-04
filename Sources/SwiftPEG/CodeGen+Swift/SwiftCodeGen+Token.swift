@@ -915,6 +915,7 @@ extension SwiftCodeGen {
         // loop:
         // while !isEof {
         //   if consume_x(from: &stream) {
+        //   } else if consume_y(from: &stream) {
         //   } else {
         //     break loop
         //   }
@@ -922,14 +923,31 @@ extension SwiftCodeGen {
         //
         // into:
         //
-        // while consume_x(from: &stream) {
+        // while consume_x(from: &stream) || consume_y(from: &stream) {
         // }
-        if alts.count == 1 {
-            if alts[0].excluded.isEmpty, case .identifier = alts[0].terminal {
-                let conditional = try tok_conditional(for: alts[0])
-
-                return .while(clauses: .init(clauses: conditional), body: [])
+        var canSimplify = true
+        for alt in alts {
+            guard alt.excluded.isEmpty, case .identifier = alt.terminal else {
+                canSimplify = false
+                break
             }
+        }
+        if canSimplify {
+            let conditionals = try alts.flatMap { alt in
+                let conditionals = try tok_conditional(for: alt)
+
+                if conditionals.count == 1 {
+                    return [conditionals[0]]
+                }
+
+                return []
+            }.map { $0.expression }
+
+            let flattened: Expression = conditionals.dropFirst().reduce(conditionals[0]) {
+                .binary(lhs: $0, op: .or, rhs: $1)
+            }
+
+            return .while(flattened, body: [])
         }
 
         let expr: Expression = .unary(op: .negate, .identifier("stream").dot("isEof"))
