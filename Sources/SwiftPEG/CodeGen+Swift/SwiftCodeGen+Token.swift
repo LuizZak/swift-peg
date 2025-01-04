@@ -23,6 +23,7 @@ extension SwiftCodeGen {
         let applier = SyntaxNodeRewriterApplier(topLevelDecls: decls)
 
         applier.apply(OptionalIfStatementSimplifier())
+        applier.apply(IfElseChainIntoGuardSimplifier())
 
         return applier.topLevelDecls
     }
@@ -1678,8 +1679,8 @@ private extension InternalGrammar.TokenDefinition {
     }
 }
 
-/// Simplifies non-top-level if expressions into their singular conditional clause,
-/// in case their bodies are empty.
+/// Simplifies non-top-level if expressions into their singular non-pattern bound
+/// conditional clause expression, in case their bodies are empty.
 private class OptionalIfStatementSimplifier: SyntaxNodeRewriter {
     override func visitIf(_ stmt: IfExpression) -> Expression {
         guard stmt.conditionalClauses.clauses.count == 1 else {
@@ -1696,5 +1697,84 @@ private class OptionalIfStatementSimplifier: SyntaxNodeRewriter {
         }
 
         return .assignment(lhs: .identifier("_"), op: .assign, rhs: stmt.conditionalClauses.clauses[0].expression.copy())
+    }
+}
+
+/// Simplifies if-else chains composed of simple boolean expression chains into
+/// a single guard statement.
+private class IfElseChainIntoGuardSimplifier: SyntaxNodeRewriter {
+    override func visitExpressions(_ stmt: ExpressionsStatement) -> Statement {
+        if stmt.expressions.count == 1, let ifExpr = stmt.expressions[0] as? IfExpression {
+            guard
+                let conditionals = collectConditionals(ifExpr),
+                let elseBody = collectElseBody(ifExpr)
+            else {
+                return super.visitExpressions(stmt)
+            }
+
+            let exp = conditionals.dropFirst().reduce(conditionals[0].copy()) {
+                .binary(lhs: $0, op: .or, rhs: $1.copy())
+            }
+
+            let stmt = GuardStatement.guard(exp, else: elseBody.copy())
+            return visitGuard(stmt)
+        }
+
+        let stmt = super.visitExpressions(stmt)
+
+        return stmt
+    }
+
+    // - note: Returns `nil` if pattern binds are found, or if the body of any
+    // of the if statements is non-empty.
+    func collectConditionals(_ stmt: IfExpression) -> [Expression]? {
+        guard stmt.body.isEmpty else {
+            return nil
+        }
+        guard stmt.conditionalClauses.clauses.count == 1 else {
+            return nil
+        }
+        let clause = stmt.conditionalClauses.clauses[0]
+        guard clause.pattern == nil else {
+            return nil
+        }
+
+        switch stmt.elseBody {
+        case nil, .else:
+            return [clause.expression]
+
+        case .elseIf(let expr):
+            guard let next = collectConditionals(expr) else {
+                return nil
+            }
+
+            return [clause.expression] + next
+        }
+    }
+
+    func collectElseBody(_ stmt: IfExpression) -> CompoundStatement? {
+        switch stmt.elseBody {
+        case nil:
+            return nil
+
+        case .elseIf(let expr):
+            return collectElseBody(expr)
+
+        case .else(let body):
+            return body
+        }
+    }
+
+    func isElseStatementEmpty(_ stmt: IfExpression) -> Bool {
+        switch stmt.elseBody {
+        case nil:
+            return true
+
+        case .elseIf(let expr):
+            return isElseStatementEmpty(expr)
+
+        case .else(let body):
+            return body.isEmpty
+        }
     }
 }

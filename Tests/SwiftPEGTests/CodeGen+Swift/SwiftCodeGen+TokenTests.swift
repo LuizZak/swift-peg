@@ -1802,8 +1802,7 @@ struct SwiftCodeGen_TokenTests {
 
                     stream.advance()
 
-                    if consume_b(from: &stream) {
-                    } else {
+                    guard consume_b(from: &stream) else {
                         break alt
                     }
 
@@ -1986,9 +1985,7 @@ struct SwiftCodeGen_TokenTests {
 
                     stream.advance()
 
-                    if consume_b(from: &stream) {
-                    } else if consume_c(from: &stream) {
-                    } else {
+                    guard consume_b(from: &stream) || consume_c(from: &stream) else {
                         break alt
                     }
 
