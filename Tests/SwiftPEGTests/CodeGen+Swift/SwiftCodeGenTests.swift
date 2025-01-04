@@ -3410,7 +3410,7 @@ struct SwiftCodeGenTests {
         @token NUMBER ;
         @token NEWLINE ;
 
-        start[TestGrammarAST.Expression]:
+        start[TestGrammarAST.Expr]:
             | expr _=NEWLINE? { expr }
             ;
 
@@ -3445,13 +3445,13 @@ struct SwiftCodeGenTests {
 
             extension TestGrammarParser {
                 /// ```
-                /// start[TestGrammarAST.Expression]:
+                /// start[TestGrammarAST.Expr]:
                 ///     | expr _=NEWLINE? { expr }
                 ///     ;
                 /// ```
                 @memoized("start")
                 @inlinable
-                public func __start() throws -> TestGrammarAST.Expression? {
+                public func __start() throws -> TestGrammarAST.Expr? {
                     let _mark: Mark = self.mark()
 
                     if

@@ -98,13 +98,13 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
 
     /// Convenience for `self.tokenizer.mark()`.
     @inlinable
-    open func mark() -> Mark {
+    public func mark() -> Mark {
         tokenizer.mark()
     }
 
     /// Convenience for `self.tokenizer.restore(mark)`.
     @inlinable
-    open func restore(_ mark: Mark) {
+    public func restore(_ mark: Mark) {
         tokenizer.restore(mark)
     }
 

@@ -423,7 +423,7 @@ extension TestGrammarParser {
     @memoized("start")
     @inlinable
     public func __start() throws -> TestGrammarAST.Expr? {
-        let mark = self.mark()
+        let _mark: Mark = self.mark()
 
         if
             let expr = try self.expr(),
@@ -432,7 +432,8 @@ extension TestGrammarParser {
             return expr
         }
 
-        self.restore(mark)
+        self.restore(_mark)
+
         return nil
     }
 
@@ -446,7 +447,7 @@ extension TestGrammarParser {
     @memoizedLeftRecursive("expr")
     @inlinable
     public func __expr() throws -> TestGrammarAST.Expr? {
-        let mark = self.mark()
+        let _mark: Mark = self.mark()
 
         if
             let expr = try self.expr(),
@@ -456,7 +457,7 @@ extension TestGrammarParser {
             return .add(expr, term)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
         if
             let expr = try self.expr(),
@@ -466,15 +467,14 @@ extension TestGrammarParser {
             return .sub(expr, term)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
-        if
-            let term = try self.term()
-        {
+        if let term = try self.term() {
             return .term(term)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
+
         return nil
     }
 
@@ -488,7 +488,7 @@ extension TestGrammarParser {
     @memoizedLeftRecursive("term")
     @inlinable
     public func __term() throws -> TestGrammarAST.Term? {
-        let mark = self.mark()
+        let _mark: Mark = self.mark()
 
         if
             let term = try self.term(),
@@ -498,7 +498,7 @@ extension TestGrammarParser {
             return .mul(term, factor)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
         if
             let term = try self.term(),
@@ -508,15 +508,14 @@ extension TestGrammarParser {
             return .div(term, factor)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
-        if
-            let factor = try self.factor()
-        {
+        if let factor = try self.factor() {
             return .factor(factor)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
+
         return nil
     }
 
@@ -529,7 +528,7 @@ extension TestGrammarParser {
     @memoized("factor")
     @inlinable
     public func __factor() throws -> TestGrammarAST.Factor? {
-        let mark = self.mark()
+        let _mark: Mark = self.mark()
 
         if
             let _ = try self.expect("("),
@@ -539,15 +538,14 @@ extension TestGrammarParser {
             return .expr(expr)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
-        if
-            let atom = try self.atom()
-        {
+        if let atom = try self.atom() {
             return .atom(atom)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
+
         return nil
     }
 
@@ -560,23 +558,20 @@ extension TestGrammarParser {
     @memoized("atom")
     @inlinable
     public func __atom() throws -> TestGrammarAST.Atom? {
-        let mark = self.mark()
+        let _mark: Mark = self.mark()
 
-        if
-            let name = try self.NAME()
-        {
+        if let name = try self.NAME() {
             return .name(name)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
 
-        if
-            let number = try self.NUMBER()
-        {
+        if let number = try self.NUMBER() {
             return .number(number)
         }
 
-        self.restore(mark)
+        self.restore(_mark)
+
         return nil
     }
 }

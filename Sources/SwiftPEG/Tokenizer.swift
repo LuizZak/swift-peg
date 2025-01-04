@@ -148,9 +148,7 @@ open class Tokenizer<Raw: RawTokenizerType> {
     /// instance's own `mark()` method.
     @inlinable
     open func restore(_ mark: Mark) {
-        if mark.index != self.tokenIndex {
-            self.tokenIndex = mark.index
-        }
+        self.tokenIndex = mark.index
     }
 
     /// Controls the token reach value by setting it to be at least as far as
