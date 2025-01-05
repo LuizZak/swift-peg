@@ -369,14 +369,7 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
                 return false
             }
 
-            loop:
-            while !stream.isEof {
-                switch stream.peek() {
-                case " ", "\t", "\n", "\r":
-                    stream.advance()
-                default:
-                    break loop
-                }
+            while stream.advanceIfNext(" ") || stream.advanceIfNext("\t") || stream.advanceIfNext("\n") || stream.advanceIfNext("\r") {
             }
 
             return true
@@ -755,20 +748,15 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard stream.isNext("\"\"\"") else {
+            guard stream.advanceIfNext("\"\"\"") else {
                 break alt
             }
 
-            stream.advance(3)
-
             loop:
             while !stream.isEof {
-                if stream.isNext("\\\"\"\"") {
-                    stream.advance(4)
-                } else if stream.isNext("\\\\") {
-                    stream.advance(2)
-                } else if stream.isNext("\\") {
-                    stream.advance()
+                if stream.advanceIfNext("\\\"\"\"") {
+                } else if stream.advanceIfNext("\\\\") {
+                } else if stream.advanceIfNext("\\") {
                 } else if
                     !stream.isNext("\"\"\""),
                     !stream.isEof
@@ -779,11 +767,9 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
                 }
             }
 
-            guard stream.isNext("\"\"\"") else {
+            guard stream.advanceIfNext("\"\"\"") else {
                 break alt
             }
-
-            stream.advance(3)
 
             return true
         }
@@ -792,20 +778,15 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard stream.isNext("\"") else {
+            guard stream.advanceIfNext("\"") else {
                 break alt
             }
 
-            stream.advance()
-
             loop:
             while !stream.isEof {
-                if stream.isNext("\\\"") {
-                    stream.advance(2)
-                } else if stream.isNext("\\\\") {
-                    stream.advance(2)
-                } else if stream.isNext("\\") {
-                    stream.advance()
+                if stream.advanceIfNext("\\\"") {
+                } else if stream.advanceIfNext("\\\\") {
+                } else if stream.advanceIfNext("\\") {
                 } else if
                     !stream.isNext("\""),
                     !stream.isNext("\n"),
@@ -817,11 +798,9 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
                 }
             }
 
-            guard stream.isNext("\"") else {
+            guard stream.advanceIfNext("\"") else {
                 break alt
             }
-
-            stream.advance()
 
             return true
         }
@@ -830,20 +809,15 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard stream.isNext("\'") else {
+            guard stream.advanceIfNext("\'") else {
                 return false
             }
 
-            stream.advance()
-
             loop:
             while !stream.isEof {
-                if stream.isNext("\\\'") {
-                    stream.advance(2)
-                } else if stream.isNext("\\\\") {
-                    stream.advance(2)
-                } else if stream.isNext("\\") {
-                    stream.advance()
+                if stream.advanceIfNext("\\\'") {
+                } else if stream.advanceIfNext("\\\\") {
+                } else if stream.advanceIfNext("\\") {
                 } else if
                     !stream.isNext("\'"),
                     !stream.isNext("\n"),
@@ -855,11 +829,9 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
                 }
             }
 
-            guard stream.isNext("\'") else {
+            guard stream.advanceIfNext("\'") else {
                 break alt
             }
-
-            stream.advance()
 
             return true
         }
@@ -882,8 +854,6 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
             return false
         }
 
-        let state: StringStream<StringType>.State = stream.save()
-
         alt:
         do {
             guard
@@ -897,8 +867,6 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
 
             return true
         }
-
-        stream.restore(state)
 
         alt:
         do {
@@ -914,17 +882,6 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
             return true
         }
 
-        stream.restore(state)
-
-        alt:
-        do {
-            guard stream.isNext("_") else {
-                return false
-            }
-
-            stream.advance()
-
-            return true
-        }
+        return stream.advanceIfNext("_")
     }
 }
