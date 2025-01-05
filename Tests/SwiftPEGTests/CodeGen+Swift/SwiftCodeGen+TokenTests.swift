@@ -2049,20 +2049,7 @@ struct SwiftCodeGen_TokenTests {
             /// ```
             @inlinable
             public static func consume_tok<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-                guard !stream.isEof else {
-                    return false
-                }
-
-                alt:
-                do {
-                    guard stream.advanceIfNext("+") else {
-                        break alt
-                    }
-
-                    return true
-                }
-
-                return stream.advanceIfNext("-")
+                return stream.advanceIfNext("+") || stream.advanceIfNext("-")
             }
         }
         """#).diff(result)

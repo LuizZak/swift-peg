@@ -986,6 +986,8 @@ extension CommonAbstract {
         case rangeLiteral(DualString, DualString)
 
         /// `string`
+        @GeneratedIsCase(accessLevel: "public")
+        @generateGetter(accessLevel: "public")
         case literal(DualString)
 
         /// IDENTIFIER
@@ -1005,15 +1007,6 @@ extension CommonAbstract {
                 return lower...upper
             default:
                 return nil
-            }
-        }
-
-        /// If this `TokenTerminal` is a `literal()` case, returns the associated
-        /// value, otherwise, returns `nil`.
-        public var asLiteral: DualString? {
-            switch self {
-            case .literal(let value): return value
-            default: return nil
             }
         }
 

@@ -5198,20 +5198,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_binary_prefix<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else {
-            return false
-        }
-
-        alt:
-        do {
-            guard stream.advanceIfNext("0b") else {
-                break alt
-            }
-
-            return true
-        }
-
-        return stream.advanceIfNext("0B")
+        return stream.advanceIfNext("0b") || stream.advanceIfNext("0B")
     }
 
     /// ```
@@ -5222,20 +5209,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_bit_precise_int_suffix<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else {
-            return false
-        }
-
-        alt:
-        do {
-            guard stream.advanceIfNext("wb") else {
-                break alt
-            }
-
-            return true
-        }
-
-        return stream.advanceIfNext("WB")
+        return stream.advanceIfNext("wb") || stream.advanceIfNext("WB")
     }
 
     /// ```
@@ -5339,20 +5313,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_binary_digit<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else {
-            return false
-        }
-
-        alt:
-        do {
-            guard stream.advanceIfNext("0") else {
-                break alt
-            }
-
-            return true
-        }
-
-        return stream.advanceIfNext("1")
+        return stream.advanceIfNext("0") || stream.advanceIfNext("1")
     }
 
     /// ```
@@ -5365,38 +5326,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_encoding_prefix<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else {
-            return false
-        }
-
-        alt:
-        do {
-            guard stream.advanceIfNext("u8") else {
-                break alt
-            }
-
-            return true
-        }
-
-        alt:
-        do {
-            guard stream.advanceIfNext("u") else {
-                break alt
-            }
-
-            return true
-        }
-
-        alt:
-        do {
-            guard stream.advanceIfNext("U") else {
-                break alt
-            }
-
-            return true
-        }
-
-        return stream.advanceIfNext("L")
+        return stream.advanceIfNext("u8") || stream.advanceIfNext("u") || stream.advanceIfNext("U") || stream.advanceIfNext("L")
     }
 
     /// ```
@@ -5559,92 +5489,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_floating_suffix<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else {
-            return false
-        }
-
-        alt:
-        do {
-            guard stream.advanceIfNext("f") else {
-                break alt
-            }
-
-            return true
-        }
-
-        alt:
-        do {
-            guard stream.advanceIfNext("l") else {
-                break alt
-            }
-
-            return true
-        }
-
-        alt:
-        do {
-            guard stream.advanceIfNext("F") else {
-                break alt
-            }
-
-            return true
-        }
-
-        alt:
-        do {
-            guard stream.advanceIfNext("L") else {
-                break alt
-            }
-
-            return true
-        }
-
-        alt:
-        do {
-            guard stream.advanceIfNext("df") else {
-                break alt
-            }
-
-            return true
-        }
-
-        alt:
-        do {
-            guard stream.advanceIfNext("dd") else {
-                break alt
-            }
-
-            return true
-        }
-
-        alt:
-        do {
-            guard stream.advanceIfNext("dl") else {
-                break alt
-            }
-
-            return true
-        }
-
-        alt:
-        do {
-            guard stream.advanceIfNext("DF") else {
-                break alt
-            }
-
-            return true
-        }
-
-        alt:
-        do {
-            guard stream.advanceIfNext("DD") else {
-                break alt
-            }
-
-            return true
-        }
-
-        return stream.advanceIfNext("DL")
+        return stream.advanceIfNext("f") || stream.advanceIfNext("l") || stream.advanceIfNext("F") || stream.advanceIfNext("L") || stream.advanceIfNext("df") || stream.advanceIfNext("dd") || stream.advanceIfNext("dl") || stream.advanceIfNext("DF") || stream.advanceIfNext("DD") || stream.advanceIfNext("DL")
     }
 
     /// ```
@@ -5864,20 +5709,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_hexadecimal_prefix<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else {
-            return false
-        }
-
-        alt:
-        do {
-            guard stream.advanceIfNext("0x") else {
-                break alt
-            }
-
-            return true
-        }
-
-        return stream.advanceIfNext("0X")
+        return stream.advanceIfNext("0x") || stream.advanceIfNext("0X")
     }
 
     /// ```
@@ -6054,20 +5886,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_long_long_suffix<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else {
-            return false
-        }
-
-        alt:
-        do {
-            guard stream.advanceIfNext("ll") else {
-                break alt
-            }
-
-            return true
-        }
-
-        return stream.advanceIfNext("LL")
+        return stream.advanceIfNext("ll") || stream.advanceIfNext("LL")
     }
 
     /// ```
@@ -6078,20 +5897,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_long_suffix<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else {
-            return false
-        }
-
-        alt:
-        do {
-            guard stream.advanceIfNext("l") else {
-                break alt
-            }
-
-            return true
-        }
-
-        return stream.advanceIfNext("L")
+        return stream.advanceIfNext("l") || stream.advanceIfNext("L")
     }
 
     /// ```
@@ -6126,20 +5932,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_sign<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else {
-            return false
-        }
-
-        alt:
-        do {
-            guard stream.advanceIfNext("+") else {
-                break alt
-            }
-
-            return true
-        }
-
-        return stream.advanceIfNext("-")
+        return stream.advanceIfNext("+") || stream.advanceIfNext("-")
     }
 
     /// ```
@@ -6185,20 +5978,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     /// ```
     @inlinable
     public static func consume_unsigned_suffix<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else {
-            return false
-        }
-
-        alt:
-        do {
-            guard stream.advanceIfNext("u") else {
-                break alt
-            }
-
-            return true
-        }
-
-        return stream.advanceIfNext("U")
+        return stream.advanceIfNext("u") || stream.advanceIfNext("U")
     }
 }
 """ ;

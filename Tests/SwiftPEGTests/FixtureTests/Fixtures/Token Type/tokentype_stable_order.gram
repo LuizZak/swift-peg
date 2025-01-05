@@ -1817,20 +1817,7 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
     ///     ;
     /// ```
     static func consume_hexadecimal_prefix<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else {
-            return false
-        }
-
-        alt:
-        do {
-            guard stream.advanceIfNext("0x") else {
-                break alt
-            }
-
-            return true
-        }
-
-        return stream.advanceIfNext("0X")
+        return stream.advanceIfNext("0x") || stream.advanceIfNext("0X")
     }
 
     /// ```
@@ -2019,20 +2006,7 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
     ///     ;
     /// ```
     static func consume_sign<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else {
-            return false
-        }
-
-        alt:
-        do {
-            guard stream.advanceIfNext("+") else {
-                break alt
-            }
-
-            return true
-        }
-
-        return stream.advanceIfNext("-")
+        return stream.advanceIfNext("+") || stream.advanceIfNext("-")
     }
 }
 """ ;

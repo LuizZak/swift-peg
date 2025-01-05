@@ -734,6 +734,30 @@ extension SwiftCodeGen {
 
             return result
         }
+        // Simplify token definitions that consist of single literal alts, with no exclusions.
+        simplifier:
+        if
+            tokenSyntax.alts.allSatisfy({ $0.trailExclusions.isEmpty && $0.items.count == 1 && $0.items[0].isAtom && $0.items[0].atoms[0].excluded.isEmpty })
+        {
+            let atoms = tokenSyntax.alts.map { alt in
+                alt.items[0].atoms[0]
+            }
+            guard atoms.allSatisfy({ $0.terminal.isLiteral }) else {
+                break simplifier
+            }
+
+            let conditionals = try atoms.flatMap { try tok_conditional(for: $0) }
+
+            let expr = conditionals.dropFirst().reduce(conditionals[0].expression.copy()) {
+                .binary(lhs: $0, op: .or, rhs: $1.expression.copy())
+            }
+
+            result.append(
+                .return(expr)
+            )
+
+            return result
+        }
 
         result.append(
             .guard(.unary(op: .negate, .identifier("stream").dot("isEof")), else: [
