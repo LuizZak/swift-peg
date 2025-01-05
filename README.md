@@ -88,7 +88,7 @@ A parser may be generated with the following code:
 let tokenizer = GrammarRawTokenizer(source: grammarString)
 let parser = GrammarParser(raw: tokenizer)
 
-guard let grammar = try parser.start(), tokenizer.isEOF else {
+guard let grammar = try parser.start(), parser.isEOF() else {
     throw parser.makeSyntaxError()
 }
 
