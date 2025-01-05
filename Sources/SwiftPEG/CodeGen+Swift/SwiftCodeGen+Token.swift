@@ -24,6 +24,7 @@ extension SwiftCodeGen {
 
         applier.apply(OptionalIfStatementSimplifier())
         applier.apply(IfElseChainIntoGuardSimplifier())
+        applier.apply(GuardLetTrailSimplifier())
 
         return applier.topLevelDecls
     }
@@ -761,7 +762,9 @@ extension SwiftCodeGen {
                 .labeled("alt")
             )
 
-            if !canReturnAsBail || hasFallthroughPath {
+            let requiresRestore = alt.items.count > 1 || !alt.trailExclusions.isEmpty
+
+            if (!canReturnAsBail || hasFallthroughPath) && requiresRestore {
                 usedState = true
 
                 result.append(
@@ -855,7 +858,7 @@ extension SwiftCodeGen {
 
         case .optionalAtom(let atom):
             let bailStmt: BailStatementKind
-            if let advanceExpr = try tok_advanceExpr(for: atom) {
+            if let advanceExpr = try tok_advanceExpr(for: atom, implicit: true) {
                 bailStmt = .custom(.expression(advanceExpr))
             } else {
                 bailStmt = .none
@@ -868,7 +871,7 @@ extension SwiftCodeGen {
         case .atom(let atom):
             result.append(try generateGuardAtom(atom, bailStatement: bailStatement))
 
-            if let expr = try tok_advanceExpr(for: atom) {
+            if let expr = try tok_advanceExpr(for: atom, implicit: true) {
                 result.append(
                     .expression(expr)
                 )
@@ -928,9 +931,15 @@ extension SwiftCodeGen {
         // }
         var canSimplify = true
         for alt in alts {
-            guard alt.excluded.isEmpty, case .identifier = alt.terminal else {
+            guard alt.excluded.isEmpty else {
                 canSimplify = false
                 break
+            }
+            switch alt.terminal {
+            case .identifier, .literal:
+                break
+            default:
+                canSimplify = false
             }
         }
         if canSimplify {
@@ -980,7 +989,7 @@ extension SwiftCodeGen {
 
         let ifExpressions: [IfExpression] = try alts.map { atom in
             var body: [Statement] = []
-            if let expr = try tok_advanceExpr(for: atom) {
+            if let expr = try tok_advanceExpr(for: atom, implicit: true) {
                 body.append(.expression(expr))
             }
 
@@ -1108,7 +1117,7 @@ extension SwiftCodeGen {
             defer { index += 1 }
             let alt = alts[index]
 
-            guard let advanceExpr = try tok_advanceExpr(for: alt) else {
+            guard let advanceExpr = try tok_advanceExpr(for: alt, implicit: false) else {
                 continue
             }
 
@@ -1132,7 +1141,7 @@ extension SwiftCodeGen {
                     var nextIndex = index + 1
                     while nextIndex < alts.count && !stopEarly {
                         let nextAlt = alts[nextIndex]
-                        guard canCombine(nextAlt) && tok_length(for: alt) == tok_length(for: nextAlt) else {
+                        guard canCombine(nextAlt) && tok_length(for: alt, implicit: false) == tok_length(for: nextAlt, implicit: false) else {
                             break
                         }
                         let lastCombined = combination(of: combined[combined.count - 1], nextAlt)
@@ -1188,7 +1197,7 @@ extension SwiftCodeGen {
                 return false
 
             case .characterPredicate, .rangeLiteral, .literal, .any:
-                guard tok_length(for: alt) == 1 else {
+                guard tok_length(for: alt, implicit: false) == 1 else {
                     return false
                 }
             }
@@ -1255,7 +1264,7 @@ extension SwiftCodeGen {
 
         case .literal(let literal):
             return [
-                .init(expression: .identifier("stream").dot("isNext").call([tok_escapeLiteralExpression(literal)]))
+                .init(expression: .identifier("stream").dot("advanceIfNext").call([tok_escapeLiteralExpression(literal)]))
             ]
 
         case .identifier(let ident):
@@ -1291,8 +1300,8 @@ extension SwiftCodeGen {
 
     /// Returns the appropriate `StringStream.advance` call that advances the
     /// stream forward by the given atom's required length.
-    private func tok_advanceExpr(for term: CommonAbstract.TokenAtom) throws -> Expression? {
-        let length = tok_length(for: term)
+    private func tok_advanceExpr(for term: CommonAbstract.TokenAtom, implicit: Bool) throws -> Expression? {
+        let length = tok_length(for: term, implicit: implicit)
         if length == 0 {
             return nil
         }
@@ -1303,14 +1312,41 @@ extension SwiftCodeGen {
     }
 
     /// Returns how many extended grapheme clusters should be skipped for a given
+    /// alt to match.
+    private func tok_length(for alt: CommonAbstract.TokenAlt, implicit: Bool) -> Int {
+        var total = 0
+
+        for item in alt.items {
+            total += tok_length(for: item, implicit: implicit)
+        }
+
+        return total
+    }
+
+    /// Returns how many extended grapheme clusters should be skipped for a given
+    /// item to match.
+    private func tok_length(for item: CommonAbstract.TokenItem, implicit: Bool) -> Int {
+        switch item {
+        case .atom(let atom):
+            return tok_length(for: atom, implicit: implicit)
+
+        case .optionalAtom(let atom):
+            return tok_length(for: atom, implicit: implicit)
+
+        case .optionalGroup(let atoms), .zeroOrMore(let atoms), .oneOrMore(let atoms), .group(let atoms):
+            return atoms.reduce(0) { $0 + tok_length(for: $1, implicit: implicit) }
+        }
+    }
+
+    /// Returns how many extended grapheme clusters should be skipped for a given
     /// atom to match.
-    private func tok_length(for atom: CommonAbstract.TokenAtom) -> Int {
-        tok_length(for: atom.terminal)
+    private func tok_length(for atom: CommonAbstract.TokenAtom, implicit: Bool) -> Int {
+        tok_length(for: atom.terminal, implicit: implicit)
     }
 
     /// Returns how many extended grapheme clusters should be skipped for a given
     /// terminal to match.
-    private func tok_length(for term: CommonAbstract.TokenTerminal) -> Int {
+    private func tok_length(for term: CommonAbstract.TokenTerminal, implicit: Bool) -> Int {
         switch term {
         case .characterPredicate:
             return 1
@@ -1319,6 +1355,11 @@ extension SwiftCodeGen {
             return 1
 
         case .literal(let literal):
+            // Literals are advanced automatically with `advanceIfNext`
+            if implicit {
+                return 0
+            }
+
             return literal.contents.count
 
         case .identifier:
@@ -1776,5 +1817,47 @@ private class IfElseChainIntoGuardSimplifier: SyntaxNodeRewriter {
         case .else(let body):
             return body.isEmpty
         }
+    }
+}
+
+/// Simplifies:
+/// ```
+/// alt:
+/// do {
+///     guard <conditional> else {
+///         return false
+///     }
+///
+///     return true
+/// }
+/// ```
+/// into:
+/// ```
+/// return <conditional>
+/// ```
+private class GuardLetTrailSimplifier: SyntaxNodeRewriter {
+    override func visitDo(_ stmt: DoStatement) -> Statement {
+        let result = super.visitDo(stmt)
+
+        guard stmt.body.statements.count == 2 else {
+            return result
+        }
+        guard let guardStmt = stmt.body.statements[0].asGuard else {
+            return result
+        }
+        guard guardStmt.conditionalClauses.clauses.count == 1 else {
+            return stmt
+        }
+        guard guardStmt.conditionalClauses.clauses[0].pattern == nil else {
+            return stmt
+        }
+        guard guardStmt.elseBody == [.return(.constant(false))] else {
+            return result
+        }
+        guard stmt.body.statements[1] == .return(.constant(true)) else {
+            return result
+        }
+
+        return .return(guardStmt.conditionalClauses.clauses[0].expression.copy())
     }
 }

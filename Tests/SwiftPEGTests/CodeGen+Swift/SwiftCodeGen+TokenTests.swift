@@ -282,11 +282,9 @@ struct SwiftCodeGen_TokenTests {
 
             alt:
             do {
-                guard stream.isNext("[") else {
+                guard stream.advanceIfNext("[") else {
                     return false
                 }
-
-                stream.advance()
 
                 switch stream.peek() {
                 case "0"..."9", "_":
@@ -295,11 +293,9 @@ struct SwiftCodeGen_TokenTests {
                     Void()
                 }
 
-                guard stream.isNext("]") else {
+                guard stream.advanceIfNext("]") else {
                     break alt
                 }
-
-                stream.advance()
 
                 return true
             }
@@ -335,11 +331,9 @@ struct SwiftCodeGen_TokenTests {
 
             alt:
             do {
-                guard stream.isNext("[") else {
+                guard stream.advanceIfNext("[") else {
                     return false
                 }
-
-                stream.advance()
 
                 if
                     !stream.isNext("5"),
@@ -349,11 +343,9 @@ struct SwiftCodeGen_TokenTests {
                     stream.advance()
                 }
 
-                guard stream.isNext("]") else {
+                guard stream.advanceIfNext("]") else {
                     break alt
                 }
-
-                stream.advance()
 
                 return true
             }
@@ -390,11 +382,9 @@ struct SwiftCodeGen_TokenTests {
 
             alt:
             do {
-                guard stream.isNext("[") else {
+                guard stream.advanceIfNext("[") else {
                     return false
                 }
-
-                stream.advance()
 
                 switch stream.peek() {
                 case "]":
@@ -435,27 +425,17 @@ struct SwiftCodeGen_TokenTests {
 
             alt:
             do {
-                guard stream.isNext("a") else {
+                guard stream.advanceIfNext("a") else {
                     return false
                 }
 
-                stream.advance()
-
                 if consume_b(from: &stream) {
-                } else if stream.isNext("c") {
-                    stream.advance()
+                } else if stream.advanceIfNext("c") {
                 } else {
                     break alt
                 }
 
-                loop:
-                while !stream.isEof {
-                    if consume_b(from: &stream) {
-                    } else if stream.isNext("c") {
-                        stream.advance()
-                    } else {
-                        break loop
-                    }
+                while consume_b(from: &stream) || stream.advanceIfNext("c") {
                 }
 
                 return true
@@ -494,19 +474,15 @@ struct SwiftCodeGen_TokenTests {
 
             alt:
             do {
-                guard stream.isNext("a") else {
+                guard stream.advanceIfNext("a") else {
                     return false
                 }
 
-                stream.advance()
-
                 if
                     stream.negativeLookahead(consume_b(from:)),
-                    stream.isNext("c")
+                    stream.advanceIfNext("c")
                 {
-                    stream.advance()
-                } else if stream.isNext("d") {
-                    stream.advance()
+                } else if stream.advanceIfNext("d") {
                 } else {
                     break alt
                 }
@@ -515,11 +491,9 @@ struct SwiftCodeGen_TokenTests {
                 while !stream.isEof {
                     if
                         stream.negativeLookahead(consume_b(from:)),
-                        stream.isNext("c")
+                        stream.advanceIfNext("c")
                     {
-                        stream.advance()
-                    } else if stream.isNext("d") {
-                        stream.advance()
+                    } else if stream.advanceIfNext("d") {
                     } else {
                         break loop
                     }
@@ -561,11 +535,9 @@ struct SwiftCodeGen_TokenTests {
 
             alt:
             do {
-                guard stream.isNext("a") else {
+                guard stream.advanceIfNext("a") else {
                     return false
                 }
-
-                stream.advance()
 
                 if
                     !stream.isNextInRange("b"..."d"),
@@ -810,11 +782,9 @@ struct SwiftCodeGen_TokenTests {
 
             alt:
             do {
-                guard stream.isNext("for") else {
+                guard stream.advanceIfNext("for") else {
                     return false
                 }
-
-                stream.advance(3)
 
                 guard
                     stream.negativeLookahead(consume_letter(from:)),
@@ -866,11 +836,9 @@ struct SwiftCodeGen_TokenTests {
 
             alt:
             do {
-                guard stream.isNext("\"\"\"") else {
+                guard stream.advanceIfNext("\"\"\"") else {
                     break alt
                 }
-
-                stream.advance(3)
 
                 loop:
                 while !stream.isEof {
@@ -879,18 +847,15 @@ struct SwiftCodeGen_TokenTests {
                         !stream.isEof
                     {
                         stream.advance()
-                    } else if stream.isNext("\\\"\"\"") {
-                        stream.advance(4)
+                    } else if stream.advanceIfNext("\\\"\"\"") {
                     } else {
                         break loop
                     }
                 }
 
-                guard stream.isNext("\"\"\"") else {
+                guard stream.advanceIfNext("\"\"\"") else {
                     break alt
                 }
-
-                stream.advance(3)
 
                 return true
             }
@@ -899,11 +864,9 @@ struct SwiftCodeGen_TokenTests {
 
             alt:
             do {
-                guard stream.isNext("\'") else {
+                guard stream.advanceIfNext("\'") else {
                     break alt
                 }
-
-                stream.advance()
 
                 loop:
                 while !stream.isEof {
@@ -913,18 +876,15 @@ struct SwiftCodeGen_TokenTests {
                         !stream.isEof
                     {
                         stream.advance()
-                    } else if stream.isNext("\\\'") {
-                        stream.advance(2)
+                    } else if stream.advanceIfNext("\\\'") {
                     } else {
                         break loop
                     }
                 }
 
-                guard stream.isNext("\'") else {
+                guard stream.advanceIfNext("\'") else {
                     break alt
                 }
-
-                stream.advance()
 
                 return true
             }
@@ -933,11 +893,9 @@ struct SwiftCodeGen_TokenTests {
 
             alt:
             do {
-                guard stream.isNext("\"") else {
+                guard stream.advanceIfNext("\"") else {
                     return false
                 }
-
-                stream.advance()
 
                 loop:
                 while !stream.isEof {
@@ -947,18 +905,15 @@ struct SwiftCodeGen_TokenTests {
                         !stream.isEof
                     {
                         stream.advance()
-                    } else if stream.isNext("\\\"") {
-                        stream.advance(2)
+                    } else if stream.advanceIfNext("\\\"") {
                     } else {
                         break loop
                     }
                 }
 
-                guard stream.isNext("\"") else {
+                guard stream.advanceIfNext("\"") else {
                     break alt
                 }
-
-                stream.advance()
 
                 return true
             }
@@ -1196,11 +1151,9 @@ struct SwiftCodeGen_TokenTests {
 
                 alt:
                 do {
-                    guard stream.isNext("a") else {
+                    guard stream.advanceIfNext("a") else {
                         return false
                     }
-
-                    stream.advance()
 
                     guard consume_frag(from: &stream) else {
                         break alt
@@ -1663,11 +1616,9 @@ struct SwiftCodeGen_TokenTests {
 
                 alt:
                 do {
-                    guard stream.isNext("a") else {
+                    guard stream.advanceIfNext("a") else {
                         return false
                     }
-
-                    stream.advance()
 
                     _ = consume_b(from: &stream)
 
@@ -1796,11 +1747,9 @@ struct SwiftCodeGen_TokenTests {
 
                 alt:
                 do {
-                    guard stream.isNext("a") else {
+                    guard stream.advanceIfNext("a") else {
                         return false
                     }
-
-                    stream.advance()
 
                     guard consume_b(from: &stream) else {
                         break alt
@@ -1979,11 +1928,9 @@ struct SwiftCodeGen_TokenTests {
 
                 alt:
                 do {
-                    guard stream.isNext("a") else {
+                    guard stream.advanceIfNext("a") else {
                         break alt
                     }
-
-                    stream.advance()
 
                     guard consume_b(from: &stream) || consume_c(from: &stream) else {
                         break alt
@@ -1999,27 +1946,15 @@ struct SwiftCodeGen_TokenTests {
 
                 alt:
                 do {
-                    guard stream.isNext("a") else {
+                    guard stream.advanceIfNext("a") else {
                         return false
                     }
 
-                    stream.advance()
-
-                    if consume_b(from: &stream) {
-                    } else if stream.isNext("c") {
-                        stream.advance()
-                    } else {
+                    guard consume_b(from: &stream) || stream.advanceIfNext("c") else {
                         break alt
                     }
 
-                    loop:
-                    while !stream.isEof {
-                        if consume_b(from: &stream) {
-                        } else if stream.isNext("c") {
-                            stream.advance()
-                        } else {
-                            break loop
-                        }
+                    while consume_b(from: &stream) || stream.advanceIfNext("c") {
                     }
 
                     return true
@@ -2028,6 +1963,106 @@ struct SwiftCodeGen_TokenTests {
                 stream.restore(state)
 
                 return false
+            }
+        }
+        """#).diff(result)
+    }
+
+    @Test
+    func generateTokenType_simplifiesTrailGuards() throws {
+        let tokens = try parseTokenDefinitions(#"""
+        $tok: '+' | '-' ;
+        """#)
+        let sut = makeSut(tokens)
+        let settings: SwiftCodeGen.TokenTypeGenSettings =
+            .default.with(\.accessLevel, value: "public")
+                .with(\.emitInlinable, value: true)
+
+        let result = try sut.generateTokenType(settings: settings)
+
+        diffTest(expected: #"""
+        public struct ParserToken: RawTokenType, CustomStringConvertible {
+            public var kind: TokenKind
+
+            public var string: Substring
+
+            @inlinable
+            public var length: Int {
+                string.count
+            }
+
+            @inlinable
+            public var description: String {
+                String(string)
+            }
+
+            @inlinable
+            public init(kind: TokenKind, string: Substring) {
+                self.kind = kind
+
+                self.string = string
+            }
+
+            @inlinable
+            public static func produceDummy(_ kind: TokenKind) -> Self {
+                .init(kind: kind, string: "<dummy>")
+            }
+
+            @inlinable
+            public static func from<StringType>(stream: inout StringStream<StringType>) -> Self? where StringType.SubSequence == Substring {
+                guard !stream.isEof else {
+                    return nil
+                }
+
+                stream.markSubstringStart()
+
+                if consume_tok(from: &stream) {
+                    return .init(kind: .tok, string: stream.substring)
+                }
+
+                return nil
+            }
+
+            public enum TokenKind: TokenKindType {
+                /// ```
+                /// tok:
+                ///     | "+"
+                ///     | "-"
+                ///     ;
+                /// ```
+                case tok
+
+                @inlinable
+                public var description: String {
+                    switch self {
+                    case .tok:
+                        "tok"
+                    }
+                }
+            }
+
+            /// ```
+            /// tok:
+            ///     | "+"
+            ///     | "-"
+            ///     ;
+            /// ```
+            @inlinable
+            public static func consume_tok<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+                guard !stream.isEof else {
+                    return false
+                }
+
+                alt:
+                do {
+                    guard stream.advanceIfNext("+") else {
+                        break alt
+                    }
+
+                    return true
+                }
+
+                return stream.advanceIfNext("-")
             }
         }
         """#).diff(result)

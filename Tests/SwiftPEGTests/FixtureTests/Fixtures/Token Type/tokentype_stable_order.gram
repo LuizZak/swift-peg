@@ -754,14 +754,7 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
                 return false
             }
 
-            loop:
-            while !stream.isEof {
-                switch stream.peek() {
-                case " ", "\\n", "\\t", "\\r":
-                    stream.advance()
-                default:
-                    break loop
-                }
+            while stream.advanceIfNext(" ") || stream.advanceIfNext("\\n") || stream.advanceIfNext("\\t") || stream.advanceIfNext("\\r") {
             }
 
             return true
@@ -1484,9 +1477,7 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            if stream.isNext("\\'") {
-                stream.advance()
-            }
+            _ = stream.advanceIfNext("\\'")
 
             guard
                 !stream.isEof,
@@ -1519,9 +1510,7 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            if stream.isNext("\\'") {
-                stream.advance()
-            }
+            _ = stream.advanceIfNext("\\'")
 
             guard consume_hexadecimal_digit(from: &stream) else {
                 break alt
@@ -1664,11 +1653,9 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
         do {
             _ = consume_digit_sequence(from: &stream)
 
-            guard stream.isNext(".") else {
+            guard stream.advanceIfNext(".") else {
                 break alt
             }
-
-            stream.advance()
 
             guard consume_digit_sequence(from: &stream) else {
                 break alt
@@ -1685,11 +1672,9 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
                 return false
             }
 
-            guard stream.isNext(".") else {
+            guard stream.advanceIfNext(".") else {
                 break alt
             }
-
-            stream.advance()
 
             return true
         }
@@ -1711,8 +1696,6 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
             return false
         }
 
-        let state: StringStream<StringType>.State = stream.save()
-
         alt:
         do {
             guard
@@ -1727,8 +1710,6 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
             return true
         }
 
-        stream.restore(state)
-
         alt:
         do {
             guard
@@ -1742,8 +1723,6 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
 
             return true
         }
-
-        stream.restore(state)
 
         alt:
         do {
@@ -1800,11 +1779,9 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
         do {
             _ = consume_hexadecimal_digit_sequence(from: &stream)
 
-            guard stream.isNext(".") else {
+            guard stream.advanceIfNext(".") else {
                 break alt
             }
-
-            stream.advance()
 
             guard consume_hexadecimal_digit_sequence(from: &stream) else {
                 break alt
@@ -1821,11 +1798,9 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
                 return false
             }
 
-            guard stream.isNext(".") else {
+            guard stream.advanceIfNext(".") else {
                 break alt
             }
-
-            stream.advance()
 
             return true
         }
@@ -1846,31 +1821,16 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
             return false
         }
 
-        let state: StringStream<StringType>.State = stream.save()
-
         alt:
         do {
-            guard stream.isNext("0x") else {
+            guard stream.advanceIfNext("0x") else {
                 break alt
             }
 
-            stream.advance(2)
-
             return true
         }
 
-        stream.restore(state)
-
-        alt:
-        do {
-            guard stream.isNext("0X") else {
-                return false
-            }
-
-            stream.advance(2)
-
-            return true
-        }
+        return stream.advanceIfNext("0X")
     }
 
     /// ```
@@ -1921,11 +1881,9 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard stream.isNext("p") else {
+            guard stream.advanceIfNext("p") else {
                 break alt
             }
-
-            stream.advance()
 
             _ = consume_sign(from: &stream)
 
@@ -1940,11 +1898,9 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard stream.isNext("P") else {
+            guard stream.advanceIfNext("P") else {
                 return false
             }
-
-            stream.advance()
 
             _ = consume_sign(from: &stream)
 
@@ -1975,11 +1931,9 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard stream.isNext("e") else {
+            guard stream.advanceIfNext("e") else {
                 break alt
             }
-
-            stream.advance()
 
             _ = consume_sign(from: &stream)
 
@@ -1994,11 +1948,9 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard stream.isNext("E") else {
+            guard stream.advanceIfNext("E") else {
                 return false
             }
-
-            stream.advance()
 
             _ = consume_sign(from: &stream)
 
@@ -2071,31 +2023,16 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
             return false
         }
 
-        let state: StringStream<StringType>.State = stream.save()
-
         alt:
         do {
-            guard stream.isNext("+") else {
+            guard stream.advanceIfNext("+") else {
                 break alt
             }
 
-            stream.advance()
-
             return true
         }
 
-        stream.restore(state)
-
-        alt:
-        do {
-            guard stream.isNext("-") else {
-                return false
-            }
-
-            stream.advance()
-
-            return true
-        }
+        return stream.advanceIfNext("-")
     }
 }
 """ ;

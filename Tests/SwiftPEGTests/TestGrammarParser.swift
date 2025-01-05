@@ -142,7 +142,7 @@ enum TestGrammarAST {
                     return .whitespace(match)
                 }
                 return nil
-            case let c where c.isWholeNumber:
+            case "0"..."9":
                 if let number = Self._parseNumber(string), let double = Double(number) {
                     return .number(double, number)
                 }
@@ -218,7 +218,7 @@ enum TestGrammarAST {
             guard !stream.isEof else { return nil }
 
             switch stream.next() {
-            case let c where c.isWholeNumber:
+            case "0"..."9":
                 break
             default:
                 return nil
@@ -227,7 +227,7 @@ enum TestGrammarAST {
             loop:
             while !stream.isEof {
                 switch stream.peek() {
-                case let c where c.isWholeNumber:
+                case "0"..."9":
                     stream.advance()
                 default:
                     break loop
@@ -238,7 +238,7 @@ enum TestGrammarAST {
                 loop:
                 while !stream.isEof {
                     switch stream.peek() {
-                    case let c where c.isWholeNumber:
+                    case "0"..."9":
                         stream.advance()
                     default:
                         break loop

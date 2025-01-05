@@ -126,14 +126,7 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
                 return false
             }
 
-            loop:
-            while !stream.isEof {
-                switch stream.peek() {
-                case " ", "\\n":
-                    stream.advance()
-                default:
-                    break loop
-                }
+            while stream.advanceIfNext(" ") || stream.advanceIfNext("\\n") {
             }
 
             return true
@@ -208,11 +201,9 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard stream.isNext("\\"") else {
+            guard stream.advanceIfNext("\\"") else {
                 return false
             }
-
-            stream.advance()
 
             if
                 !stream.isNext("\\""),
@@ -235,11 +226,9 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
                 }
             }
 
-            guard stream.isNext("\\"") else {
+            guard stream.advanceIfNext("\\"") else {
                 break alt
             }
-
-            stream.advance()
 
             return true
         }

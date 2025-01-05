@@ -205,11 +205,9 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard stream.isNext("\\"") else {
+            guard stream.advanceIfNext("\\"") else {
                 return false
             }
-
-            stream.advance()
 
             if
                 !stream.isNext("\\""),
@@ -232,11 +230,9 @@ struct ParserToken: RawTokenType, CustomStringConvertible {
                 }
             }
 
-            guard stream.isNext("\\"") else {
+            guard stream.advanceIfNext("\\"") else {
                 break alt
             }
-
-            stream.advance()
 
             return true
         }

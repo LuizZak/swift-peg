@@ -3128,7 +3128,7 @@ struct SwiftCodeGenTests {
                             return .whitespace(match)
                         }
                         return nil
-                    case let c where c.isWholeNumber:
+                    case "0"..."9":
                         if let number = Self._parseNumber(string), let double = Double(number) {
                             return .number(double, number)
                         }
@@ -3204,7 +3204,7 @@ struct SwiftCodeGenTests {
                     guard !stream.isEof else { return nil }
 
                     switch stream.next() {
-                    case let c where c.isWholeNumber:
+                    case "0"..."9":
                         break
                     default:
                         return nil
@@ -3213,7 +3213,7 @@ struct SwiftCodeGenTests {
                     loop:
                     while !stream.isEof {
                         switch stream.peek() {
-                        case let c where c.isWholeNumber:
+                        case "0"..."9":
                             stream.advance()
                         default:
                             break loop
@@ -3224,7 +3224,7 @@ struct SwiftCodeGenTests {
                         loop:
                         while !stream.isEof {
                             switch stream.peek() {
-                            case let c where c.isWholeNumber:
+                            case "0"..."9":
                                 stream.advance()
                             default:
                                 break loop

@@ -1856,14 +1856,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                 return false
             }
 
-            loop:
-            while !stream.isEof {
-                switch stream.peek() {
-                case " ", "\\n", "\\t", "\\r":
-                    stream.advance()
-                default:
-                    break loop
-                }
+            while stream.advanceIfNext(" ") || stream.advanceIfNext("\\n") || stream.advanceIfNext("\\t") || stream.advanceIfNext("\\r") {
             }
 
             return true
@@ -1883,16 +1876,11 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            if stream.isNext("\\\\\\\\") {
-                stream.advance(2)
-            } else if stream.isNext("\\\\\\'") {
-                stream.advance(2)
-            } else if stream.isNext("\\\\n") {
-                stream.advance(2)
-            } else if stream.isNext("\\\\r") {
-                stream.advance(2)
-            } else if stream.isNext("\\\\t") {
-                stream.advance(2)
+            if stream.advanceIfNext("\\\\\\\\") {
+            } else if stream.advanceIfNext("\\\\\\'") {
+            } else if stream.advanceIfNext("\\\\n") {
+            } else if stream.advanceIfNext("\\\\r") {
+            } else if stream.advanceIfNext("\\\\t") {
             } else if
                 !stream.isNext("\\'"),
                 !stream.isNext("\\\\"),
@@ -1906,16 +1894,11 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
             loop:
             while !stream.isEof {
-                if stream.isNext("\\\\\\\\") {
-                    stream.advance(2)
-                } else if stream.isNext("\\\\\\'") {
-                    stream.advance(2)
-                } else if stream.isNext("\\\\n") {
-                    stream.advance(2)
-                } else if stream.isNext("\\\\r") {
-                    stream.advance(2)
-                } else if stream.isNext("\\\\t") {
-                    stream.advance(2)
+                if stream.advanceIfNext("\\\\\\\\") {
+                } else if stream.advanceIfNext("\\\\\\'") {
+                } else if stream.advanceIfNext("\\\\n") {
+                } else if stream.advanceIfNext("\\\\r") {
+                } else if stream.advanceIfNext("\\\\t") {
                 } else if
                     !stream.isNext("\\'"),
                     !stream.isNext("\\\\"),
@@ -1945,16 +1928,11 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            if stream.isNext("\\\\\\\\") {
-                stream.advance(2)
-            } else if stream.isNext("\\\\\\"") {
-                stream.advance(2)
-            } else if stream.isNext("\\\\n") {
-                stream.advance(2)
-            } else if stream.isNext("\\\\r") {
-                stream.advance(2)
-            } else if stream.isNext("\\\\t") {
-                stream.advance(2)
+            if stream.advanceIfNext("\\\\\\\\") {
+            } else if stream.advanceIfNext("\\\\\\"") {
+            } else if stream.advanceIfNext("\\\\n") {
+            } else if stream.advanceIfNext("\\\\r") {
+            } else if stream.advanceIfNext("\\\\t") {
             } else if
                 !stream.isNext("\\""),
                 !stream.isNext("\\\\"),
@@ -1968,16 +1946,11 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
             loop:
             while !stream.isEof {
-                if stream.isNext("\\\\\\\\") {
-                    stream.advance(2)
-                } else if stream.isNext("\\\\\\"") {
-                    stream.advance(2)
-                } else if stream.isNext("\\\\n") {
-                    stream.advance(2)
-                } else if stream.isNext("\\\\r") {
-                    stream.advance(2)
-                } else if stream.isNext("\\\\t") {
-                    stream.advance(2)
+                if stream.advanceIfNext("\\\\\\\\") {
+                } else if stream.advanceIfNext("\\\\\\"") {
+                } else if stream.advanceIfNext("\\\\n") {
+                } else if stream.advanceIfNext("\\\\r") {
+                } else if stream.advanceIfNext("\\\\t") {
                 } else if
                     !stream.isNext("\\""),
                     !stream.isNext("\\\\"),
@@ -3769,11 +3742,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard stream.isNext("@autoreleasepool") else {
+            guard stream.advanceIfNext("@autoreleasepool") else {
                 return false
             }
-
-            stream.advance(16)
 
             guard
                 !stream.isNextInRange("0"..."9"),
@@ -3807,11 +3778,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard stream.isNext("@catch") else {
+            guard stream.advanceIfNext("@catch") else {
                 return false
             }
-
-            stream.advance(6)
 
             guard
                 !stream.isNextInRange("0"..."9"),
@@ -3845,11 +3814,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard stream.isNext("@class") else {
+            guard stream.advanceIfNext("@class") else {
                 return false
             }
-
-            stream.advance(6)
 
             guard
                 !stream.isNextInRange("0"..."9"),
@@ -3883,11 +3850,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard stream.isNext("@dynamic") else {
+            guard stream.advanceIfNext("@dynamic") else {
                 return false
             }
-
-            stream.advance(8)
 
             guard
                 !stream.isNextInRange("0"..."9"),
@@ -3921,11 +3886,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard stream.isNext("@encode") else {
+            guard stream.advanceIfNext("@encode") else {
                 return false
             }
-
-            stream.advance(7)
 
             guard
                 !stream.isNextInRange("0"..."9"),
@@ -3959,11 +3922,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard stream.isNext("@end") else {
+            guard stream.advanceIfNext("@end") else {
                 return false
             }
-
-            stream.advance(4)
 
             guard
                 !stream.isNextInRange("0"..."9"),
@@ -3997,11 +3958,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard stream.isNext("@finally") else {
+            guard stream.advanceIfNext("@finally") else {
                 return false
             }
-
-            stream.advance(8)
 
             guard
                 !stream.isNextInRange("0"..."9"),
@@ -4069,11 +4028,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard stream.isNext("@implementation") else {
+            guard stream.advanceIfNext("@implementation") else {
                 return false
             }
-
-            stream.advance(15)
 
             guard
                 !stream.isNextInRange("0"..."9"),
@@ -4107,11 +4064,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard stream.isNext("@import") else {
+            guard stream.advanceIfNext("@import") else {
                 return false
             }
-
-            stream.advance(7)
 
             guard
                 !stream.isNextInRange("0"..."9"),
@@ -4145,11 +4100,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard stream.isNext("@interface") else {
+            guard stream.advanceIfNext("@interface") else {
                 return false
             }
-
-            stream.advance(10)
 
             guard
                 !stream.isNextInRange("0"..."9"),
@@ -4185,11 +4138,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard stream.isNext("nonnull") else {
+            guard stream.advanceIfNext("nonnull") else {
                 break alt
             }
-
-            stream.advance(7)
 
             guard
                 !stream.isNextInRange("0"..."9"),
@@ -4207,11 +4158,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard stream.isNext("__nonnull") else {
+            guard stream.advanceIfNext("__nonnull") else {
                 break alt
             }
-
-            stream.advance(9)
 
             guard
                 !stream.isNextInRange("0"..."9"),
@@ -4229,11 +4178,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard stream.isNext("_Nonnull") else {
+            guard stream.advanceIfNext("_Nonnull") else {
                 return false
             }
-
-            stream.advance(8)
 
             guard
                 !stream.isNextInRange("0"..."9"),
@@ -4269,11 +4216,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard stream.isNext("nullable") else {
+            guard stream.advanceIfNext("nullable") else {
                 break alt
             }
-
-            stream.advance(8)
 
             guard
                 !stream.isNextInRange("0"..."9"),
@@ -4291,11 +4236,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard stream.isNext("__nullable") else {
+            guard stream.advanceIfNext("__nullable") else {
                 break alt
             }
-
-            stream.advance(10)
 
             guard
                 !stream.isNextInRange("0"..."9"),
@@ -4313,11 +4256,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard stream.isNext("_Nullable") else {
+            guard stream.advanceIfNext("_Nullable") else {
                 return false
             }
-
-            stream.advance(9)
 
             guard
                 !stream.isNextInRange("0"..."9"),
@@ -4353,11 +4294,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard stream.isNext("null_resettable") else {
+            guard stream.advanceIfNext("null_resettable") else {
                 break alt
             }
-
-            stream.advance(15)
 
             guard
                 !stream.isNextInRange("0"..."9"),
@@ -4375,11 +4314,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard stream.isNext("__null_resettable") else {
+            guard stream.advanceIfNext("__null_resettable") else {
                 break alt
             }
-
-            stream.advance(17)
 
             guard
                 !stream.isNextInRange("0"..."9"),
@@ -4397,11 +4334,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard stream.isNext("_Null_resettable") else {
+            guard stream.advanceIfNext("_Null_resettable") else {
                 return false
             }
-
-            stream.advance(16)
 
             guard
                 !stream.isNextInRange("0"..."9"),
@@ -4437,11 +4372,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard stream.isNext("null_unspecified") else {
+            guard stream.advanceIfNext("null_unspecified") else {
                 break alt
             }
-
-            stream.advance(16)
 
             guard
                 !stream.isNextInRange("0"..."9"),
@@ -4459,11 +4392,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard stream.isNext("__null_unspecified") else {
+            guard stream.advanceIfNext("__null_unspecified") else {
                 break alt
             }
-
-            stream.advance(18)
 
             guard
                 !stream.isNextInRange("0"..."9"),
@@ -4481,11 +4412,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard stream.isNext("_Null_unspecified") else {
+            guard stream.advanceIfNext("_Null_unspecified") else {
                 return false
             }
-
-            stream.advance(17)
 
             guard
                 !stream.isNextInRange("0"..."9"),
@@ -4519,11 +4448,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard stream.isNext("@optional") else {
+            guard stream.advanceIfNext("@optional") else {
                 return false
             }
-
-            stream.advance(9)
 
             guard
                 !stream.isNextInRange("0"..."9"),
@@ -4557,11 +4484,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard stream.isNext("@package") else {
+            guard stream.advanceIfNext("@package") else {
                 return false
             }
-
-            stream.advance(8)
 
             guard
                 !stream.isNextInRange("0"..."9"),
@@ -4595,11 +4520,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard stream.isNext("@private") else {
+            guard stream.advanceIfNext("@private") else {
                 return false
             }
-
-            stream.advance(8)
 
             guard
                 !stream.isNextInRange("0"..."9"),
@@ -4633,11 +4556,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard stream.isNext("@property") else {
+            guard stream.advanceIfNext("@property") else {
                 return false
             }
-
-            stream.advance(9)
 
             guard
                 !stream.isNextInRange("0"..."9"),
@@ -4671,11 +4592,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard stream.isNext("@protected") else {
+            guard stream.advanceIfNext("@protected") else {
                 return false
             }
-
-            stream.advance(10)
 
             guard
                 !stream.isNextInRange("0"..."9"),
@@ -4709,11 +4628,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard stream.isNext("@protocol") else {
+            guard stream.advanceIfNext("@protocol") else {
                 return false
             }
-
-            stream.advance(9)
 
             guard
                 !stream.isNextInRange("0"..."9"),
@@ -4747,11 +4664,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard stream.isNext("@public") else {
+            guard stream.advanceIfNext("@public") else {
                 return false
             }
-
-            stream.advance(7)
 
             guard
                 !stream.isNextInRange("0"..."9"),
@@ -4785,11 +4700,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard stream.isNext("@required") else {
+            guard stream.advanceIfNext("@required") else {
                 return false
             }
-
-            stream.advance(9)
 
             guard
                 !stream.isNextInRange("0"..."9"),
@@ -4823,11 +4736,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard stream.isNext("@selector") else {
+            guard stream.advanceIfNext("@selector") else {
                 return false
             }
-
-            stream.advance(9)
 
             guard
                 !stream.isNextInRange("0"..."9"),
@@ -4861,11 +4772,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard stream.isNext("@synchronized") else {
+            guard stream.advanceIfNext("@synchronized") else {
                 return false
             }
-
-            stream.advance(13)
 
             guard
                 !stream.isNextInRange("0"..."9"),
@@ -4899,11 +4808,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard stream.isNext("@synthesize") else {
+            guard stream.advanceIfNext("@synthesize") else {
                 return false
             }
-
-            stream.advance(11)
 
             guard
                 !stream.isNextInRange("0"..."9"),
@@ -4937,11 +4844,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard stream.isNext("@throw") else {
+            guard stream.advanceIfNext("@throw") else {
                 return false
             }
-
-            stream.advance(6)
 
             guard
                 !stream.isNextInRange("0"..."9"),
@@ -4975,11 +4880,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard stream.isNext("@try") else {
+            guard stream.advanceIfNext("@try") else {
                 return false
             }
-
-            stream.advance(4)
 
             guard
                 !stream.isNextInRange("0"..."9"),
@@ -5015,11 +4918,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard stream.isNext("typeof") else {
+            guard stream.advanceIfNext("typeof") else {
                 break alt
             }
-
-            stream.advance(6)
 
             guard
                 !stream.isNextInRange("0"..."9"),
@@ -5037,11 +4938,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard stream.isNext("__typeof") else {
+            guard stream.advanceIfNext("__typeof") else {
                 break alt
             }
-
-            stream.advance(8)
 
             guard
                 !stream.isNextInRange("0"..."9"),
@@ -5095,9 +4994,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            if stream.isNext("\\'") {
-                stream.advance()
-            }
+            _ = stream.advanceIfNext("\\'")
 
             guard consume_binary_digit(from: &stream) else {
                 break alt
@@ -5126,9 +5023,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            if stream.isNext("\\'") {
-                stream.advance()
-            }
+            _ = stream.advanceIfNext("\\'")
 
             guard
                 !stream.isEof,
@@ -5162,9 +5057,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            if stream.isNext("\\'") {
-                stream.advance()
-            }
+            _ = stream.advanceIfNext("\\'")
 
             guard consume_hexadecimal_digit(from: &stream) else {
                 break alt
@@ -5193,9 +5086,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            if stream.isNext("\\'") {
-                stream.advance()
-            }
+            _ = stream.advanceIfNext("\\'")
 
             guard
                 !stream.isEof,
@@ -5264,11 +5155,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard stream.isNext("p") else {
+            guard stream.advanceIfNext("p") else {
                 break alt
             }
-
-            stream.advance()
 
             _ = consume_sign(from: &stream)
 
@@ -5283,11 +5172,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard stream.isNext("P") else {
+            guard stream.advanceIfNext("P") else {
                 return false
             }
-
-            stream.advance()
 
             _ = consume_sign(from: &stream)
 
@@ -5315,31 +5202,16 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             return false
         }
 
-        let state: StringStream<StringType>.State = stream.save()
-
         alt:
         do {
-            guard stream.isNext("0b") else {
+            guard stream.advanceIfNext("0b") else {
                 break alt
             }
 
-            stream.advance(2)
-
             return true
         }
 
-        stream.restore(state)
-
-        alt:
-        do {
-            guard stream.isNext("0B") else {
-                return false
-            }
-
-            stream.advance(2)
-
-            return true
-        }
+        return stream.advanceIfNext("0B")
     }
 
     /// ```
@@ -5354,31 +5226,16 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             return false
         }
 
-        let state: StringStream<StringType>.State = stream.save()
-
         alt:
         do {
-            guard stream.isNext("wb") else {
+            guard stream.advanceIfNext("wb") else {
                 break alt
             }
 
-            stream.advance(2)
-
             return true
         }
 
-        stream.restore(state)
-
-        alt:
-        do {
-            guard stream.isNext("WB") else {
-                return false
-            }
-
-            stream.advance(2)
-
-            return true
-        }
+        return stream.advanceIfNext("WB")
     }
 
     /// ```
@@ -5398,19 +5255,15 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
         do {
             _ = consume_encoding_prefix(from: &stream)
 
-            guard stream.isNext("\\'") else {
+            guard stream.advanceIfNext("\\'") else {
                 break alt
             }
-
-            stream.advance()
 
             _ = consume_c_char_sequence(from: &stream)
 
-            guard stream.isNext("\\'") else {
+            guard stream.advanceIfNext("\\'") else {
                 break alt
             }
-
-            stream.advance()
 
             return true
         }
@@ -5490,31 +5343,16 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             return false
         }
 
-        let state: StringStream<StringType>.State = stream.save()
-
         alt:
         do {
-            guard stream.isNext("0") else {
+            guard stream.advanceIfNext("0") else {
                 break alt
             }
 
-            stream.advance()
-
             return true
         }
 
-        stream.restore(state)
-
-        alt:
-        do {
-            guard stream.isNext("1") else {
-                return false
-            }
-
-            stream.advance()
-
-            return true
-        }
+        return stream.advanceIfNext("1")
     }
 
     /// ```
@@ -5531,57 +5369,34 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             return false
         }
 
-        let state: StringStream<StringType>.State = stream.save()
-
         alt:
         do {
-            guard stream.isNext("u8") else {
+            guard stream.advanceIfNext("u8") else {
                 break alt
             }
 
-            stream.advance(2)
-
             return true
         }
 
-        stream.restore(state)
-
         alt:
         do {
-            guard stream.isNext("u") else {
+            guard stream.advanceIfNext("u") else {
                 break alt
             }
 
-            stream.advance()
-
             return true
         }
 
-        stream.restore(state)
-
         alt:
         do {
-            guard stream.isNext("U") else {
+            guard stream.advanceIfNext("U") else {
                 break alt
             }
 
-            stream.advance()
-
             return true
         }
 
-        stream.restore(state)
-
-        alt:
-        do {
-            guard stream.isNext("L") else {
-                return false
-            }
-
-            stream.advance()
-
-            return true
-        }
+        return stream.advanceIfNext("L")
     }
 
     /// ```
@@ -5600,11 +5415,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard stream.isNext("e") else {
+            guard stream.advanceIfNext("e") else {
                 break alt
             }
-
-            stream.advance()
 
             _ = consume_sign(from: &stream)
 
@@ -5619,11 +5432,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard stream.isNext("E") else {
+            guard stream.advanceIfNext("E") else {
                 return false
             }
-
-            stream.advance()
 
             _ = consume_sign(from: &stream)
 
@@ -5752,135 +5563,88 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             return false
         }
 
-        let state: StringStream<StringType>.State = stream.save()
-
         alt:
         do {
-            guard stream.isNext("f") else {
+            guard stream.advanceIfNext("f") else {
                 break alt
             }
 
-            stream.advance()
-
             return true
         }
 
-        stream.restore(state)
-
         alt:
         do {
-            guard stream.isNext("l") else {
+            guard stream.advanceIfNext("l") else {
                 break alt
             }
 
-            stream.advance()
-
             return true
         }
 
-        stream.restore(state)
-
         alt:
         do {
-            guard stream.isNext("F") else {
+            guard stream.advanceIfNext("F") else {
                 break alt
             }
 
-            stream.advance()
-
             return true
         }
 
-        stream.restore(state)
-
         alt:
         do {
-            guard stream.isNext("L") else {
+            guard stream.advanceIfNext("L") else {
                 break alt
             }
 
-            stream.advance()
-
             return true
         }
 
-        stream.restore(state)
-
         alt:
         do {
-            guard stream.isNext("df") else {
+            guard stream.advanceIfNext("df") else {
                 break alt
             }
 
-            stream.advance(2)
-
             return true
         }
 
-        stream.restore(state)
-
         alt:
         do {
-            guard stream.isNext("dd") else {
+            guard stream.advanceIfNext("dd") else {
                 break alt
             }
 
-            stream.advance(2)
-
             return true
         }
 
-        stream.restore(state)
-
         alt:
         do {
-            guard stream.isNext("dl") else {
+            guard stream.advanceIfNext("dl") else {
                 break alt
             }
 
-            stream.advance(2)
-
             return true
         }
 
-        stream.restore(state)
-
         alt:
         do {
-            guard stream.isNext("DF") else {
+            guard stream.advanceIfNext("DF") else {
                 break alt
             }
 
-            stream.advance(2)
-
             return true
         }
 
-        stream.restore(state)
-
         alt:
         do {
-            guard stream.isNext("DD") else {
+            guard stream.advanceIfNext("DD") else {
                 break alt
             }
 
-            stream.advance(2)
-
             return true
         }
 
-        stream.restore(state)
-
-        alt:
-        do {
-            guard stream.isNext("DL") else {
-                return false
-            }
-
-            stream.advance(2)
-
-            return true
-        }
+        return stream.advanceIfNext("DL")
     }
 
     /// ```
@@ -5901,11 +5665,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
         do {
             _ = consume_digit_sequence(from: &stream)
 
-            guard stream.isNext(".") else {
+            guard stream.advanceIfNext(".") else {
                 break alt
             }
-
-            stream.advance()
 
             guard consume_digit_sequence(from: &stream) else {
                 break alt
@@ -5922,11 +5684,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                 return false
             }
 
-            guard stream.isNext(".") else {
+            guard stream.advanceIfNext(".") else {
                 break alt
             }
-
-            stream.advance()
 
             return true
         }
@@ -5980,8 +5740,6 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             return false
         }
 
-        let state: StringStream<StringType>.State = stream.save()
-
         alt:
         do {
             guard
@@ -5996,8 +5754,6 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             return true
         }
 
-        stream.restore(state)
-
         alt:
         do {
             guard
@@ -6011,8 +5767,6 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
             return true
         }
-
-        stream.restore(state)
 
         alt:
         do {
@@ -6071,11 +5825,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
         do {
             _ = consume_hexadecimal_digit_sequence(from: &stream)
 
-            guard stream.isNext(".") else {
+            guard stream.advanceIfNext(".") else {
                 break alt
             }
-
-            stream.advance()
 
             guard consume_hexadecimal_digit_sequence(from: &stream) else {
                 break alt
@@ -6092,11 +5844,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                 return false
             }
 
-            guard stream.isNext(".") else {
+            guard stream.advanceIfNext(".") else {
                 break alt
             }
-
-            stream.advance()
 
             return true
         }
@@ -6118,31 +5868,16 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             return false
         }
 
-        let state: StringStream<StringType>.State = stream.save()
-
         alt:
         do {
-            guard stream.isNext("0x") else {
+            guard stream.advanceIfNext("0x") else {
                 break alt
             }
 
-            stream.advance(2)
-
             return true
         }
 
-        stream.restore(state)
-
-        alt:
-        do {
-            guard stream.isNext("0X") else {
-                return false
-            }
-
-            stream.advance(2)
-
-            return true
-        }
+        return stream.advanceIfNext("0X")
     }
 
     /// ```
@@ -6323,31 +6058,16 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             return false
         }
 
-        let state: StringStream<StringType>.State = stream.save()
-
         alt:
         do {
-            guard stream.isNext("ll") else {
+            guard stream.advanceIfNext("ll") else {
                 break alt
             }
 
-            stream.advance(2)
-
             return true
         }
 
-        stream.restore(state)
-
-        alt:
-        do {
-            guard stream.isNext("LL") else {
-                return false
-            }
-
-            stream.advance(2)
-
-            return true
-        }
+        return stream.advanceIfNext("LL")
     }
 
     /// ```
@@ -6362,31 +6082,16 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             return false
         }
 
-        let state: StringStream<StringType>.State = stream.save()
-
         alt:
         do {
-            guard stream.isNext("l") else {
+            guard stream.advanceIfNext("l") else {
                 break alt
             }
 
-            stream.advance()
-
             return true
         }
 
-        stream.restore(state)
-
-        alt:
-        do {
-            guard stream.isNext("L") else {
-                return false
-            }
-
-            stream.advance()
-
-            return true
-        }
+        return stream.advanceIfNext("L")
     }
 
     /// ```
@@ -6402,11 +6107,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard stream.isNext("0") else {
+            guard stream.advanceIfNext("0") else {
                 return false
             }
-
-            stream.advance()
 
             while consume__octal_digit(from: &stream) {
             }
@@ -6427,31 +6130,16 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             return false
         }
 
-        let state: StringStream<StringType>.State = stream.save()
-
         alt:
         do {
-            guard stream.isNext("+") else {
+            guard stream.advanceIfNext("+") else {
                 break alt
             }
 
-            stream.advance()
-
             return true
         }
 
-        stream.restore(state)
-
-        alt:
-        do {
-            guard stream.isNext("-") else {
-                return false
-            }
-
-            stream.advance()
-
-            return true
-        }
+        return stream.advanceIfNext("-")
     }
 
     /// ```
@@ -6471,19 +6159,15 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
         do {
             _ = consume_encoding_prefix(from: &stream)
 
-            guard stream.isNext("\\"") else {
+            guard stream.advanceIfNext("\\"") else {
                 break alt
             }
-
-            stream.advance()
 
             _ = consume_s_char_sequence(from: &stream)
 
-            guard stream.isNext("\\"") else {
+            guard stream.advanceIfNext("\\"") else {
                 break alt
             }
-
-            stream.advance()
 
             return true
         }
@@ -6505,31 +6189,16 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             return false
         }
 
-        let state: StringStream<StringType>.State = stream.save()
-
         alt:
         do {
-            guard stream.isNext("u") else {
+            guard stream.advanceIfNext("u") else {
                 break alt
             }
 
-            stream.advance()
-
             return true
         }
 
-        stream.restore(state)
-
-        alt:
-        do {
-            guard stream.isNext("U") else {
-                return false
-            }
-
-            stream.advance()
-
-            return true
-        }
+        return stream.advanceIfNext("U")
     }
 }
 """ ;
