@@ -179,6 +179,7 @@ extension SwiftCodeGen {
             inheritances: [
                 .typeName(protocolInfo.name)
             ],
+            genericWhereClause: nil,
             members: members
         )
     }

@@ -10,6 +10,8 @@ public class GrammarProcessor {
     let tokensFileProp: KnownProperty
     let importFileProp: KnownProperty
     let tokenProp: KnownProperty
+    let tokenTypeNameProp: KnownProperty
+    let generationKindProp: KnownProperty
     let anyTokenProp: KnownProperty
 
     /// A list of non-Error diagnostics issued during grammar analysis.
@@ -64,12 +66,31 @@ public class GrammarProcessor {
             acceptedValues: .single([.identifier(description: "A unique identifier for the any token reference.")]),
             repeatMode: .never
         )
+        // @generationKind
+        let generationKindProp = propManager.register(
+            name: "generationKind",
+            description: "Specifies the kind of parser declaration to generate.",
+            acceptedValues: .single([
+                .exactIdentifier("class", description: "Requests that a class be generated. Requires a @tokenTypeName declaration."),
+                .exactIdentifier("extension", description: "Requires that an extension with the parsing code be generated"),
+            ]),
+            repeatMode: .never
+        )
+        // @tokenTypeName
+        let tokenTypeNameProp = propManager.register(
+            name: "tokenTypeName",
+            description: "Specifies the type name of tokens produced by the raw tokenizer associate with this grammar. Is required if @generationKind class or @generationKind struct is specified. Must be parsable as a Swift type.",
+            acceptedValues: .single([.string()]),
+            repeatMode: .never
+        )
 
         self.metaPropertyManager = propManager
         self.tokensFileProp = tokensFileProp
         self.tokenProp = tokenProp
         self.importFileProp = importFileProp
         self.anyTokenProp = anyTokenProp
+        self.generationKindProp = generationKindProp
+        self.tokenTypeNameProp = tokenTypeNameProp
         self.delegate = delegate
         self.verbose = verbose
     }
@@ -413,24 +434,42 @@ public class GrammarProcessor {
 
         /// Rules found sharing the same name.
         case repeatedRuleName(String, SwiftPEGGrammar.Rule, prior: SwiftPEGGrammar.Rule)
+
         /// Rule found that has an invalid name.
         case invalidRuleName(desc: String, SwiftPEGGrammar.Rule)
+
         /// Named item found that has an invalid name.
         case invalidNamedItem(desc: String, SwiftPEGGrammar.NamedItem)
+
         /// An identifier was found in a rule that could not be resolved to a
         /// rule or token name.
         case unknownReference(SwiftPEGGrammar.IdentAtom, SwiftPEGGrammar.Rule, tokensFileName: String? = nil)
+
         /// An identifier was found in a rule that refers to token fragments,
         /// which are not queryable by the parser.
         case referencedFragmentInParser(SwiftPEGGrammar.IdentAtom, SwiftPEGGrammar.Rule)
+
         /// An attempt at resolving a left recursion and find a leader rule from
         /// a set of rules has failed.
         case unresolvedLeftRecursion(ruleNames: [String])
+
+        /// An attempt to generate a class or struct with @generationKind while
+        /// no @tokenTypeName was provided.
+        case missingTokenTypeName
+
+        /// A @generationKind meta property was provided with an unknown production
+        /// kind.
+        case unknownProductionType(SwiftPEGGrammar.Meta)
+
+        /// A @tokenTypeName meta property was provided that could not be parsed
+        /// as a valid Swift type.
+        case invalidTokenTypeName(SwiftPEGGrammar.Meta)
 
         // MARK: - Tokens file errors
 
         /// Tokens found sharing the same name.
         case repeatedTokenName(String, SwiftPEGGrammar.TokenDefinition, prior: SwiftPEGGrammar.TokenDefinition)
+
         /// An identifier was found in a token syntax that could not be resolved
         /// to another token syntax.
         case unknownReferenceInToken(String, SwiftPEGGrammar.TokenDefinition)
@@ -498,6 +537,15 @@ public class GrammarProcessor {
 
             case .tokensFileTokenizerError(let meta, let error):
                 return "\(meta.shortDebugDescription) (\(meta.location)) failed to parse due to tokenizer errors: \(error)"
+
+            case .missingTokenTypeName:
+                return "@tokenTypeName is required by current meta-property specifies, but it was not found."
+
+            case .unknownProductionType(let meta):
+                return "\(meta.shortDebugDescription) (\(meta.location)) provided unknown production kind."
+
+            case .invalidTokenTypeName(let meta):
+                return "\(meta.shortDebugDescription) (\(meta.location)) could not be parsed as a valid Swift type identifier."
 
             case .message(let message):
                 return message

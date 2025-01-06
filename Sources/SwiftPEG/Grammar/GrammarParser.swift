@@ -3,7 +3,26 @@
 /// A parser for SwiftPEG grammar files.
 public final class GrammarParser<RawTokenizer: RawTokenizerType>: PEGParser<RawTokenizer>
     where RawTokenizer.RawToken == SwiftPEGGrammar.Token, RawTokenizer.Location == FileSourceLocation
-{ }
+{
+    /// Skips tokens associated with '~> skip' channels, optionally not skipping
+    /// a specific set of token kinds.
+    public override func skipChannelSkipTokens(_ except: Set<RawToken.TokenKind> = []) throws {
+        let skippable: Set<RawToken.TokenKind> = [
+            .whitespace,
+        ]
+
+        repeat {
+            let next = try tokenizer.peekToken()
+            guard let kind = next?.rawToken.kind, skippable.contains(kind) else {
+                break
+            }
+            if except.contains(kind) {
+                break
+            }
+            _=try tokenizer.next()
+        } while !tokenizer.isEOF
+    }
+}
 
 extension GrammarParser {
     /// ```

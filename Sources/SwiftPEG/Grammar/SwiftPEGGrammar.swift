@@ -990,6 +990,20 @@ extension SwiftPEGGrammar {
         }
     }
 
+    /// Represents a token file declaration.
+    ///
+    /// Represents the construct:
+    /// ```
+    /// tokensFileDeclaration:
+    ///     | tokenDefinition
+    ///     | tokenChannelDeclaration
+    ///     ;
+    /// ```
+    @GeneratedNodeType<Node>
+    public class TokenFileDeclaration: GrammarNode {
+
+    }
+
     /// Represents a token definition collected from a tokens file.
     ///
     /// Represents the construct:
@@ -1006,8 +1020,8 @@ extension SwiftPEGGrammar {
     ///     | '%'
     ///     ;
     /// ```
-    @GeneratedNodeType<Node>
-    public final class TokenDefinition: GrammarNode {
+    @GeneratedNodeType<Node>(overrideDeepCopyType: "TokenFileDeclaration")
+    public final class TokenDefinition: TokenFileDeclaration {
         /// The identifier for the token.
         @NodeRequired
         public var name: Token
@@ -1024,6 +1038,35 @@ extension SwiftPEGGrammar {
         /// The syntax of the token.
         @NodeRequired
         public var tokenSyntax: CommonAbstract.TokenSyntax?
+    }
+
+    /// Represents a tokens channel declaration.
+    ///
+    /// Represents the construct:
+    /// ```
+    /// tokenChannelDeclaration[[SwiftPEGGrammar.TokenChannel]]:
+    ///     | '@' IDENTIFIER IDENTIFIER '~>' tokenChannelTarget ';'   { "\(identifier)" == "channel" ? self.setLocation(.init(identifier: identifier, target: tokenChannelTarget), at: _mark) : nil }
+    ///     | '@' IDENTIFIER IDENTIFIER? ';'                          { "\(identifier)" == "channel" ? self.setLocation(.init(identifier: identifier, target: nil), at: _mark) : nil }
+    ///     ;
+    /// ```
+    @GeneratedNodeType<Node>(overrideDeepCopyType: "TokenFileDeclaration")
+    public final class TokenChannelDeclaration: TokenFileDeclaration {
+        @NodeProperty
+        var _target: TokenChannelTarget?
+    }
+
+    /// Represents a tokens channel target declaration.
+    ///
+    /// Represents the construct:
+    /// ```
+    /// tokenChannelTarget:
+    ///     | IDENTIFIER
+    ///     ;
+    /// ```
+    @GeneratedNodeType<Node>
+    public final class TokenChannelTarget: GrammarNode {
+        @NodeRequired
+        var _identifier: Token
     }
 
     /// Protocol for visiting Grammar node types.

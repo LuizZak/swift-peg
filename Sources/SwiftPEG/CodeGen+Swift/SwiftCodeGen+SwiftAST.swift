@@ -24,6 +24,7 @@ public extension SwiftCodeGen {
         public var name: String
         public var genericArguments: [GenericArgumentDecl]
         public var inheritances: [SwiftType]
+        public var genericWhereClause: GenericWhereClause?
         public var members: [MemberDecl]
 
         public init(
@@ -32,6 +33,7 @@ public extension SwiftCodeGen {
             name: String,
             genericArguments: [SwiftCodeGen.GenericArgumentDecl],
             inheritances: [SwiftType],
+            genericWhereClause: GenericWhereClause?,
             members: [SwiftCodeGen.MemberDecl]
         ) {
             self.leadingComments = leadingComments
@@ -39,6 +41,7 @@ public extension SwiftCodeGen {
             self.name = name
             self.genericArguments = genericArguments
             self.inheritances = inheritances
+            self.genericWhereClause = genericWhereClause
             self.members = members
         }
     }

@@ -1,103 +1,5 @@
 public enum InternalGrammar {
     /// ```
-    /// tokenDefinition:
-    ///     | tokenOrFragmentSpecifier name=IDENTIFIER '[' tokenCodeReference=STRING ']' ':' ~ tokenSyntax ';'
-    ///     | tokenOrFragmentSpecifier name=IDENTIFIER '[' tokenCodeReference=STRING ']' ';'
-    ///     | tokenOrFragmentSpecifier name=IDENTIFIER ':' ~ tokenSyntax ';'
-    ///     | tokenOrFragmentSpecifier name=IDENTIFIER ';'
-    ///     ;
-    ///
-    /// tokenOrFragmentSpecifier:
-    ///     | '$'
-    ///     | '%'
-    ///     ;
-    /// ```
-    public struct TokenDefinition: Equatable, CustomStringConvertible {
-        public var name: String
-
-        /// Whether this token is a fragment, or a part of another token's syntax
-        /// without being exposed to the parser as a token kind or lexed on its
-        /// own in a token's lexing function.
-        public var isFragment: Bool
-
-        public var tokenCodeReference: String?
-
-        /// The syntax definition of this token.
-        public var tokenSyntax: CommonAbstract.TokenSyntax?
-
-        /// String literal. Does not contains the quotes around the literal.
-        /// May not be provided; in which case the literal is assumed to be the
-        /// same value as `name` wrapped in any type of quotes.
-        public var string: String? {
-            guard let tokenSyntax else { return nil }
-            guard let alt = tokenSyntax.alts.first, tokenSyntax.alts.count == 1 else {
-                return nil
-            }
-            guard let item = alt.items.first, alt.items.count == 1 else {
-                return nil
-            }
-            guard case .atom(let atom) = item else {
-                return nil
-            }
-            guard atom.excluded.isEmpty else {
-                return nil
-            }
-            guard case .literal(let literal) = atom.terminal else {
-                return nil
-            }
-
-            return literal.contents
-        }
-
-        /// Returns the computed literal for this token.
-        ///
-        /// If `self.string` is non-nil, returns its value, otherwise returns
-        /// `name`.
-        ///
-        /// Does not contains the quotes around the literal.
-        public var computedLiteral: String {
-            if let string {
-                return string
-            } else {
-                return name
-            }
-        }
-
-        public var description: String {
-            let prefix = isFragment ? "%" : "$"
-
-            switch (tokenCodeReference, tokenSyntax) {
-            case (let tokenCodeReference?, let tokenSyntax?):
-                return #"\#(prefix)\#(name)[\#(tokenCodeReference.debugDescription)]: \#(tokenSyntax) ;"#
-            case (let tokenCodeReference?, nil):
-                return #"\#(prefix)\#(name)[\#(tokenCodeReference.debugDescription)] ;"#
-            case (nil, let tokenSyntax?):
-                return #"\#(prefix)\#(name) : \#(tokenSyntax) ;"#
-            case (nil, nil):
-                return #"\#(prefix)\#(name) ;"#
-            }
-        }
-
-        /// Accepts a given visitor, and recursively passes the visitor to nested
-        /// property types within this object that can be visited, if present.
-        public func accept(_ visitor: some Visitor) throws {
-            try visitor.visit(self)
-        }
-
-        public static func from(
-            _ node: SwiftPEGGrammar.TokenDefinition
-        ) -> Self {
-
-            .init(
-                name: String(node.name.string),
-                isFragment: node.isFragment,
-                tokenCodeReference: node.tokenCodeReference.map({ $0.rawContents() }),
-                tokenSyntax: node.tokenSyntax
-            )
-        }
-    }
-
-    /// ```
     /// grammar:
     ///     | metas rules
     ///     | rules
@@ -1024,6 +926,104 @@ public enum InternalGrammar {
         }
     }
 
+    /// ```
+    /// tokenDefinition:
+    ///     | tokenOrFragmentSpecifier name=IDENTIFIER '[' tokenCodeReference=STRING ']' ':' ~ tokenSyntax ';'
+    ///     | tokenOrFragmentSpecifier name=IDENTIFIER '[' tokenCodeReference=STRING ']' ';'
+    ///     | tokenOrFragmentSpecifier name=IDENTIFIER ':' ~ tokenSyntax ';'
+    ///     | tokenOrFragmentSpecifier name=IDENTIFIER ';'
+    ///     ;
+    ///
+    /// tokenOrFragmentSpecifier:
+    ///     | '$'
+    ///     | '%'
+    ///     ;
+    /// ```
+    public struct TokenDefinition: Equatable, CustomStringConvertible {
+        public var name: String
+
+        /// Whether this token is a fragment, or a part of another token's syntax
+        /// without being exposed to the parser as a token kind or lexed on its
+        /// own in a token's lexing function.
+        public var isFragment: Bool
+
+        public var tokenCodeReference: String?
+
+        /// The syntax definition of this token.
+        public var tokenSyntax: CommonAbstract.TokenSyntax?
+
+        /// String literal. Does not contains the quotes around the literal.
+        /// May not be provided; in which case the literal is assumed to be the
+        /// same value as `name` wrapped in any type of quotes.
+        public var string: String? {
+            guard let tokenSyntax else { return nil }
+            guard let alt = tokenSyntax.alts.first, tokenSyntax.alts.count == 1 else {
+                return nil
+            }
+            guard let item = alt.items.first, alt.items.count == 1 else {
+                return nil
+            }
+            guard case .atom(let atom) = item else {
+                return nil
+            }
+            guard atom.excluded.isEmpty else {
+                return nil
+            }
+            guard case .literal(let literal) = atom.terminal else {
+                return nil
+            }
+
+            return literal.contents
+        }
+
+        /// Returns the computed literal for this token.
+        ///
+        /// If `self.string` is non-nil, returns its value, otherwise returns
+        /// `name`.
+        ///
+        /// Does not contains the quotes around the literal.
+        public var computedLiteral: String {
+            if let string {
+                return string
+            } else {
+                return name
+            }
+        }
+
+        public var description: String {
+            let prefix = isFragment ? "%" : "$"
+
+            switch (tokenCodeReference, tokenSyntax) {
+            case (let tokenCodeReference?, let tokenSyntax?):
+                return #"\#(prefix)\#(name)[\#(tokenCodeReference.debugDescription)]: \#(tokenSyntax) ;"#
+            case (let tokenCodeReference?, nil):
+                return #"\#(prefix)\#(name)[\#(tokenCodeReference.debugDescription)] ;"#
+            case (nil, let tokenSyntax?):
+                return #"\#(prefix)\#(name) : \#(tokenSyntax) ;"#
+            case (nil, nil):
+                return #"\#(prefix)\#(name) ;"#
+            }
+        }
+
+        /// Accepts a given visitor, and recursively passes the visitor to nested
+        /// property types within this object that can be visited, if present.
+        public func accept(_ visitor: some Visitor) throws {
+            try visitor.visit(self)
+        }
+
+        public static func from(
+            _ node: SwiftPEGGrammar.TokenDefinition
+        ) -> Self {
+
+            .init(
+                name: String(node.name.string),
+                isFragment: node.isFragment,
+                tokenCodeReference: node.tokenCodeReference.map({ $0.rawContents() }),
+                tokenSyntax: node.tokenSyntax
+            )
+        }
+    }
+
     /// Simplified visitor protocol for internal grammar trees.
     public protocol Visitor {
         func visit(_ node: TokenDefinition) throws
@@ -1063,8 +1063,6 @@ public enum InternalGrammar {
 }
 
 public extension InternalGrammar.Visitor {
-    func visit(_ node: InternalGrammar.TokenDefinition) throws { }
-
     func willVisit(_ node: InternalGrammar.Grammar) throws { }
     func visit(_ node: InternalGrammar.Grammar) throws { }
     func didVisit(_ node: InternalGrammar.Grammar) throws { }
@@ -1096,4 +1094,6 @@ public extension InternalGrammar.Visitor {
     func willVisit(_ node: InternalGrammar.Atom) throws { }
     func visit(_ node: InternalGrammar.Atom) throws { }
     func didVisit(_ node: InternalGrammar.Atom) throws { }
+
+    func visit(_ node: InternalGrammar.TokenDefinition) throws { }
 }

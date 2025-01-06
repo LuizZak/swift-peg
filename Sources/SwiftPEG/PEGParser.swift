@@ -89,11 +89,24 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
         let mark = self.mark()
         defer { self.restore(mark) }
 
-        while try tokenizer.peekToken()?.rawToken.isWhitespace == true {
-            _=try tokenizer.next()
-        }
+        try skipChannelSkipTokens()
 
         return tokenizer.isEOF
+    }
+
+    /// Skips tokens associated with '~> skip' channels, optionally not skipping
+    /// a specific set of token kinds.
+    open func skipChannelSkipTokens(_ except: Set<RawToken.TokenKind> = []) throws {
+        repeat {
+            let next = try tokenizer.peekToken()
+            guard next?.rawToken.kind == .whitespace else {
+                break
+            }
+            if let kind = next?.rawToken.kind, except.contains(kind) {
+                break
+            }
+            _=try tokenizer.next()
+        } while !tokenizer.isEOF
     }
 
     /// Convenience for `self.tokenizer.mark()`.
@@ -171,9 +184,7 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
         restore(mark)
 
         do {
-            while try tokenizer.peekToken()?.rawToken.isWhitespace == true {
-                _=try tokenizer.next()
-            }
+            try skipChannelSkipTokens()
         } catch {
         }
 
@@ -218,11 +229,7 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
 
         // If expected kind is not explicitly a whitespace, skip all whitespace
         // tokens first
-        if !token.isWhitespace {
-            while try tokenizer.peekToken()?.rawToken.isWhitespace == true {
-                _=try tokenizer.next()
-            }
-        }
+        try skipChannelSkipTokens([token.kind])
 
         self.cache.storeTokenKind(at: self.mark(), token.kind)
 
@@ -244,11 +251,7 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
 
         // If expected kind is not explicitly a whitespace, skip all whitespace
         // tokens first
-        if kind != .whitespace {
-            while try tokenizer.peekToken()?.rawToken.isWhitespace == true {
-                _=try tokenizer.next()
-            }
-        }
+        try skipChannelSkipTokens([kind])
 
         self.cache.storeTokenKind(at: self.mark(), kind)
 
@@ -271,11 +274,7 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
 
         // If expected kind is not explicitly a whitespace, skip all whitespace
         // tokens first
-        if !kinds.contains(.whitespace) {
-            while try tokenizer.peekToken()?.rawToken.isWhitespace == true {
-                _=try tokenizer.next()
-            }
-        }
+        try skipChannelSkipTokens(kinds)
 
         self.cache.storeUniqueTokenKinds(at: self.mark(), kinds)
 

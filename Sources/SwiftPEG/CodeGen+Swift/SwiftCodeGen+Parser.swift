@@ -91,15 +91,60 @@ extension SwiftCodeGen {
 
         self.remaining = grammar.rules.map(RemainingProduction.rule)
 
-        let members = try generateRemainingProductions()
+        let generationKind = grammar.generationKind()
 
-        result.append(
-            .extension(
-                .init(leadingComments: [], baseType: .typeName(parserName), accessLevel: .internal, members: members)
+        switch generationKind {
+        case nil, "extension":
+            result.append(
+                .extension(try generateParser_extension())
             )
-        )
+
+        case "class":
+            result.append(
+                .class(try generateParser_class())
+            )
+
+        case let ident?:
+            throw Error.unknownGenerationKind(ident)
+        }
 
         return result
+    }
+
+    /// Generates a parser as an extension of a type.
+    func generateParser_extension() throws -> ExtensionDecl {
+        let members = try generateRemainingProductions()
+
+        return .init(
+            leadingComments: [],
+            baseType: .typeName(parserName),
+            accessLevel: .internal,
+            members: members
+        )
+    }
+
+    /// Generates a parser as class type.
+    func generateParser_class() throws -> ClassDecl {
+        guard let tokenTypeName = grammar.tokenTypeName() else {
+            throw Error.missingTokenTypeName
+        }
+
+        let members = try generateRemainingProductions()
+
+        return .init(
+            leadingComments: [],
+            accessLevel: .public,
+            name: parserName,
+            genericArguments: [
+                .init(name: "RawTokenizer", type: "RawTokenizerType"),
+            ],
+            inheritances: [.generic("PEGParser", parameters: ["RawTokenizer"])],
+            genericWhereClause: [
+                .sameTypeRequirement(.nested(.init(base: "RawTokenizer", nested: "RawToken")), .typeName(tokenTypeName)),
+                .sameTypeRequirement(.nested(.init(base: "RawTokenizer", nested: "Location")), "FileSourceLocation"),
+            ],
+            members: members
+        )
     }
 
     // MARK: - Main productions

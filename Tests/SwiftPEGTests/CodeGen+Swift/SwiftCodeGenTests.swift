@@ -18,6 +18,23 @@ struct SwiftCodeGenTests {
     }
 
     @Test
+    func generateParser_generationKind_class_emptyGrammar() throws {
+        let grammar = makeGrammar([], metas: [
+            .init(name: "generationKind", value: .identifier("class")),
+            .init(name: "tokenTypeName", value: .identifier("MyToken")),
+        ])
+        let sut = makeSut(grammar)
+
+        let result = try sut.generateParser()
+
+        diffTest(expected: """
+            // TestParser
+            public class TestParser<RawTokenizer: RawTokenizerType>: PEGParser<RawTokenizer> where RawTokenizer.RawToken == MyToken, RawTokenizer.Location == FileSourceLocation {
+            }
+            """).diff(result)
+    }
+
+    @Test
     func generateParser_anyTokenAtom_returnsNextToken() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [

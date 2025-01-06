@@ -70,6 +70,15 @@ public class SwiftCodeGen {
     /// `bindTokenLiterals`
     public static let bindTokenLiterals: String = "bindTokenLiterals"
 
+    /// Name of optional meta-property (`@<name> <value>`) from grammar file
+    /// that indicates the kind of parser declaration to generate.
+    ///
+    /// Defaults to `extension`, can be specified as `class`, `struct`, or `extension`,
+    /// as either strings or identifiers.
+    ///
+    /// `generationKind`
+    public static let generationKind: String = "generationKind"
+
     /// Set of identifiers that cannot be used as bare identifiers in Swift, and
     /// must be escaped with backticks (`) to allow usage in declarations.
     public static var invalidBareIdentifiers: Set<String> {
@@ -211,6 +220,15 @@ public class SwiftCodeGen {
             dependant: InternalGrammar.TokenDefinition
         )
 
+        /// Issued during parser generation, indicates that a specified @generationKind
+        /// was not recognized.
+        case unknownGenerationKind(String)
+
+        /// Issued during parser generation, indicates that a parser could not be
+        /// generated because a combination of `@generationKind class` is missing
+        /// a `@tokenTypeName <name>`.
+        case missingTokenTypeName
+
         public var description: String {
             switch self {
             case .tokenDefinitionMissingSyntax(let def):
@@ -223,6 +241,12 @@ public class SwiftCodeGen {
                 Found token '\(token.name)' that has a dependant '\(dependant.name)' \
                 that has a non-static syntax '\(dependant.tokenSyntax?.description ?? "<nil>")'.
                 """
+
+            case .unknownGenerationKind(let kind):
+                return "Unknown @generationKind value '\(kind)'. Expected: 'class', or 'extension'."
+
+            case .missingTokenTypeName:
+                return "@generationKind class requires a @tokenTypeName <name> meta-property."
             }
         }
     }
@@ -903,6 +927,10 @@ extension InternalGrammar.Grammar {
 
     func bindTokenLiterals() -> String? {
         return _stringOrIdentMeta(named: SwiftCodeGen.bindTokenLiterals)
+    }
+
+    func generationKind() -> String? {
+        return _stringOrIdentMeta(named: SwiftCodeGen.generationKind)
     }
 
     private func _stringOrIdentMeta(named name: String) -> String? {

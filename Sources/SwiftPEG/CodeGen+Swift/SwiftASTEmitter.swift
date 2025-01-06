@@ -63,6 +63,7 @@ extension SwiftASTEmitter {
         buffer.emit(decl.name)
         emit(decl.genericArguments)
         emit(inheritances: decl.inheritances)
+        emit(decl.genericWhereClause)
         buffer.ensureSpaceSeparator()
         buffer.emitMembersBlock {
             let separator = TypeMemberSeparator()

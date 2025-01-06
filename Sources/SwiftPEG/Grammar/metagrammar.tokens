@@ -1,8 +1,18 @@
 # Note: Comments (prefixed with a '#') are currently an implementation detail of GrammarRawTokenizer and not explicitly defined in the tokens or grammar files.
 
+@channel comments ~> discard ;
+
+$COMMENT[".comment"]:
+    | '#' (!'\n' .)* '\n'?
+    ;
+
+@channel whitespace ~> skip ;
+
 $WHITESPACE[".whitespace"]:
     | (" " | "\t" | "\n" | "\r")+
     ;
+
+@channel ;
 
 $IDENTIFIER[".identifier"]:
     | identifierHead identifierTrail*
@@ -44,6 +54,7 @@ $SEMICOLON[".semicolon"]: ";" ;
 $BAR[".bar"]: "|" ;
 $EQUALS[".equals"]: "=" ;
 $TILDE[".tilde"]: "~" ;
+$TILDEARROW[".tildeArrow"]: "~>" ;
 $STAR[".star"]: "*" ;
 $PLUS[".plus"]: "+" ;
 $MINUS[".minus"]: "-" ;

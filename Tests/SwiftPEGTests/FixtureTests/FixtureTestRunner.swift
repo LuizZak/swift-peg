@@ -125,7 +125,6 @@ class FixtureTestRunner {
         var _error: Swift.Error?
         let queue = OperationQueue()
 
-
         for grammarFileUrl in grammarFileUrls {
             queue.addOperation {
                 do {

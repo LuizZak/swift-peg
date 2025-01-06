@@ -2,13 +2,12 @@
 # This metagrammar requires the GrammarRawTokenizer for tokenizing.
 
 @parserName "GrammarParser" ;
+@generationKind class ;
+@tokenTypeName "GrammarParserToken" ;
 @parserHeader """
 // HEADS UP! This is a generated file
 
 /// A parser for SwiftPEG grammar files.
-public final class GrammarParser<RawTokenizer: RawTokenizerType>: PEGParser<RawTokenizer>
-    where RawTokenizer.RawToken == SwiftPEGGrammar.Token, RawTokenizer.Location == FileSourceLocation
-{ }
 """ ;
 @tokenTypeHeader """
 // HEADS UP! This is a generated file
@@ -154,23 +153,23 @@ string[SwiftPEGGrammar.GrammarString]:
 
 # Tokens file grammar
 
-tokensFile[[SwiftPEGGrammar.TokenDefinition]]:
-    | tokens=tokenDefinition*
+# TODO: Consider implementing lexer channels if needs be?
+tokensFile[[SwiftPEGGrammar.TokenFileDeclaration]]:
+    | tokensFileDeclaration*
     ;
 
-# TODO: Consider implementing lexer channels if needs be?
-# tokensFile[[SwiftPEGGrammar.TokenFileDeclaration]]:
-#     | tokensFileDeclaration*
-#     ;
-# 
-# tokensFileDeclaration[[SwiftPEGGrammar.TokenFileDeclaration]]:
-#     | tokenDefinition
-#     | tokenChannelDeclaration
-#     ;
-# 
-# tokenChannelDeclaration[[SwiftPEGGrammar.TokenChannel]]:
-#     | '@' IDENTIFIER                            { "\(identifier)" == "channel" ? self.setLocation(.init(identifier: identifier), at: _mark) : nil }
-#     ;
+tokensFileDeclaration[[SwiftPEGGrammar.TokenFileDeclaration]]:
+    | tokenDefinition
+    | tokenChannelDeclaration
+    ;
+
+tokenChannelDeclaration[[SwiftPEGGrammar.TokenChannel]]:
+    | '@' IDENTIFIER IDENTIFIER '~>' tokenChannelTarget ';'   { "\(identifier)" == "channel" ? self.setLocation(.init(identifier: identifier), at: _mark) : nil }
+    | '@' IDENTIFIER IDENTIFIER? ';'                          { "\(identifier)" == "channel" ? self.setLocation(.init(identifier: identifier), at: _mark) : nil }
+    ;
+tokenChannelTarget[SwiftPEGGrammar.TokenChannelTarget]:
+    | IDENTIFIER            { TokenChannelTarget(identifier: identifier) }
+    ;
 
 # Note: tokenCodeReference must resolve statically to a token reference when PEGParser.expect()/PEGParser.expect(kind:) uses it as its argument.
 #       Usually this can be simplified to a `.tokenReference` for RawTokenType/RawTokenType.TokenKind types that provide statically-accessible token declarations,
