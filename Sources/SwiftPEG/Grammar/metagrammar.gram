@@ -28,7 +28,7 @@ grammar[SwiftPEGGrammar.Grammar]:
     ;
 
 meta[SwiftPEGGrammar.Meta]:
-    | "@" name=IDENTIFIER value=metaValue? ';' { self.setLocation(.init(name: name.rawToken, value: value), at: _mark) }
+    | "@" name=IDENTIFIER values=metaValue* ';' { self.setLocation(.init(name: name.rawToken, values: values), at: _mark) }
     ;
 
 metaValue[SwiftPEGGrammar.MetaValue]:

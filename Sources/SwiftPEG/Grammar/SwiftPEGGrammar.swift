@@ -53,7 +53,7 @@ extension SwiftPEGGrammar {
     /// Represents the construct:
     /// ```
     /// meta:
-    ///     | "@" name=IDENTIFIER value=metaValue? ';'
+    ///     | "@" name=IDENTIFIER values=metaValue* ';'
     ///     ;
     /// ```
     @GeneratedNodeType<Node>
@@ -62,12 +62,23 @@ extension SwiftPEGGrammar {
         @NodeRequired
         public var name: Token
 
-        /// The value associated with this meta-property.
+        /// The values associated with this meta-property.
         @NodeProperty
-        var _value: MetaValue?
+        var _values: [MetaValue]
 
         public override var shortDebugDescription: String {
-            "@\(name.string) \(value?.shortDebugDescription ?? "")"
+            "@\(name.string) \(values.map(\.shortDebugDescription).joined(separator: " "))"
+        }
+
+        public init(name: Token, value: MetaValue?) {
+            self._values = value.map { [$0] } ?? []
+            self.name = name
+
+            super.init()
+
+            self._values.forEach({
+                $0.parent = self
+            })
         }
 
         /// Accepts a given grammar-node visitor into this node.

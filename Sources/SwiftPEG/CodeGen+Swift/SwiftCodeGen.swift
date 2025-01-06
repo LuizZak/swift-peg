@@ -912,16 +912,17 @@ extension InternalGrammar.Grammar {
             return nil
         }
 
-        switch meta.value {
-        case .string(let value)?:
-            return value
+        for value in meta.values {
+            switch value {
+            case .string(let value):
+                return value
 
-        case .identifier(let value)?:
-            return value
-
-        case nil:
-            return nil
+            case .identifier(let value):
+                return value
+            }
         }
+
+        return nil
     }
 }
 

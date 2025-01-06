@@ -64,10 +64,12 @@ extension GrammarParser {
         if
             let _ = try self.expect(kind: .at),
             let name = try self.expect(kind: .identifier),
-            case let value = try self.metaValue(),
+            let values = try self.repeatZeroOrMore({
+                try self.metaValue()
+            }),
             let _ = try self.expect(kind: .semicolon)
         {
-            return self.setLocation(.init(name: name.rawToken, value: value), at: _mark)
+            return self.setLocation(.init(name: name.rawToken, values: values), at: _mark)
         }
 
         self.restore(_mark)

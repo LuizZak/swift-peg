@@ -16,7 +16,7 @@ struct GrammarParserTests {
         let result = try assertUnwrap(try sut.grammar())
 
         let meta = try assertUnwrap(result.metas.first)
-        let value = try assertCast(meta.value, to: SwiftPEGGrammar.MetaStringValue.self)
+        let value = try assertCast(meta.values.first, to: SwiftPEGGrammar.MetaStringValue.self)
 
         assertEqual(value.string.asStringLiteral(), #""a\nb\"""#)
         assertEqual(value.string.rawContents(), "a\nb\"")

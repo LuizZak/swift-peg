@@ -8,6 +8,7 @@ public class GrammarProcessor {
 
     let metaPropertyManager: MetaPropertyManager
     let tokensFileProp: KnownProperty
+    let importFileProp: KnownProperty
     let tokenProp: KnownProperty
     let anyTokenProp: KnownProperty
 
@@ -35,27 +36,39 @@ public class GrammarProcessor {
         let tokensFileProp = propManager.register(
             name: "tokensFile",
             description: "Optional property for specifying a file containing extra token definitions.",
-            acceptedValues: [.string(description: "A file path, usually ending in .tokens.")],
+            acceptedValues: .single([.string(description: "A file path, usually ending in .tokens.")]),
             repeatMode: .never
+        )
+        // @importFile
+        let importFileProp = propManager.register(
+            name: "importFile",
+            description: "Optional property for specifying a file containing extra grammar definitions to import, along with an alias for namespacing.",
+            acceptedValues: .structure(fields: [
+                .string(description: "A file path, usually ending in .gram."),
+                .exactIdentifier("as", description: "Required separator before alias name"),
+                .identifier(description: "Alias for namespacing"),
+            ]),
+            repeatMode: .distinctValues
         )
         // @token
         let tokenProp = propManager.register(
             name: "token",
             description: "Forward-declares a token identifier.",
-            acceptedValues: [.identifier(description: "A unique identifier for the token reference.")],
+            acceptedValues: .list(element: [.identifier(description: "A unique identifier for the token reference.")]),
             repeatMode: .distinctValues
         )
         // @anyToken
         let anyTokenProp = propManager.register(
             name: "anyToken",
             description: "Declares the identifier of the 'any token' construct; a token reference that accepts any valid token from the grammar, including white spaces.",
-            acceptedValues: [.identifier(description: "A unique identifier for the any token reference.")],
+            acceptedValues: .single([.identifier(description: "A unique identifier for the any token reference.")]),
             repeatMode: .never
         )
 
         self.metaPropertyManager = propManager
         self.tokensFileProp = tokensFileProp
         self.tokenProp = tokenProp
+        self.importFileProp = importFileProp
         self.anyTokenProp = anyTokenProp
         self.delegate = delegate
         self.verbose = verbose
@@ -172,7 +185,7 @@ public class GrammarProcessor {
         guard let tokensMeta = metaPropertyManager.propertiesValidating(knownProperty: self.tokensFileProp).first else {
             return []
         }
-        guard let tokensFileName = tokensMeta.value.stringValue else {
+        guard let tokensFileName = tokensMeta.values.first?.stringValue else {
             return []
         }
 
@@ -205,12 +218,14 @@ public class GrammarProcessor {
         var metaTokens: Set<String> = []
 
         for token in tokenMetaProperties(in: grammar) {
-            guard let value = token.value as? SwiftPEGGrammar.MetaIdentifierValue else {
-                continue
-            }
+            for value in token.values {
+                guard let value = value as? SwiftPEGGrammar.MetaIdentifierValue else {
+                    continue
+                }
 
-            let name = String(value.identifier.string)
-            metaTokens.insert(name)
+                let name = String(value.identifier.string)
+                metaTokens.insert(name)
+            }
         }
 
         var tokensFromFile: Set<String> = []
@@ -635,6 +650,14 @@ public class GrammarProcessor {
         func grammarProcessor(
             _ processor: GrammarProcessor,
             loadTokensFileNamed name: String,
+            ofGrammar grammar: SwiftPEGGrammar.Grammar
+        ) throws -> String
+
+        /// Called by a grammar processor to resolve references to `@import`
+        /// meta-property.
+        func grammarProcessor(
+            _ processor: GrammarProcessor,
+            importFileNamed name: String,
             ofGrammar grammar: SwiftPEGGrammar.Grammar
         ) throws -> String
     }

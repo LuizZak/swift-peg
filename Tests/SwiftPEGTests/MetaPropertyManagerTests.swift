@@ -7,7 +7,7 @@ struct MetaPropertyManagerTests {
     func diagnoseValue_acceptedValues_none_withValues() throws {
         let known = [
             makeKnown(name: "meta1", acceptedValues: []),
-            makeKnown(name: "meta2", acceptedValues: [.none]),
+            makeKnown(name: "meta2", acceptedValue: .none),
         ]
         let metaProperties = try parseMetaProperties("""
         @meta1 a;
@@ -82,7 +82,7 @@ struct MetaPropertyManagerTests {
     func diagnoseValue_acceptedValues_mixedKinds() throws {
         let known = [
             makeKnown(name: "meta1", acceptedValues: [.boolean(), .string()], repeatMode: .always),
-            makeKnown(name: "meta2", acceptedValues: [.none, .identifier()], repeatMode: .always),
+            makeKnown(name: "meta2", acceptedValues: [.exactIdentifier("a"), .string()], repeatMode: .always),
         ]
         let metaProperties = try parseMetaProperties("""
         @meta1;
@@ -90,9 +90,9 @@ struct MetaPropertyManagerTests {
         @meta1 true;
         @meta1 "notBoolean";
 
-        @meta2 "string";
         @meta2;
-        @meta2 b;
+        @meta2 a;
+        @meta2 "b";
         """)
         let sut = makeSut(known)
         sut.add(contentsOf: metaProperties)
@@ -106,6 +106,39 @@ struct MetaPropertyManagerTests {
         assertDiagnosedMeta(sut, meta: metaProperties[4])
         assertDidNotDiagnoseMeta(sut, meta: metaProperties[5])
         assertDidNotDiagnoseMeta(sut, meta: metaProperties[6])
+    }
+
+    @Test
+    func diagnoseValue_acceptedValues_structure() throws {
+        let known = [
+            makeKnown(name: "meta1", acceptedValue: .structure(fields: [.identifier(), .exactIdentifier("is"), .string()]), repeatMode: .always),
+            makeKnown(name: "meta2", acceptedValue: .structure(fields: [.boolean(), .boolean()]), repeatMode: .always),
+        ]
+        let metaProperties = try parseMetaProperties("""
+        @meta1;
+        @meta1 a is "abc";
+        @meta1 a is;
+        @meta1 "a" "is" abc;
+
+        @meta2 "string";
+        @meta2 true false;
+        @meta2 "true" false;
+        @meta2 true;
+        """)
+        let sut = makeSut(known)
+        sut.add(contentsOf: metaProperties)
+
+        sut.validateAll()
+
+        assertDiagnosedMeta(sut, meta: metaProperties[0])
+        assertDidNotDiagnoseMeta(sut, meta: metaProperties[1])
+        assertDiagnosedMeta(sut, meta: metaProperties[2])
+        assertDiagnosedMeta(sut, meta: metaProperties[3])
+
+        assertDiagnosedMeta(sut, meta: metaProperties[4])
+        assertDidNotDiagnoseMeta(sut, meta: metaProperties[5])
+        assertDidNotDiagnoseMeta(sut, meta: metaProperties[6])
+        assertDiagnosedMeta(sut, meta: metaProperties[7])
     }
 
     // MARK: Repeat mode
@@ -147,10 +180,11 @@ struct MetaPropertyManagerTests {
 
         assertDiagnosticCount(sut, expected: 2) { diag in
             switch diag {
-            case .repeatedDefinitions(let first, let repeated)
+            case .repeatedDefinitions(let first, _, let repeated)
                 where first == metaProperties[0] && repeated == metaProperties[2]:
                 return true
-            case .repeatedDefinitions(let first, let repeated)
+
+            case .repeatedDefinitions(let first, _, let repeated)
                 where first == metaProperties[0] && repeated == metaProperties[3]:
                 return true
 
@@ -181,7 +215,22 @@ private func makeKnown(
     .init(
         name: name,
         propertyDescription: description,
-        acceptedValues: acceptedValues,
+        acceptedValues: .single(acceptedValues),
+        repeatMode: repeatMode
+    )
+}
+
+private func makeKnown(
+    name: String,
+    description: String = "",
+    acceptedValue: MetaPropertyManager.KnownProperty.AcceptedValues,
+    repeatMode: MetaPropertyManager.KnownProperty.RepeatMode = .always
+) -> MetaPropertyManager.KnownProperty {
+
+    .init(
+        name: name,
+        propertyDescription: description,
+        acceptedValues: acceptedValue,
         repeatMode: repeatMode
     )
 }
@@ -240,8 +289,9 @@ private func assertDidNotDiagnoseMeta(
 
     let diagnostics = sut.diagnostics.filter({ diag in
         switch diag {
-        case .repeatedDefinitions(let metaProp1, let metaProp2):
+        case .repeatedDefinitions(let metaProp1, _, let metaProp2):
             return metaProp1 == meta || metaProp2 == meta
+
         case .unexpectedValue(let metaProp, _):
             return metaProp == meta
         }
@@ -264,8 +314,9 @@ private func assertDiagnosedMeta(
 
     let diagnostics = sut.diagnostics.filter({ diag in
         switch diag {
-        case .repeatedDefinitions(let metaProp1, let metaProp2):
+        case .repeatedDefinitions(let metaProp1, _, let metaProp2):
             return metaProp1 == meta || metaProp2 == meta
+
         case .unexpectedValue(let metaProp, _):
             return metaProp == meta
         }
@@ -291,7 +342,7 @@ private func assertDiagnosedMeta(
 
 private extension MetaPropertyManager.MetaProperty {
     static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.node === rhs.node && lhs.name == rhs.name && lhs.value == rhs.value
+        lhs.node === rhs.node && lhs.name == rhs.name && lhs.values == rhs.values
     }
 
     static func == (lhs: Self, rhs: SwiftPEGGrammar.Meta) -> Bool {

@@ -13,7 +13,7 @@ extension SwiftPEGGrammar.Grammar {
             return nil
         }
 
-        return meta.value?.test_valueString
+        return meta.values.first?.test_valueString
     }
 }
 

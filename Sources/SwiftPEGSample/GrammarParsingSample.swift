@@ -138,11 +138,13 @@ class GrammarParsingSample: ParsableCommand {
                 print("Number of meta-properties: \(grammar.metas.count)")
 
                 for property in grammar.metas {
-                    if let value = property.value {
-                        print("@\(property.name.string) = \(value.shortDebugDescription)")
-                    } else {
-                        print("@\(property.name.string)")
+                    var buffer = "@\(property.name.string)"
+
+                    if !property.values.isEmpty {
+                        buffer += property.values.map(\.shortDebugDescription).joined(separator: " ")
                     }
+
+                    print(buffer)
                 }
 
                 print("Number of rules: \(grammar.rules.count)")
@@ -215,6 +217,17 @@ extension GrammarParsingSample: GrammarProcessor.Delegate {
     func grammarProcessor(
         _ processor: GrammarProcessor,
         loadTokensFileNamed name: String,
+        ofGrammar grammar: SwiftPEGGrammar.Grammar
+    ) throws -> String {
+
+        let url = resolveRelativeFileName(name)
+
+        return try String(contentsOf: url)
+    }
+
+    func grammarProcessor(
+        _ processor: GrammarProcessor,
+        importFileNamed name: String,
         ofGrammar grammar: SwiftPEGGrammar.Grammar
     ) throws -> String {
 

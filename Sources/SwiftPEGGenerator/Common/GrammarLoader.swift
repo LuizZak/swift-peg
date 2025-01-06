@@ -12,11 +12,18 @@ class GrammarLoader {
     /// Defaults to `baseURL` at initialization.
     var tokensFileBaseURL: URL
 
+    /// URL to use for the purposes of searching .gram files included in grammar
+    /// files.
+    ///
+    /// Defaults to `baseURL` at initialization.
+    var importFileBaseURL: URL
+
     /// Initializes a new grammar loader, to be based on a given path for the
     /// purposes of loading auxiliary files like .tokens files.
     init(baseURL: URL) throws {
         self.baseURL = baseURL
         self.tokensFileBaseURL = baseURL
+        self.importFileBaseURL = baseURL
     }
 
     /// Initializes a new grammar loader, to be based on the parent path of the
@@ -24,6 +31,7 @@ class GrammarLoader {
     init(baseURLOfPath fileURL: URL) throws {
         self.baseURL = fileURL.deletingLastPathComponent()
         self.tokensFileBaseURL = baseURL
+        self.importFileBaseURL = baseURL
     }
 
     /// Loads a raw grammar file at a given URL.
@@ -68,6 +76,10 @@ class GrammarLoader {
 
         return try processor.process(rawGrammar)
     }
+
+    enum Error: Swift.Error {
+        case importFailed(name: String)
+    }
 }
 
 extension GrammarLoader: GrammarProcessor.Delegate {
@@ -77,6 +89,16 @@ extension GrammarLoader: GrammarProcessor.Delegate {
         ofGrammar grammar: SwiftPEGGrammar.Grammar
     ) throws -> String {
         let source = try String(contentsOf: tokensFileBaseURL.appendingPathComponent(name))
+
+        return source
+    }
+
+    func grammarProcessor(
+        _ processor: GrammarProcessor,
+        importFileNamed name: String,
+        ofGrammar grammar: SwiftPEGGrammar.Grammar
+    ) throws -> String {
+        let source = try String(contentsOf: importFileBaseURL.appendingPathComponent(name))
 
         return source
     }

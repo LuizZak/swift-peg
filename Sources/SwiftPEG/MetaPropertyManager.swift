@@ -11,7 +11,7 @@ class MetaPropertyManager {
     func register(
         name: String,
         description: String,
-        acceptedValues: [KnownProperty.AcceptedValue],
+        acceptedValues: KnownProperty.AcceptedValues,
         repeatMode: KnownProperty.RepeatMode = .always
     ) -> KnownProperty {
 
@@ -97,7 +97,7 @@ class MetaPropertyManager {
 
             case .never:
                 for remaining in properties.dropFirst() {
-                    diagnoseRepeated(original: properties[0], remaining)
+                    diagnoseRepeated(original: properties[0], value: nil, remaining)
                 }
             }
         }
@@ -136,7 +136,7 @@ class MetaPropertyManager {
     func firstValue(of knownProperty: KnownProperty) -> MetaProperty.Value? {
         metaProperties.filter({
             $0.name == knownProperty.name && knownProperty.acceptsValue(of: $0)
-        }).first?.value
+        }).first?.values.first
     }
 
     private func validateValue(_ property: MetaProperty, _ knownProperty: KnownProperty) {
@@ -148,23 +148,65 @@ class MetaPropertyManager {
     }
 
     private func validateDistinctValues(_ properties: [MetaProperty]) {
-        var metaDict: [MetaProperty.Value: MetaProperty] = [:]
+        var metaDict: [MetaProperty.Value: (MetaProperty, MetaProperty.Value)] = [:]
 
         for property in properties {
-            if let original = metaDict[property.value] {
-                diagnoseRepeatedValue(original: original, property)
-            } else {
-                metaDict[property.value] = property
+            for value in property.values {
+                if let original = metaDict[value] {
+                    diagnoseRepeatedValue(original: original.0, value: original.1, property)
+                } else {
+                    metaDict[value] = (property, value)
+                }
             }
         }
     }
 
-    private func diagnoseRepeatedValue(original: MetaProperty, _ next: MetaProperty) {
-        diagnostics.append(.repeatedDefinitions(firstDefinition: original, next))
+    private func diagnoseRepeatedValue(original: MetaProperty, value: MetaProperty.Value?, _ next: MetaProperty) {
+        diagnostics.append(.repeatedDefinitions(firstDefinition: original, value, next))
     }
 
-    private func diagnoseRepeated(original: MetaProperty, _ next: MetaProperty) {
-        diagnostics.append(.repeatedDefinitions(firstDefinition: original, next))
+    private func diagnoseRepeated(original: MetaProperty, value: MetaProperty.Value?, _ next: MetaProperty) {
+        diagnostics.append(.repeatedDefinitions(firstDefinition: original, value, next))
+    }
+
+    static func makeAcceptedValueDescription(_ expected: KnownProperty.AcceptedValues) -> String {
+        func bufferForValue(_ value: KnownProperty.AcceptedValue) -> String {
+            func terminate(_ suffix: String?) -> String {
+                if let suffix { ": \(suffix)" }
+                else { "." }
+            }
+
+            switch value {
+            case .string(let description):
+                return "A string\(terminate(description))"
+
+            case .exactIdentifier(let ident, let description):
+                return "'\(ident)'\(terminate(description))"
+
+            case .identifier(let description):
+                return "An identifier\(terminate(description))"
+
+            case .boolean(let description):
+                return "A string or identifier of 'true'/'false' value\(terminate(description))"
+            }
+        }
+
+        switch expected {
+        case .none:
+            return "No value"
+
+        case .any:
+            return "Any value"
+
+        case .single(let value):
+            return value.map(bufferForValue(_:)).asNaturalLanguageList()
+
+        case .list(let element):
+            return "A list of values matching: \(element.map(bufferForValue(_:)).asNaturalLanguageList())"
+
+        case .structure:
+            return "A static structure accepting: \(expected.description)"
+        }
     }
 
     static func makeAcceptedValueDescription(_ expected: [KnownProperty.AcceptedValue]) -> String {
@@ -175,10 +217,11 @@ class MetaPropertyManager {
             }
 
             switch value {
-            case .none:
-                return "No value"
             case .string(let description):
                 return "A string\(terminate(description))"
+
+            case .exactIdentifier(let ident, let description):
+                return "'\(ident)'\(terminate(description))"
 
             case .identifier(let description):
                 return "An identifier\(terminate(description))"
@@ -188,7 +231,7 @@ class MetaPropertyManager {
             }
         }
         if expected.isEmpty {
-            return makeAcceptedValueDescription([.none])
+            return makeAcceptedValueDescription(.none)
         }
         if expected.count == 1 {
             return bufferForValue(expected[0])
@@ -202,17 +245,17 @@ class MetaPropertyManager {
     enum Diagnostic: CustomStringConvertible {
         /// A meta-property was defined multiple times when it was described to
         /// not be.
-        case repeatedDefinitions(firstDefinition: MetaProperty, MetaProperty)
+        case repeatedDefinitions(firstDefinition: MetaProperty, MetaProperty.Value?, MetaProperty)
 
         /// A meta-property was defined with a value that differed from the expected
         /// kind.
-        case unexpectedValue(MetaProperty, expected: [KnownProperty.AcceptedValue])
+        case unexpectedValue(MetaProperty, expected: KnownProperty.AcceptedValues)
 
         /// Returns the meta-property that originated this diagnostic; suitable
         /// for using as source location for displaying diagnostic to users.
         var metaProperty: MetaProperty {
             switch self {
-            case .repeatedDefinitions(_, let meta),
+            case .repeatedDefinitions(_, _, let meta),
                 .unexpectedValue(let meta, _):
                 return meta
             }
@@ -220,14 +263,21 @@ class MetaPropertyManager {
 
         var description: String {
             switch self {
-            case .repeatedDefinitions(let firstDefinition, let other):
-                if let value = other.value.stringValue {
+            case .repeatedDefinitions(let firstDefinition, let value, let other):
+                if let value = value?.stringValue {
                     return "@\(other.name) with value '\(value)' @ \(other.node.location) has been declared at least once @ \(firstDefinition.node.location)."
                 }
                 return "@\(other.name) @ \(other.node.location) has been declared at least once @ \(firstDefinition.node.location)."
 
             case .unexpectedValue(let property, let expected):
-                return "Unexpected value '\(property.value)' for @\(property.name): expected: \(MetaPropertyManager.makeAcceptedValueDescription(expected))"
+                if property.values.isEmpty {
+                    return "Unexpected value '<empty>' for @\(property.name): expected: \(MetaPropertyManager.makeAcceptedValueDescription(expected))"
+                }
+                if property.values.count == 1 {
+                    return "Unexpected value '\(property.values.map(\.description).joined(separator: ", "))' for @\(property.name): expected: \(MetaPropertyManager.makeAcceptedValueDescription(expected))"
+                }
+
+                return "Unexpected values [\(property.values.map(\.description).joined(separator: ", "))] for @\(property.name): expected: \(MetaPropertyManager.makeAcceptedValueDescription(expected))"
             }
         }
     }
@@ -236,13 +286,13 @@ class MetaPropertyManager {
     struct MetaProperty {
         var node: SwiftPEGGrammar.Meta
         var name: String
-        var value: Value
+        var values: [Value]
 
         static func from(_ node: SwiftPEGGrammar.Meta) -> Self {
             return .init(
                 node: node,
                 name: String(node.name.string),
-                value: .from(node.value)
+                values: node.values.map(Value.from)
             )
         }
 
@@ -293,7 +343,7 @@ class MetaPropertyManager {
         /// including descriptions, if available.
         ///
         /// If the array is empty, it equates to `AcceptedValue.none`.
-        var acceptedValues: [AcceptedValue]
+        var acceptedValues: AcceptedValues
 
         /// The repeat mode acceptable for the described meta-property.
         var repeatMode: RepeatMode
@@ -305,15 +355,87 @@ class MetaPropertyManager {
         /// Returns `true` if this known property entry accepts values defined by
         /// a given grammar's meta property.
         internal func acceptsValue(of property: MetaProperty) -> Bool {
-            if acceptedValues.isEmpty { return property.value == .none }
-            return acceptedValues.contains(where: { $0.accepts(property.value) })
+            return acceptedValues.accepts(property.values)
         }
 
+        /// Specifies a structured set of accepted values for a meta-property.
+        enum AcceptedValues: Equatable {
+            /// No value, i.e. `@metaPropertyName ;`.
+            case none
+
+            /// Any combination of values, including no values at all.
+            case any
+
+            /// A single value.
+            case single([AcceptedValue])
+
+            /// A list of accepted values, described by the same `AcceptedValue`
+            /// declaration.
+            case list(element: [AcceptedValue])
+
+            /// A structured accepted value sequence, applied to each value
+            /// separately and in order.
+            case structure(fields: [AcceptedValue])
+
+            var description: String {
+                switch self {
+                case .none:
+                    return "No value"
+
+                case .any:
+                    return "Any value"
+
+                case .single(let value):
+                    return value.description
+
+                case .list(let value):
+                    return "A list of values matching: \(value.description)"
+
+                case .structure(let values):
+                    return "A list of values representing: \(values.enumerated().map { "index \($0.offset): \($0.element.description)" }.joined(separator: ", "))"
+                }
+            }
+
+            func accepts(_ values: [MetaProperty.Value]) -> Bool {
+                switch self {
+                case .none:
+                    return values.isEmpty
+
+                case .any:
+                    return true
+
+                case .single(let value):
+                    guard values.count == 1 else {
+                        return false
+                    }
+
+                    return value.contains { $0.accepts(values[0]) }
+
+                case .list(let acceptedValue):
+                    return values.allSatisfy { value in acceptedValue.contains(where: { $0.accepts(value) }) }
+
+                case .structure(let fields):
+                    guard values.count == fields.count else {
+                        return false
+                    }
+
+                    for (value, accepted) in zip(values, fields) {
+                        if !accepted.accepts(value) {
+                            return false
+                        }
+                    }
+
+                    return true
+                }
+            }
+        }
+
+        /// Specifies an acceptable value for a meta-property.
         enum AcceptedValue: Equatable {
             /// The list of accepted values that represent that any value for a
             /// meta-property, present or not, is accepted.
             static let any: [AcceptedValue] = [
-                .none, .string(), .identifier(), .boolean()
+                .string(), .identifier(),
             ]
 
             /// Returns a combination of `string` and `identifier` cases with a
@@ -326,28 +448,28 @@ class MetaPropertyManager {
                 ]
             }
 
-            /// No value, i.e. `@metaPropertyName ;`.
-            case none
-
             /// A string literal value.
             case string(description: String? = nil)
 
             /// An identifier value.
             case identifier(description: String? = nil)
 
+            /// An identifier value that resolves to an exact known identifier.
+            case exactIdentifier(String, description: String? = nil)
+
             /// A special case of an identifier that resolves to `true` or `false`.
             case boolean(description: String? = nil)
 
             var description: String {
                 switch self {
-                case .none:
-                    return "No value"
-
                 case .boolean(let description):
                     return "Identifiers or strings 'true' or 'false'. \(description ?? "")"
 
                 case .string(let description):
                     return "A single, double, or triple-quoted string. \(description ?? "")"
+
+                case .exactIdentifier(let exact, let description):
+                    return "'\(exact)'. \(description ?? "")"
 
                 case .identifier(let description):
                     return "An identifier. \(description ?? "")"
@@ -356,9 +478,6 @@ class MetaPropertyManager {
 
             func accepts(_ value: MetaProperty.Value) -> Bool {
                 switch self {
-                case .none:
-                    return value == .none
-
                 case .boolean:
                     return value == .identifier("true")
                         || value == .identifier("false")
@@ -368,6 +487,12 @@ class MetaPropertyManager {
                 case .string:
                     switch value {
                     case .string: return true
+                    default: return false
+                    }
+
+                case .exactIdentifier(let ident, _):
+                    switch value {
+                    case .identifier(ident): return true
                     default: return false
                     }
 

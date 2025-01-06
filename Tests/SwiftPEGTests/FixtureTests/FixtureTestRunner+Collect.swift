@@ -54,7 +54,7 @@ extension FixtureTestRunner {
         guard let expectedParserProp = file.test_metaProperty(named: Self.expectedParserProp) else {
             return nil
         }
-        guard let value = expectedParserProp.value?.test_valueString?.trimmingWhitespaceTrail() else {
+        guard let value = expectedParserProp.values.first?.test_valueString?.trimmingWhitespaceTrail() else {
             return nil
         }
 
@@ -97,7 +97,7 @@ extension FixtureTestRunner {
         guard let expectedTokenTypeProp = file.test_metaProperty(named: Self.expectedTokenTypeProp) else {
             return nil
         }
-        guard let value = expectedTokenTypeProp.value?.test_valueString?.trimmingWhitespaceTrail() else {
+        guard let value = expectedTokenTypeProp.values.first?.test_valueString?.trimmingWhitespaceTrail() else {
             return nil
         }
 

@@ -132,13 +132,22 @@ public enum InternalGrammar {
 
     /// ```
     /// meta:
-    ///     | "@" name=IDENT value=metaValue ';'
-    ///     | "@" name=IDENT ';'
+    ///     | "@" name=IDENT values=metaValue* ';'
     ///     ;
     /// ```
     public struct MetaProperty: Hashable {
         public var name: String
-        public var value: Value? = nil
+        public var values: [Value] = []
+
+        public init(name: String, values: [Value] = []) {
+            self.name = name
+            self.values = values
+        }
+
+        public init(name: String, value: Value) {
+            self.name = name
+            self.values = [value]
+        }
 
         /// Accepts a given visitor, and recursively passes the visitor to nested
         /// property types within this object that can be visited, if present.
@@ -152,7 +161,7 @@ public enum InternalGrammar {
 
             .init(
                 name: String(node.name.string),
-                value: node.value.map(Value.from)
+                values: node.values.map(Value.from)
             )
         }
 

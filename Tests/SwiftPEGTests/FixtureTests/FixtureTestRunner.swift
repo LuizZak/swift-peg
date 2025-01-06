@@ -198,7 +198,7 @@ class FixtureTestRunner {
     ) throws -> (SwiftPEGGrammar.Grammar, LineDiagnosticTarget) {
         if
             let grammarProp = grammar.test_metaProperty(named: Self.grammarProp),
-            let value = grammarProp.value?.test_valueString
+            let value = grammarProp.values.first?.test_valueString
         {
             let parsed = try parse(source: value)
             return (parsed, GrammarLineContext.grammarMetaProperty(self, url, grammarProp))
@@ -401,6 +401,15 @@ class FixtureTestRunner {
             ofGrammar grammar: SwiftPEGGrammar.Grammar
         ) throws -> String {
 
+            let url = basePath.appendingPathComponent(name)
+            return try String(contentsOf: url)
+        }
+
+        func grammarProcessor(
+            _ processor: GrammarProcessor,
+            importFileNamed name: String,
+            ofGrammar grammar: SwiftPEGGrammar.Grammar
+        ) throws -> String {
             let url = basePath.appendingPathComponent(name)
             return try String(contentsOf: url)
         }
