@@ -51,13 +51,6 @@ public class GrammarRawTokenizer: RawTokenizerType {
     }
 
     @inlinable
-    internal func skipLine() {
-        while !_stream.isEof && _stream.peek() != "\n" {
-            advance(by: 1)
-        }
-    }
-
-    @inlinable
     internal func advance(by count: Int) {
         for _ in 0..<count {
             if _stream.isEof { break }
