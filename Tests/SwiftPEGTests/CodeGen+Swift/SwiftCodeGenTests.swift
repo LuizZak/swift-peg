@@ -14,6 +14,7 @@ struct SwiftCodeGenTests {
             // TestParser
             extension TestParser {
             }
+
             """).diff(result)
     }
 
@@ -30,7 +31,28 @@ struct SwiftCodeGenTests {
         diffTest(expected: """
             // TestParser
             public class TestParser<RawTokenizer: RawTokenizerType>: PEGParser<RawTokenizer> where RawTokenizer.RawToken == MyToken, RawTokenizer.Location == FileSourceLocation {
+                public override func skipChannelSkipTokens(_ except: Set<RawToken.TokenKind>) throws -> Void {
+                    let skipKinds: Set<RawToken.TokenKind> = []
+
+                    repeat {
+                        let next: Token? = try tokenizer.peekToken()
+
+                        guard
+                            let kind = next?.rawToken.kind,
+                            skipKinds.contains(kind)
+                        else {
+                            break
+                        }
+
+                        if except.contains(kind) {
+                            break
+                        }
+
+                        _ = try tokenizer.next()
+                    } while !tokenizer.isEOF
+                }
             }
+
             """).diff(result)
     }
 
@@ -69,6 +91,7 @@ struct SwiftCodeGenTests {
                     return nil
                 }
             }
+
             """).diff(result)
     }
 
@@ -107,6 +130,7 @@ struct SwiftCodeGenTests {
                     return nil
                 }
             }
+
             """).diff(result)
     }
 
@@ -129,6 +153,7 @@ struct SwiftCodeGenTests {
             // TestParser
             extension TestParser {
             }
+
             """).diff(result)
     }
 
@@ -169,6 +194,7 @@ struct SwiftCodeGenTests {
                     return nil
                 }
             }
+
             """).diff(result)
     }
 
@@ -305,6 +331,7 @@ struct SwiftCodeGenTests {
                     return nil
                 }
             }
+
             """).diff(result)
     }
 
@@ -443,6 +470,7 @@ struct SwiftCodeGenTests {
                     return nil
                 }
             }
+
             """).diff(result)
     }
 
@@ -487,6 +515,7 @@ struct SwiftCodeGenTests {
                     return nil
                 }
             }
+
             """).diff(result)
     }
 
@@ -531,6 +560,7 @@ struct SwiftCodeGenTests {
                     return nil
                 }
             }
+
             """).diff(result)
     }
 
@@ -608,6 +638,7 @@ struct SwiftCodeGenTests {
                     return nil
                 }
             }
+
             """).diff(result)
     }
 
@@ -785,6 +816,7 @@ struct SwiftCodeGenTests {
                     return nil
                 }
             }
+
             """).diff(result)
     }
 
@@ -863,6 +895,7 @@ struct SwiftCodeGenTests {
                     return nil
                 }
             }
+
             """).diff(result)
     }
 
@@ -945,6 +978,7 @@ struct SwiftCodeGenTests {
                     return nil
                 }
             }
+
             """).diff(result)
     }
 
@@ -1039,6 +1073,7 @@ struct SwiftCodeGenTests {
                     return nil
                 }
             }
+
             """).diff(result)
     }
 
@@ -1085,6 +1120,7 @@ struct SwiftCodeGenTests {
                     return nil
                 }
             }
+
             """).diff(result)
     }
 
@@ -1129,6 +1165,7 @@ struct SwiftCodeGenTests {
                     return nil
                 }
             }
+
             """#).diff(result)
     }
 
@@ -1223,6 +1260,7 @@ struct SwiftCodeGenTests {
                     return nil
                 }
             }
+
             """#).diff(result)
     }
 
@@ -1305,6 +1343,7 @@ struct SwiftCodeGenTests {
                     return nil
                 }
             }
+
             """#).diff(result)
     }
 
@@ -1389,6 +1428,7 @@ struct SwiftCodeGenTests {
                     return nil
                 }
             }
+
             """#).diff(result)
     }
 
@@ -1429,6 +1469,7 @@ struct SwiftCodeGenTests {
                     return nil
                 }
             }
+
             """).diff(result)
     }
 
@@ -1469,6 +1510,7 @@ struct SwiftCodeGenTests {
                     return nil
                 }
             }
+
             """).diff(result)
     }
 
@@ -1513,6 +1555,7 @@ struct SwiftCodeGenTests {
                     return nil
                 }
             }
+
             """).diff(result)
     }
 
@@ -1573,6 +1616,7 @@ struct SwiftCodeGenTests {
                     return nil
                 }
             }
+
             """).diff(result)
     }
 
@@ -1617,6 +1661,7 @@ struct SwiftCodeGenTests {
                     return nil
                 }
             }
+
             """).diff(result)
     }
 
@@ -1660,6 +1705,7 @@ struct SwiftCodeGenTests {
                     return nil
                 }
             }
+
             """).diff(result)
     }
 
@@ -1701,6 +1747,7 @@ struct SwiftCodeGenTests {
                     return nil
                 }
             }
+
             """).diff(result)
     }
 
@@ -1737,6 +1784,7 @@ struct SwiftCodeGenTests {
                     return nil
                 }
             }
+
             """).diff(result)
     }
 
@@ -1779,6 +1827,7 @@ struct SwiftCodeGenTests {
                     return nil
                 }
             }
+
             """).diff(result)
     }
 
@@ -1815,6 +1864,7 @@ struct SwiftCodeGenTests {
                     return nil
                 }
             }
+
             """).diff(result)
     }
 
@@ -1863,6 +1913,7 @@ struct SwiftCodeGenTests {
                     return nil
                 }
             }
+
             """).diff(result)
     }
 
@@ -1928,6 +1979,7 @@ struct SwiftCodeGenTests {
                     return nil
                 }
             }
+
             """#).diff(result)
     }
 
@@ -1967,6 +2019,7 @@ struct SwiftCodeGenTests {
                     return nil
                 }
             }
+
             """).diff(result)
     }
 
@@ -2029,6 +2082,7 @@ struct SwiftCodeGenTests {
                     return nil
                 }
             }
+
             """).diff(result)
     }
 
@@ -2156,6 +2210,7 @@ struct SwiftCodeGenTests {
                     return nil
                 }
             }
+
             """).diff(result)
     }
 
@@ -2283,6 +2338,7 @@ struct SwiftCodeGenTests {
                     return nil
                 }
             }
+
             """).diff(result)
     }
 
@@ -2420,6 +2476,7 @@ struct SwiftCodeGenTests {
                     return nil
                 }
             }
+
             """).diff(result)
     }
 
@@ -2546,6 +2603,7 @@ struct SwiftCodeGenTests {
                     return nil
                 }
             }
+
             """).diff(result)
     }
 
@@ -2711,6 +2769,7 @@ struct SwiftCodeGenTests {
                     return nil
                 }
             }
+
             """).diff(result)
     }
 
@@ -2768,6 +2827,7 @@ struct SwiftCodeGenTests {
                     return nil
                 }
             }
+
             """).diff(result)
     }
 
@@ -2804,6 +2864,7 @@ struct SwiftCodeGenTests {
                     return nil
                 }
             }
+
             """).diff(result)
     }
 
@@ -2861,6 +2922,7 @@ struct SwiftCodeGenTests {
                     return nil
                 }
             }
+
             """).diff(result)
     }
 
@@ -2928,6 +2990,7 @@ struct SwiftCodeGenTests {
                     return nil
                 }
             }
+
             """#).diff(result)
     }
 
@@ -2995,6 +3058,7 @@ struct SwiftCodeGenTests {
                     return nil
                 }
             }
+
             """#).diff(result)
     }
 
@@ -3621,6 +3685,7 @@ struct SwiftCodeGenTests {
                     return nil
                 }
             }
+
             """, highlightLineInEditor: false).diff(result)
     }
 }

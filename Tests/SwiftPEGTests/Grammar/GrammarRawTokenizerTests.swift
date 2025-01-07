@@ -81,7 +81,7 @@ struct GrammarRawTokenizerTests {
     }
 
     @Test
-    func skipsComments() throws {
+    func lexesComments() throws {
         let sut = makeSut(#"""
         # A line comment
         a b c
@@ -90,17 +90,17 @@ struct GrammarRawTokenizerTests {
         """#)
 
         try assertTokensAndLocations(sut, [
-            (.whitespace("\n"),   makeLocation(line: 1, column: 17)),
-            (.identifier("a"),    makeLocation(line: 2, column: 1)),
-            (.whitespace(" "),    makeLocation(line: 2, column: 2)),
-            (.identifier("b"),    makeLocation(line: 2, column: 3)),
-            (.whitespace(" "),    makeLocation(line: 2, column: 4)),
-            (.identifier("c"),    makeLocation(line: 2, column: 5)),
-            (.whitespace("\n"),   makeLocation(line: 2, column: 6)),
-            (.identifier("d"),    makeLocation(line: 3, column: 1)),
-            (.whitespace(" "),    makeLocation(line: 3, column: 2)),
-            (.whitespace("\n"),   makeLocation(line: 3, column: 25)),
-            (.identifier("e"),    makeLocation(line: 4, column: 1)),
+            (.comment("# A line comment\n"),        makeLocation(line: 1, column: 1)),
+            (.identifier("a"),                      makeLocation(line: 2, column: 1)),
+            (.whitespace(" "),                      makeLocation(line: 2, column: 2)),
+            (.identifier("b"),                      makeLocation(line: 2, column: 3)),
+            (.whitespace(" "),                      makeLocation(line: 2, column: 4)),
+            (.identifier("c"),                      makeLocation(line: 2, column: 5)),
+            (.whitespace("\n"),                     makeLocation(line: 2, column: 6)),
+            (.identifier("d"),                      makeLocation(line: 3, column: 1)),
+            (.whitespace(" "),                      makeLocation(line: 3, column: 2)),
+            (.comment("# Another line comment\n"),  makeLocation(line: 3, column: 3)),
+            (.identifier("e"),                      makeLocation(line: 4, column: 1)),
         ])
     }
 }

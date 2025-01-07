@@ -434,7 +434,13 @@ private func parseTokenDefinitions(
         throw parser.makeSyntaxError()
     }
 
-    return tokens.map(InternalGrammar.TokenDefinition.from)
+    return tokens.compactMap { decl in
+        guard let decl = decl as? SwiftPEGGrammar.TokenDefinition else {
+            return nil
+        }
+
+        return InternalGrammar.TokenDefinition.from(decl)
+    }
 }
 
 private func assertParses(

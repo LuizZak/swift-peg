@@ -998,6 +998,7 @@ struct SwiftCodeGen_TokenTests {
                 stream.advanceIfNext("abc")
             }
         }
+
         """#).diff(result)
     }
 
@@ -1071,6 +1072,7 @@ struct SwiftCodeGen_TokenTests {
                 stream.advanceIfNext("abc")
             }
         }
+
         """#).diff(result)
     }
 
@@ -1167,6 +1169,7 @@ struct SwiftCodeGen_TokenTests {
                 return false
             }
         }
+
         """#).diff(result)
     }
 
@@ -1270,6 +1273,7 @@ struct SwiftCodeGen_TokenTests {
                 stream.advanceIfNext("c")
             }
         }
+
         """#).diff(result)
     }
 
@@ -1343,6 +1347,7 @@ struct SwiftCodeGen_TokenTests {
                 stream.advanceIfNext("abc")
             }
         }
+
         """#).diff(result)
     }
 
@@ -1416,6 +1421,7 @@ struct SwiftCodeGen_TokenTests {
                 stream.advanceIfNext("abc")
             }
         }
+
         """#).diff(result)
     }
 
@@ -1497,6 +1503,7 @@ struct SwiftCodeGen_TokenTests {
                 stream.advanceIfNext("abc")
             }
         }
+
         """#).diff(result)
     }
 
@@ -1626,6 +1633,7 @@ struct SwiftCodeGen_TokenTests {
                 }
             }
         }
+
         """#).diff(result)
     }
 
@@ -1766,6 +1774,7 @@ struct SwiftCodeGen_TokenTests {
                 return false
             }
         }
+
         """#).diff(result)
     }
 
@@ -1965,6 +1974,7 @@ struct SwiftCodeGen_TokenTests {
                 return false
             }
         }
+
         """#).diff(result)
     }
 
@@ -2052,6 +2062,7 @@ struct SwiftCodeGen_TokenTests {
                 return stream.advanceIfNext("+") || stream.advanceIfNext("-")
             }
         }
+
         """#).diff(result)
     }
 }
@@ -2084,7 +2095,13 @@ private func parseTokenDefinitions(
         throw parser.makeSyntaxError()
     }
 
-    return tokens.map(InternalGrammar.TokenDefinition.from)
+    return tokens.compactMap { decl in
+        guard let decl = decl as? SwiftPEGGrammar.TokenDefinition else {
+            return nil
+        }
+
+        return InternalGrammar.TokenDefinition.from(decl)
+    }
 }
 
 private extension Expression {

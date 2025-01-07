@@ -10,6 +10,10 @@ extension GrammarParserToken: ExpressibleByStringLiteral {
 // Static constructors
 
 extension GrammarParserToken {
+    static func comment(_ value: some StringProtocol) -> Self {
+        .init(kind: .comment, string: Substring(value))
+    }
+
     static func whitespace(_ value: some StringProtocol) -> Self {
         .init(kind: .whitespace, string: Substring(value))
     }

@@ -25,23 +25,12 @@ public protocol RawTokenType: Hashable {
     /// `String.count` property).
     var length: Int { get }
 
-    /// Returns `true` if this token represents a sequence of whitespace characters.
-    var isWhitespace: Bool { get }
-
     /// Produces a dummy token construction of a given type.
     /// The construction must have `RawTokenType.kind` be the same as the provided
     /// `kind`.
     ///
     /// The `RawTokenType.string` may be any arbitrary value.
     static func produceDummy(_ kind: TokenKind) -> Self
-}
-
-extension RawTokenType {
-    /// Returns `true` if `self.kind == TokenKind.whitespace`.
-    @inlinable
-    public var isWhitespace: Bool {
-        self.kind == .whitespace
-    }
 }
 
 /// Specifies a kind of a token.

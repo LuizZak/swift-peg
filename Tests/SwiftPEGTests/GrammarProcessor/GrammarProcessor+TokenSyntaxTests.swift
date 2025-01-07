@@ -583,7 +583,7 @@ private func parseTokens(
     _ tokensFile: String,
     file: StaticString = #file,
     line: UInt = #line
-) throws -> [SwiftPEGGrammar.TokenDefinition] {
+) throws -> [SwiftPEGGrammar.TokenFileDeclaration] {
 
     let tokenizer = GrammarRawTokenizer(source: tokensFile)
     let parser = GrammarParser(raw: tokenizer)
@@ -603,5 +603,11 @@ private func parseTokenDefinitions(
 
     return
         try parseTokens(tokensFile, file: file, line: line)
-        .map(InternalGrammar.TokenDefinition.from)
+        .compactMap { decl in
+            guard let decl = decl as? SwiftPEGGrammar.TokenDefinition else {
+                return nil
+            }
+
+            return InternalGrammar.TokenDefinition.from(decl)
+        }
 }
