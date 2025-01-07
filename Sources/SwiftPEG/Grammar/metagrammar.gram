@@ -153,22 +153,21 @@ string[SwiftPEGGrammar.GrammarString]:
 
 # Tokens file grammar
 
-# TODO: Consider implementing lexer channels if needs be?
 tokensFile[[SwiftPEGGrammar.TokenFileDeclaration]]:
     | tokensFileDeclaration*
     ;
 
-tokensFileDeclaration[[SwiftPEGGrammar.TokenFileDeclaration]]:
+tokensFileDeclaration[SwiftPEGGrammar.TokenFileDeclaration]:
     | tokenDefinition
     | tokenChannelDeclaration
     ;
 
-tokenChannelDeclaration[[SwiftPEGGrammar.TokenChannel]]:
-    | '@' IDENTIFIER IDENTIFIER '~>' tokenChannelTarget ';'   { "\(identifier)" == "channel" ? self.setLocation(.init(identifier: identifier), at: _mark) : nil }
-    | '@' IDENTIFIER IDENTIFIER? ';'                          { "\(identifier)" == "channel" ? self.setLocation(.init(identifier: identifier), at: _mark) : nil }
+tokenChannelDeclaration[SwiftPEGGrammar.TokenChannelDeclaration]:
+    | '@' IDENTIFIER name=IDENTIFIER '~>' tokenChannelTarget ';'   { "\(identifier)" == "channel" ? self.setLocation(.init(name: name.rawToken, target: tokenChannelTarget), at: _mark) : nil }
+    | '@' IDENTIFIER name=IDENTIFIER? ';'                          { "\(identifier)" == "channel" ? self.setLocation(.init(name: name?.rawToken, target: nil), at: _mark) : nil }
     ;
 tokenChannelTarget[SwiftPEGGrammar.TokenChannelTarget]:
-    | IDENTIFIER            { TokenChannelTarget(identifier: identifier) }
+    | IDENTIFIER            { .init(identifier: identifier.rawToken) }
     ;
 
 # Note: tokenCodeReference must resolve statically to a token reference when PEGParser.expect()/PEGParser.expect(kind:) uses it as its argument.

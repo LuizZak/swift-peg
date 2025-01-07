@@ -151,8 +151,16 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
             return .init(kind: .star, string: stream.substring)
         }
 
+        if consume_TILDEARROW(from: &stream) {
+            return .init(kind: .tildeArrow, string: stream.substring)
+        }
+
         if consume_TILDE(from: &stream) {
             return .init(kind: .tilde, string: stream.substring)
+        }
+
+        if consume_COMMENT(from: &stream) {
+            return .init(kind: .comment, string: stream.substring)
         }
 
         if consume_DIGITS(from: &stream) {
@@ -258,8 +266,14 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
         /// `"*"`
         case star
 
+        /// `"~>"`
+        case tildeArrow
+
         /// `"~"`
         case tilde
+
+        /// `"#" (!"\n" .)* "\n"?`
+        case comment
 
         /// `("0"..."9")+`
         case digits
@@ -337,8 +351,12 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
                 ";"
             case .star:
                 "*"
+            case .tildeArrow:
+                "~>"
             case .tilde:
                 "~"
+            case .comment:
+                "COMMENT"
             case .digits:
                 "DIGITS"
             case .identifier:
@@ -657,6 +675,16 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
     }
 
     /// ```
+    /// TILDEARROW[".tildeArrow"]:
+    ///     | "~>"
+    ///     ;
+    /// ```
+    @inlinable
+    public static func consume_TILDEARROW<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("~>")
+    }
+
+    /// ```
     /// TILDE[".tilde"]:
     ///     | "~"
     ///     ;
@@ -664,6 +692,41 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
     @inlinable
     public static func consume_TILDE<StringType>(from stream: inout StringStream<StringType>) -> Bool {
         stream.advanceIfNext("~")
+    }
+
+    /// ```
+    /// COMMENT[".comment"]:
+    ///     | "#" (!"\n" .)* "\n"?
+    ///     ;
+    /// ```
+    @inlinable
+    public static func consume_COMMENT<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else {
+            return false
+        }
+
+        alt:
+        do {
+            guard stream.advanceIfNext("#") else {
+                return false
+            }
+
+            loop:
+            while !stream.isEof {
+                if
+                    !stream.isNext("\n"),
+                    !stream.isEof
+                {
+                    stream.advance()
+                } else {
+                    break loop
+                }
+            }
+
+            _ = stream.advanceIfNext("\n")
+
+            return true
+        }
     }
 
     /// ```

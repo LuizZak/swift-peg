@@ -141,10 +141,14 @@ public class SwiftCodeGen {
     ///
     /// - Parameters:
     ///   - grammar: The grammar to generate.
-    ///   - tokenDefinitions: A list of token definitions to use when examining string literals.
+    ///   - tokenDefinitions: A list of token definitions to use when examining
+    ///     string literals.
+    ///   - tokenChannels: A list of token channels to use when emitting token
+    ///     channel-related code.
     public convenience init(
         grammar: InternalGrammar.Grammar,
         tokenDefinitions: [InternalGrammar.TokenDefinition] = [],
+        tokenChannels: [InternalGrammar.TokenChannel] = [],
         ruleDependencyGraph: RuleDependencyGraph = .empty,
         tokenOcclusionGraph: TokenOcclusionGraph = .empty
     ) {
@@ -152,6 +156,7 @@ public class SwiftCodeGen {
             from: .init(
                 grammar: grammar,
                 tokens: tokenDefinitions,
+                tokenChannels: tokenChannels,
                 ruleDependencyGraph: ruleDependencyGraph,
                 tokenOcclusionGraph: tokenOcclusionGraph
             )
@@ -172,7 +177,7 @@ public class SwiftCodeGen {
             emitter.emit(decl)
         }
 
-        return emitter.finishBuffer()
+        return emitter.finishBuffer(addTrailingNewline: true)
     }
 
     private func memoizationMode(for rule: InternalGrammar.Rule) -> MemoizationMode {

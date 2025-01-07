@@ -1044,13 +1044,16 @@ extension SwiftPEGGrammar {
     ///
     /// Represents the construct:
     /// ```
-    /// tokenChannelDeclaration[[SwiftPEGGrammar.TokenChannel]]:
-    ///     | '@' IDENTIFIER IDENTIFIER '~>' tokenChannelTarget ';'   { "\(identifier)" == "channel" ? self.setLocation(.init(identifier: identifier, target: tokenChannelTarget), at: _mark) : nil }
-    ///     | '@' IDENTIFIER IDENTIFIER? ';'                          { "\(identifier)" == "channel" ? self.setLocation(.init(identifier: identifier, target: nil), at: _mark) : nil }
+    /// tokenChannelDeclaration:
+    ///     | '@' IDENTIFIER IDENTIFIER '~>' tokenChannelTarget ';'
+    ///     | '@' IDENTIFIER IDENTIFIER? ';'
     ///     ;
     /// ```
     @GeneratedNodeType<Node>(overrideDeepCopyType: "TokenFileDeclaration")
     public final class TokenChannelDeclaration: TokenFileDeclaration {
+        @NodeRequired
+        public var name: Token?
+
         @NodeProperty
         var _target: TokenChannelTarget?
     }
@@ -1066,7 +1069,7 @@ extension SwiftPEGGrammar {
     @GeneratedNodeType<Node>
     public final class TokenChannelTarget: GrammarNode {
         @NodeRequired
-        var _identifier: Token
+        public var identifier: Token
     }
 
     /// Protocol for visiting Grammar node types.

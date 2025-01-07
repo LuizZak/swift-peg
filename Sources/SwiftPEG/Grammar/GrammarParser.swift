@@ -1,30 +1,29 @@
 // HEADS UP! This is a generated file
 
 /// A parser for SwiftPEG grammar files.
-public final class GrammarParser<RawTokenizer: RawTokenizerType>: PEGParser<RawTokenizer>
-    where RawTokenizer.RawToken == SwiftPEGGrammar.Token, RawTokenizer.Location == FileSourceLocation
-{
-    /// Skips tokens associated with '~> skip' channels, optionally not skipping
-    /// a specific set of token kinds.
-    public override func skipChannelSkipTokens(_ except: Set<RawToken.TokenKind> = []) throws {
-        let skippable: Set<RawToken.TokenKind> = [
-            .whitespace,
-        ]
+
+public class GrammarParser<RawTokenizer: RawTokenizerType>: PEGParser<RawTokenizer> where RawTokenizer.RawToken == GrammarParserToken, RawTokenizer.Location == FileSourceLocation {
+    public override func skipChannelSkipTokens(_ except: Set<RawToken.TokenKind>) throws -> Void {
+        let skipKinds: Set<RawToken.TokenKind> = [.comment, .whitespace]
 
         repeat {
-            let next = try tokenizer.peekToken()
-            guard let kind = next?.rawToken.kind, skippable.contains(kind) else {
+            let next: Token? = try tokenizer.peekToken()
+
+            guard
+                let kind = next?.rawToken.kind,
+                skipKinds.contains(kind)
+            else {
                 break
             }
+
             if except.contains(kind) {
                 break
             }
-            _=try tokenizer.next()
+
+            _ = try tokenizer.next()
         } while !tokenizer.isEOF
     }
-}
 
-extension GrammarParser {
     /// ```
     /// start[SwiftPEGGrammar.Grammar]:
     ///     | grammar { grammar }
@@ -72,7 +71,7 @@ extension GrammarParser {
 
     /// ```
     /// meta[SwiftPEGGrammar.Meta]:
-    ///     | "@" name=IDENTIFIER value=metaValue? ';' { self.setLocation(.init(name: name.rawToken, value: value), at: _mark) }
+    ///     | "@" name=IDENTIFIER values=metaValue* ';' { self.setLocation(.init(name: name.rawToken, values: values), at: _mark) }
     ///     ;
     /// ```
     @memoized("meta")
@@ -940,21 +939,104 @@ extension GrammarParser {
     }
 
     /// ```
-    /// tokensFile[[SwiftPEGGrammar.TokenDefinition]]:
-    ///     | tokens=tokenDefinition*
+    /// tokensFile[[SwiftPEGGrammar.TokenFileDeclaration]]:
+    ///     | tokensFileDeclaration*
     ///     ;
     /// ```
     @memoized("tokensFile")
     @inlinable
-    public func __tokensFile() throws -> [SwiftPEGGrammar.TokenDefinition]? {
+    public func __tokensFile() throws -> [SwiftPEGGrammar.TokenFileDeclaration]? {
         let _mark: Mark = self.mark()
 
         if
-            let tokens = try self.repeatZeroOrMore({
-                try self.tokenDefinition()
+            let tokensFileDeclaration = try self.repeatZeroOrMore({
+                try self.tokensFileDeclaration()
             })
         {
-            return tokens
+            return tokensFileDeclaration
+        }
+
+        self.restore(_mark)
+
+        return nil
+    }
+
+    /// ```
+    /// tokensFileDeclaration[SwiftPEGGrammar.TokenFileDeclaration]:
+    ///     | tokenDefinition
+    ///     | tokenChannelDeclaration
+    ///     ;
+    /// ```
+    @memoized("tokensFileDeclaration")
+    @inlinable
+    public func __tokensFileDeclaration() throws -> SwiftPEGGrammar.TokenFileDeclaration? {
+        let _mark: Mark = self.mark()
+
+        if let tokenDefinition = try self.tokenDefinition() {
+            return tokenDefinition
+        }
+
+        self.restore(_mark)
+
+        if let tokenChannelDeclaration = try self.tokenChannelDeclaration() {
+            return tokenChannelDeclaration
+        }
+
+        self.restore(_mark)
+
+        return nil
+    }
+
+    /// ```
+    /// tokenChannelDeclaration[SwiftPEGGrammar.TokenChannelDeclaration]:
+    ///     | '@' IDENTIFIER name=IDENTIFIER '~>' tokenChannelTarget ';' { "\(identifier)" == "channel" ? self.setLocation(.init(name: name.rawToken, target: tokenChannelTarget), at: _mark) : nil }
+    ///     | '@' IDENTIFIER name=IDENTIFIER? ';' { "\(identifier)" == "channel" ? self.setLocation(.init(name: name?.rawToken, target: nil), at: _mark) : nil }
+    ///     ;
+    /// ```
+    @memoized("tokenChannelDeclaration")
+    @inlinable
+    public func __tokenChannelDeclaration() throws -> SwiftPEGGrammar.TokenChannelDeclaration? {
+        let _mark: Mark = self.mark()
+
+        if
+            let _ = try self.expect(kind: .at),
+            let identifier = try self.expect(kind: .identifier),
+            let name = try self.expect(kind: .identifier),
+            let _ = try self.expect(kind: .tildeArrow),
+            let tokenChannelTarget = try self.tokenChannelTarget(),
+            let _ = try self.expect(kind: .semicolon)
+        {
+            return "\(identifier)" == "channel" ? self.setLocation(.init(name: name.rawToken, target: tokenChannelTarget), at: _mark) : nil
+        }
+
+        self.restore(_mark)
+
+        if
+            let _ = try self.expect(kind: .at),
+            let identifier = try self.expect(kind: .identifier),
+            case let name = try self.expect(kind: .identifier),
+            let _ = try self.expect(kind: .semicolon)
+        {
+            return "\(identifier)" == "channel" ? self.setLocation(.init(name: name?.rawToken, target: nil), at: _mark) : nil
+        }
+
+        self.restore(_mark)
+
+        return nil
+    }
+
+    /// ```
+    /// tokenChannelTarget[SwiftPEGGrammar.TokenChannelTarget]:
+    ///     | IDENTIFIER { .init(identifier: identifier.rawToken) }
+    ///     ;
+    /// ```
+    @memoized("tokenChannelTarget")
+    @inlinable
+    public func __tokenChannelTarget() throws -> SwiftPEGGrammar.TokenChannelTarget? {
+        let _mark: Mark = self.mark()
+
+        if let identifier = try self.expect(kind: .identifier) {
+            return .init(identifier: identifier.rawToken)
         }
 
         self.restore(_mark)

@@ -307,6 +307,11 @@ extension SwiftASTEmitter {
         emit(memberDecl.leadingComments)
         emit(memberDecl.signature.attributes)
         emit(memberDecl.accessLevel)
+        if memberDecl.isOverride {
+            buffer.ensureSpaceSeparator()
+            buffer.emit("override")
+            buffer.ensureSpaceSeparator()
+        }
         buffer.ensureSpaceSeparator()
         emit(memberDecl.signature)
         buffer.ensureSpaceSeparator()

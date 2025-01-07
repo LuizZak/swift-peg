@@ -1,6 +1,4 @@
-# Note: Comments (prefixed with a '#') are currently an implementation detail of GrammarRawTokenizer and not explicitly defined in the tokens or grammar files.
-
-@channel comments ~> discard ;
+@channel comments ~> skip ;
 
 $COMMENT[".comment"]:
     | '#' (!'\n' .)* '\n'?

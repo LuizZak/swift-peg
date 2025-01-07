@@ -59,6 +59,7 @@ public class GrammarInterpreter {
     public convenience init(
         grammar: InternalGrammar.Grammar,
         tokens: [InternalGrammar.TokenDefinition] = [],
+        tokenChannels: [InternalGrammar.TokenChannel] = [],
         source: String,
         tokenDelegate: TokenDelegate?,
         altDelegate: AltDelegate?
@@ -67,6 +68,7 @@ public class GrammarInterpreter {
             processedGrammar: .init(
                 grammar: grammar,
                 tokens: tokens,
+                tokenChannels: tokenChannels,
                 ruleDependencyGraph: .init(nodes: [], edges: []),
                 tokenOcclusionGraph: .init(nodes: [], edges: [])
             ),

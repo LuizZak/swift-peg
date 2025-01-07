@@ -240,17 +240,20 @@ public extension SwiftCodeGen {
     struct FunctionMemberDecl {
         public var leadingComments: [SwiftComment]
         public var accessLevel: AccessLevel
+        public var isOverride: Bool
         public var signature: FunctionSignature
         public var body: CompoundStatement
 
         public init(
             leadingComments: [SwiftComment],
             accessLevel: AccessLevel,
+            isOverride: Bool = false,
             signature: FunctionSignature,
             body: CompoundStatement
         ) {
             self.leadingComments = leadingComments
             self.accessLevel = accessLevel
+            self.isOverride = isOverride
             self.signature = signature
             self.body = body
         }

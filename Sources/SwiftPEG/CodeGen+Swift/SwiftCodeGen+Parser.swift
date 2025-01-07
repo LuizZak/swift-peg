@@ -129,7 +129,8 @@ extension SwiftCodeGen {
             throw Error.missingTokenTypeName
         }
 
-        let members = try generateRemainingProductions()
+        var members = try generateRemainingProductions()
+        members.insert(.function(try generateSkipChannelSkipTokens()), at: 0)
 
         return .init(
             leadingComments: [],
@@ -144,6 +145,97 @@ extension SwiftCodeGen {
                 .sameTypeRequirement(.nested(.init(base: "RawTokenizer", nested: "Location")), "FileSourceLocation"),
             ],
             members: members
+        )
+    }
+
+    // MARK: - Token channel manager
+
+    /// ```
+    /// public override func skipChannelSkipTokens(
+    ///     _ except: Set<RawToken.TokenKind> = []
+    /// ) throws {
+    ///     var skipKinds: Set<RawToken.TokenKind> = [<skip token kinds>]
+    ///
+    ///     repeat {
+    ///         let next = try tokenizer.peekToken()
+    ///         guard let kind = next?.rawToken.kind, skipKinds.contains(kind) else {
+    ///             break
+    ///         }
+    ///         if except.contains(kind) {
+    ///             break
+    ///         }
+    ///         _ = try tokenizer.next()
+    ///     } while !tokenizer.isEOF
+    /// }
+    /// ```
+    func generateSkipChannelSkipTokens() throws -> FunctionMemberDecl {
+        let signature = FunctionSignature(
+            attributes: [],
+            genericParameters: nil,
+            name: "skipChannelSkipTokens",
+            parameters: [
+                .init(
+                    label: nil,
+                    name: "except",
+                    type: .generic("Set", parameters: [.nested(.init(base: "RawToken", nested: "TokenKind"))]),
+                    defaultValue: .arrayLiteral([])
+                ),
+            ],
+            returnType: .void,
+            genericWhereClause: nil,
+            traits: [.throwing]
+        )
+
+        let skipChannels = processedGrammar.tokenChannels.filter { tokenChannel in
+            tokenChannel.target == .skip
+        }.compactMap { tokenChannel in
+            tokenChannel.name
+        }
+        let skipTokens: [Expression] = processedGrammar.tokens.filter { token in
+            guard let tokenChannel = token.tokenChannel else {
+                return false
+            }
+
+            return skipChannels.contains(tokenChannel)
+        }.map({ Expression.implicitMember(caseName(for: $0)) })
+
+        let body: CompoundStatement = [
+            .variableDeclaration(
+                identifier: "skipKinds",
+                type: .generic("Set", parameters: [.nested(.init(base: "RawToken", nested: "TokenKind"))]),
+                isConstant: true,
+                initialization: .arrayLiteral(skipTokens)
+            ),
+            .repeatWhile(.unary(op: .negate, .identifier("tokenizer").dot("isEOF")), body: [
+                .variableDeclaration(
+                    identifier: "next",
+                    type: .optional("Token"),
+                    isConstant: true,
+                    initialization: .try(.identifier("tokenizer").dot("peekToken").call())
+                ),
+                .guard(
+                    clauses: [
+                        .init(
+                            pattern: .valueBindingPattern(constant: true, .identifier("kind")),
+                            expression: .identifier("next").optional().dot("rawToken").dot("kind")
+                        ),
+                        .init(expression: .identifier("skipKinds").dot("contains").call([.identifier("kind")]))
+                    ],
+                    else: [.break()]
+                ),
+                .if(.identifier("except").dot("contains").call([.identifier("kind")]), body: [
+                    .break(),
+                ]),
+                .expression(.identifier("_").assignment(op: .assign, rhs: .try(.identifier("tokenizer").dot("next").call())))
+            ]),
+        ]
+
+        return .init(
+            leadingComments: [],
+            accessLevel: .public,
+            isOverride: true,
+            signature: signature,
+            body: body
         )
     }
 

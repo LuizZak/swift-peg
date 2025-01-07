@@ -952,6 +952,10 @@ public enum InternalGrammar {
         /// The syntax definition of this token.
         public var tokenSyntax: CommonAbstract.TokenSyntax?
 
+        /// The channel associated with this token, or `nil`, if it belongs to
+        /// the default channel.
+        public var tokenChannel: String? = nil
+
         /// String literal. Does not contains the quotes around the literal.
         /// May not be provided; in which case the literal is assumed to be the
         /// same value as `name` wrapped in any type of quotes.
@@ -1021,6 +1025,65 @@ public enum InternalGrammar {
                 tokenCodeReference: node.tokenCodeReference.map({ $0.rawContents() }),
                 tokenSyntax: node.tokenSyntax
             )
+        }
+    }
+
+    /// ```
+    /// tokenChannelDeclaration:
+    ///     | '@' IDENTIFIER name=IDENTIFIER '~>' tokenChannelTarget ';'
+    ///     | '@' IDENTIFIER name=IDENTIFIER? ';'
+    ///     ;
+    /// ```
+    public struct TokenChannel: Equatable, CustomStringConvertible {
+        public var name: String?
+        public var target: Target?
+
+        public var description: String {
+            guard let name else {
+                return "@channel ;"
+            }
+            if let target {
+                return "@channel \(name) ~> \(target) ;"
+            }
+            return "@channel \(name) ;"
+        }
+
+        public static func from(
+            _ node: SwiftPEGGrammar.TokenChannelDeclaration
+        ) -> Self {
+
+            .init(
+                name: node.name.map(String.init),
+                target: node.target.flatMap(Target.from)
+            )
+        }
+
+        public enum Target: Equatable, CustomStringConvertible {
+            case skip
+            case regular
+
+            public var description: String {
+                switch self {
+                case .skip: "skip"
+                case .regular: "regular"
+                }
+            }
+
+            static func from(
+                _ node: SwiftPEGGrammar.TokenChannelTarget
+            ) -> Self? {
+
+                switch node.identifier.string {
+                case "skip":
+                    return .skip
+
+                case "regular":
+                    return .regular
+
+                default:
+                    return nil
+                }
+            }
         }
     }
 

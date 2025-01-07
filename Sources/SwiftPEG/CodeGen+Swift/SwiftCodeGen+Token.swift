@@ -16,7 +16,7 @@ extension SwiftCodeGen {
             emitter.emit(decl)
         }
 
-        return emitter.finishBuffer()
+        return emitter.finishBuffer(addTrailingNewline: true)
     }
 
     private func _applySyntaxPasses(_ decls: [TopLevelDecl]) -> [TopLevelDecl] {

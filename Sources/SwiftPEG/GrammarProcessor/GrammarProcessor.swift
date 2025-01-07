@@ -117,7 +117,7 @@ public class GrammarProcessor {
         let knownRules = try validateRuleNames(in: grammar)
         let dependencyGraph = generateDependencyGraph(for: grammar, knownRules: knownRules)
         let tokensFile = try loadTokensFile(from: grammar)
-        let (processedTokens, occlusionGraph) = try validateTokenSyntaxes(tokensFile)
+        let (processedTokens, tokenChannels, occlusionGraph) = try validateTokenSyntaxes(tokensFile)
 
         let (tokenNames, fragments) = try collectTokenNames(in: grammar, tokensFile: tokensFile)
         try validateReferences(in: grammar, tokens: tokenNames, fragments: fragments)
@@ -135,6 +135,7 @@ public class GrammarProcessor {
         return ProcessedGrammar(
             grammar: internalGrammar,
             tokens: processedTokens,
+            tokenChannels: tokenChannels,
             ruleDependencyGraph: dependencyGraph,
             tokenOcclusionGraph: occlusionGraph
         )
@@ -202,7 +203,7 @@ public class GrammarProcessor {
         return ruleName
     }
 
-    func loadTokensFile(from grammar: SwiftPEGGrammar.Grammar) throws -> [SwiftPEGGrammar.TokenDefinition] {
+    func loadTokensFile(from grammar: SwiftPEGGrammar.Grammar) throws -> [SwiftPEGGrammar.TokenFileDeclaration] {
         guard let tokensMeta = metaPropertyManager.propertiesValidating(knownProperty: self.tokensFileProp).first else {
             return []
         }
@@ -234,7 +235,7 @@ public class GrammarProcessor {
     /// Collects all the names of known token definitions.
     func collectTokenNames(
         in grammar: SwiftPEGGrammar.Grammar,
-        tokensFile: [SwiftPEGGrammar.TokenDefinition]
+        tokensFile: [SwiftPEGGrammar.TokenFileDeclaration]
     ) throws -> (tokens: Set<String>, fragments: Set<String>) {
         var metaTokens: Set<String> = []
 
@@ -251,7 +252,11 @@ public class GrammarProcessor {
 
         var tokensFromFile: Set<String> = []
         var fragments: Set<String> = []
-        for token in tokensFile {
+        for decl in tokensFile {
+            guard let token = decl as? SwiftPEGGrammar.TokenDefinition else {
+                continue
+            }
+
             let tokenName = String(token.name.string)
 
             if token.isFragment {

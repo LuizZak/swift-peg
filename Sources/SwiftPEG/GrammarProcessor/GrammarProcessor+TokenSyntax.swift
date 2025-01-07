@@ -9,8 +9,13 @@ extension GrammarProcessor {
     ///
     /// Returns a processed version of the tokens for emitting by a code generator.
     func validateTokenSyntaxes(
-        _ tokens: [SwiftPEGGrammar.TokenDefinition]
-    ) throws -> ([InternalGrammar.TokenDefinition], TokenOcclusionGraph) {
+        _ declarations: [SwiftPEGGrammar.TokenFileDeclaration]
+    ) throws -> ([InternalGrammar.TokenDefinition], [InternalGrammar.TokenChannel], TokenOcclusionGraph) {
+
+        let channelLookup = TokenChannelLookup(decls: declarations)
+        let tokens = declarations.compactMap { decl in
+            decl as? SwiftPEGGrammar.TokenDefinition
+        }
 
         var fragmentReferenceCount: [String: Int] =
             Dictionary(grouping: tokens.filter(\.isFragment)) {
@@ -33,9 +38,29 @@ extension GrammarProcessor {
         )
         inlined = sortTokens(inlined)
 
+        inlined = inlined.map { token in
+            var token = token
+            token.tokenChannel = channelLookup.lookupTokenChannel(name: token.name)
+            return token
+        }
+
+        let channels = try validateTokenChannels(declarations)
+
         let occlusionGraph = computeTokenOcclusions(inlined)
 
-        return (inlined, occlusionGraph)
+        return (inlined, channels, occlusionGraph)
+    }
+
+    fileprivate func validateTokenChannels(_ tokensFile: [SwiftPEGGrammar.TokenFileDeclaration]) throws -> [InternalGrammar.TokenChannel] {
+        var result: [InternalGrammar.TokenChannel] = []
+
+        for case let decl as SwiftPEGGrammar.TokenChannelDeclaration in tokensFile {
+            let channel = InternalGrammar.TokenChannel.from(decl)
+
+            result.append(channel)
+        }
+
+        return result
     }
 
     /// Computes the relationship between static tokens and dynamic tokens that
@@ -768,6 +793,53 @@ extension GrammarProcessor {
             }
 
             return lhsSyntax.isPrefix(of: rhsSyntax)
+        }
+    }
+
+    private struct TokenChannelLookup {
+        var decls: [Decl]
+        var processed: [String: String?] = [:]
+
+        init(decls: [SwiftPEGGrammar.TokenFileDeclaration]) {
+            self.decls = decls.compactMap { decl in
+                switch decl {
+                case let decl as SwiftPEGGrammar.TokenDefinition:
+                    return Decl.token(String(decl.name.string))
+
+                case let decl as SwiftPEGGrammar.TokenChannelDeclaration:
+                    return Decl.channel((decl.name?.string).map(String.init))
+
+                default:
+                    return nil
+                }
+            }
+
+            process()
+        }
+
+        mutating func process() {
+            var currentChannel: String? = nil
+
+            for decl in decls {
+                switch decl {
+                case .channel(let name):
+                    currentChannel = name
+
+                case .token(let name):
+                    self.processed[name] = currentChannel
+                }
+            }
+        }
+
+        /// Returns the token channel associated with a given token name, or `nil`,
+        /// in case the token doesn't belong to a specific channel.
+        func lookupTokenChannel(name: String) -> String? {
+            processed[name] ?? nil
+        }
+
+        enum Decl {
+            case token(String)
+            case channel(String?)
         }
     }
 }

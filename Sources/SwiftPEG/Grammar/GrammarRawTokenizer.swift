@@ -24,8 +24,6 @@ public class GrammarRawTokenizer: RawTokenizerType {
 
     @inlinable
     public func next() throws -> (rawToken: RawToken, location: Location)? {
-        skipToContent()
-
         guard !_stream.isEof else {
             return nil
         }
@@ -53,26 +51,9 @@ public class GrammarRawTokenizer: RawTokenizerType {
     }
 
     @inlinable
-    internal func skipToContent() {
-        var lastIndex = _stream.index
-        repeat {
-            lastIndex = _stream.index
-            skipComments()
-        } while !_stream.isEof && lastIndex != _stream.index
-    }
-
-    @inlinable
     internal func skipLine() {
         while !_stream.isEof && _stream.peek() != "\n" {
             advance(by: 1)
-        }
-    }
-
-    @inlinable
-    internal func skipComments() {
-        while !_stream.isEof && _stream.isNext("#") {
-            skipLine()
-            _stream.markSubstringStart()
         }
     }
 
