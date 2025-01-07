@@ -158,7 +158,10 @@ extension SwiftCodeGen {
     ///
     ///     repeat {
     ///         let next = try tokenizer.peekToken()
-    ///         guard let kind = next?.rawToken.kind, skipKinds.contains(kind) else {
+    ///         guard
+    ///             let kind = next?.rawToken.kind,
+    ///             kind == .<skip token kind1> || kind == .<skip token kind2> || ...
+    ///         else {
     ///             break
     ///         }
     ///         if except.contains(kind) {
@@ -199,36 +202,39 @@ extension SwiftCodeGen {
             return skipChannels.contains(tokenChannel)
         }.map({ Expression.implicitMember(caseName(for: $0)) })
 
-        let body: CompoundStatement = [
-            .variableDeclaration(
-                identifier: "skipKinds",
-                type: .generic("Set", parameters: [.nested(.init(base: "RawToken", nested: "TokenKind"))]),
-                isConstant: true,
-                initialization: .arrayLiteral(skipTokens)
-            ),
-            .repeatWhile(.unary(op: .negate, .identifier("tokenizer").dot("isEOF")), body: [
-                .variableDeclaration(
-                    identifier: "next",
-                    type: .optional("Token"),
-                    isConstant: true,
-                    initialization: .try(.identifier("tokenizer").dot("peekToken").call())
-                ),
-                .guard(
-                    clauses: [
-                        .init(
-                            pattern: .valueBindingPattern(constant: true, .identifier("kind")),
-                            expression: .identifier("next").optional().dot("rawToken").dot("kind")
-                        ),
-                        .init(expression: .identifier("skipKinds").dot("contains").call([.identifier("kind")]))
-                    ],
-                    else: [.break()]
-                ),
-                .if(.identifier("except").dot("contains").call([.identifier("kind")]), body: [
-                    .break(),
+        let body: CompoundStatement
+        if !skipTokens.isEmpty {
+            let conditionals: [Expression] = skipTokens.map { exp in
+                .identifier("kind").binary(op: .equals, rhs: exp)
+            }
+
+            body = [
+                .repeatWhile(.unary(op: .negate, .identifier("tokenizer").dot("isEOF")), body: [
+                    .variableDeclaration(
+                        identifier: "next",
+                        type: .optional("Token"),
+                        isConstant: true,
+                        initialization: .try(.identifier("tokenizer").dot("peekToken").call())
+                    ),
+                    .guard(
+                        clauses: [
+                            .init(
+                                pattern: .valueBindingPattern(constant: true, .identifier("kind")),
+                                expression: .identifier("next").optional().dot("rawToken").dot("kind")
+                            ),
+                            .init(expression: conditionals.dropFirst().reduce(conditionals[0]) { $0.binary(op: .or, rhs: $1) }),
+                        ],
+                        else: [.break()]
+                    ),
+                    .if(.identifier("except").dot("contains").call([.identifier("kind")]), body: [
+                        .break(),
+                    ]),
+                    .expression(.identifier("_").assignment(op: .assign, rhs: .try(.identifier("tokenizer").dot("next").call())))
                 ]),
-                .expression(.identifier("_").assignment(op: .assign, rhs: .try(.identifier("tokenizer").dot("next").call())))
-            ]),
-        ]
+            ]
+        } else {
+            body = []
+        }
 
         return .init(
             leadingComments: [],

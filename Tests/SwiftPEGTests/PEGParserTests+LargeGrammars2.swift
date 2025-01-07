@@ -18,6 +18,11 @@ struct PEGParser_LargeGrammarsTests2 {
         try runTest(rules: 100)
     }
 
+    @Test
+    func grammar_1000_rules() throws {
+        try runTest(rules: 1000)
+    }
+
 #if !DEBUG
     @Test
     func grammar_10_000_rules() throws {

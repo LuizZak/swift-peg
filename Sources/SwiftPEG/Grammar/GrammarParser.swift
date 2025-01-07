@@ -4,14 +4,12 @@
 
 public class GrammarParser<RawTokenizer: RawTokenizerType>: PEGParser<RawTokenizer> where RawTokenizer.RawToken == GrammarParserToken, RawTokenizer.Location == FileSourceLocation {
     public override func skipChannelSkipTokens(_ except: Set<RawToken.TokenKind>) throws -> Void {
-        let skipKinds: Set<RawToken.TokenKind> = [.comment, .whitespace]
-
         repeat {
             let next: Token? = try tokenizer.peekToken()
 
             guard
                 let kind = next?.rawToken.kind,
-                skipKinds.contains(kind)
+                kind == .comment || kind == .whitespace
             else {
                 break
             }
