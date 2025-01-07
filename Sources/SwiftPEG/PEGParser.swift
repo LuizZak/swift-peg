@@ -97,16 +97,6 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
     /// Skips tokens associated with '~> skip' channels, optionally not skipping
     /// a specific set of token kinds.
     open func skipChannelSkipTokens(_ except: Set<RawToken.TokenKind> = []) throws {
-        repeat {
-            let next = try tokenizer.peekToken()
-            guard next?.rawToken.kind == .whitespace else {
-                break
-            }
-            if let kind = next?.rawToken.kind, except.contains(kind) {
-                break
-            }
-            _=try tokenizer.next()
-        } while !tokenizer.isEOF
     }
 
     /// Convenience for `self.tokenizer.mark()`.
