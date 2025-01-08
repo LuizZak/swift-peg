@@ -64,6 +64,7 @@ extension SwiftCodeGen {
                     name: tokenName,
                     genericArguments: [],
                     inheritances: ["RawTokenType", "CustomStringConvertible"],
+                    genericWhereClause: nil,
                     members: try generateTokenTypeMembers(settings: settings, sortedTokens: sortedTokens)
                 )
             )
