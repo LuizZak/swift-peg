@@ -18,7 +18,7 @@ public class GrammarParser<RawTokenizer: RawTokenizerType>: PEGParser<RawTokeniz
                 break
             }
 
-            _ = try tokenizer.next()
+            try tokenizer.skip()
         } while !tokenizer.isEOF
     }
 

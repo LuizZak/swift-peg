@@ -1,7 +1,7 @@
 import Foundation
 
 /// A tokenizer with built-in caching support.
-open class Tokenizer<Raw: RawTokenizerType> {
+public class Tokenizer<Raw: RawTokenizerType> {
     public typealias RawToken = Raw.RawToken
     public typealias Location = Raw.Location
 
@@ -24,6 +24,13 @@ open class Tokenizer<Raw: RawTokenizerType> {
     /// Index into `_cachedTokens` that tokens are fetched from, currently.
     @usableFromInline
     internal var tokenIndex: Int = 0
+
+    /// Returns `true` if the current token index is within the cached tokens
+    /// list.
+    @inlinable
+    internal var isInCache: Bool {
+        tokenIndex < cachedTokens.count
+    }
 
     /// Returns whether the current tokenizer position is at end-of-file, a.k.a.
     /// EOF.
@@ -57,7 +64,7 @@ open class Tokenizer<Raw: RawTokenizerType> {
 
     /// Returns a human-readable location for a specified mark.
     @inlinable
-    open func readableLocation(for mark: Mark) -> String {
+    public func readableLocation(for mark: Mark) -> String {
         if mark.index < cachedTokens.count {
             let token = cachedTokens[mark.index]
             return "\(token.location)"
@@ -71,20 +78,20 @@ open class Tokenizer<Raw: RawTokenizerType> {
     ///
     /// Returns `nil` if at EOF.
     @inlinable
-    open func location() throws -> Raw.Location? {
+    public func location() throws -> Raw.Location? {
         try peekToken()?.location
     }
 
     /// Returns the location of the token pointed by `mark`.
     @inlinable
-    open func location(at mark: Mark) -> Raw.Location {
+    public func location(at mark: Mark) -> Raw.Location {
         cachedTokens[mark.index].location
     }
 
     /// Peeks the next token from the underlying raw stream without advancing the
     /// token index.
     @inlinable
-    open func peekToken() throws -> Token? {
+    public func peekToken() throws -> Token? {
         _reach = max(_reach, tokenIndex + 1)
 
         // Look into cached tokens
@@ -116,7 +123,7 @@ open class Tokenizer<Raw: RawTokenizerType> {
     /// forward to the next token.
     /// Returns `nil` to indicate the end of the token stream.
     @inlinable
-    open func next() throws -> Token? {
+    public func next() throws -> Token? {
         if let next = try peekToken() {
             tokenIndex += 1
             _reach = max(_reach, tokenIndex)
@@ -126,11 +133,22 @@ open class Tokenizer<Raw: RawTokenizerType> {
         return nil
     }
 
+    /// Skips the current token in the stream without consuming it.
+    @inlinable
+    public func skip() throws {
+        if isInCache {
+            tokenIndex += 1
+            _reach = max(_reach, tokenIndex)
+        } else {
+            _=try next()
+        }
+    }
+
     // MARK: - Seeking/restoring
 
     /// Returns a marker that points just before a given marker.
     @inlinable
-    open func mark(before marker: Mark) -> Mark {
+    public func mark(before marker: Mark) -> Mark {
         return Mark(index: marker.index - 1)
     }
 
@@ -139,7 +157,7 @@ open class Tokenizer<Raw: RawTokenizerType> {
     ///
     /// - note: Markers from different tokenizer instances are not exchangeable.
     @inlinable
-    open func mark() -> Mark {
+    public func mark() -> Mark {
         return Mark(index: self.tokenIndex)
     }
 
@@ -147,7 +165,7 @@ open class Tokenizer<Raw: RawTokenizerType> {
     /// - precondition: `mark` was created by an invocation to this tokenizer
     /// instance's own `mark()` method.
     @inlinable
-    open func restore(_ mark: Mark) {
+    public func restore(_ mark: Mark) {
         self.tokenIndex = mark.index
     }
 

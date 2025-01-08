@@ -428,7 +428,7 @@ final class TestGrammarParser<Raw: RawTokenizerType>: PEGParser<Raw> where Raw.R
                 break
             }
 
-            _ = try tokenizer.next()
+            try tokenizer.skip()
         } while !tokenizer.isEOF
     }
 }

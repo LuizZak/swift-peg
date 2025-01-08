@@ -169,7 +169,7 @@ extension SwiftCodeGen {
     ///         if except.contains(kind) {
     ///             break
     ///         }
-    ///         _ = try tokenizer.next()
+    ///         try tokenizer.skip()
     ///     } while !tokenizer.isEOF
     /// }
     /// ```
@@ -231,7 +231,7 @@ extension SwiftCodeGen {
                     .if(.identifier("except").dot("contains").call([.identifier("kind")]), body: [
                         .break(),
                     ]),
-                    .expression(.identifier("_").assignment(op: .assign, rhs: .try(.identifier("tokenizer").dot("next").call())))
+                    .expression(.try(.identifier("tokenizer").dot("skip").call()))
                 ]),
             ]
         } else {
