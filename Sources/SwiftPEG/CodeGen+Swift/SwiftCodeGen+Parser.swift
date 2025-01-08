@@ -200,6 +200,9 @@ extension SwiftCodeGen {
             guard let tokenChannel = token.tokenChannel else {
                 return false
             }
+            guard !token.isFragment else {
+                return false
+            }
 
             return skipChannels.contains(tokenChannel)
         }.map({ Expression.implicitMember(caseName(for: $0)) })
