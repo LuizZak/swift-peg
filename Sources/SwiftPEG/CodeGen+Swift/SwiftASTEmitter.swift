@@ -50,7 +50,7 @@ extension SwiftASTEmitter {
 
     /// ```
     /// <leadingComments>
-    /// <accessLevel> class <name>[<genericParameters>][: <inheritance1>, <inheritance2>, ...] {
+    /// <accessLevel> class <name>[<genericParameters>][: <inheritance1>, <inheritance2>, ...][<genericWhereClause>] {
     ///     <members>
     /// }
     /// ```
@@ -80,7 +80,7 @@ extension SwiftASTEmitter {
 
     /// ```
     /// <leadingComments>
-    /// <accessLevel> struct <name>[<genericParameters>][: <inheritance1>, <inheritance2>, ...] {
+    /// <accessLevel> struct <name>[<genericParameters>][: <inheritance1>, <inheritance2>, ...][<genericWhereClause>] {
     ///     <members>
     /// }
     /// ```
@@ -93,6 +93,7 @@ extension SwiftASTEmitter {
         buffer.emit(decl.name)
         emit(decl.genericArguments)
         emit(inheritances: decl.inheritances)
+        emit(decl.genericWhereClause)
         buffer.ensureSpaceSeparator()
         buffer.emitMembersBlock {
             let separator = TypeMemberSeparator()
@@ -109,7 +110,7 @@ extension SwiftASTEmitter {
 
     /// ```
     /// <leadingComments>
-    /// <accessLevel> extension <type> {
+    /// <accessLevel> extension <type>[: <inheritance1>, <inheritance2>, ...][<genericWhereClause>] {
     ///     <members>
     /// }
     /// ```
@@ -120,6 +121,8 @@ extension SwiftASTEmitter {
         buffer.emit("extension")
         buffer.ensureSpaceSeparator()
         emit(decl.baseType)
+        emit(inheritances: decl.inheritances)
+        emit(decl.genericWhereClause)
         buffer.ensureSpaceSeparator()
         buffer.emitMembersBlock {
             for member in decl.members {

@@ -119,6 +119,8 @@ extension SwiftCodeGen {
             leadingComments: [],
             baseType: .typeName(parserName),
             accessLevel: .internal,
+            inheritances: [],
+            genericWhereClause: nil,
             members: members
         )
     }
