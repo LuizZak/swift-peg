@@ -47,10 +47,6 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
             return .init(kind: .at, string: stream.substring)
         }
 
-        if consume_BACKSLASH(from: &stream) {
-            return .init(kind: .backslash, string: stream.substring)
-        }
-
         if consume_BACKTICK(from: &stream) {
             return .init(kind: .backtick, string: stream.substring)
         }
@@ -159,6 +155,10 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
             return .init(kind: .tilde, string: stream.substring)
         }
 
+        if consume_BACKSLASH(from: &stream) {
+            return .init(kind: .backslash, string: stream.substring)
+        }
+
         if consume_COMMENT(from: &stream) {
             return .init(kind: .comment, string: stream.substring)
         }
@@ -187,9 +187,6 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
 
         /// `"@"`
         case at
-
-        /// `"\\"`
-        case backslash
 
         /// `"`"`
         case backtick
@@ -272,6 +269,9 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
         /// `"~"`
         case tilde
 
+        /// `"\\"`
+        case backslash
+
         /// `"#" (!"\n" .)* "\n"?`
         case comment
 
@@ -283,9 +283,9 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
 
         /// ```
         /// STRING[".string"]:
-        ///     | "\"\"\"" ("\\\"\"\"" | "\\\\" | "\\" | !"\"\"\"" .)* "\"\"\""
-        ///     | "\"" ("\\\"" | "\\\\" | "\\" | !"\"" !"\n" .)* "\""
-        ///     | "'" ("\\'" | "\\\\" | "\\" | !"'" !"\n" .)* "'"
+        ///     | "\"\"\"" ("\\\"\"\"" | unicodeEscape | "\\\\" | "\\" | !"\"\"\"" .)* "\"\"\""
+        ///     | "\"" ("\\\"" | unicodeEscape | "\\\\" | "\\" | !"\"" !"\n" .)* "\""
+        ///     | "'" ("\\'" | unicodeEscape | "\\\\" | "\\" | !"'" !"\n" .)* "'"
         ///     ;
         /// ```
         case string
@@ -299,8 +299,6 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
                 "&"
             case .at:
                 "@"
-            case .backslash:
-                "\\"
             case .backtick:
                 "`"
             case .bar:
@@ -355,6 +353,8 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
                 "~>"
             case .tilde:
                 "~"
+            case .backslash:
+                "\\"
             case .comment:
                 "COMMENT"
             case .digits:
@@ -412,16 +412,6 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
     @inlinable
     public static func consume_AT<StringType>(from stream: inout StringStream<StringType>) -> Bool {
         stream.advanceIfNext("@")
-    }
-
-    /// ```
-    /// BACKSLASH[".backslash"]:
-    ///     | "\\"
-    ///     ;
-    /// ```
-    @inlinable
-    public static func consume_BACKSLASH<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        stream.advanceIfNext("\\")
     }
 
     /// ```
@@ -695,6 +685,64 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
     }
 
     /// ```
+    /// unicodeEscape:
+    ///     | "\\u{" ("a"..."f" | "A"..."F" | "0"..."9")+ "}"
+    ///     ;
+    /// ```
+    @inlinable
+    public static func consume_unicodeEscape<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
+
+        alt:
+        do {
+            guard stream.advanceIfNext("\\u{") else {
+                return false
+            }
+
+            switch stream.peek() {
+            case "a"..."f", "A"..."F", "0"..."9":
+                stream.advance()
+            default:
+                break alt
+            }
+
+            loop:
+            while !stream.isEof {
+                switch stream.peek() {
+                case "a"..."f", "A"..."F", "0"..."9":
+                    stream.advance()
+                default:
+                    break loop
+                }
+            }
+
+            guard stream.advanceIfNext("}") else {
+                break alt
+            }
+
+            return true
+        }
+
+        stream.restore(state)
+
+        return false
+    }
+
+    /// ```
+    /// BACKSLASH[".backslash"]:
+    ///     | "\\"
+    ///     ;
+    /// ```
+    @inlinable
+    public static func consume_BACKSLASH<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        stream.advanceIfNext("\\")
+    }
+
+    /// ```
     /// COMMENT[".comment"]:
     ///     | "#" (!"\n" .)* "\n"?
     ///     ;
@@ -796,9 +844,9 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
 
     /// ```
     /// STRING[".string"]:
-    ///     | "\"\"\"" ("\\\"\"\"" | "\\\\" | "\\" | !"\"\"\"" .)* "\"\"\""
-    ///     | "\"" ("\\\"" | "\\\\" | "\\" | !"\"" !"\n" .)* "\""
-    ///     | "'" ("\\'" | "\\\\" | "\\" | !"'" !"\n" .)* "'"
+    ///     | "\"\"\"" ("\\\"\"\"" | unicodeEscape | "\\\\" | "\\" | !"\"\"\"" .)* "\"\"\""
+    ///     | "\"" ("\\\"" | unicodeEscape | "\\\\" | "\\" | !"\"" !"\n" .)* "\""
+    ///     | "'" ("\\'" | unicodeEscape | "\\\\" | "\\" | !"'" !"\n" .)* "'"
     ///     ;
     /// ```
     @inlinable
@@ -818,6 +866,7 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
             loop:
             while !stream.isEof {
                 if stream.advanceIfNext("\\\"\"\"") {
+                } else if consume_unicodeEscape(from: &stream) {
                 } else if stream.advanceIfNext("\\\\") {
                 } else if stream.advanceIfNext("\\") {
                 } else if
@@ -848,6 +897,7 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
             loop:
             while !stream.isEof {
                 if stream.advanceIfNext("\\\"") {
+                } else if consume_unicodeEscape(from: &stream) {
                 } else if stream.advanceIfNext("\\\\") {
                 } else if stream.advanceIfNext("\\") {
                 } else if
@@ -879,6 +929,7 @@ public struct GrammarParserToken: RawTokenType, CustomStringConvertible {
             loop:
             while !stream.isEof {
                 if stream.advanceIfNext("\\\'") {
+                } else if consume_unicodeEscape(from: &stream) {
                 } else if stream.advanceIfNext("\\\\") {
                 } else if stream.advanceIfNext("\\") {
                 } else if

@@ -29,15 +29,17 @@ $DIGITS[".digits"]:
     ;
 
 $STRING[".string"]:
-    | tripleQuote ( '\\"""' | backslashEscape | !tripleQuote . )* tripleQuote
-    | doubleQuote ( '\\"' | backslashEscape | !doubleQuote !'\n' . )* doubleQuote
-    | singleQuote ( "\\'" | backslashEscape | !singleQuote !'\n' . )* singleQuote
+    | tripleQuote ( '\\"""' | unicodeEscape | backslashEscape | !tripleQuote . )* tripleQuote
+    | doubleQuote ( '\\"' | unicodeEscape | backslashEscape | !doubleQuote !'\n' . )* doubleQuote
+    | singleQuote ( "\\'" | unicodeEscape | backslashEscape | !singleQuote !'\n' . )* singleQuote
     ;
 
 %tripleQuote: '"""' ;
 %doubleQuote: '"' ;
 %singleQuote: "'" ;
 %backslashEscape: '\\\\' | '\\' ;
+%unicodeEscape: '\\u{' hexDigit+ '}';
+%hexDigit: 'a'...'f' | 'A'...'F' | '0'...'9' ;
 
 $LEFTPAREN[".leftParen"]: "(" ;
 $RIGHTPAREN[".rightParen"]: ")" ;

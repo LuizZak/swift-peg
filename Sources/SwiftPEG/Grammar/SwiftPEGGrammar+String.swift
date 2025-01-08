@@ -90,10 +90,35 @@ extension SwiftPEGGrammar {
                     case "r": pieces.append(.escapeSequence("r"))
                     case "t": pieces.append(.escapeSequence("t"))
                     case "(": pieces.append(.literal(#"\("#))
+                    case "u":
+                        stream.advance()
+
+                        guard stream.advanceIfNext("{") else {
+                            throw Error.unknownEscapeSequence("\\u\(stream.peek())", at: stream.index)
+                        }
+
+                        stream.markSubstringStart()
+
+                        while !stream.isEof, stream.isNextInRange("0"..."9") || stream.isNextInRange("a"..."f") || stream.isNextInRange("A"..."F") {
+                            stream.advance()
+                        }
+
+                        let scalar = stream.substring
+
+                        guard stream.advanceIfNext("}"), let scalarInt = Int(scalar, radix: 16) else {
+                            throw Error.invalidUnicodeCharacter("\\u{\(stream.substring)", at: stream.index)
+                        }
+
+                        pieces.append(.unicodeCharacter(scalarInt))
+
+                        inEscapeSequence = false
+                        continue
+
                     case _ where stream.advanceIfNext(quote.raw):
                         pieces.append(.escapeSequence(quote.raw))
                         inEscapeSequence = false
                         continue
+
                     default:
                         throw Error.unknownEscapeSequence("\\\(stream.peek())", at: stream.index)
                     }
@@ -145,6 +170,7 @@ extension SwiftPEGGrammar {
         public enum Piece: Hashable {
             case literal(String)
             case escapeSequence(String)
+            case unicodeCharacter(Int)
 
             var raw: String {
                 switch self {
@@ -157,10 +183,19 @@ extension SwiftPEGGrammar {
                     case "\"\"\"": return "\"\"\""
                     case "'": return "'"
                     case "\\": return "\\"
-                    default: fatalError("Unknown escape sequence \(escape)")
+                    default:
+                        fatalError("Unknown escape sequence \(escape)")
                     }
+
                 case .literal(let literal):
                     return literal
+
+                case .unicodeCharacter(let scalar):
+                    guard let scalar = UnicodeScalar(scalar) else {
+                        fatalError("Invalid unicode scalar value \\u{\(String(scalar, radix: 16))}")
+                    }
+
+                    return "\(Character(scalar))"
                 }
             }
 
@@ -168,6 +203,9 @@ extension SwiftPEGGrammar {
                 switch self {
                 case .escapeSequence(let escape):
                     return "\\\(escape)"
+
+                case .unicodeCharacter(let scalar):
+                    return "\\u{\(String(scalar, radix: 16))}"
 
                 case .literal(let literal):
                     return literal
@@ -181,6 +219,9 @@ extension SwiftPEGGrammar {
             /// Reports an escape sequence that was not recognized.
             case unknownEscapeSequence(String, at: String.Index)
 
+            /// Reports a unicode character escape code that is invalid.
+            case invalidUnicodeCharacter(String, at: String.Index)
+
             /// A token that is not a string token was provided.
             case unrecognizedStringToken
 
@@ -191,8 +232,13 @@ extension SwiftPEGGrammar {
                 switch self {
                 case .unknownEscapeSequence(let sequence, _):
                     return "Unknown escape sequence \(sequence)"
+
+                case .invalidUnicodeCharacter(let sequence, _):
+                    return "Invalid unicode character code \(sequence)"
+
                 case .unrecognizedStringToken:
                     return "Expected token with kind SwiftPEGGrammar.Token.TokenKind._string"
+
                 case .unrecognizedTerminators(let message, _):
                     return "Unrecognized string terminators: \(message)"
                 }

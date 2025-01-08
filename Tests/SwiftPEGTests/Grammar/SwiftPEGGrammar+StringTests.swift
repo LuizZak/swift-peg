@@ -20,6 +20,16 @@ struct SwiftPEGGrammar_StringTests {
 
         assertEqual(result.rawContents(), #"a\(bc)"#)
     }
+
+    @Test
+    func grammarString_fromStringToken_unicodeLiteral() throws {
+        let token = makeStringToken(#""a\u{AA}""#)
+
+        let result = try makeSut(fromStringToken: token)
+
+        assertEqual(result.asStringLiteral(), #""a\u{aa}""#)
+        assertEqual(result.rawContents(), "a\u{AA}")
+    }
 }
 
 // MARK: - Test internals
