@@ -103,13 +103,17 @@ extension SwiftPEGGrammar {
                             stream.advance()
                         }
 
-                        let scalar = stream.substring
+                        let scalarString = stream.substring
 
-                        guard stream.advanceIfNext("}"), let scalarInt = Int(scalar, radix: 16) else {
+                        guard
+                            stream.advanceIfNext("}"),
+                            let scalarInt = Int(scalarString, radix: 16),
+                            let scalar = UnicodeScalar(scalarInt)
+                        else {
                             throw Error.invalidUnicodeCharacter("\\u{\(stream.substring)", at: stream.index)
                         }
 
-                        pieces.append(.unicodeCharacter(scalarInt))
+                        pieces.append(.unicodeCharacter(scalar))
 
                         inEscapeSequence = false
                         continue
@@ -170,7 +174,7 @@ extension SwiftPEGGrammar {
         public enum Piece: Hashable {
             case literal(String)
             case escapeSequence(String)
-            case unicodeCharacter(Int)
+            case unicodeCharacter(UnicodeScalar)
 
             var raw: String {
                 switch self {
@@ -191,10 +195,6 @@ extension SwiftPEGGrammar {
                     return literal
 
                 case .unicodeCharacter(let scalar):
-                    guard let scalar = UnicodeScalar(scalar) else {
-                        fatalError("Invalid unicode scalar value \\u{\(String(scalar, radix: 16))}")
-                    }
-
                     return "\(Character(scalar))"
                 }
             }
@@ -205,7 +205,7 @@ extension SwiftPEGGrammar {
                     return "\\\(escape)"
 
                 case .unicodeCharacter(let scalar):
-                    return "\\u{\(String(scalar, radix: 16))}"
+                    return "\\u{\(String(scalar.value, radix: 16))}"
 
                 case .literal(let literal):
                     return literal

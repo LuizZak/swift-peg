@@ -412,6 +412,25 @@ final class TestGrammarParser<Raw: RawTokenizerType>: PEGParser<Raw> where Raw.R
         }
         return nil
     }
+
+    public override func skipChannelSkipTokens(_ except: Set<RawToken.TokenKind>) throws -> Void {
+        repeat {
+            let next: Token? = try tokenizer.peekToken()
+
+            guard
+                let kind = next?.rawToken.kind,
+                kind == .whitespace
+            else {
+                break
+            }
+
+            if except.contains(kind) {
+                break
+            }
+
+            _ = try tokenizer.next()
+        } while !tokenizer.isEOF
+    }
 }
 
 extension TestGrammarParser {
