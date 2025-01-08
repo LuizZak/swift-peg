@@ -454,6 +454,9 @@ extension GrammarProcessor {
         }
 
         private func _inlinedAsAtoms(_ node: CommonAbstract.TokenAlt) -> [CommonAbstract.TokenAtom]? {
+            guard node.items.count == 1 else {
+                return nil
+            }
             guard node.trailExclusions.isEmpty else {
                 return nil
             }
@@ -473,8 +476,6 @@ extension GrammarProcessor {
 
         private func _inlinedAsAtoms(_ node: CommonAbstract.TokenItem) -> [CommonAbstract.TokenAtom]? {
             switch node {
-            case .group(let group):
-                return group
             case .atom(let atom):
                 return [atom]
             default:

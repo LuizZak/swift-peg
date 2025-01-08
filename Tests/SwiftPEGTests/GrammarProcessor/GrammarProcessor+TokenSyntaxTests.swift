@@ -162,6 +162,73 @@ struct GrammarProcessor_TokenSyntaxTests {
     }
 
     @Test
+    func inlineFragments_alts_withSequentialItems() throws {
+        let delegate = stubDelegate(tokensFile: #"""
+        $tok: a | b ;
+        %a: | b | "c" | d | e;
+        $b: | "b" ;
+        %d: | "d" "e" ;
+        %e: | "f" g? "h" ;
+        %g: | h+ ;
+        %h: | !"\u{000A}" !"\u{000D}" . ;
+        """#)
+        let expected = try parseTokenDefinitions(#"""
+        $tok: | b | "c" | "de" | "f" g? "h" | b;
+        $b: | "b" ;
+        %g: | (!"\u{000A}" !"\u{000D}" .)+ ;
+        """#)
+        let grammar = makeGrammar()
+        let sut = makeSut(delegate)
+
+        let processed = try sut.process(grammar)
+
+        assertEqualUnordered(processed.tokens, expected)
+    }
+
+    @Test
+    func inlineFragments_alts_bug1() throws {
+        let delegate = stubDelegate(tokensFile: #"""
+        $whitespace[".whitespace"]:
+            | whitespace_item+
+            ;
+
+        %whitespace_item:
+            | comment
+            ;
+
+        %line_break:
+            | "\u{000A}"
+            | "\u{000D}\u{000A}"
+            | "\u{000D}"
+            ;
+
+        %comment:
+            | '//' comment_text line_break
+            ;
+
+        %comment_text:
+            | comment_text_item+
+            ;
+
+        %comment_text_item:
+            | !"\u{000A}" !"\u{000D}" .
+            ;
+        """#)
+        let expected = try parseTokenDefinitions(#"""
+        $whitespace[".whitespace"]: (whitespace_item)+ ;
+        %whitespace_item : '//' comment_text line_break ;
+        %comment_text: (!"\u{a}" !"\u{d}" .)+ ;
+        %line_break : "\u{a}" | "\u{d}\u{a}" | "\u{d}" ;
+        """#)
+        let grammar = makeGrammar()
+        let sut = makeSut(delegate)
+
+        let processed = try sut.process(grammar)
+
+        assertEqualUnordered(processed.tokens, expected)
+    }
+
+    @Test
     func inlineFragments_alts_copiesTrailExclusions() throws {
         let delegate = stubDelegate(tokensFile: """
         $a: b | "c" | d | f !"j" ;
