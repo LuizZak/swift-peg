@@ -36,12 +36,20 @@ metaValue[SwiftPEGGrammar.MetaValue]:
     ;
 
 rule[SwiftPEGGrammar.Rule]:
-    | ruleName ":" action? failAction? '|'? alts ';'    { self.setLocation(.init(name: ruleName, action: action, failAction: failAction, alts: alts), at: _mark) }
+    | ruleName ruleParameters? ":" action? failAction? '|'? alts ';'    { self.setLocation(.init(name: ruleName, parameters: ruleParameters, action: action, failAction: failAction, alts: alts), at: _mark) }
     ;
 
 ruleName[SwiftPEGGrammar.RuleName]:
     | name=IDENTIFIER '[' ~ type=swiftType ']'  { self.setLocation(.init(name: name.rawToken, type: type), at: _mark) }
     | name=IDENTIFIER                           { self.setLocation(.init(name: name.rawToken, type: nil), at: _mark) }
+    ;
+
+ruleParameters[SwiftPEGGrammar.RuleParameters]:
+    | '(' ','.ruleParameter+ ')'                { self.setLocation(.init(parameters: ruleParameter, type: nil), at: _mark) }
+    ;
+
+ruleParameter[SwiftPEGGrammar.RuleParameter]:
+    | IDENTIFIER ':' swiftType                  { self.setLocation(.init(name: identifier, type: swiftType, type: nil), at: _mark) }
     ;
 
 alts[[SwiftPEGGrammar.Alt]]:
@@ -88,9 +96,17 @@ repetitionMode[CommonAbstract.RepetitionMode]:
     ;
 
 atom[SwiftPEGGrammar.Atom]:
-    | '(' ~ alts ')'    { self.setLocation(SwiftPEGGrammar.GroupAtom(alts: alts), at: _mark) }
-    | IDENTIFIER        { self.setLocation(SwiftPEGGrammar.IdentAtom(identifier: identifier.rawToken, identity: .unresolved), at: _mark) }
-    | string            { self.setLocation(SwiftPEGGrammar.StringAtom(string: string), at: _mark) }
+    | '(' ~ alts ')'                { self.setLocation(SwiftPEGGrammar.GroupAtom(alts: alts), at: _mark) }
+    | IDENTIFIER atomParameters?    { self.setLocation(SwiftPEGGrammar.IdentAtom(identifier: identifier.rawToken, parameters: atomParameters, identity: .unresolved), at: _mark) }
+    | string                        { self.setLocation(SwiftPEGGrammar.StringAtom(string: string), at: _mark) }
+    ;
+
+atomParameters[SwiftPEGGrammar.AtomParameters]:
+    | '(' ','.atomParameter+ ')'    { self.setLocation(.init(parameters: atomParameter), at: _mark) }
+    ;
+
+atomParameter[SwiftPEGGrammar.AtomParameter]:
+    | IDENTIFIER ':' action         { self.setLocation(.init(label: identifier, value: action), at: _mark) }
     ;
 
 swiftType[CommonAbstract.SwiftType]:

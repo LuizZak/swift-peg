@@ -632,6 +632,7 @@ private func makeRule(name: String, _ alts: [SwiftPEGGrammar.Alt]) -> SwiftPEGGr
             name: makeIdent(name),
             type: nil
         ),
+        parameters: nil,
         action: nil,
         failAction: nil,
         alts: alts

@@ -138,7 +138,7 @@ public class GrammarParser<RawTokenizer: RawTokenizerType>: PEGParser<RawTokeniz
             let alts = try self.alts(),
             let _ = try self.expect(kind: .semicolon)
         {
-            return self.setLocation(.init(name: ruleName, action: action, failAction: failAction, alts: alts), at: _mark)
+            return self.setLocation(.init(name: ruleName, parameters: nil, action: action, failAction: failAction, alts: alts), at: _mark)
         }
 
         self.restore(_mark)
@@ -546,7 +546,7 @@ public class GrammarParser<RawTokenizer: RawTokenizerType>: PEGParser<RawTokeniz
         }
 
         if let identifier = try self.expect(kind: .identifier) {
-            return self.setLocation(SwiftPEGGrammar.IdentAtom(identifier: identifier.rawToken, identity: .unresolved), at: _mark)
+            return self.setLocation(SwiftPEGGrammar.IdentAtom(identifier: identifier.rawToken, parameters: nil, identity: .unresolved), at: _mark)
         }
 
         self.restore(_mark)

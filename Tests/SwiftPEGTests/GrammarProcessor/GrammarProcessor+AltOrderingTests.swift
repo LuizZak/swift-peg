@@ -262,6 +262,7 @@ private func makeRule(name: String, _ alts: [SwiftPEGGrammar.Alt]) -> SwiftPEGGr
             name: makeIdent(name),
             type: nil
         ),
+        parameters: nil,
         action: nil,
         failAction: nil,
         alts: alts
@@ -280,6 +281,7 @@ private func makeItem(_ ident: String, identity: SwiftPEGGrammar.IdentAtom.Ident
     makeItem(
         atom: SwiftPEGGrammar.IdentAtom(
             identifier: makeIdent(ident),
+            parameters: nil,
             identity: identity
         )
     )

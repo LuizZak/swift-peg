@@ -337,6 +337,7 @@ private func makeRule(name: String, _ alts: [SwiftPEGGrammar.Alt]) -> SwiftPEGGr
             name: makeIdent(name),
             type: nil
         ),
+        parameters: nil,
         action: nil,
         failAction: nil,
         alts: alts
@@ -356,6 +357,7 @@ private func makeNamedItem(name: String? = nil, _ ident: String, identity: Swift
         name: name,
         atom: SwiftPEGGrammar.IdentAtom(
             identifier: makeIdent(ident),
+            parameters: nil,
             identity: identity
         )
     )
@@ -373,7 +375,7 @@ private func makeNamedItem(name: String? = nil, atom: SwiftPEGGrammar.Atom) -> S
 }
 
 private func makeAtom(ident: String, identity: SwiftPEGGrammar.IdentAtom.Identity = .unresolved) -> SwiftPEGGrammar.IdentAtom {
-    SwiftPEGGrammar.IdentAtom(identifier: makeIdent(ident), identity: identity)
+    SwiftPEGGrammar.IdentAtom(identifier: makeIdent(ident), parameters: nil, identity: identity)
 }
 
 private func makeIdent(_ ident: String) -> SwiftPEGGrammar.Token {

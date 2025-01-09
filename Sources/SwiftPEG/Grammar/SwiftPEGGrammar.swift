@@ -148,7 +148,7 @@ extension SwiftPEGGrammar {
     /// Represents the construct:
     /// ```
     /// rule:
-    ///     | ruleName ":" action? failAction? '|'? alts ';'
+    ///     | ruleName ruleParameters? ":" action? failAction? '|'? alts ';'
     ///     ;
     /// ```
     @GeneratedNodeType<Node>
@@ -156,6 +156,10 @@ extension SwiftPEGGrammar {
         /// The name of this rule.
         @NodeProperty
         var _name: RuleName
+
+        /// An optional list of parameters associated with this rule.
+        @NodeProperty
+        var _parameters: RuleParameters?
 
         /// An optional action that is executed at the start of the rule's parse
         /// method.
@@ -249,6 +253,36 @@ extension SwiftPEGGrammar {
         public override func accept<Visitor>(_ visitor: Visitor) throws -> Visitor.VisitResult where Visitor: GrammarNodeVisitorType {
             try visitor.visit(self)
         }
+    }
+
+    /// A grammar rule's parameter list.
+    ///
+    /// Represents the construct:
+    /// ```
+    /// ruleParameters: '(' ','.ruleParameter+ ')' ;
+    /// ```
+    @GeneratedNodeType<Node>
+    public final class RuleParameters: GrammarNode {
+        /// The list of parameters associated with this rule parameter list.
+        @NodeProperty
+        var _parameters: [RuleParameter]
+    }
+
+    /// A grammar rule's parameter list's argument.
+    ///
+    /// Represents the construct:
+    /// ```
+    /// ruleParameter: IDENTIFIER ':' swiftType ;
+    /// ```
+    @GeneratedNodeType<Node>
+    public final class RuleParameter: GrammarNode {
+        /// The name associated with this parameter.
+        @NodeRequired
+        public var name: Token
+
+        /// The type associated with this parameter.
+        @NodeRequired
+        public var type: CommonAbstract.SwiftType
     }
 
     /// An alternative, or a sequence of items that must succeed sequentially
@@ -899,13 +933,17 @@ extension SwiftPEGGrammar {
     ///
     /// Represents the construct:
     /// ```
-    /// atom: IDENTIFIER ;
+    /// atom: IDENTIFIER atomParameters? ;
     /// ```
     @GeneratedNodeType<Node>(overrideDeepCopyType: "Atom")
     public final class IdentAtom: Atom {
         /// The identifier associated with this atom.
         @NodeRequired
         public var identifier: Token
+
+        /// An optional list of arguments associated with this atom.
+        @NodeProperty
+        var _parameters: AtomParameters?
 
         /// The identity of this atom.
         @NodeRequired
@@ -952,6 +990,36 @@ extension SwiftPEGGrammar {
             /// The identifier is unresolved.
             case unresolved
         }
+    }
+
+    /// A parameter list associated with a named atom item.
+    ///
+    /// Represents the construct:
+    /// ```
+    /// atomParameters: '(' ','.atomParameter+ ')' ;
+    /// ```
+    @GeneratedNodeType<Node>
+    public final class AtomParameters: Node {
+        /// The parameters associated with this parameter list.
+        @NodeProperty
+        var _parameters: [AtomParameter]
+    }
+
+    /// A parameter associated with a named atom item.
+    ///
+    /// Represents the construct:
+    /// ```
+    /// atomParameter: IDENTIFIER ':' action ;
+    /// ```
+    @GeneratedNodeType<Node>
+    public final class AtomParameter: Node {
+        /// The label associated with this atom parameter.
+        @NodeRequired
+        public var label: Token
+
+        /// The action associated with this atom parameter.
+        @NodeProperty
+        var _action: Action
     }
 
     /// An action of an alt. Represents a segment of code that is inserted on
