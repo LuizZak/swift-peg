@@ -271,7 +271,7 @@ class BindingEngine {
         case .anyToken, .token, .string:
             return .optional(swiftTokenType())
 
-        case .ruleName(let ruleName):
+        case .ruleName(let ruleName, _):
             if let rule = findRule(named: ruleName) {
                 return typeForRule(rule) ?? defaultRuleType()
             }
@@ -359,7 +359,7 @@ class BindingEngine {
         case .anyToken(let ident):
             return [(implicitBindings ? ident.lowercased() : nil, typeForAtom(atom))]
 
-        case .ruleName(let ident):
+        case .ruleName(let ident, _):
             let type = typeForAtom(atom).be_unwrapped()
             let bindings = bindings(for: type)
             if implicitBindings && bindings.count == 1 {

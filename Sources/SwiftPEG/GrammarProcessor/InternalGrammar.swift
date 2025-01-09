@@ -95,11 +95,12 @@ public enum InternalGrammar {
 
     /// ```
     /// rule:
-    ///     | ruleName ":" action? failAction? '|'? alts ';'
+    ///     | ruleName ruleParameters? ":" action? failAction? '|'? alts ';'
     ///     ;
     /// ```
     public struct Rule: Hashable {
         public var name: String
+        public var ruleParameters: [RuleParameter]?
         public var type: CommonAbstract.SwiftType?
         public var action: Action?
         public var failAction: Action?
@@ -157,8 +158,9 @@ public enum InternalGrammar {
             _ node: SwiftPEGGrammar.Rule
         ) -> Self {
 
-            .init(
+            return .init(
                 name: String(node.ruleName),
+                ruleParameters: node.parameters.map({ $0.parameters.map(RuleParameter.from) }),
                 type: node.name.type,
                 action: node.action.map(Action.from),
                 failAction: node.failAction.map(Action.from),
@@ -166,6 +168,29 @@ public enum InternalGrammar {
                 isReachable: node.isReachable,
                 isLeftRecursive: node.isLeftRecursive,
                 isLeftRecursiveLeader: node.isLeftRecursiveLead
+            )
+        }
+    }
+
+    /// ```
+    /// ruleParameter:
+    ///     | IDENTIFIER ':' swiftType
+    ///     ;
+    /// ```
+    public struct RuleParameter: Hashable, CustomStringConvertible {
+        public var name: String
+        public var type: CommonAbstract.SwiftType
+
+        public var description: String {
+            "\(name): \(type)"
+        }
+
+        public static func from(
+            _ node: SwiftPEGGrammar.RuleParameter
+        ) -> Self {
+            .init(
+                name: String(node.name.string),
+                type: node.type
             )
         }
     }
@@ -810,13 +835,20 @@ public enum InternalGrammar {
         }
     }
 
+    /// ```
+    /// atom:
+    ///     | '(' alts ')'
+    ///     | IDENTIFIER atomParameters?
+    ///     | string
+    ///     ;
+    /// ```
     public indirect enum Atom: Hashable, CustomStringConvertible {
         /// `'(' alts ')'`
         @GeneratedIsCase(accessLevel: "public")
         case group([Alt])
 
         /// `ident`
-        case ruleName(String)
+        case ruleName(String, parameters: [AtomParameter]? = nil)
 
         /// `IDENT`
         case token(String)
@@ -833,6 +865,7 @@ public enum InternalGrammar {
             switch self {
             case .group(let alts):
                 return .group(alts.compactMap(\.removingCuts))
+
             default:
                 return self
             }
@@ -846,6 +879,7 @@ public enum InternalGrammar {
                 let result = alts.compactMap(\.reduced)
                 if result.isEmpty { return nil }
                 return .group(result)
+
             default:
                 return self
             }
@@ -855,12 +889,20 @@ public enum InternalGrammar {
             switch self {
             case .group(let alts):
                 return "(\(alts.map(\.description).joined(separator: " | ")))"
-            case .ruleName(let ident):
+
+            case .ruleName(let ident, let parameters):
+                if let parameters {
+                    return "\(ident)(\(parameters.map(\.description).joined(separator: ",")))"
+                }
+
                 return ident
+
             case .token(let ident):
                 return ident
+
             case .anyToken(let ident):
                 return ident
+
             case .string(let str, _):
                 return str
             }
@@ -908,11 +950,16 @@ public enum InternalGrammar {
 
                 switch ident.identity {
                 case .ruleName:
-                    return .ruleName(String(value))
+                    let parameters = ident.parameters.map({ $0.parameters.map(AtomParameter.from) })
+
+                    return .ruleName(String(value), parameters: parameters)
+
                 case .token:
                     return .token(String(value))
+
                 case .anyToken:
                     return .anyToken(String(value))
+
                 case .unresolved:
                     return .ruleName(String(value))
                 }
@@ -923,6 +970,30 @@ public enum InternalGrammar {
             default:
                 fatalError("Unknown atom type \(type(of: node))")
             }
+        }
+    }
+
+    /// ```
+    /// atomParameter:
+    ///     | IDENTIFIER ':' action
+    ///     ;
+    /// ```
+    public struct AtomParameter: Hashable, CustomStringConvertible {
+        public var label: String
+        public var action: Action
+
+        public var description: String {
+            "\(label): \(action)"
+        }
+
+        public static func from(
+            _ node: SwiftPEGGrammar.AtomParameter
+        ) -> Self {
+
+            .init(
+                label: String(node.label.string),
+                action: .from(node.action)
+            )
         }
     }
 

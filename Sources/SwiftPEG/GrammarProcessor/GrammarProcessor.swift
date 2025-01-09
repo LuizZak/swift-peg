@@ -281,21 +281,29 @@ public class GrammarProcessor {
         tokens: Set<String>,
         fragments: Set<String>
     ) throws {
+
         // Populate references
-        var knownNames: [(String, SwiftPEGGrammar.IdentAtom.Identity)]
+        var knownNames: [(ReferenceVisitor.KnownReference, SwiftPEGGrammar.IdentAtom.Identity)]
         knownNames = tokens.map {
-            ($0, .token)
+            (.token($0), .token)
         }
         for rule in grammar.rules {
             let name = String(rule.ruleName)
+            let parameterCount: Int
+            if let parameters = rule.parameters {
+                parameterCount = parameters.parameters.count
+            } else {
+                parameterCount = 0
+            }
+
             knownNames.append(
-                (name, .ruleName)
+                (.rule(name, parameterCount: parameterCount), .ruleName)
             )
         }
         // anyToken
         if let anyToken = metaPropertyManager.firstValue(of: anyTokenProp)?.stringValue {
             knownNames.append(
-                (anyToken, .anyToken)
+                (.anyToken(anyToken), .anyToken)
             )
         }
 
@@ -304,11 +312,6 @@ public class GrammarProcessor {
 
         let walker = NodeWalker(visitor: visitor)
         try walker.walk(grammar)
-
-        guard !visitor.unknownReferences.isEmpty else {
-            // Ok!
-            return
-        }
 
         let tokensFile = metaPropertyManager.firstValue(of: tokensFileProp)?.stringValue
 
@@ -337,7 +340,23 @@ public class GrammarProcessor {
             firstError = firstError ?? error
         }
 
-        throw firstError!
+        for (ref, description) in visitor.invalidParameterReferences {
+            guard let rule: SwiftPEGGrammar.Rule = ref.firstAncestor() else {
+                fatalError("Found atom \(ref.name) @ \(ref.location) that has no Rule parent?")
+            }
+
+            let error: GrammarProcessorError
+
+            error = recordAndReturn(
+                .invalidParameterReference(ref, rule, description)
+            )
+
+            firstError = firstError ?? error
+        }
+
+        if let firstError {
+            throw firstError
+        }
     }
 
     func diagnoseAltLabels(in grammar: SwiftPEGGrammar.Grammar) {
@@ -450,6 +469,10 @@ public class GrammarProcessor {
         /// rule or token name.
         case unknownReference(SwiftPEGGrammar.IdentAtom, SwiftPEGGrammar.Rule, tokensFileName: String? = nil)
 
+        /// An identifier with parameters was found while none was expected, or
+        /// one with different parameter count.
+        case invalidParameterReference(SwiftPEGGrammar.IdentAtom, SwiftPEGGrammar.Rule, String)
+
         /// An identifier was found in a rule that refers to token fragments,
         /// which are not queryable by the parser.
         case referencedFragmentInParser(SwiftPEGGrammar.IdentAtom, SwiftPEGGrammar.Rule)
@@ -517,6 +540,11 @@ public class GrammarProcessor {
                 return """
                 Reference to unknown identifier '\(atom.name)' @ \(atom.location) in rule '\(rule.name.shortDebugDescription)'. \
                 Did you forget to forward-declare a token with '@token \(atom.name);' or define it in '@tokensFile \"\(tokensFileName ?? "<file.tokens>")\"'?
+                """
+
+            case .invalidParameterReference(let atom, let rule, let description):
+                return """
+                Invalid parameter reference: \(description) @ '\(atom.name)' @ \(atom.location) in rule '\(rule.name.shortDebugDescription)'.
                 """
 
             case .referencedFragmentInParser(let atom, let rule):
@@ -721,23 +749,57 @@ public class GrammarProcessor {
 private extension GrammarProcessor {
     /// Visitor used to validate named references in rules.
     final class ReferenceVisitor: SwiftPEGGrammar.GrammarNodeVisitorType {
-        private let knownIdentifiers: [(name: String, type: SwiftPEGGrammar.IdentAtom.Identity)]
+        private let knownIdentifiers: [(name: KnownReference, type: SwiftPEGGrammar.IdentAtom.Identity)]
         var unknownReferences: [SwiftPEGGrammar.IdentAtom] = []
+        var invalidParameterReferences: [(SwiftPEGGrammar.IdentAtom, String)] = []
 
-        init(knownIdentifiers: some Sequence<(String, SwiftPEGGrammar.IdentAtom.Identity)>) {
+        init(knownIdentifiers: some Sequence<(KnownReference, SwiftPEGGrammar.IdentAtom.Identity)>) {
             self.knownIdentifiers = Array(knownIdentifiers)
         }
 
         func visit(_ node: SwiftPEGGrammar.IdentAtom) throws -> NodeVisitChildrenResult {
             let ref = node.identifier.string
 
-            if let identifier = knownIdentifiers.first(where: { $0.name == ref }) {
+            if let identifier = knownIdentifiers.first(where: { $0.name.name == ref }) {
                 node.identity = identifier.type
+
+                if let parameters = node.parameters {
+                    switch identifier.name {
+                    case .rule(_, let parameterCount):
+                        if parameters.parameters.count != parameterCount {
+                            invalidParameterReferences.append((node, "expected \(parameterCount), found \(parameters.parameters.count) parameter(s)."))
+                        }
+
+                    case .token, .anyToken:
+                        invalidParameterReferences.append((node, "tokens cannot be parameterized"))
+                    }
+                } else {
+                    switch identifier.name {
+                    case .rule(_, let parameterCount) where parameterCount > 0:
+                        invalidParameterReferences.append((node, "expected \(parameterCount), found none."))
+
+                    case .rule, .token, .anyToken:
+                        break
+                    }
+                }
             } else {
                 unknownReferences.append(node)
             }
 
             return .visitChildren
+        }
+
+        enum KnownReference {
+            case rule(String, parameterCount: Int)
+            case token(String)
+            case anyToken(String)
+
+            var name: String {
+                switch self {
+                case .rule(let name, _), .token(let name), .anyToken(let name):
+                    return name
+                }
+            }
         }
     }
 

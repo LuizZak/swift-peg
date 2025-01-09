@@ -314,11 +314,13 @@ extension SwiftCodeGen {
         )
 
         let fName = memoizationMode == .none ? name : "__\(name)"
+        let parameters = generateParameters(rule.ruleParameters)
         let returnType = bindingEngine.returnTypeForRule(rule).asSwiftASTType
 
         let signature = FunctionSignature(
             attributes: attributes,
             name: fName,
+            parameters: parameters,
             returnType: returnType,
             traits: [.throwing]
         )
@@ -409,7 +411,7 @@ extension SwiftCodeGen {
         let returnType = ruleType.asSwiftASTType.scg_removingTupleLabels()
 
         // Synthesize method
-        let comments = generateRuleDocComment(ruleName, info.bindings.be_asTupleType(), nil, nil, [
+        let comments = generateRuleDocComment(ruleName, info.bindings.be_asTupleType(), nil, nil, nil, [
             .init(namedItems: [repetitionInfo.repetition] + repetitionInfo.trail)
         ])
 
@@ -516,11 +518,12 @@ extension SwiftCodeGen {
     fileprivate func generateRuleDocComment(_ rule: InternalGrammar.Rule) -> [SwiftComment] {
         let ruleName = rule.name
         let ruleType = rule.type
+        let ruleParameters = rule.ruleParameters
         let action = rule.action
         let failAction = rule.failAction
         let alts = rule.alts
 
-        return generateRuleDocComment(ruleName, ruleType, action, failAction, alts)
+        return generateRuleDocComment(ruleName, ruleType, ruleParameters, action, failAction, alts)
     }
 
     /// ```
@@ -536,6 +539,7 @@ extension SwiftCodeGen {
     fileprivate func generateRuleDocComment(
         _ ruleName: String,
         _ ruleType: CommonAbstract.SwiftType?,
+        _ ruleParameters: [InternalGrammar.RuleParameter]?,
         _ action: InternalGrammar.Action?,
         _ failAction: InternalGrammar.Action?,
         _ alts: [InternalGrammar.Alt]
@@ -554,6 +558,13 @@ extension SwiftCodeGen {
         buffer.emit("\(linePrefix)\(ruleName)")
         if let ruleType {
             buffer.emit("[\(ruleType.scg_asReturnType())]")
+        }
+        if let ruleParameters {
+            buffer.emit("(")
+            buffer.emitWithSeparators(ruleParameters, separator: ", ") { parameter in
+                buffer.emit("\(parameter)")
+            }
+            buffer.emit(")")
         }
         buffer.emitLine(":")
         if action != nil || failAction != nil {
@@ -610,6 +621,25 @@ extension SwiftCodeGen {
         result.append(.init(name: "inlinable"))
 
         return result
+    }
+
+    fileprivate func generateParameters(
+        _ parameters: [InternalGrammar.RuleParameter]?
+    ) -> [ParameterSignature] {
+        guard let parameters else {
+            return []
+        }
+
+        return parameters.map(generateParameter)
+    }
+
+    fileprivate func generateParameter(
+        _ parameter: InternalGrammar.RuleParameter
+    ) -> ParameterSignature {
+        .init(
+            name: escapeIdentifier(parameter.name, isLabel: true),
+            type: parameter.type.asSwiftASTType
+        )
     }
 
     fileprivate func generateAlt(
@@ -915,8 +945,8 @@ extension SwiftCodeGen {
 
             return .try(.identifier("self").dot(aux).call())
 
-        case .ruleName(let ident):
-            return .try(.identifier("self").dot(escapeIdentifier(ident)).call())
+        case .ruleName(let ident, let parameters):
+            return .try(.identifier("self").dot(escapeIdentifier(ident)).call(generateAtomParameters(parameters)))
 
         case .token(let ident):
             return .try(expandTokenName(ident))
@@ -942,6 +972,22 @@ extension SwiftCodeGen {
 
             return .try(.identifier("self").dot("expect").call(callArgs))
         }
+    }
+
+    func generateAtomParameters(
+        _ parameters: [InternalGrammar.AtomParameter]?
+    ) -> [FunctionArgument] {
+        guard let parameters else {
+            return []
+        }
+
+        return parameters.map(generateAtomParameter)
+    }
+
+    func generateAtomParameter(
+        _ parameters: InternalGrammar.AtomParameter
+    ) -> FunctionArgument {
+        .init(label: parameters.label, expression: .unknown(.init(context: parameters.action.string.trimmingWhitespace())))
     }
 
     /// `let <bind>[: <BindingType>]`

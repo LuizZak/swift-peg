@@ -509,7 +509,7 @@ public class GrammarInterpreter {
         case .group(let alts):
             return try tryAlts(alts)
 
-        case .ruleName(let ruleName):
+        case .ruleName(let ruleName, _):
             return try produce(ruleName: ruleName)
 
         case .token(let tokenName):
@@ -657,7 +657,7 @@ public class GrammarInterpreter {
         case .anyToken(let ident):
             return ident.lowercased()
 
-        case .ruleName(let ident):
+        case .ruleName(let ident, _):
             return ident
 
         case .group:

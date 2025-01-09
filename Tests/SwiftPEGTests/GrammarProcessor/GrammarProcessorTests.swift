@@ -100,6 +100,75 @@ struct GrammarProcessorTests {
     }
 
     @Test
+    func errorInvalidParameterReference_expectsZeroFoundOne() throws {
+        let start = makeRule(name: "start", [
+            makeAlt([ makeNamedItem("a", parameters: makeAtomParameters([makeAtomParameter(label: "a", action: "b")])) ]),
+        ])
+        let a = makeRule(name: "a", [
+            makeAlt([ makeNamedItem("b") ])
+        ])
+        let grammar = makeGrammar(
+            metas: [
+                makeMeta(name: "anyToken", identifier: "b"),
+            ],
+            [start, a]
+        )
+        let sut = makeSut()
+
+        assertThrows({ try sut.process(grammar) })
+
+        assertCount(sut.errors, 1)
+        assertEqual(sut.test_errorMessages(), """
+            Invalid parameter reference: expected 0, found 1 parameter(s). @ 'a' @ 0 in rule 'start'.
+            """)
+    }
+
+    @Test
+    func errorInvalidParameterReference_expectsOneFoundZero() throws {
+        let start = makeRule(name: "start", [
+            makeAlt([ makeNamedItem("a") ]),
+        ])
+        let a = makeRule(name: "a", parameters: makeRuleParameters([makeRuleParameter(name: "a", swiftType: .typeName("Int"))]), [
+            makeAlt([ makeNamedItem("b") ])
+        ])
+        let grammar = makeGrammar(
+            metas: [
+                makeMeta(name: "anyToken", identifier: "b"),
+            ],
+            [start, a]
+        )
+        let sut = makeSut()
+
+        assertThrows({ try sut.process(grammar) })
+
+        assertCount(sut.errors, 1)
+        assertEqual(sut.test_errorMessages(), """
+            Invalid parameter reference: expected 1, found none. @ 'a' @ 0 in rule 'start'.
+            """)
+    }
+
+    @Test
+    func errorInvalidParameterReference_parameterizedTokenReference() throws {
+        let start = makeRule(name: "start", [
+            makeAlt([ makeNamedItem("b", parameters: makeAtomParameters([makeAtomParameter(label: "a", action: "b")])) ]),
+        ])
+        let grammar = makeGrammar(
+            metas: [
+                makeMeta(name: "anyToken", identifier: "b"),
+            ],
+            [start]
+        )
+        let sut = makeSut()
+
+        assertThrows({ try sut.process(grammar) })
+
+        assertCount(sut.errors, 1)
+        assertEqual(sut.test_errorMessages(), """
+            Invalid parameter reference: tokens cannot be parameterized @ 'b' @ 0 in rule 'start'.
+            """)
+    }
+
+    @Test
     func errorFragmentReferenceInParser() throws {
         let delegate = stubDelegate(tokensFile: """
         %a: 'a' ;
@@ -331,16 +400,27 @@ private func makeMeta(name: String) -> SwiftPEGGrammar.Meta {
     SwiftPEGGrammar.Meta(name: makeIdent(name), value: nil)
 }
 
-private func makeRule(name: String, _ alts: [SwiftPEGGrammar.Alt]) -> SwiftPEGGrammar.Rule {
+private func makeRule(name: String, parameters: SwiftPEGGrammar.RuleParameters? = nil, _ alts: [SwiftPEGGrammar.Alt]) -> SwiftPEGGrammar.Rule {
     SwiftPEGGrammar.Rule(
         name: .init(
             name: makeIdent(name),
             type: nil
         ),
-        parameters: nil,
+        parameters: parameters,
         action: nil,
         failAction: nil,
         alts: alts
+    )
+}
+
+private func makeRuleParameters(_ parameters: [SwiftPEGGrammar.RuleParameter]) -> SwiftPEGGrammar.RuleParameters {
+    .init(parameters: parameters)
+}
+
+private func makeRuleParameter(name: String, swiftType: CommonAbstract.SwiftType) -> SwiftPEGGrammar.RuleParameter {
+    .init(
+        name: .init(kind: .identifier, string: Substring(name)),
+        type: swiftType
     )
 }
 
@@ -352,14 +432,25 @@ private func makeAlt(_ items: [SwiftPEGGrammar.NamedItem]) -> SwiftPEGGrammar.Al
     )
 }
 
-private func makeNamedItem(name: String? = nil, _ ident: String, identity: SwiftPEGGrammar.IdentAtom.Identity = .ruleName) -> SwiftPEGGrammar.NamedItem {
+private func makeNamedItem(name: String? = nil, _ ident: String, parameters: SwiftPEGGrammar.AtomParameters? = nil, identity: SwiftPEGGrammar.IdentAtom.Identity = .ruleName) -> SwiftPEGGrammar.NamedItem {
     makeNamedItem(
         name: name,
         atom: SwiftPEGGrammar.IdentAtom(
             identifier: makeIdent(ident),
-            parameters: nil,
+            parameters: parameters,
             identity: identity
         )
+    )
+}
+
+private func makeAtomParameters(_ parameters: [SwiftPEGGrammar.AtomParameter]) -> SwiftPEGGrammar.AtomParameters {
+    .init(parameters: parameters)
+}
+
+private func makeAtomParameter(label: String, action: String) -> SwiftPEGGrammar.AtomParameter {
+    .init(
+        label: .init(kind: .identifier, string: Substring(label)),
+        action: .init(balancedTokens: .init(pieces: [.literal(action)]))
     )
 }
 

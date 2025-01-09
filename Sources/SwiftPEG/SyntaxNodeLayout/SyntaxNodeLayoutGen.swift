@@ -185,7 +185,7 @@ public class SyntaxNodeLayoutGen {
 
             return LabeledLayout(name: nil, layout: layout)
 
-        case .ruleName(let name):
+        case .ruleName(let name, _):
             let layout = SyntaxNodeLayout.rule(name)
 
             return LabeledLayout(name: name, layout: layout)
