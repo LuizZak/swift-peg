@@ -45,11 +45,11 @@ ruleName[SwiftPEGGrammar.RuleName]:
     ;
 
 ruleParameters[SwiftPEGGrammar.RuleParameters]:
-    | '(' ','.ruleParameter+ ')'                { self.setLocation(.init(parameters: ruleParameter, type: nil), at: _mark) }
+    | '(' ','.ruleParameter+ ')'                { self.setLocation(.init(parameters: ruleParameter), at: _mark) }
     ;
 
 ruleParameter[SwiftPEGGrammar.RuleParameter]:
-    | IDENTIFIER ':' swiftType                  { self.setLocation(.init(name: identifier, type: swiftType, type: nil), at: _mark) }
+    | IDENTIFIER ':' swiftType                  { self.setLocation(.init(name: identifier.rawToken, type: swiftType), at: _mark) }
     ;
 
 alts[[SwiftPEGGrammar.Alt]]:
@@ -106,7 +106,7 @@ atomParameters[SwiftPEGGrammar.AtomParameters]:
     ;
 
 atomParameter[SwiftPEGGrammar.AtomParameter]:
-    | IDENTIFIER ':' action         { self.setLocation(.init(label: identifier, value: action), at: _mark) }
+    | IDENTIFIER ':' action         { self.setLocation(.init(label: identifier.rawToken, action: action), at: _mark) }
     ;
 
 swiftType[CommonAbstract.SwiftType]:

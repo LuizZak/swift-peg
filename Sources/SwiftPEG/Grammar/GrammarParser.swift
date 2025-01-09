@@ -121,7 +121,7 @@ public class GrammarParser<RawTokenizer: RawTokenizerType>: PEGParser<RawTokeniz
 
     /// ```
     /// rule[SwiftPEGGrammar.Rule]:
-    ///     | ruleName ":" action? failAction? '|'? alts ';' { self.setLocation(.init(name: ruleName, action: action, failAction: failAction, alts: alts), at: _mark) }
+    ///     | ruleName ruleParameters? ":" action? failAction? '|'? alts ';' { self.setLocation(.init(name: ruleName, parameters: ruleParameters, action: action, failAction: failAction, alts: alts), at: _mark) }
     ///     ;
     /// ```
     @memoized("rule")
@@ -131,6 +131,7 @@ public class GrammarParser<RawTokenizer: RawTokenizerType>: PEGParser<RawTokeniz
 
         if
             let ruleName = try self.ruleName(),
+            case let ruleParameters = try self.ruleParameters(),
             let _ = try self.expect(kind: .colon),
             case let action = try self.action(),
             case let failAction = try self.failAction(),
@@ -138,7 +139,7 @@ public class GrammarParser<RawTokenizer: RawTokenizerType>: PEGParser<RawTokeniz
             let alts = try self.alts(),
             let _ = try self.expect(kind: .semicolon)
         {
-            return self.setLocation(.init(name: ruleName, parameters: nil, action: action, failAction: failAction, alts: alts), at: _mark)
+            return self.setLocation(.init(name: ruleName, parameters: ruleParameters, action: action, failAction: failAction, alts: alts), at: _mark)
         }
 
         self.restore(_mark)
@@ -177,6 +178,56 @@ public class GrammarParser<RawTokenizer: RawTokenizerType>: PEGParser<RawTokeniz
 
         if let name = try self.expect(kind: .identifier) {
             return self.setLocation(.init(name: name.rawToken, type: nil), at: _mark)
+        }
+
+        self.restore(_mark)
+
+        return nil
+    }
+
+    /// ```
+    /// ruleParameters[SwiftPEGGrammar.RuleParameters]:
+    ///     | '(' ','.ruleParameter+ ')' { self.setLocation(.init(parameters: ruleParameter), at: _mark) }
+    ///     ;
+    /// ```
+    @memoized("ruleParameters")
+    @inlinable
+    public func __ruleParameters() throws -> SwiftPEGGrammar.RuleParameters? {
+        let _mark: Mark = self.mark()
+
+        if
+            let _ = try self.expect(kind: .leftParen),
+            let ruleParameter = try self.gather(separator: {
+                try self.expect(kind: .comma)
+            }, item: {
+                try self.ruleParameter()
+            }),
+            let _ = try self.expect(kind: .rightParen)
+        {
+            return self.setLocation(.init(parameters: ruleParameter), at: _mark)
+        }
+
+        self.restore(_mark)
+
+        return nil
+    }
+
+    /// ```
+    /// ruleParameter[SwiftPEGGrammar.RuleParameter]:
+    ///     | IDENTIFIER ':' swiftType { self.setLocation(.init(name: identifier.rawToken, type: swiftType), at: _mark) }
+    ///     ;
+    /// ```
+    @memoized("ruleParameter")
+    @inlinable
+    public func __ruleParameter() throws -> SwiftPEGGrammar.RuleParameter? {
+        let _mark: Mark = self.mark()
+
+        if
+            let identifier = try self.expect(kind: .identifier),
+            let _ = try self.expect(kind: .colon),
+            let swiftType = try self.swiftType()
+        {
+            return self.setLocation(.init(name: identifier.rawToken, type: swiftType), at: _mark)
         }
 
         self.restore(_mark)
@@ -519,7 +570,7 @@ public class GrammarParser<RawTokenizer: RawTokenizerType>: PEGParser<RawTokeniz
     /// ```
     /// atom[SwiftPEGGrammar.Atom]:
     ///     | '(' ~ alts ')' { self.setLocation(SwiftPEGGrammar.GroupAtom(alts: alts), at: _mark) }
-    ///     | IDENTIFIER { self.setLocation(SwiftPEGGrammar.IdentAtom(identifier: identifier.rawToken, identity: .unresolved), at: _mark) }
+    ///     | IDENTIFIER atomParameters? { self.setLocation(SwiftPEGGrammar.IdentAtom(identifier: identifier.rawToken, parameters: atomParameters, identity: .unresolved), at: _mark) }
     ///     | string { self.setLocation(SwiftPEGGrammar.StringAtom(string: string), at: _mark) }
     ///     ;
     /// ```
@@ -545,14 +596,67 @@ public class GrammarParser<RawTokenizer: RawTokenizerType>: PEGParser<RawTokeniz
             return nil
         }
 
-        if let identifier = try self.expect(kind: .identifier) {
-            return self.setLocation(SwiftPEGGrammar.IdentAtom(identifier: identifier.rawToken, parameters: nil, identity: .unresolved), at: _mark)
+        if
+            let identifier = try self.expect(kind: .identifier),
+            case let atomParameters = try self.atomParameters()
+        {
+            return self.setLocation(SwiftPEGGrammar.IdentAtom(identifier: identifier.rawToken, parameters: atomParameters, identity: .unresolved), at: _mark)
         }
 
         self.restore(_mark)
 
         if let string = try self.string() {
             return self.setLocation(SwiftPEGGrammar.StringAtom(string: string), at: _mark)
+        }
+
+        self.restore(_mark)
+
+        return nil
+    }
+
+    /// ```
+    /// atomParameters[SwiftPEGGrammar.AtomParameters]:
+    ///     | '(' ','.atomParameter+ ')' { self.setLocation(.init(parameters: atomParameter), at: _mark) }
+    ///     ;
+    /// ```
+    @memoized("atomParameters")
+    @inlinable
+    public func __atomParameters() throws -> SwiftPEGGrammar.AtomParameters? {
+        let _mark: Mark = self.mark()
+
+        if
+            let _ = try self.expect(kind: .leftParen),
+            let atomParameter = try self.gather(separator: {
+                try self.expect(kind: .comma)
+            }, item: {
+                try self.atomParameter()
+            }),
+            let _ = try self.expect(kind: .rightParen)
+        {
+            return self.setLocation(.init(parameters: atomParameter), at: _mark)
+        }
+
+        self.restore(_mark)
+
+        return nil
+    }
+
+    /// ```
+    /// atomParameter[SwiftPEGGrammar.AtomParameter]:
+    ///     | IDENTIFIER ':' action { self.setLocation(.init(label: identifier.rawToken, action: action), at: _mark) }
+    ///     ;
+    /// ```
+    @memoized("atomParameter")
+    @inlinable
+    public func __atomParameter() throws -> SwiftPEGGrammar.AtomParameter? {
+        let _mark: Mark = self.mark()
+
+        if
+            let identifier = try self.expect(kind: .identifier),
+            let _ = try self.expect(kind: .colon),
+            let action = try self.action()
+        {
+            return self.setLocation(.init(label: identifier.rawToken, action: action), at: _mark)
         }
 
         self.restore(_mark)
