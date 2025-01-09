@@ -315,6 +315,13 @@ extension SwiftCodeGen {
 
         let fName = memoizationMode == .none ? name : "__\(name)"
         let parameters = generateParameters(rule.ruleParameters)
+
+        if let parameters = rule.ruleParameters {
+            for parameter in parameters {
+                declContext.defineLocal(suggestedName: parameter.name, type: .none)
+            }
+        }
+
         let returnType = bindingEngine.returnTypeForRule(rule).asSwiftASTType
 
         let signature = FunctionSignature(

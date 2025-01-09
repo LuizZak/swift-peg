@@ -1,0 +1,94 @@
+@grammar """
+start: a ;
+a: a='a' c(b: { a }) ;
+b: 'b' ;
+c(b: Token): b 'c' ;
+""" ;
+
+@expectedParser """
+extension Parser {
+    /// ```
+    /// start:
+    ///     | a
+    ///     ;
+    /// ```
+    @memoized("start")
+    @inlinable
+    public func __start() throws -> Node? {
+        let _mark: Mark = self.mark()
+
+        if let a = try self.a() {
+            return a
+        }
+
+        self.restore(_mark)
+
+        return nil
+    }
+
+    /// ```
+    /// a:
+    ///     | a='a' c(b: { a })
+    ///     ;
+    /// ```
+    @memoized("a")
+    @inlinable
+    public func __a() throws -> Node? {
+        let _mark: Mark = self.mark()
+
+        if
+            let a = try self.expect("a"),
+            let c = try self.c(b: a)
+        {
+            return Node()
+        }
+
+        self.restore(_mark)
+
+        return nil
+    }
+
+    /// ```
+    /// b:
+    ///     | 'b'
+    ///     ;
+    /// ```
+    @memoized("b")
+    @inlinable
+    public func __b() throws -> Node? {
+        let _mark: Mark = self.mark()
+
+        if let _ = try self.expect("b") {
+            return Node()
+        }
+
+        self.restore(_mark)
+
+        return nil
+    }
+
+    /// ```
+    /// c(b: Token):
+    ///     | b 'c'
+    ///     ;
+    /// ```
+    @memoized("c")
+    @inlinable
+    public func __c(b: Token) throws -> Node? {
+        let _mark: Mark = self.mark()
+
+        if
+            let b1 = try self.b(),
+            let _ = try self.expect("c")
+        {
+            return Node()
+        }
+
+        self.restore(_mark)
+
+        return nil
+    }
+}
+""" ;
+
+start: '' ;
