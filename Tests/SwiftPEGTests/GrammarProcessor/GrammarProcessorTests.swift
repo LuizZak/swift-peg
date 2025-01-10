@@ -169,6 +169,30 @@ struct GrammarProcessorTests {
     }
 
     @Test
+    func errorInvalidParameterReference_mismatchedLabels() throws {
+        let start = makeRule(name: "start", [
+            makeAlt([ makeNamedItem("a", parameters: makeAtomParameters([makeAtomParameter(label: "b", action: "c")])) ]),
+        ])
+        let a = makeRule(name: "a", parameters: makeRuleParameters([makeRuleParameter(name: "a", swiftType: .typeName("Int"))]), [
+            makeAlt([ makeNamedItem("b") ])
+        ])
+        let grammar = makeGrammar(
+            metas: [
+                makeMeta(name: "anyToken", identifier: "b"),
+            ],
+            [start, a]
+        )
+        let sut = makeSut()
+
+        assertThrows({ try sut.process(grammar) })
+
+        assertCount(sut.errors, 1)
+        assertEqual(sut.test_errorMessages(), """
+            Invalid parameter reference: expected label 'a', found 'b'. @ 'a' @ 0 in rule 'start'.
+            """)
+    }
+
+    @Test
     func errorFragmentReferenceInParser() throws {
         let delegate = stubDelegate(tokensFile: """
         %a: 'a' ;

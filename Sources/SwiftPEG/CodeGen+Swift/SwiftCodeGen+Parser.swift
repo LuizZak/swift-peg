@@ -661,7 +661,6 @@ extension SwiftCodeGen {
         if alt.namedItems.isEmpty { return results }
 
         declContext.push()
-        defer { declContext.pop() }
 
         // if bindings/conditions
         let clauses = try generateNamedItems(alt.namedItems, in: production)
@@ -673,6 +672,8 @@ extension SwiftCodeGen {
         ])
 
         results.append(.expression(ifExpr))
+
+        declContext.pop()
 
         if requiresMarkers(alt) {
             // Alt failure results in a restore to a previous mark
@@ -775,7 +776,8 @@ extension SwiftCodeGen {
                 let item: InternalGrammar.Item = .atom(.ruleName(auxInfo.name))
 
                 let (clauses, bindings) = try generateBindingsToItem(
-                    item, auxInfo.bindings,
+                    item,
+                    auxInfo.bindings,
                     in: production
                 )
                 resultClauses.append(clauses)

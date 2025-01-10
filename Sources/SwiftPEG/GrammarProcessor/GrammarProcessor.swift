@@ -289,15 +289,9 @@ public class GrammarProcessor {
         }
         for rule in grammar.rules {
             let name = String(rule.ruleName)
-            let parameterCount: Int
-            if let parameters = rule.parameters {
-                parameterCount = parameters.parameters.count
-            } else {
-                parameterCount = 0
-            }
 
             knownNames.append(
-                (.rule(name, parameterCount: parameterCount), .ruleName)
+                (.rule(name, parameters: rule.parameters?.parameters ?? []), .ruleName)
             )
         }
         // anyToken
@@ -763,11 +757,18 @@ private extension GrammarProcessor {
             if let identifier = knownIdentifiers.first(where: { $0.name.name == ref }) {
                 node.identity = identifier.type
 
-                if let parameters = node.parameters {
+                if let nodeParameters = node.parameters {
                     switch identifier.name {
-                    case .rule(_, let parameterCount):
-                        if parameters.parameters.count != parameterCount {
-                            invalidParameterReferences.append((node, "expected \(parameterCount), found \(parameters.parameters.count) parameter(s)."))
+                    case .rule(_, let parameters):
+                        let parameterCount = parameters.count
+                        if nodeParameters.parameters.count != parameterCount {
+                            invalidParameterReferences.append((node, "expected \(parameterCount), found \(nodeParameters.parameters.count) parameter(s)."))
+                        } else {
+                            for (nodeParameter, parameter) in zip(nodeParameters.parameters, parameters) {
+                                if String(nodeParameter.label.string) != String(parameter.name.string) {
+                                    invalidParameterReferences.append((node, "expected label '\(parameter.name.string)', found '\(nodeParameter.label.string)'."))
+                                }
+                            }
                         }
 
                     case .token, .anyToken:
@@ -775,8 +776,8 @@ private extension GrammarProcessor {
                     }
                 } else {
                     switch identifier.name {
-                    case .rule(_, let parameterCount) where parameterCount > 0:
-                        invalidParameterReferences.append((node, "expected \(parameterCount), found none."))
+                    case .rule(_, let parameters) where parameters.count > 0:
+                        invalidParameterReferences.append((node, "expected \(parameters.count), found none."))
 
                     case .rule, .token, .anyToken:
                         break
@@ -790,7 +791,7 @@ private extension GrammarProcessor {
         }
 
         enum KnownReference {
-            case rule(String, parameterCount: Int)
+            case rule(String, parameters: [SwiftPEGGrammar.RuleParameter])
             case token(String)
             case anyToken(String)
 
