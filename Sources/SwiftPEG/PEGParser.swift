@@ -238,7 +238,7 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
     public func expect(_ token: RawToken) throws -> Token? {
         let mark = self.mark()
 
-        // If expected kind is not explicitly a whitespace, skip all whitespace
+        // If expected kind is not explicitly a skippable token, skip all skippable
         // tokens first
         try skipChannelSkipTokens([token.kind])
 
@@ -260,7 +260,7 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
     public func expect(kind: RawToken.TokenKind) throws -> Token? {
         let mark = self.mark()
 
-        // If expected kind is not explicitly a whitespace, skip all whitespace
+        // If expected kind is not explicitly a skippable token, skip all skippable
         // tokens first
         try skipChannelSkipTokens([kind])
 
@@ -283,7 +283,7 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
     public func expect(oneOfKind kinds: Set<RawToken.TokenKind>) throws -> Token? {
         let mark = self.mark()
 
-        // If expected kind is not explicitly a whitespace, skip all whitespace
+        // If expected kind is not explicitly a skippable token, skip all skippable
         // tokens first
         try skipChannelSkipTokens(kinds)
 
