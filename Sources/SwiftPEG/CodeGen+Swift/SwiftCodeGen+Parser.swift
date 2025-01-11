@@ -156,8 +156,6 @@ extension SwiftCodeGen {
     /// public override func skipChannelSkipTokens(
     ///     _ except: Set<RawToken.TokenKind> = []
     /// ) throws {
-    ///     var skipKinds: Set<RawToken.TokenKind> = [<skip token kinds>]
-    ///
     ///     repeat {
     ///         let next = try tokenizer.peekToken()
     ///         guard
