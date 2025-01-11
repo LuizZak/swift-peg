@@ -859,7 +859,7 @@ public class GrammarParser<RawTokenizer: RawTokenizerType>: PEGParser<RawTokeniz
 
     /// ```
     /// action[SwiftPEGGrammar.Action]:
-    ///     | "{" ~ balancedTokens "}" { self.setLocation(.init(balancedTokens: balancedTokens), at: _mark) }
+    ///     | actionAttribute* "{" ~ balancedTokens "}" { self.setLocation(.init(attributes: actionAttribute, balancedTokens: balancedTokens), at: _mark) }
     ///     ;
     /// ```
     @memoized("action")
@@ -870,12 +870,15 @@ public class GrammarParser<RawTokenizer: RawTokenizerType>: PEGParser<RawTokeniz
         var _cut: CutFlag = CutFlag()
 
         if
+            let actionAttribute = try self.repeatZeroOrMore({
+                try self.actionAttribute()
+            }),
             let _ = try self.expect(kind: .leftBrace),
             _cut.toggleOn(),
             let balancedTokens = try self.balancedTokens(),
             let _ = try self.expect(kind: .rightBrace)
         {
-            return self.setLocation(.init(balancedTokens: balancedTokens), at: _mark)
+            return self.setLocation(.init(attributes: actionAttribute, balancedTokens: balancedTokens), at: _mark)
         }
 
         self.restore(_mark)
@@ -889,7 +892,7 @@ public class GrammarParser<RawTokenizer: RawTokenizerType>: PEGParser<RawTokeniz
 
     /// ```
     /// failAction[SwiftPEGGrammar.Action]:
-    ///     | "!!" "{" ~ balancedTokens "}" { self.setLocation(.init(balancedTokens: balancedTokens), at: _mark) }
+    ///     | actionAttribute* "!!" "{" ~ balancedTokens "}" { self.setLocation(.init(attributes: actionAttribute, balancedTokens: balancedTokens), at: _mark) }
     ///     ;
     /// ```
     @memoized("failAction")
@@ -900,13 +903,16 @@ public class GrammarParser<RawTokenizer: RawTokenizerType>: PEGParser<RawTokeniz
         var _cut: CutFlag = CutFlag()
 
         if
+            let actionAttribute = try self.repeatZeroOrMore({
+                try self.actionAttribute()
+            }),
             let _ = try self.expect(kind: .doubleExclamationMark),
             let _ = try self.expect(kind: .leftBrace),
             _cut.toggleOn(),
             let balancedTokens = try self.balancedTokens(),
             let _ = try self.expect(kind: .rightBrace)
         {
-            return self.setLocation(.init(balancedTokens: balancedTokens), at: _mark)
+            return self.setLocation(.init(attributes: actionAttribute, balancedTokens: balancedTokens), at: _mark)
         }
 
         self.restore(_mark)
@@ -914,6 +920,28 @@ public class GrammarParser<RawTokenizer: RawTokenizerType>: PEGParser<RawTokeniz
         if _cut.isOn {
             return nil
         }
+
+        return nil
+    }
+
+    /// ```
+    /// actionAttribute[SwiftPEGGrammar.ActionAttribute]:
+    ///     | '@' IDENTIFIER { self.setLocation(.init(name: identifier), at: _mark) }
+    ///     ;
+    /// ```
+    @memoized("actionAttribute")
+    @inlinable
+    public func __actionAttribute() throws -> SwiftPEGGrammar.ActionAttribute? {
+        let _mark: Mark = self.mark()
+
+        if
+            let _ = try self.expect(kind: .at),
+            let identifier = try self.expect(kind: .identifier)
+        {
+            return self.setLocation(.init(name: identifier.rawToken), at: _mark)
+        }
+
+        self.restore(_mark)
 
         return nil
     }

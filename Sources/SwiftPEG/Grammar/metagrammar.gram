@@ -136,11 +136,15 @@ swiftTupleTypeElement[CommonAbstract.TupleTypeElement]:
 # Mini-grammar for the actions
 
 action[SwiftPEGGrammar.Action]:
-    | "{" ~ balancedTokens "}"                  { self.setLocation(.init(balancedTokens: balancedTokens), at: _mark) }
+    | actionAttribute* "{" ~ balancedTokens "}"         { self.setLocation(.init(attributes: actionAttribute, balancedTokens: balancedTokens), at: _mark) }
     ;
 
 failAction[SwiftPEGGrammar.Action]:
-    | "!!" "{" ~ balancedTokens "}"             { self.setLocation(.init(balancedTokens: balancedTokens), at: _mark) }
+    | actionAttribute* "!!" "{" ~ balancedTokens "}"    { self.setLocation(.init(attributes: actionAttribute, balancedTokens: balancedTokens), at: _mark) }
+    ;
+
+actionAttribute[SwiftPEGGrammar.ActionAttribute]:
+    | '@' IDENTIFIER                            { self.setLocation(.init(name: identifier.rawToken), at: _mark) }
     ;
 
 balancedTokens[SwiftPEGGrammar.TokenSequence]:

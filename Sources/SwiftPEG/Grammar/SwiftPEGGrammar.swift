@@ -233,7 +233,7 @@ extension SwiftPEGGrammar {
     /// Represents the construct:
     /// ```
     /// ruleName:
-    ///     | name=IDENTIFIER '[' ~ type=swiftType ']'
+    ///     | name=IDENTIFIER '[' type=swiftType ']'
     ///     | name=IDENTIFIER
     ///     ;
     /// ```
@@ -266,6 +266,11 @@ extension SwiftPEGGrammar {
         /// The list of parameters associated with this rule parameter list.
         @NodeProperty
         var _parameters: [RuleParameter]
+
+        /// Accepts a given grammar-node visitor into this node.
+        public override func accept<Visitor>(_ visitor: Visitor) throws -> Visitor.VisitResult where Visitor: GrammarNodeVisitorType {
+            try visitor.visit(self)
+        }
     }
 
     /// A grammar rule's parameter list's argument.
@@ -283,6 +288,11 @@ extension SwiftPEGGrammar {
         /// The type associated with this parameter.
         @NodeRequired
         public var type: CommonAbstract.SwiftType
+
+        /// Accepts a given grammar-node visitor into this node.
+        public override func accept<Visitor>(_ visitor: Visitor) throws -> Visitor.VisitResult where Visitor: GrammarNodeVisitorType {
+            try visitor.visit(self)
+        }
     }
 
     /// An alternative, or a sequence of items that must succeed sequentially
@@ -368,8 +378,8 @@ extension SwiftPEGGrammar {
     /// Represents the construct:
     /// ```
     /// namedItem:
-    ///     | name=IDENTIFIER '[' type=swiftType ']' '=' ~ item
-    ///     | name=IDENTIFIER '=' ~ item
+    ///     | name=IDENTIFIER '[' type=swiftType ']' '=' item
+    ///     | name=IDENTIFIER '=' item
     ///     | item
     ///     | lookahead
     ///     ;
@@ -565,7 +575,7 @@ extension SwiftPEGGrammar {
     /// Represents the construct:
     /// ```
     /// item:
-    ///     | '[' ~ alts ']'
+    ///     | '[' alts ']'
     ///     | atom '?'
     ///     | atom '*'
     ///     | atom '+'
@@ -601,7 +611,7 @@ extension SwiftPEGGrammar {
     ///
     /// Represents the construct:
     /// ```
-    /// '[' ~ alts ']' ;
+    /// '[' alts ']' ;
     /// ```
     @GeneratedNodeType<Node>(overrideDeepCopyType: "Item")
     public final class OptionalItems: Item {
@@ -642,7 +652,7 @@ extension SwiftPEGGrammar {
     ///
     /// This is a short-form of the more general `OptionalItems` node:
     /// ```
-    /// '[' ~ alts ']' ;
+    /// '[' alts ']' ;
     /// ```
     @GeneratedNodeType<Node>(overrideDeepCopyType: "Item")
     public final class OptionalItem: Item {
@@ -835,7 +845,7 @@ extension SwiftPEGGrammar {
     /// Represents the constructs:
     /// ```
     /// atom:
-    ///     | '(' ~ alts ')'
+    ///     | '(' alts ')'
     ///     | IDENTIFIER
     ///     | string
     ///     ;
@@ -864,7 +874,7 @@ extension SwiftPEGGrammar {
     ///
     /// Represents the construct:
     /// ```
-    /// '(' ~ alts ')' ;
+    /// '(' alts ')' ;
     /// ```
     @GeneratedNodeType<Node>(overrideDeepCopyType: "Atom")
     public final class GroupAtom: Atom {
@@ -999,10 +1009,15 @@ extension SwiftPEGGrammar {
     /// atomParameters: '(' ','.atomParameter+ ')' ;
     /// ```
     @GeneratedNodeType<Node>
-    public final class AtomParameters: Node {
+    public final class AtomParameters: GrammarNode {
         /// The parameters associated with this parameter list.
         @NodeProperty
         var _parameters: [AtomParameter]
+
+        /// Accepts a given grammar-node visitor into this node.
+        public override func accept<Visitor>(_ visitor: Visitor) throws -> Visitor.VisitResult where Visitor: GrammarNodeVisitorType {
+            try visitor.visit(self)
+        }
     }
 
     /// A parameter associated with a named atom item.
@@ -1012,7 +1027,7 @@ extension SwiftPEGGrammar {
     /// atomParameter: IDENTIFIER ':' action ;
     /// ```
     @GeneratedNodeType<Node>
-    public final class AtomParameter: Node {
+    public final class AtomParameter: GrammarNode {
         /// The label associated with this atom parameter.
         @NodeRequired
         public var label: Token
@@ -1020,6 +1035,11 @@ extension SwiftPEGGrammar {
         /// The action associated with this atom parameter.
         @NodeProperty
         var _action: Action
+
+        /// Accepts a given grammar-node visitor into this node.
+        public override func accept<Visitor>(_ visitor: Visitor) throws -> Visitor.VisitResult where Visitor: GrammarNodeVisitorType {
+            try visitor.visit(self)
+        }
     }
 
     /// An action of an alt. Represents a segment of code that is inserted on
@@ -1028,14 +1048,18 @@ extension SwiftPEGGrammar {
     ///
     /// Represents the constructs:
     /// ```
-    /// action: '{' ~ balancedTokens? '}' ;
+    /// action: actionAttribute* '{' balancedTokens? '}' ;
     /// ```
     /// and:
     /// ```
-    /// failAction: '!!' '{' ~ balancedTokens? '}' ;
+    /// failAction: actionAttribute* '!!' '{' balancedTokens? '}' ;
     /// ```
     @GeneratedNodeType<Node>
     public final class Action: GrammarNode {
+        /// An optional list of attributes associated with this action.
+        @NodeProperty
+        var _attributes: [ActionAttribute]
+
         /// Balanced tokens contained within this action.
         @NodeRequired
         public var balancedTokens: TokenSequence?
@@ -1051,6 +1075,27 @@ extension SwiftPEGGrammar {
         public var rawAction: String {
             balancedTokens?.raw() ?? ""
         }
+
+        /// Accepts a given grammar-node visitor into this node.
+        public override func accept<Visitor>(_ visitor: Visitor) throws -> Visitor.VisitResult where Visitor: GrammarNodeVisitorType {
+            try visitor.visit(self)
+        }
+    }
+
+    /// Represents an attribute for an action, which indicates properties to follow
+    /// during code generation.
+    ///
+    /// Represents the construct:
+    /// ```
+    /// actionAttribute:
+    ///     | '@' IDENTIFIER
+    ///     ;
+    /// ```
+    @GeneratedNodeType<Node>
+    public final class ActionAttribute: GrammarNode {
+        /// The name of this attribute.
+        @NodeRequired
+        public var name: Token
 
         /// Accepts a given grammar-node visitor into this node.
         public override func accept<Visitor>(_ visitor: Visitor) throws -> Visitor.VisitResult where Visitor: GrammarNodeVisitorType {
@@ -1077,9 +1122,9 @@ extension SwiftPEGGrammar {
     /// Represents the construct:
     /// ```
     /// tokenDefinition:
-    ///     | tokenOrFragmentSpecifier name=IDENTIFIER '[' tokenCodeReference=STRING ']' ':' ~ tokenSyntax ';'
+    ///     | tokenOrFragmentSpecifier name=IDENTIFIER '[' tokenCodeReference=STRING ']' ':' tokenSyntax ';'
     ///     | tokenOrFragmentSpecifier name=IDENTIFIER '[' tokenCodeReference=STRING ']' ';'
-    ///     | tokenOrFragmentSpecifier name=IDENTIFIER ':' ~ tokenSyntax ';'
+    ///     | tokenOrFragmentSpecifier name=IDENTIFIER ':' tokenSyntax ';'
     ///     | tokenOrFragmentSpecifier name=IDENTIFIER ';'
     ///     ;
     ///
@@ -1160,6 +1205,12 @@ extension SwiftPEGGrammar {
         /// Visits a Rule Name node.
         func visit(_ node: RuleName) throws -> VisitResult
 
+        /// Visits an Rule Parameters node.
+        func visit(_ node: RuleParameters) throws -> VisitResult
+
+        /// Visits an Rule Parameter node.
+        func visit(_ node: RuleParameter) throws -> VisitResult
+
         /// Visits an Alt node.
         func visit(_ node: Alt) throws -> VisitResult
 
@@ -1205,8 +1256,17 @@ extension SwiftPEGGrammar {
         /// Visits an Identifier Atom node.
         func visit(_ node: IdentAtom) throws -> VisitResult
 
+        /// Visits an Atom Parameters node.
+        func visit(_ node: AtomParameters) throws -> VisitResult
+
+        /// Visits an Atom Parameter node.
+        func visit(_ node: AtomParameter) throws -> VisitResult
+
         /// Visits an Action node.
         func visit(_ node: Action) throws -> VisitResult
+
+        /// Visits an Action Attribute node.
+        func visit(_ node: ActionAttribute) throws -> VisitResult
     }
 }
 
@@ -1217,6 +1277,8 @@ public extension SwiftPEGGrammar.GrammarNodeVisitorType where VisitResult == Nod
     func visit(_ node: SwiftPEGGrammar.MetaStringValue) throws -> NodeVisitChildrenResult { .visitChildren }
     func visit(_ node: SwiftPEGGrammar.Rule) throws -> NodeVisitChildrenResult { .visitChildren }
     func visit(_ node: SwiftPEGGrammar.RuleName) throws -> NodeVisitChildrenResult { .visitChildren }
+    func visit(_ node: SwiftPEGGrammar.RuleParameters) throws -> NodeVisitChildrenResult { .visitChildren }
+    func visit(_ node: SwiftPEGGrammar.RuleParameter) throws -> NodeVisitChildrenResult { .visitChildren }
     func visit(_ node: SwiftPEGGrammar.Alt) throws -> NodeVisitChildrenResult { .visitChildren }
     func visit(_ node: SwiftPEGGrammar.NamedItem) throws -> NodeVisitChildrenResult { .visitChildren }
     func visit(_ node: SwiftPEGGrammar.Forced) throws -> NodeVisitChildrenResult { .visitChildren }
@@ -1232,5 +1294,8 @@ public extension SwiftPEGGrammar.GrammarNodeVisitorType where VisitResult == Nod
     func visit(_ node: SwiftPEGGrammar.GroupAtom) throws -> NodeVisitChildrenResult { .visitChildren }
     func visit(_ node: SwiftPEGGrammar.StringAtom) throws -> NodeVisitChildrenResult { .visitChildren }
     func visit(_ node: SwiftPEGGrammar.IdentAtom) throws -> NodeVisitChildrenResult { .visitChildren }
+    func visit(_ node: SwiftPEGGrammar.AtomParameters) throws -> NodeVisitChildrenResult { .visitChildren }
+    func visit(_ node: SwiftPEGGrammar.AtomParameter) throws -> NodeVisitChildrenResult { .visitChildren }
     func visit(_ node: SwiftPEGGrammar.Action) throws -> NodeVisitChildrenResult { .visitChildren }
+    func visit(_ node: SwiftPEGGrammar.ActionAttribute) throws -> NodeVisitChildrenResult { .visitChildren }
 }
