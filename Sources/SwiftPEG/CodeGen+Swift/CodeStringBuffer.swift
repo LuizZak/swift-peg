@@ -56,25 +56,6 @@ public class CodeStringBuffer {
         ConditionalEmitter(codeBuffer: self)
     }
 
-    /// Creates a new insertion marker at the current end-point of the buffer.
-    ///
-    /// - note: Behavior of code if multiple overlapping insertion points exist
-    /// at the same time, and are used to emit text interchangeably is not defined.
-    public func makeInsertionMarker() -> InsertionMarker {
-        InsertionMarker(codeBuffer: self)
-    }
-
-    /// Creates an insertion marker that emits code at the current position in
-    /// the buffer even after text has been emitted past it. Invokes the closure
-    /// only once, even if called multiple times.
-    ///
-    /// - note: Behavior of code is not defined if multiple overlapping insertion
-    /// points exist at the same time and are used to emit text interchangeably.
-    /// - seealso: ``makeInsertionMarker()``
-    public func startDelayedEmission(_ block: @escaping (CodeStringBuffer) -> Void) -> DelayedEmissionMarker {
-        DelayedEmissionMarker(marker: makeInsertionMarker(), block)
-    }
-
     /// Returns `true` if the last character of the buffer is a line feed character,
     /// according to `Character.isNewline`.
     public func isOnNewline() -> Bool {
@@ -353,102 +334,6 @@ public class CodeStringBuffer {
         pendingPrefix.append(prefix)
     }
 
-    /// A structure that wraps a delayed code emission that may or may not be
-    /// inserted in a past position of the buffer.
-    ///
-    /// - seealso: ``InsertionMarker``
-    public struct DelayedEmissionMarker {
-        let marker: InsertionMarker
-        let emission: (CodeStringBuffer) -> Void
-
-        init(marker: InsertionMarker, _ emission: @escaping (CodeStringBuffer) -> Void) {
-            self.marker = marker
-            self.emission = emission
-        }
-
-        /// Emits this delayed emission into the position that this marker was
-        /// created at.
-        ///
-        /// - note: Only invokes/emits the associated production closure.
-        func emit() {
-            self.marker.insertOnce(emission)
-        }
-    }
-
-    /// An object that serves as an insertion point into the buffer that can be
-    /// used to insert text at a previous buffer position after text has been
-    /// emitted past it.
-    public class InsertionMarker {
-        private let codeBuffer: CodeStringBuffer
-        private let index: String.Index
-        private var hasInserted: Bool = false
-
-        convenience init(codeBuffer: CodeStringBuffer) {
-            self.init(codeBuffer: codeBuffer, index: codeBuffer.buffer.endIndex)
-        }
-
-        init(codeBuffer: CodeStringBuffer, index: String.Index) {
-            self.codeBuffer = codeBuffer
-            self.index = index
-        }
-
-        /// Opens a temporary context for inserting text, invoking a given closure
-        /// only if a previous insertion wasn't performed with this insertion
-        /// marker.
-        ///
-        /// - seealso: ``insert(_:)``
-        @discardableResult
-        func insertOnce(_ producer: (CodeStringBuffer) throws -> Void) rethrows -> Bool {
-            guard !hasInserted else {
-                return false
-            }
-
-            return try insert(producer)
-        }
-
-        /// Opens a temporary context for inserting text into the buffer at the
-        /// point that this insertion marker points to.
-        ///
-        /// The buffer passed to the closure behaves as if the text of the original
-        /// buffer ended at this insertion point. If the text of the original
-        /// buffer was erased past this insertion point somehow (with e.g.
-        /// `backtrackWhitespace`), then the method returns `false`.
-        ///
-        /// When the closure finishes and (if throwable) doesn't throw, and the
-        /// provided temporary buffer wasn't erased back to a smaller size, the
-        /// contents that where written into the temporary buffer are inserted
-        /// into the original buffer at the appropriate location, and the method
-        /// returns `true`.
-        @discardableResult
-        func insert(_ producer: (CodeStringBuffer) throws -> Void) rethrows -> Bool {
-            hasInserted = true
-
-            guard codeBuffer.buffer.endIndex >= index else {
-                return false
-            }
-            let temporary = CodeStringBuffer(
-                startingBuffer: String(codeBuffer.buffer[..<index])
-            )
-            temporary.copyState(from: codeBuffer)
-
-            try producer(temporary)
-            guard temporary.buffer.endIndex > index else {
-                return false
-            }
-
-            // Sanity check that the original buffer didn't change while the
-            // closure was running
-            guard codeBuffer.buffer.endIndex >= index else {
-                return false
-            }
-
-            let insertSlice = temporary.buffer[index...]
-            codeBuffer.buffer.insert(contentsOf: insertSlice, at: index)
-
-            return true
-        }
-    }
-
     /// An object that watches for changes made to the buffer between points, and
     /// emits content conditionally only if changes to the buffer where made since
     /// the last point monitored.
@@ -523,7 +408,7 @@ public class CodeStringBuffer {
         }
     }
 
-    /// Specifies a line to prefixed to the next non-empty line emitted by the
+    /// Specifies a line to prefix to the next non-empty line emitted by the
     /// producer. Used to suffix declarations with comments.
     public enum PendingPrefix {
         case lineComment(String)
