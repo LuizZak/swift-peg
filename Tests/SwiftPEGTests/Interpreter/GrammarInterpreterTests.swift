@@ -111,7 +111,7 @@ struct GrammarInterpreterTests {
                 .init(namedItems: ["ruleB"], action: "ruleA_alt1"),
             ]),
             .init(name: "ruleB", alts: [
-                .init(namedItems: ["B"], action: .init(string: ruleBActionName)),
+                .init(namedItems: ["B"], action: .init(attributes: [], string: ruleBActionName)),
             ]),
         ])
         let delegate = mockDelegate()

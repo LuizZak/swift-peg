@@ -474,7 +474,7 @@ private func makeAtomParameters(_ parameters: [SwiftPEGGrammar.AtomParameter]) -
 private func makeAtomParameter(label: String, action: String) -> SwiftPEGGrammar.AtomParameter {
     .init(
         label: .init(kind: .identifier, string: Substring(label)),
-        action: .init(balancedTokens: .init(pieces: [.literal(action)]))
+        action: .init(attributes: [], balancedTokens: .init(pieces: [.literal(action)]))
     )
 }
 

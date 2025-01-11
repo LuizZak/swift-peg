@@ -43,7 +43,7 @@ extension InternalGrammar.Atom: ExpressibleByStringLiteral {
 
 extension InternalGrammar.Action: ExpressibleByStringLiteral {
     public init(stringLiteral value: String) {
-        self.init(string: value)
+        self.init(attributes: [], string: value)
     }
 }
 

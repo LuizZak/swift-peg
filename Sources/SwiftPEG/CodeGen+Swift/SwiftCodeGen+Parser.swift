@@ -1193,6 +1193,7 @@ extension SwiftCodeGen {
     ) -> InternalGrammar.Action {
 
         return .init(
+            attributes: [],
             string: " \(defaultReturnExpression(for: labeledExpressions)) "
         )
     }

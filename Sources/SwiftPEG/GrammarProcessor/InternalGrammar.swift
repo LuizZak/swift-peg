@@ -201,7 +201,9 @@ public enum InternalGrammar {
         /// Accepts a given visitor, and recursively passes the visitor to nested
         /// property types within this object that can be visited, if present.
         public func accept(_ visitor: some Visitor) throws {
+            try visitor.willVisit(self)
             try visitor.visit(self)
+            try visitor.didVisit(self)
         }
     }
 
@@ -323,8 +325,9 @@ public enum InternalGrammar {
         }
     }
 
-    /// `'{' balancedTokens '}'`
+    /// `actionAttribute* '{' balancedTokens '}'`
     public struct Action: Hashable, CustomStringConvertible {
+        public var attributes: [ActionAttribute]
         public var string: String
 
         public var description: String {
@@ -334,13 +337,43 @@ public enum InternalGrammar {
         /// Accepts a given visitor, and recursively passes the visitor to nested
         /// property types within this object that can be visited, if present.
         public func accept(_ visitor: some Visitor) throws {
+            try visitor.willVisit(self)
+            try attributes.forEach { try $0.accept(visitor) }
             try visitor.visit(self)
+            try visitor.didVisit(self)
         }
 
         public static func from(
             _ node: SwiftPEGGrammar.Action
         ) -> Self {
-            return .init(string: node.rawAction)
+            return .init(
+                attributes: node.attributes.map(ActionAttribute.from),
+                string: node.rawAction
+            )
+        }
+    }
+
+    public struct ActionAttribute: Hashable, CustomStringConvertible {
+        public var name: String
+
+        public var description: String {
+            return "@\(name)"
+        }
+
+        public static func from(
+            _ node: SwiftPEGGrammar.ActionAttribute
+        ) -> Self {
+            return .init(
+                name: String(node.name.string)
+            )
+        }
+
+        /// Accepts a given visitor, and recursively passes the visitor to nested
+        /// property types within this object that can be visited, if present.
+        public func accept(_ visitor: some Visitor) throws {
+            try visitor.willVisit(self)
+            try visitor.visit(self)
+            try visitor.didVisit(self)
         }
     }
 
@@ -1012,7 +1045,9 @@ public enum InternalGrammar {
         /// Accepts a given visitor, and recursively passes the visitor to nested
         /// property types within this object that can be visited, if present.
         public func accept(_ visitor: some Visitor) throws {
+            try visitor.willVisit(self)
             try visitor.visit(self)
+            try visitor.didVisit(self)
         }
     }
 
@@ -1242,7 +1277,13 @@ public extension InternalGrammar.Visitor {
     func visit(_ node: InternalGrammar.Alt) throws { }
     func didVisit(_ node: InternalGrammar.Alt) throws { }
 
+    func willVisit(_ node: InternalGrammar.Action) throws { }
     func visit(_ node: InternalGrammar.Action) throws { }
+    func didVisit(_ node: InternalGrammar.Action) throws { }
+
+    func willVisit(_ node: InternalGrammar.ActionAttribute) throws { }
+    func visit(_ node: InternalGrammar.ActionAttribute) throws { }
+    func didVisit(_ node: InternalGrammar.ActionAttribute) throws { }
 
     func willVisit(_ node: InternalGrammar.NamedItem) throws { }
     func visit(_ node: InternalGrammar.NamedItem) throws { }

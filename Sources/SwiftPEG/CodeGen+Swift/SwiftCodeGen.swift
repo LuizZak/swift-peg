@@ -552,7 +552,7 @@ extension SwiftCodeGen {
 
         // Produce a common action that passes the bound elements back to the
         // caller
-        var action: InternalGrammar.Action = .init(string: " () ")
+        var action: InternalGrammar.Action = .init(attributes: [], string: " () ")
         if type != "Void" {
             action = defaultReturnAction(for: elements)
         }

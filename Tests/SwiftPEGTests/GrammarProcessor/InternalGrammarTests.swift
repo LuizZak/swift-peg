@@ -40,9 +40,10 @@ private func makeAlt(
 }
 
 private func makeAction(
+    attributes: [SwiftPEGGrammar.ActionAttribute] = [],
     _ tokens: SwiftPEGGrammar.TokenSequence
 ) -> SwiftPEGGrammar.Action {
-    .init(balancedTokens: tokens)
+    .init(attributes: attributes, balancedTokens: tokens)
 }
 
 private func makeTokenSequence(
