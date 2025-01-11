@@ -926,7 +926,7 @@ public class GrammarParser<RawTokenizer: RawTokenizerType>: PEGParser<RawTokeniz
 
     /// ```
     /// actionAttribute[SwiftPEGGrammar.ActionAttribute]:
-    ///     | '@' IDENTIFIER { self.setLocation(.init(name: identifier), at: _mark) }
+    ///     | '@' IDENTIFIER { self.setLocation(.init(name: identifier.rawToken), at: _mark) }
     ///     ;
     /// ```
     @memoized("actionAttribute")
@@ -1336,6 +1336,7 @@ public class GrammarParser<RawTokenizer: RawTokenizerType>: PEGParser<RawTokeniz
     ///     | '(' '|'.tokenSyntaxAtom+ ')' '+' { .oneOrMore(tokenSyntaxAtom) }
     ///     | '(' '|'.tokenSyntaxAtom+ ')' '?' { .optionalGroup(tokenSyntaxAtom) }
     ///     | '(' '|'.tokenSyntaxAtom+ ')' { .group(tokenSyntaxAtom) }
+    ///     | '(' _=tokenSyntaxAtom _=tokenSyntaxAtom+ ')' @noReturn { throw syntaxError("Token atom sequences cannot be nested. Consider splitting the token syntax into sub-tokens or fragments instead.") }
     ///     | tokenSyntaxAtom '*' { .zeroOrMore([tokenSyntaxAtom]) }
     ///     | tokenSyntaxAtom '+' { .oneOrMore([tokenSyntaxAtom]) }
     ///     | tokenSyntaxAtom '?' { .optionalAtom(tokenSyntaxAtom) }
@@ -1402,6 +1403,19 @@ public class GrammarParser<RawTokenizer: RawTokenizerType>: PEGParser<RawTokeniz
             let _ = try self.expect(kind: .rightParen)
         {
             return .group(tokenSyntaxAtom)
+        }
+
+        self.restore(_mark)
+
+        if
+            let _ = try self.expect(kind: .leftParen),
+            let _ = try self.tokenSyntaxAtom(),
+            let _ = try self.repeatOneOrMore({
+                try self.tokenSyntaxAtom()
+            }),
+            let _ = try self.expect(kind: .rightParen)
+        {
+            throw syntaxError("Token atom sequences cannot be nested. Consider splitting the token syntax into sub-tokens or fragments instead.")
         }
 
         self.restore(_mark)

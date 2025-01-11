@@ -246,6 +246,24 @@ struct GrammarParserTests {
         assertEqual((result[7].item as? SwiftPEGGrammar.GatherItem)?.repetitionMode, .minimal)
         assertEqual((result[8].item as? SwiftPEGGrammar.GatherItem)?.repetitionMode, .maximal)
     }
+
+    @Test
+    func parseTokenFile_groupedAtomSequenceError() throws {
+        let tokenizer = rawTokenizer("""
+        (a b c)+
+        """)
+        let sut = makeSut(tokenizer)
+
+        let error = assertThrows(errorType: PEGParser<GrammarRawTokenizer>.SyntaxError.self, { try sut.tokenSyntaxItem() })
+
+        switch error {
+        case .invalidSyntax(let description, _, location: _):
+            assertEqual(description, "Token atom sequences cannot be nested. Consider splitting the token syntax into sub-tokens or fragments instead.")
+
+        default:
+            fail("Expected .invalidSyntax")
+        }
+    }
 }
 
 // MARK: - Test internals

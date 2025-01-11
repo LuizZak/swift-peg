@@ -1934,6 +1934,51 @@ struct SwiftCodeGenTests {
     }
 
     @Test
+    func generateParser_altAction_attribute_noReturn() throws {
+        let grammar = makeGrammar([
+            .init(name: "a", alts: [
+                .init(namedItems: ["b"], action: .init(attributes: ["noReturn"], string: " CustomActionB() ")),
+                .init(namedItems: ["c"], action: .init(attributes: [], string: " CustomActionC() ")),
+            ])
+        ])
+        let sut = makeSut(grammar)
+
+        let result = try sut.generateParser()
+
+        diffTest(expected: """
+            // TestParser
+            extension TestParser {
+                /// ```
+                /// a:
+                ///     | b @noReturn { CustomActionB() }
+                ///     | c { CustomActionC() }
+                ///     ;
+                /// ```
+                @memoized("a")
+                @inlinable
+                public func __a() throws -> Node? {
+                    let _mark: Mark = self.mark()
+
+                    if let b = try self.b() {
+                        CustomActionB()
+                    }
+
+                    self.restore(_mark)
+
+                    if let c = try self.c() {
+                        return CustomActionC()
+                    }
+
+                    self.restore(_mark)
+
+                    return nil
+                }
+            }
+
+            """).diff(result)
+    }
+
+    @Test
     func generateParser_altFailAction() throws {
         let grammar = makeGrammar([
             .init(name: "a", alts: [

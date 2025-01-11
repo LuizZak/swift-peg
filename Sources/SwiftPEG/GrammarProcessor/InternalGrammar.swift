@@ -331,7 +331,11 @@ public enum InternalGrammar {
         public var string: String
 
         public var description: String {
-            return "{\(string)}"
+            if attributes.isEmpty {
+                return "{\(string)}"
+            } else {
+                return "\(attributes.map(\.description).joined(separator: " ")) {\(string)}"
+            }
         }
 
         /// Accepts a given visitor, and recursively passes the visitor to nested

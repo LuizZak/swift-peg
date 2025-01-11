@@ -47,6 +47,12 @@ extension InternalGrammar.Action: ExpressibleByStringLiteral {
     }
 }
 
+extension InternalGrammar.ActionAttribute: ExpressibleByStringLiteral {
+    public init(stringLiteral value: String) {
+        self.init(name: value)
+    }
+}
+
 // MARK: Operator support
 
 extension InternalGrammar.NamedItem {

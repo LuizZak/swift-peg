@@ -694,7 +694,8 @@ extension SwiftCodeGen {
     /// successfully.
     ///
     /// If `self.implicitReturns` is `true`, always appends `return` to the start
-    /// of the action's resolved string.
+    /// of the action's resolved string, unless '@noReturn' attribute was found
+    /// on its action.
     fileprivate func generateOnAltMatchBlock(
         _ alt: InternalGrammar.Alt,
         _ altIndex: Int,
@@ -717,6 +718,10 @@ extension SwiftCodeGen {
             alt,
             production.productionType
         )
+        // @noReturn
+        if alt.action?.attributes.contains(.init(name: "noReturn")) == true {
+            return .expression(exp)
+        }
         if implicitReturns {
             return .return(exp)
         }

@@ -214,15 +214,16 @@ tokenSyntaxAlt[CommonAbstract.TokenAlt]:
     ;
 
 tokenSyntaxItem[CommonAbstract.TokenItem]:
-    | '(' '|'.tokenSyntaxAtom+ ')' '*'              { .zeroOrMore(tokenSyntaxAtom) }
-    | '(' '|'.tokenSyntaxAtom+ ')' '+'              { .oneOrMore(tokenSyntaxAtom) }
-    | '(' '|'.tokenSyntaxAtom+ ')' '?'              { .optionalGroup(tokenSyntaxAtom) }
-    | '(' '|'.tokenSyntaxAtom+ ')'                  { .group(tokenSyntaxAtom) }
-    | tokenSyntaxAtom '*'                           { .zeroOrMore([tokenSyntaxAtom]) }
-    | tokenSyntaxAtom '+'                           { .oneOrMore([tokenSyntaxAtom]) }
+    | '(' '|'.tokenSyntaxAtom+ ')' '*'                  { .zeroOrMore(tokenSyntaxAtom) }
+    | '(' '|'.tokenSyntaxAtom+ ')' '+'                  { .oneOrMore(tokenSyntaxAtom) }
+    | '(' '|'.tokenSyntaxAtom+ ')' '?'                  { .optionalGroup(tokenSyntaxAtom) }
+    | '(' '|'.tokenSyntaxAtom+ ')'                      { .group(tokenSyntaxAtom) }
+    | '(' _=tokenSyntaxAtom _=tokenSyntaxAtom+ ')'      @noReturn { throw syntaxError("Token atom sequences cannot be nested. Consider splitting the token syntax into sub-tokens or fragments instead.") }
+    | tokenSyntaxAtom '*'                               { .zeroOrMore([tokenSyntaxAtom]) }
+    | tokenSyntaxAtom '+'                               { .oneOrMore([tokenSyntaxAtom]) }
     # TODO: Maybe collapse optionalAtom into optionalGroup?
-    | tokenSyntaxAtom '?'                           { .optionalAtom(tokenSyntaxAtom) }
-    | tokenSyntaxAtom                               { .atom(tokenSyntaxAtom) }
+    | tokenSyntaxAtom '?'                               { .optionalAtom(tokenSyntaxAtom) }
+    | tokenSyntaxAtom                                   { .atom(tokenSyntaxAtom) }
     ;
 
 tokenSyntaxAtom[CommonAbstract.TokenAtom]:
