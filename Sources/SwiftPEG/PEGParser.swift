@@ -69,6 +69,27 @@ open class PEGParser<RawTokenizer: RawTokenizerType> {
         )
     }
 
+    /// Creates a syntax error that can be thrown during parsing by code actions.
+    ///
+    /// Optionally skips skippable tokens before pinning the syntax error to the
+    /// next non-skippable available token.
+    open func syntaxError(_ description: String, skipSkippable: Bool = true) -> SyntaxError {
+        let mark = self.mark()
+        defer { self.restore(mark) }
+
+        if skipSkippable {
+            do {
+                try skipChannelSkipTokens()
+            } catch {
+            }
+        }
+
+        let errorMark = self.mark()
+        let location = self.tokenizer.readableLocation(for: errorMark)
+
+        return SyntaxError.invalidSyntax(description, errorMark, location: location)
+    }
+
     /// Returns `true` if the tokenizer has reached the end of the relevant,
     /// non-whitespace tokens in the stream.
     ///
