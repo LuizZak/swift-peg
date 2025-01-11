@@ -804,6 +804,85 @@ struct SwiftCodeGen_TokenTests {
     }
 
     @Test
+    func generateTokenParser_trailOptionals() throws {
+        let tokens = try parseTokenDefinitions(#"""
+        $a: 'a' ('b' | 'c' | 'd' | 'ee')? ;
+        """#)
+        let sut = makeSut(tokens)
+
+        let result = try sut.generateTokenType()
+
+        diffTest(expected: #"""
+        struct ParserToken: RawTokenType, CustomStringConvertible {
+            var kind: TokenKind
+
+            var string: Substring
+
+            var length: Int {
+                string.count
+            }
+
+            var description: String {
+                String(string)
+            }
+
+            static func produceDummy(_ kind: TokenKind) -> Self {
+                .init(kind: kind, string: "<dummy>")
+            }
+
+            static func from<StringType>(stream: inout StringStream<StringType>) -> Self? where StringType.SubSequence == Substring {
+                guard !stream.isEof else {
+                    return nil
+                }
+
+                stream.markSubstringStart()
+
+                if consume_a(from: &stream) {
+                    return .init(kind: .a, string: stream.substring)
+                }
+
+                return nil
+            }
+
+            enum TokenKind: TokenKindType {
+                /// `"a" ("b" | "c" | "d" | "ee")?`
+                case a
+
+                var description: String {
+                    switch self {
+                    case .a:
+                        "a"
+                    }
+                }
+            }
+
+            /// ```
+            /// a:
+            ///     | "a" ("b" | "c" | "d" | "ee")?
+            ///     ;
+            /// ```
+            static func consume_a<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+                guard !stream.isEof else {
+                    return false
+                }
+
+                alt:
+                do {
+                    guard stream.advanceIfNext("a") else {
+                        return false
+                    }
+
+                    _ = stream.advanceIfNext("b") || stream.advanceIfNext("c") || stream.advanceIfNext("d") || stream.advanceIfNext("ee")
+
+                    return true
+                }
+            }
+        }
+
+        """#).diff(result)
+    }
+
+    @Test
     func generateTokenParser_stringSyntax() throws {
         let tokens = try parseTokenDefinitions(#"""
         $stringLiteral:

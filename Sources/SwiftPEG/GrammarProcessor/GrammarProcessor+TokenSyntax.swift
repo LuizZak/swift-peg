@@ -483,6 +483,52 @@ extension GrammarProcessor {
             }
         }
 
+        // MARK: Inline as item
+
+        private func _inlinedAsItems(_ node: InternalGrammar.TokenDefinition) -> [CommonAbstract.TokenItem]? {
+            node.tokenSyntax.flatMap(_inlinedAsItems)
+        }
+
+        private func _inlinedAsItems(_ node: CommonAbstract.TokenSyntax) -> [CommonAbstract.TokenItem]? {
+            guard node.alts.count == 1 else {
+                return nil
+            }
+
+            var result: [CommonAbstract.TokenItem] = []
+            for alt in node.alts {
+                guard let asItems = _inlinedAsItems(alt) else {
+                    // If one alt cannot be turned into an atom, then the syntax
+                    // is not item-able
+                    return nil
+                }
+
+                result.append(contentsOf: asItems)
+            }
+            return result
+        }
+
+        private func _inlinedAsItems(_ node: CommonAbstract.TokenAlt) -> [CommonAbstract.TokenItem]? {
+            guard node.trailExclusions.isEmpty else {
+                return nil
+            }
+
+            var result: [CommonAbstract.TokenItem] = []
+            for item in node.items {
+                guard let asItems = _inlinedAsItems(item) else {
+                    // If one item cannot be turned into an atom, then the syntax
+                    // is not atom-able
+                    return nil
+                }
+
+                result.append(contentsOf: asItems)
+            }
+            return result
+        }
+
+        private func _inlinedAsItems(_ node: CommonAbstract.TokenItem) -> [CommonAbstract.TokenItem]? {
+            return [node]
+        }
+
         // MARK: Inline as token exclusion
 
         private func _inlinedAsTokenExclusions(_ node: InternalGrammar.TokenDefinition) -> [CommonAbstract.TokenExclusion]? {
@@ -613,9 +659,27 @@ extension GrammarProcessor {
                 return [group(visit(atoms))]
 
             case .optionalAtom(let atom):
-                return [.optionalAtom(visit(atom))]
+                // Try to replace the atom with a group first
+                let grouped = visit([atom])
+                if grouped.count == 1 {
+                    return [.optionalAtom(visit(atom))]
+                }
+
+                return [.optionalGroup(grouped)]
 
             case .atom(let atom):
+                // Attempt to replace with a sequence of items first
+                let itemized = visitAsItem(atom)
+                if itemized.count >= 1 {
+                    return itemized
+                }
+
+                // Try to replace the atom with a group first
+                let grouped = visit([atom])
+                if grouped.count != 1 {
+                    return [.group(grouped)]
+                }
+
                 return [.atom(visit(atom))]
             }
         }
@@ -656,6 +720,37 @@ extension GrammarProcessor {
                 }
 
                 result.append(reducedAtom)
+            }
+
+            return result
+        }
+
+        func visitAsItem(_ atom: CommonAbstract.TokenAtom) -> [CommonAbstract.TokenItem] {
+            // Strategy: Atoms that reference token syntaxes composed of a single
+            // alt containing straight items, with no exclusions, can be inlined
+            // as the items themselves.
+            var result: [CommonAbstract.TokenItem] = []
+
+            let reducedAtom = visit(atom)
+
+            guard reducedAtom.excluded.isEmpty else {
+                result.append(.atom(reducedAtom))
+                return result
+            }
+
+            switch reducedAtom.terminal {
+            case .identifier(let identifier):
+                guard let fragment = self.fragment(named: identifier) else {
+                    break
+                }
+                guard let inlined = _inlinedAsItems(fragment) else {
+                    break
+                }
+
+                result.append(contentsOf: inlined)
+
+            default:
+                result.append(.atom(reducedAtom))
             }
 
             return result

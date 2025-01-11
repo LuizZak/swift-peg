@@ -1383,30 +1383,30 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
         /// ```
         case TYPEOF
 
-        /// `encoding_prefix? "'" c_char_sequence? "'"`
+        /// `("u8" | "u" | "U" | "L")? "'" c_char_sequence? "'"`
         case characterConstant
 
         /// ```
         /// floatingConstant[".floatingConstant"]:
-        ///     | fractional_constant exponent_part? floating_suffix?
-        ///     | digit_sequence exponent_part floating_suffix?
-        ///     | hexadecimal_prefix hexadecimal_fractional_constant binary_exponent_part floating_suffix?
-        ///     | hexadecimal_prefix hexadecimal_digit_sequence binary_exponent_part floating_suffix?
+        ///     | fractional_constant exponent_part? ("f" | "l" | "F" | "L" | "df" | "dd" | "dl" | "DF" | "DD" | "DL")?
+        ///     | "0"..."9" (_decimal_digit)* exponent_part ("f" | "l" | "F" | "L" | "df" | "dd" | "dl" | "DF" | "DD" | "DL")?
+        ///     | ("0x" | "0X") hexadecimal_fractional_constant binary_exponent_part ("f" | "l" | "F" | "L" | "df" | "dd" | "dl" | "DF" | "DD" | "DL")?
+        ///     | ("0x" | "0X") ("0"..."9" | "a"..."f" | "A"..."F") (_hexadecimal_digit)* binary_exponent_part ("f" | "l" | "F" | "L" | "df" | "dd" | "dl" | "DF" | "DD" | "DL")?
         ///     ;
         /// ```
         case floatingConstant
 
         /// ```
         /// integerConstant[".integerConstant"]:
-        ///     | hexadecimal_constant integer_suffix?
-        ///     | binary_constant integer_suffix?
-        ///     | decimal_constant integer_suffix?
-        ///     | octal_constant integer_suffix?
+        ///     | ("0x" | "0X") ("0"..."9" | "a"..."f" | "A"..."F") (_hexadecimal_digit)* integer_suffix?
+        ///     | ("0b" | "0B") ("0" | "1") (_binary_digit)* integer_suffix?
+        ///     | "1"..."9" (_decimal_digit)* integer_suffix?
+        ///     | "0" (_octal_digit)* integer_suffix?
         ///     ;
         /// ```
         case integerConstant
 
-        /// `encoding_prefix? "\\"" s_char_sequence? "\\""`
+        /// `("u8" | "u" | "U" | "L")? "\\"" s_char_sequence? "\\""`
         case stringLiteral
 
         @inlinable
@@ -4980,12 +4980,12 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     }
 
     /// ```
-    /// _binary_digit:
-    ///     | "'"? binary_digit
+    /// _hexadecimal_digit:
+    ///     | "'"? ("0"..."9" | "a"..."f" | "A"..."F")
     ///     ;
     /// ```
     @inlinable
-    public static func consume__binary_digit<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+    public static func consume__hexadecimal_digit<StringType>(from stream: inout StringStream<StringType>) -> Bool {
         guard !stream.isEof else {
             return false
         }
@@ -4996,7 +4996,10 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
         do {
             _ = stream.advanceIfNext("\\'")
 
-            guard consume_binary_digit(from: &stream) else {
+            switch stream.peek() {
+            case "0"..."9", "a"..."f", "A"..."F":
+                stream.advance()
+            default:
                 break alt
             }
 
@@ -5043,35 +5046,6 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     }
 
     /// ```
-    /// _hexadecimal_digit:
-    ///     | "'"? hexadecimal_digit
-    ///     ;
-    /// ```
-    @inlinable
-    public static func consume__hexadecimal_digit<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else {
-            return false
-        }
-
-        let state: StringStream<StringType>.State = stream.save()
-
-        alt:
-        do {
-            _ = stream.advanceIfNext("\\'")
-
-            guard consume_hexadecimal_digit(from: &stream) else {
-                break alt
-            }
-
-            return true
-        }
-
-        stream.restore(state)
-
-        return false
-    }
-
-    /// ```
     /// _octal_digit:
     ///     | "'"? "0"..."7"
     ///     ;
@@ -5106,12 +5080,12 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     }
 
     /// ```
-    /// binary_constant:
-    ///     | binary_prefix binary_digit (_binary_digit)*
+    /// _binary_digit:
+    ///     | "'"? ("0" | "1")
     ///     ;
     /// ```
     @inlinable
-    public static func consume_binary_constant<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+    public static func consume__binary_digit<StringType>(from stream: inout StringStream<StringType>) -> Bool {
         guard !stream.isEof else {
             return false
         }
@@ -5120,15 +5094,13 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard consume_binary_prefix(from: &stream) else {
-                return false
-            }
+            _ = stream.advanceIfNext("\\'")
 
-            guard consume_binary_digit(from: &stream) else {
+            switch stream.peek() {
+            case "0", "1":
+                stream.advance()
+            default:
                 break alt
-            }
-
-            while consume__binary_digit(from: &stream) {
             }
 
             return true
@@ -5141,8 +5113,8 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
     /// ```
     /// binary_exponent_part:
-    ///     | "p" sign? digit_sequence
-    ///     | "P" sign? digit_sequence
+    ///     | "p" ("+" | "-")? "0"..."9" (_decimal_digit)*
+    ///     | "P" ("+" | "-")? "0"..."9" (_decimal_digit)*
     ///     ;
     /// ```
     @inlinable
@@ -5159,10 +5131,23 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                 break alt
             }
 
-            _ = consume_sign(from: &stream)
+            switch stream.peek() {
+            case "+", "-":
+                stream.advance()
+            default:
+                Void()
+            }
 
-            guard consume_digit_sequence(from: &stream) else {
+            guard
+                !stream.isEof,
+                stream.isNextInRange("0"..."9")
+            else {
                 break alt
+            }
+
+            stream.advance()
+
+            while consume__decimal_digit(from: &stream) {
             }
 
             return true
@@ -5176,10 +5161,23 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                 return false
             }
 
-            _ = consume_sign(from: &stream)
+            switch stream.peek() {
+            case "+", "-":
+                stream.advance()
+            default:
+                Void()
+            }
 
-            guard consume_digit_sequence(from: &stream) else {
+            guard
+                !stream.isEof,
+                stream.isNextInRange("0"..."9")
+            else {
                 break alt
+            }
+
+            stream.advance()
+
+            while consume__decimal_digit(from: &stream) {
             }
 
             return true
@@ -5191,30 +5189,8 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     }
 
     /// ```
-    /// binary_prefix:
-    ///     | "0b"
-    ///     | "0B"
-    ///     ;
-    /// ```
-    @inlinable
-    public static func consume_binary_prefix<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        return stream.advanceIfNext("0b") || stream.advanceIfNext("0B")
-    }
-
-    /// ```
-    /// bit_precise_int_suffix:
-    ///     | "wb"
-    ///     | "WB"
-    ///     ;
-    /// ```
-    @inlinable
-    public static func consume_bit_precise_int_suffix<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        return stream.advanceIfNext("wb") || stream.advanceIfNext("WB")
-    }
-
-    /// ```
     /// characterConstant[".characterConstant"]:
-    ///     | encoding_prefix? "'" c_char_sequence? "'"
+    ///     | ("u8" | "u" | "U" | "L")? "'" c_char_sequence? "'"
     ///     ;
     /// ```
     @inlinable
@@ -5227,7 +5203,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            _ = consume_encoding_prefix(from: &stream)
+            _ = stream.advanceIfNext("u8") || stream.advanceIfNext("u") || stream.advanceIfNext("U") || stream.advanceIfNext("L")
 
             guard stream.advanceIfNext("\\'") else {
                 break alt
@@ -5248,21 +5224,156 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     }
 
     /// ```
-    /// decimal_constant:
-    ///     | "1"..."9" (_decimal_digit)*
+    /// floatingConstant[".floatingConstant"]:
+    ///     | fractional_constant exponent_part? ("f" | "l" | "F" | "L" | "df" | "dd" | "dl" | "DF" | "DD" | "DL")?
+    ///     | "0"..."9" (_decimal_digit)* exponent_part ("f" | "l" | "F" | "L" | "df" | "dd" | "dl" | "DF" | "DD" | "DL")?
+    ///     | ("0x" | "0X") hexadecimal_fractional_constant binary_exponent_part ("f" | "l" | "F" | "L" | "df" | "dd" | "dl" | "DF" | "DD" | "DL")?
+    ///     | ("0x" | "0X") ("0"..."9" | "a"..."f" | "A"..."F") (_hexadecimal_digit)* binary_exponent_part ("f" | "l" | "F" | "L" | "df" | "dd" | "dl" | "DF" | "DD" | "DL")?
     ///     ;
     /// ```
     @inlinable
-    public static func consume_decimal_constant<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+    public static func consume_floatingConstant<StringType>(from stream: inout StringStream<StringType>) -> Bool {
         guard !stream.isEof else {
             return false
         }
+
+        let state: StringStream<StringType>.State = stream.save()
+
+        alt:
+        do {
+            guard consume_fractional_constant(from: &stream) else {
+                break alt
+            }
+
+            _ = consume_exponent_part(from: &stream)
+
+            _ = stream.advanceIfNext("f") || stream.advanceIfNext("l") || stream.advanceIfNext("F") || stream.advanceIfNext("L") || stream.advanceIfNext("df") || stream.advanceIfNext("dd") || stream.advanceIfNext("dl") || stream.advanceIfNext("DF") || stream.advanceIfNext("DD") || stream.advanceIfNext("DL")
+
+            return true
+        }
+
+        stream.restore(state)
 
         alt:
         do {
             guard
                 !stream.isEof,
-                stream.isNextInRange("1"..."9")
+                stream.isNextInRange("0"..."9")
+            else {
+                break alt
+            }
+
+            stream.advance()
+
+            while consume__decimal_digit(from: &stream) {
+            }
+
+            guard consume_exponent_part(from: &stream) else {
+                break alt
+            }
+
+            _ = stream.advanceIfNext("f") || stream.advanceIfNext("l") || stream.advanceIfNext("F") || stream.advanceIfNext("L") || stream.advanceIfNext("df") || stream.advanceIfNext("dd") || stream.advanceIfNext("dl") || stream.advanceIfNext("DF") || stream.advanceIfNext("DD") || stream.advanceIfNext("DL")
+
+            return true
+        }
+
+        stream.restore(state)
+
+        alt:
+        do {
+            guard stream.advanceIfNext("0x") || stream.advanceIfNext("0X") else {
+                break alt
+            }
+
+            guard consume_hexadecimal_fractional_constant(from: &stream) else {
+                break alt
+            }
+
+            guard consume_binary_exponent_part(from: &stream) else {
+                break alt
+            }
+
+            _ = stream.advanceIfNext("f") || stream.advanceIfNext("l") || stream.advanceIfNext("F") || stream.advanceIfNext("L") || stream.advanceIfNext("df") || stream.advanceIfNext("dd") || stream.advanceIfNext("dl") || stream.advanceIfNext("DF") || stream.advanceIfNext("DD") || stream.advanceIfNext("DL")
+
+            return true
+        }
+
+        stream.restore(state)
+
+        alt:
+        do {
+            guard stream.advanceIfNext("0x") || stream.advanceIfNext("0X") else {
+                return false
+            }
+
+            switch stream.peek() {
+            case "0"..."9", "a"..."f", "A"..."F":
+                stream.advance()
+            default:
+                break alt
+            }
+
+            while consume__hexadecimal_digit(from: &stream) {
+            }
+
+            guard consume_binary_exponent_part(from: &stream) else {
+                break alt
+            }
+
+            _ = stream.advanceIfNext("f") || stream.advanceIfNext("l") || stream.advanceIfNext("F") || stream.advanceIfNext("L") || stream.advanceIfNext("df") || stream.advanceIfNext("dd") || stream.advanceIfNext("dl") || stream.advanceIfNext("DF") || stream.advanceIfNext("DD") || stream.advanceIfNext("DL")
+
+            return true
+        }
+
+        stream.restore(state)
+
+        return false
+    }
+
+    /// ```
+    /// fractional_constant:
+    ///     | digit_sequence? "." "0"..."9" (_decimal_digit)*
+    ///     | "0"..."9" (_decimal_digit)* "."
+    ///     ;
+    /// ```
+    @inlinable
+    public static func consume_fractional_constant<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else {
+            return false
+        }
+
+        let state: StringStream<StringType>.State = stream.save()
+
+        alt:
+        do {
+            _ = consume_digit_sequence(from: &stream)
+
+            guard stream.advanceIfNext(".") else {
+                break alt
+            }
+
+            guard
+                !stream.isEof,
+                stream.isNextInRange("0"..."9")
+            else {
+                break alt
+            }
+
+            stream.advance()
+
+            while consume__decimal_digit(from: &stream) {
+            }
+
+            return true
+        }
+
+        stream.restore(state)
+
+        alt:
+        do {
+            guard
+                !stream.isEof,
+                stream.isNextInRange("0"..."9")
             else {
                 return false
             }
@@ -5270,6 +5381,41 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
             stream.advance()
 
             while consume__decimal_digit(from: &stream) {
+            }
+
+            guard stream.advanceIfNext(".") else {
+                break alt
+            }
+
+            return true
+        }
+
+        stream.restore(state)
+
+        return false
+    }
+
+    /// ```
+    /// hexadecimal_digit_sequence:
+    ///     | ("0"..."9" | "a"..."f" | "A"..."F") (_hexadecimal_digit)*
+    ///     ;
+    /// ```
+    @inlinable
+    public static func consume_hexadecimal_digit_sequence<StringType>(from stream: inout StringStream<StringType>) -> Bool {
+        guard !stream.isEof else {
+            return false
+        }
+
+        alt:
+        do {
+            switch stream.peek() {
+            case "0"..."9", "a"..."f", "A"..."F":
+                stream.advance()
+            default:
+                return false
+            }
+
+            while consume__hexadecimal_digit(from: &stream) {
             }
 
             return true
@@ -5306,33 +5452,9 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     }
 
     /// ```
-    /// binary_digit:
-    ///     | "0"
-    ///     | "1"
-    ///     ;
-    /// ```
-    @inlinable
-    public static func consume_binary_digit<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        return stream.advanceIfNext("0") || stream.advanceIfNext("1")
-    }
-
-    /// ```
-    /// encoding_prefix:
-    ///     | "u8"
-    ///     | "u"
-    ///     | "U"
-    ///     | "L"
-    ///     ;
-    /// ```
-    @inlinable
-    public static func consume_encoding_prefix<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        return stream.advanceIfNext("u8") || stream.advanceIfNext("u") || stream.advanceIfNext("U") || stream.advanceIfNext("L")
-    }
-
-    /// ```
     /// exponent_part:
-    ///     | "e" sign? digit_sequence
-    ///     | "E" sign? digit_sequence
+    ///     | "e" ("+" | "-")? "0"..."9" (_decimal_digit)*
+    ///     | "E" ("+" | "-")? "0"..."9" (_decimal_digit)*
     ///     ;
     /// ```
     @inlinable
@@ -5349,10 +5471,23 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                 break alt
             }
 
-            _ = consume_sign(from: &stream)
+            switch stream.peek() {
+            case "+", "-":
+                stream.advance()
+            default:
+                Void()
+            }
 
-            guard consume_digit_sequence(from: &stream) else {
+            guard
+                !stream.isEof,
+                stream.isNextInRange("0"..."9")
+            else {
                 break alt
+            }
+
+            stream.advance()
+
+            while consume__decimal_digit(from: &stream) {
             }
 
             return true
@@ -5366,227 +5501,13 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                 return false
             }
 
-            _ = consume_sign(from: &stream)
-
-            guard consume_digit_sequence(from: &stream) else {
-                break alt
+            switch stream.peek() {
+            case "+", "-":
+                stream.advance()
+            default:
+                Void()
             }
 
-            return true
-        }
-
-        stream.restore(state)
-
-        return false
-    }
-
-    /// ```
-    /// floatingConstant[".floatingConstant"]:
-    ///     | fractional_constant exponent_part? floating_suffix?
-    ///     | digit_sequence exponent_part floating_suffix?
-    ///     | hexadecimal_prefix hexadecimal_fractional_constant binary_exponent_part floating_suffix?
-    ///     | hexadecimal_prefix hexadecimal_digit_sequence binary_exponent_part floating_suffix?
-    ///     ;
-    /// ```
-    @inlinable
-    public static func consume_floatingConstant<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else {
-            return false
-        }
-
-        let state: StringStream<StringType>.State = stream.save()
-
-        alt:
-        do {
-            guard consume_fractional_constant(from: &stream) else {
-                break alt
-            }
-
-            _ = consume_exponent_part(from: &stream)
-
-            _ = consume_floating_suffix(from: &stream)
-
-            return true
-        }
-
-        stream.restore(state)
-
-        alt:
-        do {
-            guard consume_digit_sequence(from: &stream) else {
-                break alt
-            }
-
-            guard consume_exponent_part(from: &stream) else {
-                break alt
-            }
-
-            _ = consume_floating_suffix(from: &stream)
-
-            return true
-        }
-
-        stream.restore(state)
-
-        alt:
-        do {
-            guard consume_hexadecimal_prefix(from: &stream) else {
-                break alt
-            }
-
-            guard consume_hexadecimal_fractional_constant(from: &stream) else {
-                break alt
-            }
-
-            guard consume_binary_exponent_part(from: &stream) else {
-                break alt
-            }
-
-            _ = consume_floating_suffix(from: &stream)
-
-            return true
-        }
-
-        stream.restore(state)
-
-        alt:
-        do {
-            guard consume_hexadecimal_prefix(from: &stream) else {
-                return false
-            }
-
-            guard consume_hexadecimal_digit_sequence(from: &stream) else {
-                break alt
-            }
-
-            guard consume_binary_exponent_part(from: &stream) else {
-                break alt
-            }
-
-            _ = consume_floating_suffix(from: &stream)
-
-            return true
-        }
-
-        stream.restore(state)
-
-        return false
-    }
-
-    /// ```
-    /// floating_suffix:
-    ///     | "f"
-    ///     | "l"
-    ///     | "F"
-    ///     | "L"
-    ///     | "df"
-    ///     | "dd"
-    ///     | "dl"
-    ///     | "DF"
-    ///     | "DD"
-    ///     | "DL"
-    ///     ;
-    /// ```
-    @inlinable
-    public static func consume_floating_suffix<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        return stream.advanceIfNext("f") || stream.advanceIfNext("l") || stream.advanceIfNext("F") || stream.advanceIfNext("L") || stream.advanceIfNext("df") || stream.advanceIfNext("dd") || stream.advanceIfNext("dl") || stream.advanceIfNext("DF") || stream.advanceIfNext("DD") || stream.advanceIfNext("DL")
-    }
-
-    /// ```
-    /// fractional_constant:
-    ///     | digit_sequence? "." digit_sequence
-    ///     | digit_sequence "."
-    ///     ;
-    /// ```
-    @inlinable
-    public static func consume_fractional_constant<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else {
-            return false
-        }
-
-        let state: StringStream<StringType>.State = stream.save()
-
-        alt:
-        do {
-            _ = consume_digit_sequence(from: &stream)
-
-            guard stream.advanceIfNext(".") else {
-                break alt
-            }
-
-            guard consume_digit_sequence(from: &stream) else {
-                break alt
-            }
-
-            return true
-        }
-
-        stream.restore(state)
-
-        alt:
-        do {
-            guard consume_digit_sequence(from: &stream) else {
-                return false
-            }
-
-            guard stream.advanceIfNext(".") else {
-                break alt
-            }
-
-            return true
-        }
-
-        stream.restore(state)
-
-        return false
-    }
-
-    /// ```
-    /// hexadecimal_constant:
-    ///     | hexadecimal_prefix hexadecimal_digit_sequence
-    ///     ;
-    /// ```
-    @inlinable
-    public static func consume_hexadecimal_constant<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else {
-            return false
-        }
-
-        let state: StringStream<StringType>.State = stream.save()
-
-        alt:
-        do {
-            guard consume_hexadecimal_prefix(from: &stream) else {
-                return false
-            }
-
-            guard consume_hexadecimal_digit_sequence(from: &stream) else {
-                break alt
-            }
-
-            return true
-        }
-
-        stream.restore(state)
-
-        return false
-    }
-
-    /// ```
-    /// hexadecimal_digit:
-    ///     | "0"..."9"
-    ///     | "a"..."f"
-    ///     | "A"..."F"
-    ///     ;
-    /// ```
-    @inlinable
-    public static func consume_hexadecimal_digit<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else {
-            return false
-        }
-
-        alt:
-        do {
             guard
                 !stream.isEof,
                 stream.isNextInRange("0"..."9")
@@ -5596,66 +5517,21 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
             stream.advance()
 
-            return true
-        }
-
-        alt:
-        do {
-            guard
-                !stream.isEof,
-                stream.isNextInRange("a"..."f")
-            else {
-                break alt
-            }
-
-            stream.advance()
-
-            return true
-        }
-
-        alt:
-        do {
-            guard
-                !stream.isEof,
-                stream.isNextInRange("A"..."F")
-            else {
-                return false
-            }
-
-            stream.advance()
-
-            return true
-        }
-    }
-
-    /// ```
-    /// hexadecimal_digit_sequence:
-    ///     | hexadecimal_digit (_hexadecimal_digit)*
-    ///     ;
-    /// ```
-    @inlinable
-    public static func consume_hexadecimal_digit_sequence<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else {
-            return false
-        }
-
-        alt:
-        do {
-            guard consume_hexadecimal_digit(from: &stream) else {
-                return false
-            }
-
-            while consume__hexadecimal_digit(from: &stream) {
+            while consume__decimal_digit(from: &stream) {
             }
 
             return true
         }
+
+        stream.restore(state)
+
+        return false
     }
 
     /// ```
     /// hexadecimal_fractional_constant:
-    ///     | hexadecimal_digit_sequence? "." hexadecimal_digit_sequence
-    ///     | hexadecimal_digit_sequence "."
+    ///     | hexadecimal_digit_sequence? "." ("0"..."9" | "a"..."f" | "A"..."F") (_hexadecimal_digit)*
+    ///     | ("0"..."9" | "a"..."f" | "A"..."F") (_hexadecimal_digit)* "."
     ///     ;
     /// ```
     @inlinable
@@ -5674,8 +5550,14 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
                 break alt
             }
 
-            guard consume_hexadecimal_digit_sequence(from: &stream) else {
+            switch stream.peek() {
+            case "0"..."9", "a"..."f", "A"..."F":
+                stream.advance()
+            default:
                 break alt
+            }
+
+            while consume__hexadecimal_digit(from: &stream) {
             }
 
             return true
@@ -5685,8 +5567,14 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard consume_hexadecimal_digit_sequence(from: &stream) else {
+            switch stream.peek() {
+            case "0"..."9", "a"..."f", "A"..."F":
+                stream.advance()
+            default:
                 return false
+            }
+
+            while consume__hexadecimal_digit(from: &stream) {
             }
 
             guard stream.advanceIfNext(".") else {
@@ -5702,22 +5590,11 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
     }
 
     /// ```
-    /// hexadecimal_prefix:
-    ///     | "0x"
-    ///     | "0X"
-    ///     ;
-    /// ```
-    @inlinable
-    public static func consume_hexadecimal_prefix<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        return stream.advanceIfNext("0x") || stream.advanceIfNext("0X")
-    }
-
-    /// ```
     /// integerConstant[".integerConstant"]:
-    ///     | hexadecimal_constant integer_suffix?
-    ///     | binary_constant integer_suffix?
-    ///     | decimal_constant integer_suffix?
-    ///     | octal_constant integer_suffix?
+    ///     | ("0x" | "0X") ("0"..."9" | "a"..."f" | "A"..."F") (_hexadecimal_digit)* integer_suffix?
+    ///     | ("0b" | "0B") ("0" | "1") (_binary_digit)* integer_suffix?
+    ///     | "1"..."9" (_decimal_digit)* integer_suffix?
+    ///     | "0" (_octal_digit)* integer_suffix?
     ///     ;
     /// ```
     @inlinable
@@ -5730,8 +5607,18 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard consume_hexadecimal_constant(from: &stream) else {
+            guard stream.advanceIfNext("0x") || stream.advanceIfNext("0X") else {
                 break alt
+            }
+
+            switch stream.peek() {
+            case "0"..."9", "a"..."f", "A"..."F":
+                stream.advance()
+            default:
+                break alt
+            }
+
+            while consume__hexadecimal_digit(from: &stream) {
             }
 
             _ = consume_integer_suffix(from: &stream)
@@ -5743,8 +5630,18 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard consume_binary_constant(from: &stream) else {
+            guard stream.advanceIfNext("0b") || stream.advanceIfNext("0B") else {
                 break alt
+            }
+
+            switch stream.peek() {
+            case "0", "1":
+                stream.advance()
+            default:
+                break alt
+            }
+
+            while consume__binary_digit(from: &stream) {
             }
 
             _ = consume_integer_suffix(from: &stream)
@@ -5756,8 +5653,16 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard consume_decimal_constant(from: &stream) else {
+            guard
+                !stream.isEof,
+                stream.isNextInRange("1"..."9")
+            else {
                 break alt
+            }
+
+            stream.advance()
+
+            while consume__decimal_digit(from: &stream) {
             }
 
             _ = consume_integer_suffix(from: &stream)
@@ -5769,8 +5674,11 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard consume_octal_constant(from: &stream) else {
+            guard stream.advanceIfNext("0") else {
                 return false
+            }
+
+            while consume__octal_digit(from: &stream) {
             }
 
             _ = consume_integer_suffix(from: &stream)
@@ -5781,12 +5689,12 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
     /// ```
     /// integer_suffix:
-    ///     | unsigned_suffix long_suffix?
-    ///     | unsigned_suffix long_long_suffix
-    ///     | unsigned_suffix bit_precise_int_suffix
-    ///     | long_suffix unsigned_suffix?
-    ///     | long_long_suffix unsigned_suffix?
-    ///     | bit_precise_int_suffix unsigned_suffix?
+    ///     | ("u" | "U") ("l" | "L")?
+    ///     | ("u" | "U") ("ll" | "LL")
+    ///     | ("u" | "U") ("wb" | "WB")
+    ///     | ("l" | "L") ("u" | "U")?
+    ///     | ("ll" | "LL") ("u" | "U")?
+    ///     | ("wb" | "WB") ("u" | "U")?
     ///     ;
     /// ```
     @inlinable
@@ -5799,25 +5707,18 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard consume_unsigned_suffix(from: &stream) else {
+            switch stream.peek() {
+            case "u", "U":
+                stream.advance()
+            default:
                 break alt
             }
 
-            _ = consume_long_suffix(from: &stream)
-
-            return true
-        }
-
-        stream.restore(state)
-
-        alt:
-        do {
-            guard consume_unsigned_suffix(from: &stream) else {
-                break alt
-            }
-
-            guard consume_long_long_suffix(from: &stream) else {
-                break alt
+            switch stream.peek() {
+            case "l", "L":
+                stream.advance()
+            default:
+                Void()
             }
 
             return true
@@ -5827,11 +5728,14 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard consume_unsigned_suffix(from: &stream) else {
+            switch stream.peek() {
+            case "u", "U":
+                stream.advance()
+            default:
                 break alt
             }
 
-            guard consume_bit_precise_int_suffix(from: &stream) else {
+            guard stream.advanceIfNext("ll") || stream.advanceIfNext("LL") else {
                 break alt
             }
 
@@ -5842,11 +5746,16 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard consume_long_suffix(from: &stream) else {
+            switch stream.peek() {
+            case "u", "U":
+                stream.advance()
+            default:
                 break alt
             }
 
-            _ = consume_unsigned_suffix(from: &stream)
+            guard stream.advanceIfNext("wb") || stream.advanceIfNext("WB") else {
+                break alt
+            }
 
             return true
         }
@@ -5855,11 +5764,19 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard consume_long_long_suffix(from: &stream) else {
+            switch stream.peek() {
+            case "l", "L":
+                stream.advance()
+            default:
                 break alt
             }
 
-            _ = consume_unsigned_suffix(from: &stream)
+            switch stream.peek() {
+            case "u", "U":
+                stream.advance()
+            default:
+                Void()
+            }
 
             return true
         }
@@ -5868,76 +5785,42 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            guard consume_bit_precise_int_suffix(from: &stream) else {
+            guard stream.advanceIfNext("ll") || stream.advanceIfNext("LL") else {
+                break alt
+            }
+
+            switch stream.peek() {
+            case "u", "U":
+                stream.advance()
+            default:
+                Void()
+            }
+
+            return true
+        }
+
+        stream.restore(state)
+
+        alt:
+        do {
+            guard stream.advanceIfNext("wb") || stream.advanceIfNext("WB") else {
                 return false
             }
 
-            _ = consume_unsigned_suffix(from: &stream)
-
-            return true
-        }
-    }
-
-    /// ```
-    /// long_long_suffix:
-    ///     | "ll"
-    ///     | "LL"
-    ///     ;
-    /// ```
-    @inlinable
-    public static func consume_long_long_suffix<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        return stream.advanceIfNext("ll") || stream.advanceIfNext("LL")
-    }
-
-    /// ```
-    /// long_suffix:
-    ///     | "l"
-    ///     | "L"
-    ///     ;
-    /// ```
-    @inlinable
-    public static func consume_long_suffix<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        return stream.advanceIfNext("l") || stream.advanceIfNext("L")
-    }
-
-    /// ```
-    /// octal_constant:
-    ///     | "0" (_octal_digit)*
-    ///     ;
-    /// ```
-    @inlinable
-    public static func consume_octal_constant<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        guard !stream.isEof else {
-            return false
-        }
-
-        alt:
-        do {
-            guard stream.advanceIfNext("0") else {
-                return false
-            }
-
-            while consume__octal_digit(from: &stream) {
+            switch stream.peek() {
+            case "u", "U":
+                stream.advance()
+            default:
+                Void()
             }
 
             return true
         }
-    }
-
-    /// ```
-    /// sign:
-    ///     | "+"
-    ///     | "-"
-    ///     ;
-    /// ```
-    @inlinable
-    public static func consume_sign<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        return stream.advanceIfNext("+") || stream.advanceIfNext("-")
     }
 
     /// ```
     /// stringLiteral[".stringLiteral"]:
-    ///     | encoding_prefix? "\\"" s_char_sequence? "\\""
+    ///     | ("u8" | "u" | "U" | "L")? "\\"" s_char_sequence? "\\""
     ///     ;
     /// ```
     @inlinable
@@ -5950,7 +5833,7 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
 
         alt:
         do {
-            _ = consume_encoding_prefix(from: &stream)
+            _ = stream.advanceIfNext("u8") || stream.advanceIfNext("u") || stream.advanceIfNext("U") || stream.advanceIfNext("L")
 
             guard stream.advanceIfNext("\\"") else {
                 break alt
@@ -5968,17 +5851,6 @@ public struct ParserToken: RawTokenType, CustomStringConvertible {
         stream.restore(state)
 
         return false
-    }
-
-    /// ```
-    /// unsigned_suffix:
-    ///     | "u"
-    ///     | "U"
-    ///     ;
-    /// ```
-    @inlinable
-    public static func consume_unsigned_suffix<StringType>(from stream: inout StringStream<StringType>) -> Bool {
-        return stream.advanceIfNext("u") || stream.advanceIfNext("U")
     }
 }
 """ ;

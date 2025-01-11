@@ -1782,6 +1782,13 @@ private class IfElseChainIntoGuardSimplifier: SyntaxNodeRewriter {
                 .binary(lhs: $0, op: .or, rhs: $1.copy())
             }
 
+            // Avoid emitting empty guard statements
+            if elseBody.isEmpty {
+                return .expression(
+                    .assignment(lhs: .identifier("_"), op: .assign, rhs: exp)
+                )
+            }
+
             let stmt = GuardStatement.guard(exp, else: elseBody.copy())
             return visitGuard(stmt)
         }
