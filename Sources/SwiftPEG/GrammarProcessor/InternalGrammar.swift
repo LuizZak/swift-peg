@@ -131,6 +131,10 @@ public enum InternalGrammar {
             try visitor.willVisit(self)
             try visitor.visit(self)
 
+            if let ruleParameters {
+                try ruleParameters.forEach { try $0.accept(visitor) }
+            }
+
             try alts.forEach { try $0.accept(visitor) }
 
             try visitor.didVisit(self)
@@ -192,6 +196,12 @@ public enum InternalGrammar {
                 name: String(node.name.string),
                 type: node.type
             )
+        }
+
+        /// Accepts a given visitor, and recursively passes the visitor to nested
+        /// property types within this object that can be visited, if present.
+        public func accept(_ visitor: some Visitor) throws {
+            try visitor.visit(self)
         }
     }
 
@@ -933,6 +943,9 @@ public enum InternalGrammar {
             if case .group(let alts) = self {
                 try alts.forEach { try $0.accept(visitor) }
             }
+            if case .ruleName(_, let parameters?) = self {
+                try parameters.forEach { try $0.accept(visitor) }
+            }
 
             try visitor.didVisit(self)
         }
@@ -994,6 +1007,12 @@ public enum InternalGrammar {
                 label: String(node.label.string),
                 action: .from(node.action)
             )
+        }
+
+        /// Accepts a given visitor, and recursively passes the visitor to nested
+        /// property types within this object that can be visited, if present.
+        public func accept(_ visitor: some Visitor) throws {
+            try visitor.visit(self)
         }
     }
 
@@ -1172,6 +1191,10 @@ public enum InternalGrammar {
         func visit(_ node: Rule) throws
         func didVisit(_ node: Rule) throws
 
+        func willVisit(_ node: RuleParameter) throws
+        func visit(_ node: RuleParameter) throws
+        func didVisit(_ node: RuleParameter) throws
+
         func willVisit(_ node: Alt) throws
         func visit(_ node: Alt) throws
         func didVisit(_ node: Alt) throws
@@ -1193,6 +1216,10 @@ public enum InternalGrammar {
         func willVisit(_ node: Atom) throws
         func visit(_ node: Atom) throws
         func didVisit(_ node: Atom) throws
+
+        func willVisit(_ node: AtomParameter) throws
+        func visit(_ node: AtomParameter) throws
+        func didVisit(_ node: AtomParameter) throws
     }
 }
 
@@ -1206,6 +1233,10 @@ public extension InternalGrammar.Visitor {
     func willVisit(_ node: InternalGrammar.Rule) throws { }
     func visit(_ node: InternalGrammar.Rule) throws { }
     func didVisit(_ node: InternalGrammar.Rule) throws { }
+
+    func willVisit(_ node: InternalGrammar.RuleParameter) throws { }
+    func visit(_ node: InternalGrammar.RuleParameter) throws { }
+    func didVisit(_ node: InternalGrammar.RuleParameter) throws { }
 
     func willVisit(_ node: InternalGrammar.Alt) throws { }
     func visit(_ node: InternalGrammar.Alt) throws { }
@@ -1228,6 +1259,10 @@ public extension InternalGrammar.Visitor {
     func willVisit(_ node: InternalGrammar.Atom) throws { }
     func visit(_ node: InternalGrammar.Atom) throws { }
     func didVisit(_ node: InternalGrammar.Atom) throws { }
+
+    func willVisit(_ node: InternalGrammar.AtomParameter) throws { }
+    func visit(_ node: InternalGrammar.AtomParameter) throws { }
+    func didVisit(_ node: InternalGrammar.AtomParameter) throws { }
 
     func visit(_ node: InternalGrammar.TokenDefinition) throws { }
 }
