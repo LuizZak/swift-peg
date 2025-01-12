@@ -512,21 +512,7 @@ extension GrammarProcessor {
                 return nil
             }
 
-            var result: [CommonAbstract.TokenItem] = []
-            for item in node.items {
-                guard let asItems = _inlinedAsItems(item) else {
-                    // If one item cannot be turned into an atom, then the syntax
-                    // is not atom-able
-                    return nil
-                }
-
-                result.append(contentsOf: asItems)
-            }
-            return result
-        }
-
-        private func _inlinedAsItems(_ node: CommonAbstract.TokenItem) -> [CommonAbstract.TokenItem]? {
-            return [node]
+            return node.items
         }
 
         // MARK: Inline as token exclusion

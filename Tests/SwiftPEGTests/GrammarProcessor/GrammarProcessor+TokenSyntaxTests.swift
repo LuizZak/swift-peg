@@ -164,30 +164,34 @@ struct GrammarProcessor_TokenSyntaxTests {
     @Test
     func inlineFragments_alts2() throws {
         let delegate = stubDelegate(tokensFile: """
-        $a:
-            | b b? c* d+
-            ;
-
-        %b:
-            | "a"..."z" | "A"..."Z"
-            ;
-
-        %c:
-            | "0"..."9" | "a"..."z" | "A"..."Z"
-            ;
-
-        %d:
-            | '0'+
-            ;
+        $a: | b b? c* d+ ;
+        %b: | "a"..."z" | "A"..."Z" ;
+        %c: | "0"..."9" | "a"..."z" | "A"..."Z" ;
+        %d: | '0'+ ;
         """)
         let expected = try parseTokenDefinitions(#"""
-        $a:
-            | ("a"..."z" | "A"..."Z") ("a"..."z" | "A"..."Z")? ("0"..."9" | "a"..."z" | "A"..."Z")* d+
-            ;
-        
-        %d:
-            | '0'+
-            ;
+        $a: | ("a"..."z" | "A"..."Z") ("a"..."z" | "A"..."Z")? ("0"..."9" | "a"..."z" | "A"..."Z")* d+ ;
+        %d: | '0'+ ;
+        """#)
+        let grammar = makeGrammar()
+        let sut = makeSut(delegate)
+
+        let processed = try sut.process(grammar)
+
+        assertEqualUnordered(processed.tokens, expected)
+    }
+
+    @Test
+    func inlineFragments_alts_skipsTrailExcludedItems() throws {
+        let delegate = stubDelegate(tokensFile: """
+        $a: | b b? c* d ;
+        %b: | "a"..."z" | "A"..."Z" ;
+        %c: | "0"..."9" | "a"..."z" | "A"..."Z" ;
+        %d: | '0' !'0' ;
+        """)
+        let expected = try parseTokenDefinitions(#"""
+        $a: | ("a"..."z" | "A"..."Z") ("a"..."z" | "A"..."Z")? ("0"..."9" | "a"..."z" | "A"..."Z")* d ;
+        %d: | '0' !'0' ;
         """#)
         let grammar = makeGrammar()
         let sut = makeSut(delegate)
