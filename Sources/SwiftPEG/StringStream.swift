@@ -114,13 +114,13 @@ public struct StringStream<StringType: StringProtocol> {
 
     /// Checks that the next character in the stream is within a given range.
     @inlinable
-    public func isNextInRange(_ range: Range<Character>) -> Bool {
+    public func isNextInRange(_ range: Range<StringType.Element>) -> Bool {
         return range.contains(source[index])
     }
 
     /// Checks that the next character in the stream is within a given range.
     @inlinable
-    public func isNextInRange(_ range: ClosedRange<Character>) -> Bool {
+    public func isNextInRange(_ range: ClosedRange<StringType.Element>) -> Bool {
         return range.contains(source[index])
     }
 

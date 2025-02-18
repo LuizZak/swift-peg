@@ -100,6 +100,12 @@ let codeGen = SwiftCodeGen(from: processedGrammar)
 print(try codeGen.generateParser())
 ```
 
+Or through the command like with the generate-parser plugin:
+
+```bash
+swift package --allow-writing-to-package-directory generate-parser generate --grammar-file ./grammar.gram --output TestGrammarParser.swift
+```
+
 A type definition extending a parser is generated like so:
 
 ```swift
