@@ -228,7 +228,9 @@ class FixtureTestRunner {
         diffOnly: Bool = false
     ) -> DiffingTest {
 
-        let location = DiffLocation(sourceLocation: .init(fileID: "", filePath: #file, line: lineOffset, column: 0))
+        let location = DiffLocation(
+            sourceLocation: .init(fileID: #fileID, filePath: #file, line: lineOffset + 1, column: 1)
+        )
         let diffable = DiffableString(string: input, location: location)
 
         return FixtureDiffingTest(
@@ -301,7 +303,7 @@ class FixtureTestRunner {
                         fileID: #fileID,
                         filePath: url.path,
                         line: line,
-                        column: 0
+                        column: 1
                     )
                 )
 
@@ -310,7 +312,7 @@ class FixtureTestRunner {
                     if let location = meta.location as? FileSourceLocation {
                         location.line
                     } else {
-                        0
+                        1
                     }
 
                 Issue.record(
@@ -319,7 +321,7 @@ class FixtureTestRunner {
                         fileID: #fileID,
                         filePath: url.path,
                         line: lineOffset + line,
-                        column: 0
+                        column: 1
                     )
                 )
             }
