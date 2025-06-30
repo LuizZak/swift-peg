@@ -417,7 +417,7 @@ extension SwiftASTEmitter {
     /// @attribute1
     /// @attribute2
     /// ...
-    /// <var> <name>: <type> <{ get }/{ get set}>
+    /// <var> <name>: <type> <{ get }/{ get set }>
     /// ```
     func emit(_ memberDecl: SwiftCodeGen.ProtocolVariableMemberDecl) {
         emit(memberDecl.leadingComments)
