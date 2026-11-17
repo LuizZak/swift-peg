@@ -202,6 +202,21 @@ extension SwiftASTEmitter: ExpressionVisitor {
         visitExpression(exp.exp)
     }
 
+    func visitRepeat(_ exp: RepeatExpression) -> Void {
+        buffer.emit("repeat ")
+        visitExpression(exp)
+    }
+
+    func visitEach(_ exp: EachExpression) -> Void {
+        buffer.emit("each ")
+        visitExpression(exp)
+    }
+
+    func visitAwait(_ exp: AwaitExpression) -> Void {
+        buffer.emit("await ")
+        visitExpression(exp)
+    }
+
     func visitIf(_ exp: IfExpression) -> Void {
         buffer.emit("if")
         visitConditionalClauses(exp.conditionalClauses)

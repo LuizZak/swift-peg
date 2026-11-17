@@ -370,6 +370,18 @@ private class RequiresMultilineConditionalClauseVisitor: ExpressionVisitor {
         visitExpression(exp.exp)
     }
 
+    func visitEach(_ exp: EachExpression) -> Bool {
+        visitExpression(exp)
+    }
+
+    func visitRepeat(_ exp: RepeatExpression) -> Bool {
+        visitExpression(exp)
+    }
+
+    func visitAwait(_ exp: AwaitExpression) -> Bool {
+        visitExpression(exp)
+    }
+
     func visitIf(_ exp: IfExpression) -> Bool {
         true
     }

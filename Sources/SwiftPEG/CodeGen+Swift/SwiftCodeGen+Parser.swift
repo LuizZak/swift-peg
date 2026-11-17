@@ -1386,6 +1386,21 @@ internal extension SwiftType {
             }
 
             return .tuple(.types(.fromCollection(elements)))
+
+        case .tuple(.parameterPackExpansion(let type)):
+            return .tuple(.parameterPackExpansion(type.scg_removingTupleLabels()))
+
+        case .opaque(let type):
+            return .opaque(type.scg_removingTupleLabels())
+
+        case .boxed(let type):
+            return .boxed(type.scg_removingTupleLabels())
+
+        case .parameterPack(.parameterPack(let type)):
+            return .parameterPack(.parameterPack(type.scg_removingTupleLabels()))
+
+        case .parameterPack(.parameterPackExpansion(let type)):
+            return .parameterPack(.parameterPackExpansion(type.scg_removingTupleLabels()))
         }
     }
 }
