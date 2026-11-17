@@ -505,7 +505,7 @@ struct GrammarProcessor_TokenSyntaxTests {
     }
 
     @Test
-    func tokenOcclusionGraph_occlusion_doesNotCheckAlts() throws {
+    func testTokenOcclusionGraph_occlusion_checksTokenDFAs() throws {
         let delegate = stubDelegate(tokensFile: #"""
         $a: 'a' | 'aa' | 'aaa';
         $b: 'a'+ ;
@@ -516,8 +516,12 @@ struct GrammarProcessor_TokenSyntaxTests {
 
         let processed = try sut.process(grammar)
 
-        assertEmpty(processed.tokenOcclusionGraph.nodes)
-        assertEmpty(processed.tokenOcclusionGraph.edges)
+        assertEqual(processed.tokenOcclusionGraph.nodes, [
+            "a", "b"
+        ])
+        assertEqual(processed.tokenOcclusionGraph.edges, [
+            .init(start: "b", end: "a"),
+        ])
     }
 
     @Test

@@ -84,6 +84,18 @@ class TokenDFA_PrefixTests: XCTestCase {
         assertFalse(token1.isPrefix(of: sut))
     }
 
+    func testIsPrefix_nonInlined_oneOrMore() throws {
+        let tokens = try parseTokenDefinitions(#"""
+        $a: 'a' | 'aa' | 'aaa' ;
+        $b: 'a'+ ;
+        """#)
+        let sut = try makeSut(tokens[0])
+        let token1 = try makeSut(tokens[1])
+
+        assertTrue(sut.isPrefix(of: token1))
+        assertFalse(token1.isPrefix(of: sut))
+    }
+
     func testIsPrefix_nonInlined_decimalsAndFloats() throws {
         let tokens = try parseTokenDefinitions(#"""
         $a: '0'...'9'+ ;
