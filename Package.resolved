@@ -1,13 +1,13 @@
 {
-  "originHash" : "93553e3098036d9ed29c7cf16a95017f6f994e2035b6cc60fadd25783e628f84",
+  "originHash" : "f1cd1c39ea3f307ac0ae7abc4b9e7afb9e9913096f3e4e09ccb7ce2c3f0d65f5",
   "pins" : [
     {
       "identity" : "console",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/LuizZak/Console.git",
       "state" : {
-        "revision" : "9f4946929b7aac54ecc642c3ef15ec4fc05618a0",
-        "version" : "0.14.1"
+        "revision" : "86160c804d22293dac3aa5b2d69f7246a2263a09",
+        "version" : "0.13.0"
       }
     },
     {
@@ -15,8 +15,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/LuizZak/MiniDigraph.git",
       "state" : {
-        "revision" : "f05b842ea381f12f31d0af05da692fefb4606104",
-        "version" : "0.9.1"
+        "revision" : "157ca2c337ea0fef68f8e8d12144726a63c48b92",
+        "version" : "0.5.0"
       }
     },
     {
@@ -24,17 +24,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/LuizZak/MiniGraphviz.git",
       "state" : {
-        "revision" : "c545e50b88fd981c3f07e29efee24c926b0e4812",
-        "version" : "0.2.0"
-      }
-    },
-    {
-      "identity" : "minilexer",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/LuizZak/MiniLexer.git",
-      "state" : {
-        "revision" : "71cc272f4613d1e45e1eacab33fa2f77c6311007",
-        "version" : "0.10.0"
+        "revision" : "aa15c50cf8027dae6dde860a40987c238070d849",
+        "version" : "0.1.0"
       }
     },
     {
@@ -49,19 +40,10 @@
     {
       "identity" : "swift-syntax",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/swiftlang/swift-syntax.git",
+      "location" : "https://github.com/apple/swift-syntax.git",
       "state" : {
-        "revision" : "cb53fa1bd3219b0b23ded7dfdd3b2baff266fd25",
-        "version" : "600.0.0"
-      }
-    },
-    {
-      "identity" : "swiftast",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/LuizZak/SwiftAST.git",
-      "state" : {
-        "revision" : "cebb189a1901ff21555030bda5101a5f7884cc21",
-        "version" : "0.16.0"
+        "revision" : "08a2f0a9a30e0f705f79c9cfaca1f68b71bdc775",
+        "version" : "510.0.0"
       }
     }
   ],

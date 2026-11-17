@@ -135,19 +135,19 @@ extension Array where Element: Hashable {
     /// to `Equatable.==` removed, while preserving the order of the items.
     @usableFromInline
     func removingDuplicates() -> Self {
-        return Self(unsafeUninitializedCapacity: count) { (buffer, count) in
-            var seen: Set<Element> = []
-            seen.reserveCapacity(self.capacity)
+        var result: [Element] = []
+        var seen: Set<Element> = []
+        seen.reserveCapacity(self.capacity)
 
-            for element in self {
-                guard seen.insert(element).inserted else {
-                    continue
-                }
-
-                buffer[count] = element
-                count += 1
+        for element in self {
+            guard seen.insert(element).inserted else {
+                continue
             }
+
+            result.append(element)
         }
+
+        return result
     }
 }
 
